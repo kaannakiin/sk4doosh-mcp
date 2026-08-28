@@ -1,0 +1,14 @@
+{
+  "kind": "naming",
+  "description": "operationId yoksa ad metod + route'tan uretilir; path parametreleri by_ ile sona gelir",
+  "input": {
+    "endpoints": [
+      { "method": "GET", "route": "/ping" },
+      { "method": "GET", "route": "/orders/{id}" },
+      { "method": "POST", "route": "/orders/{orderId}/items" }
+    ]
+  },
+  "expected": {
+    "names": ["get_ping", "get_orders_by_id", "post_orders_items_by_order_id"]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "kind": "naming",
+  "description": "operationId varsa ad onun snake_case halidir",
+  "input": {
+    "endpoints": [
+      { "operationId": "GetOrder", "method": "GET", "route": "/orders/{id}" },
+      {
+        "operationId": "getOrderById",
+        "method": "GET",
+        "route": "/v2/orders/{id}"
+      }
+    ]
+  },
+  "expected": {
+    "names": ["get_order", "get_order_by_id"]
+  }
+}

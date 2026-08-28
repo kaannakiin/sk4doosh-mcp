@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "sayi kanonik en-kisa formda yazilir; kaynak metindeki artik sifir korunmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/products",
+      "parameters": [{ "name": "price", "in": "query", "type": "number" }]
+    },
+    "arguments": { "price": 1.50 }
+  },
+  "expected": {
+    "pathAndQuery": "/products?price=1.5"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "beyan edilmemis alan sessizce dusurulmez, hata olur",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders/{id}",
+      "parameters": [{ "name": "id", "in": "path", "type": "integer" }]
+    },
+    "arguments": { "id": 5, "idd": 6 }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

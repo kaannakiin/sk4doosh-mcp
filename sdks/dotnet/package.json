@@ -1,0 +1,10 @@
+{
+  "name": "@sk-mcp/sdk-dotnet",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "dotnet build",
+    "test": "dotnet test",
+    "lint": "dotnet format --verify-no-changes"
+  }
+}

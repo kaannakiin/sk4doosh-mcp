@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "percent-encode RFC 3986 katidir; !'()* ve bosluk da kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/files/{name}",
+      "parameters": [{ "name": "name", "in": "path", "type": "string" }]
+    },
+    "arguments": { "name": "a!'()* b" }
+  },
+  "expected": {
+    "pathAndQuery": "/files/a%21%27%28%29%2A%20b"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "kind": "metadata-extraction",
+  "description": "policy korumali GET; path parametresi inputSchema'ya property olarak gecer; Faz 1 DemoApi get_order karsiligi",
+  "input": {
+    "operationId": "GetOrder",
+    "method": "GET",
+    "route": "/orders/{id}",
+    "description": "Bir siparişi id ile getirir.",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" },
+        "description": "Sipariş id'si"
+      }
+    ],
+    "responses": {
+      "200": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "item": { "type": "string" },
+            "quantity": { "type": "integer" },
+            "owner": { "type": "string" }
+          }
+        }
+      },
+      "404": {}
+    },
+    "auth": { "anonymous": false, "policies": ["OrdersRead"] },
+    "tags": ["orders"]
+  },
+  "expected": {
+    "name": "get_order",
+    "description": "Bir siparişi id ile getirir.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "Sipariş id'si" }
+      },
+      "required": ["id"]
+    },
+    "annotations": { "readOnlyHint": true, "idempotentHint": true },
+    "auth": { "anonymous": false, "policies": ["OrdersRead"] }
+  }
+}

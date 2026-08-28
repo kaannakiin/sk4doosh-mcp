@@ -1,0 +1,26 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "gen": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!src/generated/**",
+        "$TURBO_ROOT$/packages/spec/schemas/**"
+      ],
+      "outputs": ["src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+    },
+    "check-types": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+    },
+    "lint": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+    },
+    "dev": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+    }
+  }
+}

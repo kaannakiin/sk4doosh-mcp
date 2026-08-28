@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "gonderilmeyen opsiyonel query key'i hic yazilmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [{ "name": "q", "in": "query", "type": "string" }]
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/items"
+  }
+}

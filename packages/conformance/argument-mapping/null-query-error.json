@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "query'de null yasak; alan atlanmaliydi",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [{ "name": "q", "in": "query", "type": "string" }]
+    },
+    "arguments": { "q": null }
+  },
+  "expected": {
+    "error": "null_not_allowed"
+  }
+}

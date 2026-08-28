@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "path degeri ham yapistirilamaz; traversal girisimi tek encode'lu segment olur",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/files/{name}",
+      "parameters": [{ "name": "name", "in": "path", "type": "string" }]
+    },
+    "arguments": { "name": "5/../admin" }
+  },
+  "expected": {
+    "pathAndQuery": "/files/5%2F..%2Fadmin"
+  }
+}

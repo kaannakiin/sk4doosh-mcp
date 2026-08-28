@@ -1,0 +1,16 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "outputs": [
+        "samples/**/bin/**",
+        "samples/**/obj/**",
+        "src/**/bin/**",
+        "src/**/obj/**",
+        "tests/**/bin/**",
+        "tests/**/obj/**"
+      ]
+    }
+  }
+}

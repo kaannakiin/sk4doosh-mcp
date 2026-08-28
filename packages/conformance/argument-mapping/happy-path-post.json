@@ -1,0 +1,20 @@
+{
+  "kind": "argument-mapping",
+  "description": "path + query + body ayni anda; body property'leri duz JSON'dan toplanir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders/{id}/notes",
+      "parameters": [
+        { "name": "id", "in": "path", "type": "integer" },
+        { "name": "notify", "in": "query", "type": "boolean" }
+      ],
+      "body": { "properties": ["text"] }
+    },
+    "arguments": { "id": 5, "notify": true, "text": "geç kaldı" }
+  },
+  "expected": {
+    "pathAndQuery": "/orders/5/notes?notify=true",
+    "bodyJson": { "text": "geç kaldı" }
+  }
+}

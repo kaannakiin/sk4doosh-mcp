@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fixture.schema.json",
+  "title": "Fixture",
+  "oneOf": [
+    { "$ref": "#/$defs/NamingFixture" },
+    { "$ref": "#/$defs/MetadataExtractionFixture" },
+    { "$ref": "#/$defs/ArgumentMappingFixture" }
+  ],
+  "$defs": {
+    "NamingFixture": {
+      "title": "NamingFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": { "const": "naming" },
+        "description": { "type": "string", "minLength": 1 },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["endpoints"],
+          "properties": {
+            "endpoints": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/NamingEndpoint" }
+            }
+          }
+        },
+        "expected": {
+          "oneOf": [
+            {
+              "title": "NamingExpectedNames",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["names"],
+              "properties": {
+                "names": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            {
+              "title": "NamingExpectedError",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["error"],
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "enum": ["name_collision", "invalid_name"]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "NamingEndpoint": {
+      "title": "NamingEndpoint",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "route"],
+      "properties": {
+        "operationId": { "type": "string", "minLength": 1 },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "route": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "MetadataExtractionFixture": {
+      "title": "MetadataExtractionFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": { "const": "metadata-extraction" },
+        "description": { "type": "string", "minLength": 1 },
+        "input": { "$ref": "endpoint-descriptor.schema.json" },
+        "expected": { "$ref": "tool-definition.schema.json" }
+      }
+    },
+    "ArgumentMappingFixture": {
+      "title": "ArgumentMappingFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": { "const": "argument-mapping" },
+        "description": { "type": "string", "minLength": 1 },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["template", "arguments"],
+          "properties": {
+            "template": { "$ref": "#/$defs/RequestTemplateSpec" },
+            "arguments": { "type": "object" }
+          }
+        },
+        "expected": {
+          "oneOf": [
+            {
+              "title": "ComposedRequestExpectation",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pathAndQuery"],
+              "properties": {
+                "pathAndQuery": { "type": "string" },
+                "headers": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                },
+                "bodyJson": { "type": "object" }
+              }
+            },
+            {
+              "title": "ArgumentMappingError",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["error"],
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "enum": [
+                    "unknown_argument",
+                    "invalid_path_type",
+                    "missing_path_parameter",
+                    "header_injection",
+                    "null_not_allowed"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "RequestTemplateSpec": {
+      "title": "RequestTemplateSpec",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "route"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "route": { "type": "string", "pattern": "^/" },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TemplateParameter" }
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["properties"],
+          "properties": {
+            "properties": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "additionalProperties": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "TemplateParameter": {
+      "title": "TemplateParameter",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "in", "type"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "in": { "type": "string", "enum": ["path", "query", "header"] },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean"]
+        },
+        "array": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "kind": "metadata-extraction",
+  "description": "anonim GET endpoint; description fallback'i METHOD route",
+  "input": {
+    "method": "GET",
+    "route": "/ping",
+    "auth": { "anonymous": true, "policies": [] },
+    "responses": {
+      "200": {
+        "schema": {
+          "type": "object",
+          "properties": { "pong": { "type": "boolean" } }
+        }
+      }
+    },
+    "tags": ["orders"]
+  },
+  "expected": {
+    "name": "get_ping",
+    "description": "GET /ping",
+    "inputSchema": { "type": "object", "properties": {}, "required": [] },
+    "annotations": { "readOnlyHint": true, "idempotentHint": true },
+    "auth": { "anonymous": true, "policies": [] }
+  }
+}

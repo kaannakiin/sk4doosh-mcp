@@ -1,0 +1,29 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import $RefParser from "@apidevtools/json-schema-ref-parser";
+import { compile } from "json-schema-to-typescript";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const schemasDir = path.resolve(here, "../../spec/schemas");
+const outDir = path.resolve(here, "../src/generated");
+
+const schemas = [
+  "endpoint-descriptor.schema.json",
+  "tool-definition.schema.json",
+  "fixture.schema.json",
+];
+
+await mkdir(outDir, { recursive: true });
+
+for (const file of schemas) {
+  const schema = await $RefParser.dereference(path.join(schemasDir, file));
+  delete schema.$defs;
+  const ts = await compile(schema, schema.title, {
+    bannerComment: "",
+    additionalProperties: false,
+  });
+  const stripped = ts.replace(/^\s*\/\*\*[\s\S]*?\*\/\n/gm, "");
+  const outFile = path.join(outDir, file.replace(".schema.json", ".ts"));
+  await writeFile(outFile, stripped);
+}

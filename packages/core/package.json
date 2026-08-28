@@ -1,0 +1,31 @@
+{
+  "name": "@sk-mcp/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "gen": "node scripts/generate-types.mjs",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^16.0.1",
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/spec": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "10.9.1",
+    "json-schema-to-typescript": "^16.0.0",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

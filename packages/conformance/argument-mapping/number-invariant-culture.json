@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "sayi cevirimi her zaman invariant; 1.5 asla 1,5 olamaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/products",
+      "parameters": [{ "name": "price", "in": "query", "type": "number" }]
+    },
+    "arguments": { "price": 1.5 }
+  },
+  "expected": {
+    "pathAndQuery": "/products?price=1.5"
+  }
+}

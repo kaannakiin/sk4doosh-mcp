@@ -1,0 +1,13 @@
+{
+  "kind": "naming",
+  "description": "iki endpoint ayni adi uretirse sonek eklenmez, hata verilir",
+  "input": {
+    "endpoints": [
+      { "method": "GET", "route": "/orders/{id}" },
+      { "operationId": "GetOrdersById", "method": "GET", "route": "/orders/by-id/{id}" }
+    ]
+  },
+  "expected": {
+    "error": "name_collision"
+  }
+}

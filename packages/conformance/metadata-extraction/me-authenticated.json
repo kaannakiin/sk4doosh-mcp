@@ -1,0 +1,25 @@
+{
+  "kind": "metadata-extraction",
+  "description": "ciplak Authorize: kimlik gerekli, policy yok",
+  "input": {
+    "method": "GET",
+    "route": "/me",
+    "auth": { "anonymous": false, "policies": [] },
+    "responses": {
+      "200": {
+        "schema": {
+          "type": "object",
+          "properties": { "name": { "type": ["string", "null"] } }
+        }
+      }
+    },
+    "tags": ["orders"]
+  },
+  "expected": {
+    "name": "get_me",
+    "description": "GET /me",
+    "inputSchema": { "type": "object", "properties": {}, "required": [] },
+    "annotations": { "readOnlyHint": true, "idempotentHint": true },
+    "auth": { "anonymous": false, "policies": [] }
+  }
+}

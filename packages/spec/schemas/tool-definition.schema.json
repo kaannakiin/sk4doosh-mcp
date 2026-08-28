@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tool-definition.schema.json",
+  "title": "ToolDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "description", "inputSchema", "annotations", "auth"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "description": { "type": "string", "minLength": 1 },
+    "inputSchema": {
+      "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+    },
+    "annotations": { "$ref": "#/$defs/ToolAnnotations" },
+    "auth": { "$ref": "endpoint-descriptor.schema.json#/$defs/Auth" }
+  },
+  "$defs": {
+    "ToolAnnotations": {
+      "title": "ToolAnnotations",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "readOnlyHint": { "type": "boolean" },
+        "destructiveHint": { "type": "boolean" },
+        "idempotentHint": { "type": "boolean" }
+      }
+    }
+  }
+}

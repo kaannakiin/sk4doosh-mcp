@@ -1,0 +1,13 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "validate": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/spec/schemas/**"
+      ],
+      "outputs": []
+    }
+  }
+}
