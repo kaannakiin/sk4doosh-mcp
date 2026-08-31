@@ -15,6 +15,9 @@ node_modules
 # Testing
 coverage
 
+# Local caches (scrape/LLM run output, third-party lookup caches)
+.cache
+
 # Turbo
 .turbo
 
