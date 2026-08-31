@@ -4,12 +4,13 @@
 
 ## Paket sınırları
 
-| Paket                  | Rol                                                           | Kural                                                                                                                                                                   |
-| ---------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/spec`        | Normatif spec: Türkçe prose + `schemas/*.schema.json`         | Runtime kod eklenmez; şemalar TÜM dillerin tek tip kaynağıdır                                                                                                           |
-| `packages/conformance` | Saf JSON fixture korpusu + `validate.mjs`                     | SDK'lar JSON'u path'ten okur; buraya runtime bağımlılığı eklenmez                                                                                                       |
-| `packages/core`        | TS referans implementasyonu (composer/template runtime dahil) | Spec kavramları için tipler `pnpm gen` ile ÜRETİLİR; elle tip yazılmaz                                                                                                  |
-| `sdks/*`               | Dil SDK'ları (dotnet, nestjs)                                 | `packages/` altına SDK koyma; NestJS sentetik bağlamı SDK kurar — `light-my-request` YASAK (Express'i zehirliyor, [karar 004](docs/kararlar/004-nestjs-dogrulamasi.md)) |
+| Paket                   | Rol                                                                  | Kural                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/spec`         | Normatif spec: Türkçe prose + `schemas/*.schema.json`                | Runtime kod eklenmez; şemalar TÜM dillerin tek tip kaynağıdır                                                                                                           |
+| `packages/conformance`  | Saf JSON fixture korpusu + `validate.mjs`                            | SDK'lar JSON'u path'ten okur; buraya runtime bağımlılığı eklenmez                                                                                                       |
+| `packages/core`         | TS referans implementasyonu (composer/template runtime dahil)        | Spec kavramları için tipler `pnpm gen` ile ÜRETİLİR; elle tip yazılmaz                                                                                                  |
+| `packages/info-scraper` | Genel amaçlı yardımcı paket — sk-mcp spec/core alanına bağımlı değil | Spec/core'a bağımlılık eklenmez; bağımsız geliştirilir                                                                                                                  |
+| `sdks/*`                | Dil SDK'ları (dotnet, nestjs)                                        | `packages/` altına SDK koyma; NestJS sentetik bağlamı SDK kurar — `light-my-request` YASAK (Express'i zehirliyor, [karar 004](docs/kararlar/004-nestjs-dogrulamasi.md)) |
 
 ## Değişmez kurallar
 
