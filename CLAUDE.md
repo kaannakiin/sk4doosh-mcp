@@ -12,6 +12,12 @@
 | `packages/info-scraper` | Genel amaçlı yardımcı paket — sk-mcp spec/core alanına bağımlı değil | Spec/core'a bağımlılık eklenmez; bağımsız geliştirilir                                                                                                                  |
 | `sdks/*`                | Dil SDK'ları (dotnet, nestjs)                                        | `packages/` altına SDK koyma; NestJS sentetik bağlamı SDK kurar — `light-my-request` YASAK (Express'i zehirliyor, [karar 004](docs/kararlar/004-nestjs-dogrulamasi.md)) |
 
+> **`packages/info-scraper` sk-mcp mimarisinin parçası DEĞİLDİR.** Bambaşka bir amaç için
+> (B2B satış istihbaratı scraper'ı) yazılmış, tamamen bağımsız bir araç — sadece pratiklik
+> için `packages/` altında duruyor. sk-mcp'nin spec/core/SDK/MCP mimarisini anlamaya, bir
+> değişiklik planlamaya ya da referans almaya çalışırken bu paketi OKUMA, keşfetme, kod
+> ararken tarama — sk-mcp konusuyla hiçbir ilgisi yok, kendi başına ayrı bir proje olarak ele al.
+
 ## Değişmez kurallar
 
 - **Tek tip kaynağı**: spec kavramları (EndpointDescriptor, ToolDefinition, Fixture, Auth...) için TS/C# tipi elle yazma. Şemayı değiştir → `pnpm turbo run gen` → üretilen tip. `packages/core/src/generated/` dosyalarına elle dokunma; commit'lenirler.
