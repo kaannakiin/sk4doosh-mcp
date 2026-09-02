@@ -125,8 +125,16 @@ public sealed class VisibilityController : ControllerBase
     public IActionResult VisMine(int id) => id == 1 ? Ok() : Forbid();
 }
 
+internal sealed class FixedContext(HttpContext context) : IHttpContextAccessor
+{
+    public HttpContext? HttpContext { get => context; set { } }
+}
+
 public sealed class VisibilityTests
 {
+    private static int _undeclaredHits;
+
+
     private sealed record Harness(WebApplication App, SkMcpDispatcher Dispatcher) : IAsyncDisposable
     {
         public SkMcpMetaTools ToolsFor(string? token, params (string Name, string Value)[] headers)
@@ -146,7 +154,7 @@ public sealed class VisibilityTests
                 App.Services.GetRequiredService<IVisibilityEvaluator>(),
                 App.Services.GetRequiredService<IProbeEvaluator>(),
                 App.Services.GetRequiredService<IOptions<SkMcpOptions>>(),
-                new HttpContextAccessor { HttpContext = outer });
+                new FixedContext(outer));
         }
 
         public async ValueTask DisposeAsync()
@@ -213,6 +221,10 @@ public sealed class VisibilityTests
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
+            }
+            if (context.Request.Path.StartsWithSegments("/vis/undeclared"))
+            {
+                Interlocked.Increment(ref _undeclaredHits);
             }
             if (context.Request.Path.StartsWithSegments("/vis/undeclared")
                 && !context.Request.Headers.ContainsKey("Authorization"))
@@ -503,6 +515,53 @@ public sealed class VisibilityTests
         Assert.Contains("vis_undeclared", identified);
         Assert.DoesNotContain("vis_undeclared", identifiedUncertain);
         Assert.DoesNotContain("vis_undeclared", anonymous);
+    }
+
+    [Fact]
+    public async Task V24_ProbeCache_SkipsRepeatedProbesForSameCaller()
+    {
+        await using Harness host = await ProbeHostAsync();
+        SkMcpMetaTools tools = host.ToolsFor(Mint("alice"));
+        Interlocked.Exchange(ref _undeclaredHits, 0);
+
+        await SearchAsync(tools);
+        int afterFirst = Volatile.Read(ref _undeclaredHits);
+        await SearchAsync(tools);
+        int afterSecond = Volatile.Read(ref _undeclaredHits);
+
+        Assert.Equal(1, afterFirst);
+        Assert.Equal(1, afterSecond);
+
+        (HashSet<string> other, _, _, _) = await SearchAsync(host.ToolsFor(Mint("bob")));
+        Assert.Equal(2, Volatile.Read(ref _undeclaredHits));
+        Assert.Contains("vis_undeclared", other);
+    }
+
+    [Fact]
+    public async Task V26_ProbeCache_EvictsLeastRecentlyUsedCaller()
+    {
+        await using Harness host = await ProbeHostAsync(o => o.Visibility.ProbeCacheMaxCallers = 1);
+        SkMcpMetaTools alice = host.ToolsFor(Mint("alice"));
+        Interlocked.Exchange(ref _undeclaredHits, 0);
+
+        await SearchAsync(alice);
+        await SearchAsync(host.ToolsFor(Mint("bob")));
+        await SearchAsync(alice);
+
+        Assert.Equal(3, Volatile.Read(ref _undeclaredHits));
+    }
+
+    [Fact]
+    public async Task V25_ProbeCacheDisabled_ProbesEveryTime()
+    {
+        await using Harness host = await ProbeHostAsync(o => o.Visibility.ProbeCacheLifetime = TimeSpan.Zero);
+        SkMcpMetaTools tools = host.ToolsFor(Mint("alice"));
+        Interlocked.Exchange(ref _undeclaredHits, 0);
+
+        await SearchAsync(tools);
+        await SearchAsync(tools);
+
+        Assert.Equal(2, Volatile.Read(ref _undeclaredHits));
     }
 
     [Fact]

@@ -24,6 +24,9 @@ public sealed class VisibilityOptions
     public UnknownVisibility OnUnknown { get; set; } = UnknownVisibility.Show;
     public VisibilityTier Tier { get; set; } = VisibilityTier.Declarative;
     public int ProbeTopK { get; set; } = 25;
+    public int ProbeConcurrency { get; set; } = 4;
+    public TimeSpan ProbeCacheLifetime { get; set; } = TimeSpan.FromSeconds(30);
+    public int ProbeCacheMaxCallers { get; set; } = 128;
     public Dictionary<string, string> ProbeValues { get; } = new(StringComparer.OrdinalIgnoreCase);
 }
 

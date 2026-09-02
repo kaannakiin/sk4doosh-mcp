@@ -48,15 +48,48 @@ public sealed class SkMcpMetaTools(
             ? Math.Max(0, options.Value.Visibility.ProbeTopK)
             : 0;
 
-        List<object> results = [];
-        foreach (CatalogEntry entry in catalog.Search(query, everything))
+        List<CatalogEntry> ranked = [.. catalog.Search(query, everything)];
+        Dictionary<string, VisibilityDecision> decisions = new(StringComparer.Ordinal);
+        List<CatalogEntry> probeQueue = [];
+        foreach (CatalogEntry entry in ranked)
         {
             VisibilityDecision decision = decide(entry);
+            decisions[entry.Tool.Name] = decision;
             if (decision == VisibilityDecision.Unknown && probeBudget > 0 && probe.CanProbe(entry))
             {
                 probeBudget -= 1;
-                decision = await probe.ProbeAsync(entry, httpContextAccessor.HttpContext?.Request, cancellationToken);
+                probeQueue.Add(entry);
             }
+        }
+
+        if (probeQueue.Count > 0)
+        {
+            HttpRequest? outer = httpContextAccessor.HttpContext?.Request;
+            int concurrency = Math.Max(1, options.Value.Visibility.ProbeConcurrency);
+            using SemaphoreSlim gate = new(concurrency);
+            VisibilityDecision[] probed = new VisibilityDecision[probeQueue.Count];
+            await Task.WhenAll(probeQueue.Select(async (entry, index) =>
+            {
+                await gate.WaitAsync(cancellationToken);
+                try
+                {
+                    probed[index] = await probe.ProbeAsync(entry, outer, cancellationToken);
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            }));
+            for (int index = 0; index < probeQueue.Count; index++)
+            {
+                decisions[probeQueue[index].Tool.Name] = probed[index];
+            }
+        }
+
+        List<object> results = [];
+        foreach (CatalogEntry entry in ranked)
+        {
+            VisibilityDecision decision = decisions[entry.Tool.Name];
             if (!IsVisible(decision))
             {
                 continue;

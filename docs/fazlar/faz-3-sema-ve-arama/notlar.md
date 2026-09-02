@@ -163,11 +163,11 @@ Korpus 53 → 60 fixture (naming 7 → 12, `same-name-different-container-collid
 
 Yukarıda "ikinci bulgu" olarak yazılan yanlış pozitif düzeltildi. `auth.anonymous` artık `boolean` değil `yes | no | unknown`:
 
-| Endpoint metadata'sı | Değer | Neden |
-| --- | --- | --- |
-| `IAllowAnonymous` var | `yes` | Kesin: framework kimlik aramadan geçirir |
-| `IAuthorizeData` veya fallback policy var | `no` | Kesin: framework kimlik arar |
-| Hiçbiri yok | `unknown` | Bilgi yok |
+| Endpoint metadata'sı                      | Değer     | Neden                                    |
+| ----------------------------------------- | --------- | ---------------------------------------- |
+| `IAllowAnonymous` var                     | `yes`     | Kesin: framework kimlik aramadan geçirir |
+| `IAuthorizeData` veya fallback policy var | `no`      | Kesin: framework kimlik arar             |
+| Hiçbiri yok                               | `unknown` | Bilgi yok                                |
 
 Eski kural üçüncü satırı `true` sayıyordu ve gerekçesi framework'ün kendi davranışıydı: `[Authorize]`'sız, fallback'siz bir endpoint'i authorization middleware hiç değerlendirmez. Bu doğru ama dar bir gerçek — yalnız **framework'ün authorization katmanı** hakkında konuşuyor, "bu endpoint'i hiçbir şey engellemez" demiyor. **Middleware endpoint metadata'sına yazmaz, yalnız okur:** `app.UseMiddleware<...>()` bir endpoint'e değil pipeline'a bağlanır, dolayısıyla "beni şu middleware koruyor" diye bir işaret hiç oluşmaz. Kimliği global middleware'de kuran backend'de metadata'da sadece negatif işaret (anonim muafiyeti) bulunur.
 
@@ -175,13 +175,13 @@ Kural değişince görünürlük sıralaması yediye çıktı (`anonymous == unk
 
 **Gerçek backend ölçümü, öncesi ve sonrası.** motokurye'de 698 tool:
 
-| | Eski kural | Yeni kural |
-| --- | --- | --- |
-| `yes` (kesin anonim) | 698 | 34 |
-| `no` (kesin korumalı) | 0 | 0 |
-| `unknown` | 0 | 664 |
-| Probe'a giden | 447 (yalnız imperatif) | 664 |
-| Kimliksiz çağırana `allow` görünen | 251 | 34 |
+|                                    | Eski kural             | Yeni kural |
+| ---------------------------------- | ---------------------- | ---------- |
+| `yes` (kesin anonim)               | 698                    | 34         |
+| `no` (kesin korumalı)              | 0                      | 0          |
+| `unknown`                          | 0                      | 664        |
+| Probe'a giden                      | 447 (yalnız imperatif) | 664        |
+| Kimliksiz çağırana `allow` görünen | 251                    | 34         |
 
 34 sayısı host'un tek satırlık `AllowAnonymousAttribute : IAllowAnonymous` değişikliğinin karşılığı: o endpoint'ler artık kesin bilgiyle işaretli. Yeni probe adayı 217 endpoint (664 eksi zaten imperatif olan 447). Probe bütçesi top-K olduğu için maliyet arama başına sabit kalıyor.
 
@@ -189,8 +189,35 @@ Kural değişince görünürlük sıralaması yediye çıktı (`anonymous == unk
 
 C# tip üreticisi bu tur string enum desteği kazandı (`$defs` içindeki `type: string` + `enum` → C# `enum`); `JsonStringEnumConverter` + camelCase ile tel biçimi korunuyor. V matrisi 20 → 22: V22 beyansız endpoint'in `unknown` kaldığını, V23 probe açıkken aynı endpoint'in kimlikli çağırana görünüp kimliksize görünmediğini sabitliyor — motokurye'nin JWT middleware deseninin minyatürü. Korpus 60 → 63. Core TS 63/63, C# 30/30, üç TFM yeşil.
 
+### Probe maliyeti: ölçüm ve üç ayar (2026-09-02)
+
+Anonimlik kuralı değişince canlı ölçüm bir gerileme gösterdi: 50 kartlık arama **21.978 ms** sürdü (eski kuralda 1.180 ms). Sebep dürüst: eskiden 251 endpoint `allow` çıkıp probe'a hiç girmiyordu, artık `unknown` ve ilk 25'i gerçekten koşuyor. Kartların ilk 25'i çözülmüş, 26'ncıdan sonrası `authUncertain` — yani bütçe kuralı doğru çalışıyor, sorun bütçe içindeki her probe'un pahalı olması.
+
+**Yanlış teşhis, düzeltmesiyle.** İlk açıklamam "host `IsSkMcpRequest()` ile `TouchLastPing`'i atlasın" idi; koda bakınca yanlış çıktı. `TouchLastPing` kendi içinde throttle'lı (`_lastPingCache`), 25 probe'un 24'ü zaten veritabanına gitmiyor. Asıl yük [JwtAuthenticationMiddleware.cs:167](../../../../motokurye/SystemSoftBaseServerService/Middleware/JwtAuthenticationMiddleware.cs#L167): her istekte yeni NHibernate oturumu açılıp kullanıcı çekiliyor, önbellek yok. Ve bu **atlanamaz**, çünkü probe'un cevabı ona bağlı — yetki filtreleri kullanıcı bağlamını okuyor. Host tarafında geçerli kalan tek dal gerçek yan etkiler (`LogDenial`, erişim logu): performans için değil, veri kirliliği için.
+
+**Karar: maliyet politikası host'undur, SDK ayar sunar.** Doğru cevap backend'e göre değişiyor (veritabanı yükü, rate limiter, kabul edilebilir gecikme) — karar 003 cetvelinin tam tanımı. Üç ayar:
+
+| Ayar                   | Default | Ne yapar                                          |
+| ---------------------- | ------- | ------------------------------------------------- |
+| `ProbeTopK`            | 25      | Sıralama sonrası kaç aday probe edilir            |
+| `ProbeConcurrency`     | 4       | Kaç probe aynı anda koşar (1 = sıralı)            |
+| `ProbeCacheLifetime`   | 30 sn   | Çağıran-kapsamlı sonuç önbelleği (sıfır = kapalı) |
+| `ProbeCacheMaxCallers` | 128     | Önbellekte tutulan çağıran sayısı tavanı          |
+
+Kendine güvenen host `ProbeTopK = 250` yazar, rate limiter'ı hassas olan `ProbeConcurrency = 1` yapar, yetki değişiminin anında yansımasını isteyen önbelleği kapatır.
+
+**Önbellek anahtarı** kimlik taşıyıcılarının değerlerinin SHA-256 özeti + tool adıdır. Gerekçe: taşıyıcılar sentetik kimliğin tamamıdır, aynı taşıyıcılar aynı verdict'i üretir; farklı çağıran farklı anahtar alır (V24 bob ile bunu sabitliyor). Özet kullanılıyor ki token bellekte düz metin durmasın. Bilinçli sınır: `Identity.Project` dış istek dışında bir kaynaktan değer türetiyorsa anahtar onu görmez, öyle bir kurulumda önbellek kapatılmalı — spec'e yazıldı.
+
+**Önbellek yapısı (Redis pratiklerinden alınan iki düzeltme).** İlk sürüm düz bir `anahtar → (karar, son kullanma)` sözlüğüydü ve iki kusuru vardı. Birincisi sınırsız büyüme: süresi dolan giriş yalnız tekrar okunduğunda siliniyordu, bir daha aranmayan çağıranın kayıtları sonsuza kadar kalıyordu (698 tool × N çağıran). İkincisi yanlış kırılım: her tool ayrı bir girişti, dolayısıyla bir çağıranın kararlarını topluca atmak 698 anahtar taramak demekti. Düzeltme, kayıtları **çağıran başına gruplamak**: tek son kullanma tarihi, tek sözlük, ve `ProbeCacheMaxCallers` (default 128) ile en-az-kullanılan çağıranı düşüren bir kapasite sınırı. Redis'in kendisi SDK'ya girmedi — kütüphaneye altyapı bağımlılığı eklemek backend-agnostic kuralını bozar; çok instance'lı kurulum için bir depo soyutlaması gerekirse talep kanıtlandığında eklenir.
+
+**Eşzamanlılık hatası, test yakaladı.** V26 (kapasite sınırı) ilk yazımda kırıldı: LRU damgası `AddOrUpdate` fabrikasında değil, sonrasında yazılıyordu; paralel probe'larda yeni giriş damgası sıfırken buduma turuna yakalanıp hemen atılabiliyordu. Damga artık giriş oluşturulurken atanıyor.
+
+**Test harness'ında AsyncLocal tuzağı.** Aynı testte iki farklı çağıran kurarken `new HttpContextAccessor { HttpContext = outer }` kullanmak yanılttı: .NET'in `HttpContextAccessor`'ı **AsyncLocal tabanlıdır**, yani her yeni örnek aynı ambient depoya yazar ve ikinci çağıran birincinin bağlamını ezer. Trace çıkardığında alice'in üçüncü aramada bob'un anahtarını ürettiği görüldü. SDK'nın kusuru değil — gerçek kullanımda her istek kendi akışında koşar — ama test sabit bir `IHttpContextAccessor` uygulamasına geçirildi. Çok kimlikli her test bundan sonra o yolu kullanmalı.
+
+Arama döngüsü de yeniden yazıldı: önce sıralama ve karar toplama, sonra probe kuyruğunun `SemaphoreSlim` ile sınırlı eşzamanlılıkta koşması, sonra kart üretimi. V matrisi 22 → 25: V24 aynı çağıranın ikinci aramasında probe koşmadığını ve farklı çağıranın koştuğunu, V25 önbellek kapalıyken her aramanın probe ettiğini, V26 kapasite sınırında en-az-kullanılan çağıranın düşürüldüğünü sabitliyor.
+
 ## Ertelenenler
 
 - Şema sadeleştirme (generic wrapper soyma, derinlik, recursion `$ref`, readonly düşme) → adım 6. Property naming policy adım 3'te çözüldü; Newtonsoft host'lar için hook beyanı gerekiyor.
-- Üç TFM test matrisi + gerçek boot ile uçtan uca → adım 7. motokurye branch'inde gereken host değişiklikleri: `AllowAnonymousAttribute : IAllowAnonymous`, 4 endpoint'e `[EndpointName]`, tarayıcıya özgü dönüşümlerde `IsSkMcpRequest()` dalı (`EncryptedJson*Formatter`, `RequestLoggingMiddleware`, rate limiter, `TouchLastPing`, `LogDenial`). `x-portalcode` ve `x-enrollment` gerekmiyor — ölçüldü.
+- Üç TFM test matrisi + gerçek boot ile uçtan uca → adım 7. motokurye branch'inde gereken host değişiklikleri: `AllowAnonymousAttribute : IAllowAnonymous`, 4 endpoint'e `[EndpointName]`, tarayıcıya özgü dönüşümlerde `IsSkMcpRequest()` dalı (`EncryptedJson*Formatter` — kanıtlandı; `RequestLoggingMiddleware`, rate limiter, `LogDenial` — veri kirliliği için). `x-portalcode` ve `x-enrollment` gerekmiyor — ölçüldü.
 - Bağlantı yansıtması (M8) ve sentetik istek işareti (M9) NestJS'te aynalanmadı — Express karşılıkları `socket.remoteAddress` ve `req[Symbol]`/`res.locals`. n=2 kuralı gereği kural henüz tek implementasyonda.
