@@ -1,39 +1,44 @@
 # sk-mcp
 
-"Agent'lar için Swagger": mevcut backend'lere gömülen MCP katmanı — spec + dil başına SDK. Mimariyi anlamadan kod yazma: [docs/00-genel-bakis.md](docs/00-genel-bakis.md), [docs/nasil-calisiyor.md](docs/nasil-calisiyor.md), [docs/paket-yerlesimi.md](docs/paket-yerlesimi.md). Faz planları ve notları: [docs/fazlar/](docs/fazlar/).
+"Swagger for Agents": an MCP layer embedded into existing backends — spec + SDK per language. Do not write code before understanding the architecture: [docs/00-genel-bakis.md](docs/00-genel-bakis.md), [docs/nasil-calisiyor.md](docs/nasil-calisiyor.md), [docs/paket-yerlesimi.md](docs/paket-yerlesimi.md). Phase plans and notes: [docs/fazlar/](docs/fazlar/).
 
-## Paket sınırları
+## Package Boundaries
 
-| Paket                   | Rol                                                                  | Kural                                                                                                                                                                   |
-| ----------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/spec`         | Normatif spec: Türkçe prose + `schemas/*.schema.json`                | Runtime kod eklenmez; şemalar TÜM dillerin tek tip kaynağıdır                                                                                                           |
-| `packages/conformance`  | Saf JSON fixture korpusu + `validate.mjs`                            | SDK'lar JSON'u path'ten okur; buraya runtime bağımlılığı eklenmez                                                                                                       |
-| `packages/core`         | TS referans implementasyonu (composer/template runtime dahil)        | Spec kavramları için tipler `pnpm gen` ile ÜRETİLİR; elle tip yazılmaz                                                                                                  |
-| `packages/info-scraper` | Genel amaçlı yardımcı paket — sk-mcp spec/core alanına bağımlı değil | Spec/core'a bağımlılık eklenmez; bağımsız geliştirilir                                                                                                                  |
-| `sdks/*`                | Dil SDK'ları (dotnet, nestjs)                                        | `packages/` altına SDK koyma; NestJS sentetik bağlamı SDK kurar — `light-my-request` YASAK (Express'i zehirliyor, [karar 004](docs/kararlar/004-nestjs-dogrulamasi.md)) |
+| Package                 | Role                                                                         | Rule                                                                                                                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/spec`         | Normative spec: Turkish prose + `schemas/*.schema.json`                      | No runtime code; schemas are the single source of truth for all languages                                                                                                                                 |
+| `packages/conformance`  | Pure JSON fixture corpus + `validate.mjs`                                    | SDKs read JSON from paths; no runtime dependencies may be added here                                                                                                                                      |
+| `packages/core`         | TS reference implementation (including composer/template runtime)            | Types for spec concepts are GENERATED via `pnpm gen`; never write them manually                                                                                                                           |
+| `sdks/*`                | Language SDKs (dotnet, nestjs)                                               | Do not put SDKs under `packages/`; the NestJS synthetic context is created by the SDK — `light-my-request` is FORBIDDEN (it poisons Express, see [decision 004](docs/kararlar/004-nestjs-dogrulamasi.md)) |
 
-> **`packages/info-scraper` sk-mcp mimarisinin parçası DEĞİLDİR.** Bambaşka bir amaç için
-> (B2B satış istihbaratı scraper'ı) yazılmış, tamamen bağımsız bir araç — sadece pratiklik
-> için `packages/` altında duruyor. sk-mcp'nin spec/core/SDK/MCP mimarisini anlamaya, bir
-> değişiklik planlamaya ya da referans almaya çalışırken bu paketi OKUMA, keşfetme, kod
-> ararken tarama — sk-mcp konusuyla hiçbir ilgisi yok, kendi başına ayrı bir proje olarak ele al.
+## Immutable Rules
 
-## Değişmez kurallar
+- **Single source of truth**: Never manually define TS/C# types for spec concepts (`EndpointDescriptor`, `ToolDefinition`, `Fixture`, `Auth`, etc.). Change the schema → run `pnpm turbo run gen` → use the generated types. Never manually modify files under `packages/core/src/generated/` or `sdks/dotnet/src/SkMcp.AspNetCore/Generated/`; they are committed to the repository.
 
-- **Tek tip kaynağı**: spec kavramları (EndpointDescriptor, ToolDefinition, Fixture, Auth...) için TS/C# tipi elle yazma. Şemayı değiştir → `pnpm turbo run gen` → üretilen tip. `packages/core/src/generated/` dosyalarına elle dokunma; commit'lenirler.
-- `packages/core/src/index.ts` yalnız kanonik dosyadan `export type` yapar; `generated/fixture.ts` içindeki gömülü EndpointDescriptor/ToolDefinition kopyalarını asla re-export etme (tek-tanım kuralı).
-- Şemalarda `$id` ≡ dosya adı; 2020-12'nin şu keyword'leri kullanılmaz: `prefixItems`, `unevaluatedProperties`, `$dynamicRef`, `dependentSchemas` (codegen desteklemiyor).
-- Şema değişikliği fixture'ları kırarsa ikisi aynı değişiklikte güncellenir.
-- **Yorum yasağı**: kodda/JSON'da yorum satırı yok; açıklama spec prose'una ya da docs'a yazılır.
-- **Dil**: prose dökümanlar Türkçe; makine-okur her şey (JSON alanları, tool adları, kod tanımlayıcıları) İngilizce.
-- core'u her zaman turbo üzerinden derle (`pnpm turbo run build`) — `pnpm --filter @sk-mcp/core run build` gen'i atlar, stale tip riski.
-- Tool isimlendirmede sessiz çakışma çözümü yasak: çakışma = hata ([packages/spec/isimlendirme.md](packages/spec/isimlendirme.md)).
-- Görünürlük ≠ yaptırım: arama filtrelemesi güvenlik değildir; yaptırım her zaman invoke'ta backend pipeline'ındadır.
+- `packages/core/src/index.ts` may only re-export `export type` from the canonical files. Never re-export the embedded `EndpointDescriptor`/`ToolDefinition` copies from `generated/fixture.ts` (single-definition rule).
 
-## Komutlar
+- In schemas, `$id` ≡ the file name. The following 2020-12 keywords must not be used: `prefixItems`, `unevaluatedProperties`, `$dynamicRef`, `dependentSchemas` (the code generator does not support them).
 
-- `pnpm build` / `pnpm lint` (validate dahil) / `pnpm check-types` / `pnpm validate`
-- TS testleri: `pnpm --filter @sk-mcp/core test` / `pnpm --filter @sk-mcp/sdk-nestjs test` (vitest)
-- dotnet tarafı: `pnpm turbo run build --filter=@sk-mcp/sdk-dotnet` (shim `dotnet build` çağırır)
-- DemoApi: `dotnet run` — `sdks/dotnet/samples/DemoApi` içinde; MCP endpoint `/mcp`, demo token `POST /auth/token {"user":"alice"|"bob"}`
-- Nest demo: `sdks/nestjs/samples/demo-api` içinde `node dist/main.js` (önce `pnpm turbo run build --filter=@sk-mcp/demo-nestjs`); aynı `/mcp` + `/auth/token` sözleşmesi
+- If a schema change breaks fixtures, update the fixtures in the same change.
+
+- **No comments**: No comment lines in code or JSON. Put explanations in the spec prose or documentation.
+
+- **Language**: Prose documentation is in Turkish; everything machine-readable (JSON fields, tool names, code identifiers) is in English.
+
+- Always build core through Turbo (`pnpm turbo run build`) — `pnpm --filter @sk-mcp/core run build` skips generation and risks using stale types.
+
+- Silent conflict resolution in tool naming is forbidden: a conflict is an error ([packages/spec/isimlendirme.md](packages/spec/isimlendirme.md)).
+
+- Visibility ≠ enforcement: search filtering is not a security mechanism; enforcement must always happen in the backend pipeline at invoke time.
+
+## Commands
+
+- `pnpm build` / `pnpm lint` (includes validation) / `pnpm check-types` / `pnpm validate`
+
+- TS tests: `pnpm --filter @sk-mcp/core test` / `pnpm --filter @sk-mcp/sdk-nestjs test` (Vitest)
+
+- dotnet side: `pnpm turbo run build --filter=@sk-mcp/sdk-dotnet` (the shim invokes `dotnet build`)
+
+- DemoApi: `dotnet run` — located in `sdks/dotnet/samples/DemoApi`; MCP endpoint `/mcp`; demo token: `POST /auth/token {"user":"alice"|"bob"}`
+
+- Nest demo: located in `sdks/nestjs/samples/demo-api`; run with `node dist/main.js` (first run `pnpm turbo run build --filter=@sk-mcp/demo-nestjs`); same `/mcp` + `/auth/token` contract

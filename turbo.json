@@ -2,13 +2,8 @@
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
-    "OLLAMA_BASE_URL",
-    "OLLAMA_MODEL",
-    "OLLAMA_NUM_CTX",
-    "OLLAMA_TEMPERATURE",
-    "OLLAMA_SEED",
-    "SCRAPER_TIMEOUT_MS",
-    "SCRAPER_MAX_CONTENT_CHARS"
+    "SKMCP_BASE_URL",
+    "SKMCP_USER"
   ],
   "tasks": {
     "build": {
