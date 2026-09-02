@@ -1,0 +1,33 @@
+{
+  "kind": "naming",
+  "description": "container adindan prefix turetilir: son segment alinir, Controller soneki atilir, snake_case olur",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "List",
+        "container": "Web.Controllers.PushProviderConfigController",
+        "method": "GET",
+        "route": "/Rest/PushProviderConfig/List"
+      },
+      {
+        "operationId": "List",
+        "container": "OrdersController",
+        "method": "GET",
+        "route": "/orders"
+      },
+      {
+        "operationId": "Report",
+        "container": "Bpm",
+        "method": "POST",
+        "route": "/Rest/Bpm/Report"
+      }
+    ]
+  },
+  "expected": {
+    "names": [
+      "push_provider_config_list",
+      "orders_list",
+      "bpm_report"
+    ]
+  }
+}

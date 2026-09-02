@@ -13,7 +13,11 @@
         "schema": { "type": "integer" }
       }
     ],
-    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersWrite"],
+      "imperative": false
+    }
   },
   "expected": {
     "name": "delete_order",
@@ -24,6 +28,10 @@
       "required": ["id"]
     },
     "annotations": { "destructiveHint": true, "idempotentHint": true },
-    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersWrite"],
+      "imperative": false
+    }
   }
 }

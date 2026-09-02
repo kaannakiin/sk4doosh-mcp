@@ -98,23 +98,34 @@ describe("conformance: argument-mapping", () => {
 describe("conformance: naming", () => {
   for (const [file, fixture] of fixturesOf("naming")) {
     it(file, () => {
+      const hostPrefixes = fixture.input.hostPrefixes ?? {};
       const endpoints: EndpointDescriptor[] = fixture.input.endpoints.map(
-        (e) => ({
-          ...(e.operationId === undefined
-            ? {}
-            : { operationId: e.operationId }),
-          ...(e.container === undefined ? {} : { container: e.container }),
-          method: e.method,
-          route: e.route,
-          auth: unusedAuth,
-        }),
+        (e) => {
+          const declared =
+            e.containerPrefix ??
+            (e.container === undefined ? undefined : hostPrefixes[e.container]);
+          return {
+            ...(e.operationId === undefined
+              ? {}
+              : { operationId: e.operationId }),
+            ...(e.container === undefined ? {} : { container: e.container }),
+            ...(declared === undefined ? {} : { containerPrefix: declared }),
+            ...(e.toolName === undefined ? {} : { toolName: e.toolName }),
+            method: e.method,
+            route: e.route,
+            auth: unusedAuth,
+          };
+        },
       );
+      const options = { prefixMode: fixture.input.prefixMode ?? "always" };
       if ("error" in fixture.expected) {
-        expect(catalogErrorCode(() => createToolNames(endpoints))).toBe(
-          fixture.expected.error,
-        );
+        expect(
+          catalogErrorCode(() => createToolNames(endpoints, options)),
+        ).toBe(fixture.expected.error);
       } else {
-        expect(createToolNames(endpoints)).toEqual(fixture.expected.names);
+        expect(createToolNames(endpoints, options)).toEqual(
+          fixture.expected.names,
+        );
       }
     });
   }

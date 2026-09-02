@@ -7,7 +7,7 @@
       "route": "/products",
       "parameters": [{ "name": "price", "in": "query", "type": "number" }]
     },
-    "arguments": { "price": 1.50 }
+    "arguments": { "price": 1.5 }
   },
   "expected": {
     "pathAndQuery": "/products?price=1.5"

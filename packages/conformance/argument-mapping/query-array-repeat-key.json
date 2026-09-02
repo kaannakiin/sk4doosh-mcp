@@ -5,7 +5,9 @@
     "template": {
       "method": "GET",
       "route": "/items",
-      "parameters": [{ "name": "tag", "in": "query", "type": "string", "array": true }]
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true }
+      ]
     },
     "arguments": { "tag": ["a", "b"] }
   },

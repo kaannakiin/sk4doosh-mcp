@@ -16,6 +16,10 @@ public sealed class McpToolAttribute : Attribute, IMcpSelectionMetadata
 
     public bool Include => true;
 
+    public string? Name { get; set; }
+
+    public string? Prefix { get; set; }
+
     public bool ReadOnly
     {
         get => _readOnly ?? false;

@@ -1,4 +1,3 @@
-using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -60,7 +59,7 @@ public sealed class CustomGateAttribute : Attribute, IAuthorizationFilter
 
 [ApiController]
 [Route("/vis")]
-[McpTool]
+[McpTool(Prefix = "vis")]
 public sealed class VisibilityController : ControllerBase
 {
     public static int SideEffects;
@@ -467,26 +466,6 @@ public sealed class VisibilityTests
         string body = await response.Content.ReadAsStringAsync();
         Assert.Contains("\"probe\":false", body);
         Assert.Contains("\"synthetic\":false", body);
-    }
-
-    [Fact]
-    public async Task V20_SyntheticRequest_CarriesMarkerAndOuterConnection()
-    {
-        await using Harness host = await HostAsync();
-        DefaultHttpContext outer = new();
-        outer.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.7");
-        outer.Connection.RemotePort = 4711;
-
-        DispatchResult marked = await host.Dispatcher.DispatchAsync(
-            System.Net.Http.HttpMethod.Get, "/vis/probeflag", outer.Request, CancellationToken.None);
-        DispatchResult detached = await host.Dispatcher.DispatchAsync(
-            System.Net.Http.HttpMethod.Get, "/vis/probeflag", null, CancellationToken.None);
-
-        Assert.Equal(StatusCodes.Status200OK, marked.Status);
-        Assert.Contains("\"synthetic\":true", marked.Body);
-        Assert.Contains("\"probe\":false", marked.Body);
-        Assert.Contains("\"remote\":\"203.0.113.7:4711\"", marked.Body);
-        Assert.Contains("\"remote\":null", detached.Body);
     }
 
     [Fact]

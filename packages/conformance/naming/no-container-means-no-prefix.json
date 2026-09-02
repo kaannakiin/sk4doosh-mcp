@@ -1,0 +1,23 @@
+{
+  "kind": "naming",
+  "description": "container yoksa prefix uygulanmaz: minimal API route'tan uretilen govde hiyerarsiyi zaten tasir",
+  "input": {
+    "endpoints": [
+      {
+        "method": "GET",
+        "route": "/health"
+      },
+      {
+        "operationId": "HealthCheck",
+        "method": "GET",
+        "route": "/health/live"
+      }
+    ]
+  },
+  "expected": {
+    "names": [
+      "get_health",
+      "health_check"
+    ]
+  }
+}

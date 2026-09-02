@@ -1,0 +1,19 @@
+{
+  "kind": "naming",
+  "description": "tekrar bastirma yalniz sondaki s'yi katlar; activities/activity gibi ies-y cifti katlanmaz, prefix eklenir",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "SaveTaskActivity",
+        "container": "TaskActivitiesController",
+        "method": "POST",
+        "route": "/Rest/TaskActivities/Save"
+      }
+    ]
+  },
+  "expected": {
+    "names": [
+      "task_activities_save_task_activity"
+    ]
+  }
+}

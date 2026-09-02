@@ -60,18 +60,98 @@ function fromRoute(endpoint: EndpointDescriptor): string {
   return collapse([...parts, ...pathParameters].join("_"));
 }
 
-export function createToolName(endpoint: EndpointDescriptor): string {
-  const name =
-    endpoint.operationId === undefined || endpoint.operationId.trim() === ""
-      ? fromRoute(endpoint)
-      : snakeCase(endpoint.operationId);
+export type PrefixMode = "always" | "onCollision";
+
+const controllerSuffix = "Controller";
+
+function fold(token: string): string {
+  return token.length > 3 && token.endsWith("s") ? token.slice(0, -1) : token;
+}
+
+function tokensOf(name: string): string[] {
+  return name
+    .split("_")
+    .filter((part) => part.length > 0)
+    .map(fold);
+}
+
+export function derivePrefix(endpoint: EndpointDescriptor): string | undefined {
+  if (endpoint.containerPrefix !== undefined) {
+    return snakeCase(endpoint.containerPrefix);
+  }
+  const container = endpoint.container;
+  if (container === undefined || container.trim() === "") {
+    return undefined;
+  }
+  const segments = container.split(".").filter((part) => part.length > 0);
+  let last = segments[segments.length - 1] ?? "";
+  if (
+    last.length > controllerSuffix.length &&
+    last.endsWith(controllerSuffix)
+  ) {
+    last = last.slice(0, -controllerSuffix.length);
+  }
+  const prefix = snakeCase(last);
+  return prefix === "" ? undefined : prefix;
+}
+
+function isRedundant(prefix: string, body: string): boolean {
+  const prefixTokens = tokensOf(prefix);
+  const bodyTokens = tokensOf(body);
+  if (prefixTokens.length === 0 || prefixTokens.length > bodyTokens.length) {
+    return false;
+  }
+  for (
+    let start = 0;
+    start + prefixTokens.length <= bodyTokens.length;
+    start++
+  ) {
+    if (
+      prefixTokens.every(
+        (token, offset) => bodyTokens[start + offset] === token,
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function applyPrefix(body: string, prefix: string | undefined): string {
+  if (prefix === undefined || prefix === "" || isRedundant(prefix, body)) {
+    return body;
+  }
+  return collapse(`${prefix}_${body}`);
+}
+
+function validate(name: string, endpoint: EndpointDescriptor): string {
   if (!toolNamePattern.test(name)) {
     throw new SkMcpCatalogError(
       "invalid_name",
-      `Generated tool name '${name}' for ${endpoint.method} ${endpoint.route} does not match the required pattern; define an operationId.`,
+      `Generated tool name '${name}' for ${endpoint.method} ${endpoint.route} does not match the required pattern; define an operationId or a tool name.`,
     );
   }
   return name;
+}
+
+export function createToolBody(endpoint: EndpointDescriptor): string {
+  return endpoint.operationId === undefined ||
+    endpoint.operationId.trim() === ""
+    ? fromRoute(endpoint)
+    : snakeCase(endpoint.operationId);
+}
+
+export function createToolName(
+  endpoint: EndpointDescriptor,
+  mode: PrefixMode = "always",
+): string {
+  if (endpoint.toolName !== undefined) {
+    return validate(endpoint.toolName, endpoint);
+  }
+  const body = createToolBody(endpoint);
+  const name =
+    mode === "always" ? applyPrefix(body, derivePrefix(endpoint)) : body;
+  return validate(name, endpoint);
 }
 
 function shorter(candidate: string, current: string): boolean {
@@ -114,22 +194,62 @@ export function deduplicateOperations<T>(
   return operations;
 }
 
+export interface NamingOptions {
+  readonly prefixMode?: PrefixMode;
+  readonly onDiagnostic?: (code: string, message: string) => void;
+}
+
 export function createToolNames(
   endpoints: readonly EndpointDescriptor[],
+  options: NamingOptions = {},
 ): string[] {
-  const names: string[] = [];
+  const mode = options.prefixMode ?? "always";
+  const operations = deduplicateOperations(endpoints, (e) => e);
+  const names = operations.map((endpoint) => createToolName(endpoint, mode));
+
+  if (mode === "onCollision") {
+    const groups = new Map<string, number[]>();
+    operations.forEach((endpoint, index) => {
+      if (endpoint.toolName !== undefined) {
+        return;
+      }
+      const group = groups.get(names[index] as string);
+      if (group === undefined) {
+        groups.set(names[index] as string, [index]);
+      } else {
+        group.push(index);
+      }
+    });
+    for (const [body, group] of groups) {
+      if (group.length < 2) {
+        continue;
+      }
+      for (const index of group) {
+        const endpoint = operations[index] as EndpointDescriptor;
+        const prefixed = applyPrefix(body, derivePrefix(endpoint));
+        if (prefixed === body) {
+          continue;
+        }
+        names[index] = prefixed;
+        options.onDiagnostic?.(
+          "name_disambiguated",
+          `Tool name '${body}' collided; ${endpoint.method} ${endpoint.route} is exposed as '${prefixed}'.`,
+        );
+      }
+    }
+  }
+
   const claimed = new Map<string, EndpointDescriptor>();
-  for (const endpoint of deduplicateOperations(endpoints, (e) => e)) {
-    const name = createToolName(endpoint);
+  operations.forEach((endpoint, index) => {
+    const name = names[index] as string;
     const owner = claimed.get(name);
     if (owner !== undefined) {
       throw new SkMcpCatalogError(
         "name_collision",
-        `Tool name '${name}' is produced by both ${owner.method} ${owner.route} and ${endpoint.method} ${endpoint.route}; define an operationId on one of them.`,
+        `Tool name '${name}' is produced by both ${owner.method} ${owner.route} and ${endpoint.method} ${endpoint.route}; declare a tool name on one of them.`,
       );
     }
     claimed.set(name, endpoint);
-    names.push(name);
-  }
+  });
   return names;
 }

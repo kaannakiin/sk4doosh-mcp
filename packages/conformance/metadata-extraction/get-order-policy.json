@@ -29,7 +29,11 @@
       },
       "404": {}
     },
-    "auth": { "anonymous": false, "policies": ["OrdersRead"], "imperative": false },
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersRead"],
+      "imperative": false
+    },
     "tags": ["orders"]
   },
   "expected": {
@@ -43,6 +47,10 @@
       "required": ["id"]
     },
     "annotations": { "readOnlyHint": true, "idempotentHint": true },
-    "auth": { "anonymous": false, "policies": ["OrdersRead"], "imperative": false }
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersRead"],
+      "imperative": false
+    }
   }
 }

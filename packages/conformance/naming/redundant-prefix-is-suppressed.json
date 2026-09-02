@@ -1,0 +1,26 @@
+{
+  "kind": "naming",
+  "description": "prefix token dizisi govdede ardisik geciyorsa eklenmez; karsilastirmada sondaki s katlanir",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "CreateSupportRequest",
+        "container": "SupportRequestController",
+        "method": "POST",
+        "route": "/Rest/SupportRequest/Create"
+      },
+      {
+        "operationId": "GetOrder",
+        "container": "OrdersController",
+        "method": "GET",
+        "route": "/orders/{id}"
+      }
+    ]
+  },
+  "expected": {
+    "names": [
+      "create_support_request",
+      "get_order"
+    ]
+  }
+}

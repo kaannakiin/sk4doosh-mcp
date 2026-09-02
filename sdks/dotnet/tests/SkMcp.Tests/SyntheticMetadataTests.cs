@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
@@ -26,7 +28,9 @@ internal static class MetaHost
             ctx.Request.Headers.UserAgent.ToString(),
             ctx.Request.Headers["traceparent"].ToString(),
             ctx.Request.Headers.AcceptEncoding.ToString(),
-            ctx.TraceIdentifier));
+            ctx.TraceIdentifier,
+            ctx.Connection.RemoteIpAddress is { } ip ? $"{ip}:{ctx.Connection.RemotePort}" : "",
+            ctx.IsSkMcpRequest() ? "synthetic" : "outer"));
         app.MapGet("/tenant", (HttpRequest r) =>
             r.Host.Host.StartsWith("tenant-a", StringComparison.OrdinalIgnoreCase) ? "A" : "other");
         await app.StartAsync();
@@ -41,8 +45,53 @@ internal static class MetaHost
     }
 }
 
+internal static class TransformHost
+{
+    public static async Task<TestApp> StartAsync()
+    {
+        WebApplicationBuilder builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Logging.ClearProviders();
+        builder.Services.AddSkMcp();
+
+        WebApplication app = builder.Build();
+        app.UseSkMcpCapture();
+        app.Use(async (context, next) =>
+        {
+            if (context.IsSkMcpRequest())
+            {
+                await next();
+                return;
+            }
+            if (!HttpMethods.IsGet(context.Request.Method) && context.Request.Headers["x-encrypted"] != "true")
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Payload must be encrypted");
+                return;
+            }
+
+            Stream outbound = context.Response.Body;
+            using MemoryStream buffer = new();
+            context.Response.Body = buffer;
+            await next();
+            context.Response.Body = outbound;
+            context.Response.Headers["x-encrypted"] = "true";
+            byte[] encoded = Encoding.UTF8.GetBytes(Convert.ToBase64String(buffer.ToArray()));
+            context.Response.ContentLength = encoded.Length;
+            await outbound.WriteAsync(encoded);
+        });
+        app.UseRouting();
+        app.MapMethods("/payload", ["GET", "POST"], () => Results.Text(
+            SyntheticMetadataTests.Body, "application/json"));
+        await app.StartAsync();
+        return new TestApp(app, app.GetTestClient(), app.Services.GetRequiredService<SkMcpDispatcher>());
+    }
+}
+
 public class SyntheticMetadataTests
 {
+    internal const string Body = "{\"ok\":true}";
+
     private static Task<DispatchResult> Meta(TestApp app, HttpRequest? outer) =>
         app.Dispatcher.DispatchAsync(HttpMethod.Get, "/meta", outer, CancellationToken.None);
 
@@ -125,5 +174,56 @@ public class SyntheticMetadataTests
 
         string[] parts = (await Meta(app, outer)).Body.Split('|');
         Assert.Equal("", parts[5]);
+    }
+
+    [Fact]
+    public async Task M8_ConnectionInfo_ReflectedFromOuter_NeverInvented()
+    {
+        await using TestApp app = await MetaHost.StartAsync();
+        HttpRequest outer = MetaHost.Outer(_ => { });
+        outer.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.7");
+        outer.HttpContext.Connection.RemotePort = 4711;
+
+        Assert.Equal("203.0.113.7:4711", (await Meta(app, outer)).Body.Split('|')[7]);
+        Assert.Equal("", (await Meta(app, null)).Body.Split('|')[7]);
+    }
+
+    [Fact]
+    public async Task M9_SyntheticMarker_CannotBeSetByOuterRequest()
+    {
+        await using TestApp app = await MetaHost.StartAsync();
+        Assert.Equal("synthetic", (await Meta(app, null)).Body.Split('|')[8]);
+
+        using HttpRequestMessage spoof = new(HttpMethod.Get, "/meta");
+        spoof.Headers.TryAddWithoutValidation("sk-mcp.synthetic", "true");
+        spoof.Headers.TryAddWithoutValidation("User-Agent", "sk-mcp/9.9.9");
+        HttpResponseMessage response = await app.Client.SendAsync(spoof);
+
+        Assert.Equal("outer", (await response.Content.ReadAsStringAsync()).Split('|')[8]);
+    }
+
+    [Fact]
+    public async Task M10_BrowserTransforms_BypassedForSyntheticRequests()
+    {
+        await using TestApp app = await TransformHost.StartAsync();
+
+        HttpResponseMessage browserGet = await app.Client.GetAsync("/payload");
+        Assert.Equal("true", browserGet.Headers.GetValues("x-encrypted").Single());
+        Assert.Equal(
+            Body,
+            Encoding.UTF8.GetString(Convert.FromBase64String(await browserGet.Content.ReadAsStringAsync())));
+
+        using StringContent plain = new(Body, Encoding.UTF8, "application/json");
+        HttpResponseMessage browserPost = await app.Client.PostAsync("/payload", plain);
+        Assert.Equal(HttpStatusCode.BadRequest, browserPost.StatusCode);
+
+        DispatchResult agentGet = await app.Dispatcher.DispatchAsync(
+            HttpMethod.Get, "/payload", null, CancellationToken.None);
+        DispatchResult agentPost = await app.Dispatcher.DispatchAsync(
+            HttpMethod.Post, "/payload", null, CancellationToken.None);
+
+        Assert.Equal(Body, agentGet.Body);
+        Assert.Equal(StatusCodes.Status200OK, agentPost.Status);
+        Assert.Equal(Body, agentPost.Body);
     }
 }

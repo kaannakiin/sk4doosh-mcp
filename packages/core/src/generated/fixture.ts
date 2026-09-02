@@ -5,12 +5,17 @@ export type Fixture =
   | SelectionFixture
   | VisibilityFixture
   | SearchFixture;
+export type PrefixMode = "always" | "onCollision";
 
 export interface NamingFixture {
   kind: "naming";
   description: string;
   input: {
     endpoints: [NamingEndpoint, ...NamingEndpoint[]];
+    prefixMode?: PrefixMode;
+    hostPrefixes?: {
+      [k: string]: string;
+    };
   };
   expected: NamingExpectedNames | NamingExpectedError;
 }
@@ -19,6 +24,8 @@ export interface NamingEndpoint {
   container?: string;
   method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   route: string;
+  containerPrefix?: string;
+  toolName?: string;
 }
 export interface NamingExpectedNames {
   names: [string, ...string[]];
@@ -35,6 +42,8 @@ export interface MetadataExtractionFixture {
 export interface EndpointDescriptor {
   operationId?: string;
   container?: string;
+  containerPrefix?: string;
+  toolName?: string;
   method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   route: string;
   description?: string;

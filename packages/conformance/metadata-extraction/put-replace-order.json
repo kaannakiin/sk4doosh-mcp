@@ -24,7 +24,11 @@
         "required": ["item"]
       }
     },
-    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersWrite"],
+      "imperative": false
+    }
   },
   "expected": {
     "name": "replace_order",
@@ -39,6 +43,10 @@
       "required": ["id", "item"]
     },
     "annotations": { "destructiveHint": true, "idempotentHint": true },
-    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersWrite"],
+      "imperative": false
+    }
   }
 }

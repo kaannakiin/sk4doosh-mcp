@@ -45,7 +45,9 @@ public static partial class EndpointCatalog
         bool useOperationIds = true,
         string? reservedRoutePrefix = null,
         Func<PropertyInfo, string>? propertyName = null,
-        bool hasFallbackPolicy = false)
+        bool hasFallbackPolicy = false,
+        PrefixMode prefixMode = PrefixMode.Always,
+        Func<string, string?>? containerPrefix = null)
     {
         ArgumentNullException.ThrowIfNull(apiDescriptions);
 
@@ -107,7 +109,8 @@ public static partial class EndpointCatalog
                 }
 
                 EndpointDescriptor? descriptor = Describe(
-                    api, route, action, metadata, useOperationIds, propertyName, hasFallbackPolicy, diagnostics);
+                    api, route, action, metadata, useOperationIds, propertyName, hasFallbackPolicy,
+                    containerPrefix, diagnostics);
                 if (descriptor is not null)
                 {
                     candidates.Add((endpoint, descriptor, OverridesFor(action, metadata)));
@@ -118,13 +121,42 @@ public static partial class EndpointCatalog
         List<CatalogEntry> entries = [];
         Dictionary<string, EndpointDescriptor> claimed = new(StringComparer.Ordinal);
 
-        foreach ((Endpoint? endpoint, EndpointDescriptor descriptor, ToolAnnotations? overrides)
-            in ToolNameFactory.Deduplicate(candidates, c => c.Descriptor))
+        List<(Endpoint? Endpoint, EndpointDescriptor Descriptor, ToolAnnotations? Overrides)> operations =
+            [.. ToolNameFactory.Deduplicate(candidates, c => c.Descriptor)];
+        Dictionary<string, int> bodyGroups = new(StringComparer.Ordinal);
+        if (prefixMode == PrefixMode.OnCollision)
+        {
+            foreach ((_, EndpointDescriptor descriptor, _) in operations)
+            {
+                if (descriptor.ToolName is not null)
+                {
+                    continue;
+                }
+                string body = ToolNameFactory.CreateBody(descriptor);
+                bodyGroups[body] = bodyGroups.TryGetValue(body, out int count) ? count + 1 : 1;
+            }
+        }
+
+        foreach ((Endpoint? endpoint, EndpointDescriptor descriptor, ToolAnnotations? overrides) in operations)
         {
             string name;
             try
             {
-                name = ToolNameFactory.Create(descriptor);
+                name = ToolNameFactory.Create(descriptor, prefixMode);
+                if (prefixMode == PrefixMode.OnCollision
+                    && descriptor.ToolName is null
+                    && bodyGroups.TryGetValue(name, out int clashes)
+                    && clashes > 1)
+                {
+                    string prefixed = ToolNameFactory.ApplyPrefix(name, ToolNameFactory.DerivePrefix(descriptor));
+                    if (!string.Equals(prefixed, name, StringComparison.Ordinal))
+                    {
+                        diagnostics.Add(new CatalogDiagnostic(
+                            ToolNameFactory.NameDisambiguated,
+                            $"Tool name '{name}' collided; {descriptor.Method} {descriptor.Route} is exposed as '{prefixed}'."));
+                        name = prefixed;
+                    }
+                }
             }
             catch (SkMcpCatalogException ex)
             {
@@ -173,6 +205,7 @@ public static partial class EndpointCatalog
         bool useOperationIds,
         Func<PropertyInfo, string>? propertyName,
         bool hasFallbackPolicy,
+        Func<string, string?>? containerPrefix,
         List<CatalogDiagnostic> diagnostics)
     {
         List<Parameter> parameters = [];
@@ -232,6 +265,8 @@ public static partial class EndpointCatalog
             Container = action is ControllerActionDescriptor declaring
                 ? declaring.ControllerTypeInfo.FullName
                 : null,
+            ToolName = SelectionAttribute(action, metadata, operationOnly: true)?.Name,
+            ContainerPrefix = PrefixFor(action, metadata, containerPrefix),
             Method = api.HttpMethod!.ToUpperInvariant(),
             Route = route,
             Description = DescriptionOf(metadata),
@@ -333,6 +368,36 @@ public static partial class EndpointCatalog
             return action.AttributeRouteInfo.Name;
         }
         return action is ControllerActionDescriptor controller ? controller.ActionName : null;
+    }
+
+    private static McpToolAttribute? SelectionAttribute(
+        ActionDescriptor action, IReadOnlyList<object> metadata, bool operationOnly)
+    {
+        if (action is ControllerActionDescriptor controller)
+        {
+            McpToolAttribute? operation = controller.MethodInfo
+                .GetCustomAttribute<McpToolAttribute>(inherit: true);
+            if (operation is not null || operationOnly)
+            {
+                return operation;
+            }
+            return controller.ControllerTypeInfo.GetCustomAttribute<McpToolAttribute>(inherit: true);
+        }
+        return metadata.OfType<McpToolAttribute>().LastOrDefault();
+    }
+
+    private static string? PrefixFor(
+        ActionDescriptor action, IReadOnlyList<object> metadata, Func<string, string?>? containerPrefix)
+    {
+        if (SelectionAttribute(action, metadata, operationOnly: false)?.Prefix is { } declared)
+        {
+            return declared;
+        }
+        if (containerPrefix is null || action is not ControllerActionDescriptor controller)
+        {
+            return null;
+        }
+        return containerPrefix(controller.ControllerTypeInfo.FullName ?? controller.ControllerName);
     }
 
     private static ToolAnnotations? OverridesFor(ActionDescriptor action, IReadOnlyList<object> metadata)

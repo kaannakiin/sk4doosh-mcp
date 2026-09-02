@@ -125,7 +125,9 @@ public sealed class SkMcpCatalogProvider(
         CatalogBuildResult result = EndpointCatalog.Build(
             apiDescriptions, endpoints, options.Value.Selection.Default,
             reservedRoutePrefix: _reservedPrefix, propertyName: propertyName,
-            hasFallbackPolicy: hasFallbackPolicy);
+            hasFallbackPolicy: hasFallbackPolicy,
+            prefixMode: options.Value.Naming.PrefixMode,
+            containerPrefix: options.Value.Naming.Prefix);
         if (namingNote is not null)
         {
             result = result with { Diagnostics = [namingNote, .. result.Diagnostics] };

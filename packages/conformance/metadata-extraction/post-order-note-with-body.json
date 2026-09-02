@@ -25,11 +25,17 @@
     "requestBody": {
       "schema": {
         "type": "object",
-        "properties": { "text": { "type": "string", "description": "Not metni" } },
+        "properties": {
+          "text": { "type": "string", "description": "Not metni" }
+        },
         "required": ["text"]
       }
     },
-    "auth": { "anonymous": false, "policies": ["OrdersRead"], "imperative": false },
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersRead"],
+      "imperative": false
+    },
     "tags": ["orders"]
   },
   "expected": {
@@ -48,6 +54,10 @@
       "required": ["id", "text"]
     },
     "annotations": { "destructiveHint": false },
-    "auth": { "anonymous": false, "policies": ["OrdersRead"], "imperative": false }
+    "auth": {
+      "anonymous": false,
+      "policies": ["OrdersRead"],
+      "imperative": false
+    }
   }
 }

@@ -11,6 +11,9 @@ OpenAPI'nin küçük, katı bir alt kümesi. Yeni ontoloji değil; bilinen kelim
 | Alan          | Zorunlu | Anlam                                                                                      |
 | ------------- | ------- | ------------------------------------------------------------------------------------------ |
 | `operationId` | hayır   | Framework'ün stabil operasyon kimliği (C#: action adı / `[EndpointName]`; Nest: metod adı) |
+| `container` | hayır | Operasyonu barındıran birim (C#: controller tipinin tam adı; Nest: controller sınıfı). Operasyon kimliğinin ve tool adı prefix'inin kaynağı |
+| `containerPrefix` | hayır | Container prefix'i beyanı; verilmezse container adından türetilir ([isimlendirme.md](isimlendirme.md)) |
+| `toolName` | hayır | Tam ad beyanı; verilirse gövde üretilmez ve prefix uygulanmaz |
 | `method`      | evet    | `GET/HEAD/POST/PUT/PATCH/DELETE`                                                           |
 | `route`       | evet    | `/` ile başlayan route şablonu; path parametreleri süslü parantezli                        |
 | `description` | hayır   | İnsan-yazımı açıklama (C#: XML doc / `[Description]`; Nest: Swagger decorator'ları)        |
@@ -21,6 +24,8 @@ OpenAPI'nin küçük, katı bir alt kümesi. Yeni ontoloji değil; bilinen kelim
 | `tags`        | hayır   | Gruplama (C#: controller adı; Nest: controller / `@ApiTags`)                               |
 
 Dil kuralı: alan adları ve tool adları İngilizce; `description` içerikleri serbest (backend'in dili).
+
+`containerPrefix` ve `toolName` keşfedilen gerçek değil **beyandır**: platform bunları hiyerarşik attribute'lardan ve host'un global kuralından toplar, saf isimlendirme katmanına iki alan olarak indirir. C#'ta `[McpTool(Name = ...)]` operasyon seviyesinde `toolName`'i, `[McpTool(Prefix = ...)]` container (veya operasyon) seviyesinde `containerPrefix`'i doldurur; `options.Naming.Prefix` beyan yoksa aynı alanı doldurur. Sıra en özelden genele: operasyon adı → operasyon/container prefix'i → host kuralı → container'dan türetme.
 
 ## Auth temsili (v0)
 

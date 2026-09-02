@@ -17,5 +17,9 @@
       }
     ]
   },
-  "expected": { "names": ["logout"] }
+  "expected": {
+    "names": [
+      "system_soft_logout"
+    ]
+  }
 }

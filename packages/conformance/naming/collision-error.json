@@ -4,7 +4,11 @@
   "input": {
     "endpoints": [
       { "method": "GET", "route": "/orders/{id}" },
-      { "operationId": "GetOrdersById", "method": "GET", "route": "/orders/by-id/{id}" }
+      {
+        "operationId": "GetOrdersById",
+        "method": "GET",
+        "route": "/orders/by-id/{id}"
+      }
     ]
   },
   "expected": {

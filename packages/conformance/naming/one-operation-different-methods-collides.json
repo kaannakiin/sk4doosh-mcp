@@ -1,6 +1,6 @@
 {
   "kind": "naming",
-  "description": "ayni operationId farkli metodla iki ayri operasyondur; ad ayni oldugu icin hata verir",
+  "description": "ayni operationId farkli metodla iki ayri operasyondur; ayni container prefix'i cakismayi cozmez, hata verir",
   "input": {
     "endpoints": [
       {
@@ -17,5 +17,7 @@
       }
     ]
   },
-  "expected": { "error": "name_collision" }
+  "expected": {
+    "error": "name_collision"
+  }
 }

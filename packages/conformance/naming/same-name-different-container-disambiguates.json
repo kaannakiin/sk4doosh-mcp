@@ -1,6 +1,6 @@
 {
   "kind": "naming",
-  "description": "ayni operationId farkli container'da iki AYRI operasyondur; sessizce birlesmez, hata verir",
+  "description": "ayni operationId farkli container'da iki AYRI operasyondur; container prefix'i ikisini de ayirir",
   "input": {
     "endpoints": [
       {
@@ -17,5 +17,10 @@
       }
     ]
   },
-  "expected": { "error": "name_collision" }
+  "expected": {
+    "names": [
+      "notification_delete",
+      "push_provider_config_delete"
+    ]
+  }
 }

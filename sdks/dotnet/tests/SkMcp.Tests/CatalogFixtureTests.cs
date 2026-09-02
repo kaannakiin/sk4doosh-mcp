@@ -39,16 +39,40 @@ public sealed class CatalogFixtureTests
         foreach (JsonElement root in Fixtures("naming"))
         {
             Assert.Equal("naming", root.GetProperty("kind").GetString());
-            List<EndpointDescriptor> endpoints = [];
-            foreach (JsonElement endpoint in root.GetProperty("input").GetProperty("endpoints").EnumerateArray())
+            JsonElement namingInput = root.GetProperty("input");
+            PrefixMode mode = namingInput.TryGetProperty("prefixMode", out JsonElement prefixMode)
+                && prefixMode.GetString() == "onCollision"
+                    ? PrefixMode.OnCollision
+                    : PrefixMode.Always;
+            Dictionary<string, string> hostPrefixes = new(StringComparer.Ordinal);
+            if (namingInput.TryGetProperty("hostPrefixes", out JsonElement declaredPrefixes))
             {
+                foreach (JsonProperty entry in declaredPrefixes.EnumerateObject())
+                {
+                    hostPrefixes[entry.Name] = entry.Value.GetString()!;
+                }
+            }
+
+            List<EndpointDescriptor> endpoints = [];
+            foreach (JsonElement endpoint in namingInput.GetProperty("endpoints").EnumerateArray())
+            {
+                string? container = endpoint.TryGetProperty("container", out JsonElement containerValue)
+                    ? containerValue.GetString()
+                    : null;
+                string? declared = endpoint.TryGetProperty("containerPrefix", out JsonElement prefixValue)
+                    ? prefixValue.GetString()
+                    : container is not null && hostPrefixes.TryGetValue(container, out string? hosted)
+                        ? hosted
+                        : null;
                 endpoints.Add(new EndpointDescriptor
                 {
                     OperationId = endpoint.TryGetProperty("operationId", out JsonElement operationId)
                         ? operationId.GetString()
                         : null,
-                    Container = endpoint.TryGetProperty("container", out JsonElement container)
-                        ? container.GetString()
+                    Container = container,
+                    ContainerPrefix = declared,
+                    ToolName = endpoint.TryGetProperty("toolName", out JsonElement toolName)
+                        ? toolName.GetString()
                         : null,
                     Method = endpoint.GetProperty("method").GetString()!,
                     Route = endpoint.GetProperty("route").GetString()!,
@@ -60,14 +84,14 @@ public sealed class CatalogFixtureTests
             if (expected.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpCatalogException ex = Assert.Throws<SkMcpCatalogException>(
-                    () => ToolNameFactory.CreateAll(endpoints));
+                    () => ToolNameFactory.CreateAll(endpoints, mode));
                 Assert.Equal(error.GetString(), ex.Code);
             }
             else
             {
                 string[] names = expected.GetProperty("names")
                     .EnumerateArray().Select(n => n.GetString()!).ToArray();
-                Assert.Equal(names, ToolNameFactory.CreateAll(endpoints));
+                Assert.Equal(names, ToolNameFactory.CreateAll(endpoints, mode));
             }
         }
     }

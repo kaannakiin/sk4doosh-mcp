@@ -1,0 +1,30 @@
+{
+  "kind": "naming",
+  "description": "container prefix beyani turetmeye ustundur; host global kurali ayni alani doldurur",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "List",
+        "container": "PushProviderConfigController",
+        "containerPrefix": "cfg",
+        "method": "GET",
+        "route": "/Rest/PushProviderConfig/List"
+      },
+      {
+        "operationId": "List",
+        "container": "WorkflowEndpointController",
+        "method": "GET",
+        "route": "/Rest/WorkflowEndpoint/manage/list"
+      }
+    ],
+    "hostPrefixes": {
+      "WorkflowEndpointController": "wf"
+    }
+  },
+  "expected": {
+    "names": [
+      "cfg_list",
+      "wf_list"
+    ]
+  }
+}

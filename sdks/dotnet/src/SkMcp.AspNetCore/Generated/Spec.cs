@@ -6,6 +6,8 @@ public sealed record EndpointDescriptor
 {
     public string? OperationId { get; init; }
     public string? Container { get; init; }
+    public string? ContainerPrefix { get; init; }
+    public string? ToolName { get; init; }
     public required string Method { get; init; }
     public required string Route { get; init; }
     public string? Description { get; init; }

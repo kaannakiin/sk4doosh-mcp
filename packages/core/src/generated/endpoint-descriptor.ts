@@ -1,6 +1,8 @@
 export interface EndpointDescriptor {
   operationId?: string;
   container?: string;
+  containerPrefix?: string;
+  toolName?: string;
   method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   route: string;
   description?: string;

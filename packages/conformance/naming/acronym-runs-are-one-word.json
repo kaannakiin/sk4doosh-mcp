@@ -3,7 +3,11 @@
   "description": "ardisik buyuk harf dizisi tek kelimedir; _ yalnizca dizinin sonunda eklenir",
   "input": {
     "endpoints": [
-      { "operationId": "GetMappingDTOProperties", "method": "GET", "route": "/mappings" },
+      {
+        "operationId": "GetMappingDTOProperties",
+        "method": "GET",
+        "route": "/mappings"
+      },
       { "operationId": "GetQRDetailsByToken", "method": "GET", "route": "/qr" },
       { "operationId": "AIDocument", "method": "POST", "route": "/ai" },
       { "operationId": "WS_GetTree", "method": "GET", "route": "/ws" }

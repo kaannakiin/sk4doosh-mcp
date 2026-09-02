@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Http;
 using SkMcp.AspNetCore.Discovery;
+using SkMcp.AspNetCore.Naming;
 
 namespace SkMcp.AspNetCore;
 
@@ -10,6 +11,7 @@ public sealed class SkMcpOptions
     public SyntheticRequestOptions Synthetic { get; } = new();
     public SelectionOptions Selection { get; } = new();
     public SchemaOptions Schema { get; } = new();
+    public NamingOptions Naming { get; } = new();
     public VisibilityOptions Visibility { get; } = new();
 }
 
@@ -28,6 +30,12 @@ public sealed class VisibilityOptions
 public sealed class SelectionOptions
 {
     public SelectionDefault Default { get; set; } = SelectionDefault.Exclude;
+}
+
+public sealed class NamingOptions
+{
+    public PrefixMode PrefixMode { get; set; } = PrefixMode.Always;
+    public Func<string, string?>? Prefix { get; set; }
 }
 
 public sealed class SchemaOptions

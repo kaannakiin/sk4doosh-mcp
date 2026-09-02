@@ -4,44 +4,173 @@ using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Naming;
 
+public enum PrefixMode { Always, OnCollision }
+
 public static partial class ToolNameFactory
 {
     public const int LongNameThreshold = 64;
+    public const string NameDisambiguated = "name_disambiguated";
 
-    public static string Create(EndpointDescriptor endpoint)
+    private const string ControllerSuffix = "Controller";
+
+    public static string Create(EndpointDescriptor endpoint, PrefixMode mode = PrefixMode.Always)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
-        string name = string.IsNullOrWhiteSpace(endpoint.OperationId)
+        if (endpoint.ToolName is not null)
+        {
+            return Validate(endpoint.ToolName, endpoint);
+        }
+
+        string body = CreateBody(endpoint);
+        string name = mode == PrefixMode.Always ? ApplyPrefix(body, DerivePrefix(endpoint)) : body;
+        return Validate(name, endpoint);
+    }
+
+    public static string CreateBody(EndpointDescriptor endpoint)
+    {
+        ArgumentNullException.ThrowIfNull(endpoint);
+        return string.IsNullOrWhiteSpace(endpoint.OperationId)
             ? FromRoute(endpoint)
             : SnakeCase(endpoint.OperationId);
+    }
 
+    public static string? DerivePrefix(EndpointDescriptor endpoint)
+    {
+        ArgumentNullException.ThrowIfNull(endpoint);
+
+        if (endpoint.ContainerPrefix is not null)
+        {
+            return SnakeCase(endpoint.ContainerPrefix);
+        }
+        if (string.IsNullOrWhiteSpace(endpoint.Container))
+        {
+            return null;
+        }
+
+        string last = endpoint.Container.Split('.', StringSplitOptions.RemoveEmptyEntries) is { Length: > 0 } segments
+            ? segments[^1]
+            : string.Empty;
+        if (last.Length > ControllerSuffix.Length && last.EndsWith(ControllerSuffix, StringComparison.Ordinal))
+        {
+            last = last[..^ControllerSuffix.Length];
+        }
+        string prefix = SnakeCase(last);
+        return prefix.Length == 0 ? null : prefix;
+    }
+
+    public static string ApplyPrefix(string body, string? prefix)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        return string.IsNullOrEmpty(prefix) || IsRedundant(prefix, body)
+            ? body
+            : Collapse($"{prefix}_{body}");
+    }
+
+    private static string Validate(string name, EndpointDescriptor endpoint)
+    {
         if (!ToolNamePattern().IsMatch(name))
         {
             throw new SkMcpCatalogException(
                 SkMcpCatalogException.InvalidName,
-                $"Generated tool name '{name}' for {endpoint.Method} {endpoint.Route} does not match the required pattern; define an operationId.");
+                $"Generated tool name '{name}' for {endpoint.Method} {endpoint.Route} does not match the required pattern; define an operationId or a tool name.");
         }
         return name;
     }
 
-    public static IReadOnlyList<string> CreateAll(IEnumerable<EndpointDescriptor> endpoints)
+    private static string Fold(string token) =>
+        token.Length > 3 && token.EndsWith('s') ? token[..^1] : token;
+
+    private static string[] TokensOf(string name) =>
+        name.Split('_', StringSplitOptions.RemoveEmptyEntries).Select(Fold).ToArray();
+
+    private static bool IsRedundant(string prefix, string body)
+    {
+        string[] prefixTokens = TokensOf(prefix);
+        string[] bodyTokens = TokensOf(body);
+        if (prefixTokens.Length == 0 || prefixTokens.Length > bodyTokens.Length)
+        {
+            return false;
+        }
+        for (int start = 0; start + prefixTokens.Length <= bodyTokens.Length; start++)
+        {
+            bool match = true;
+            for (int offset = 0; offset < prefixTokens.Length; offset++)
+            {
+                if (!string.Equals(bodyTokens[start + offset], prefixTokens[offset], StringComparison.Ordinal))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            if (match)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static IReadOnlyList<string> CreateAll(
+        IEnumerable<EndpointDescriptor> endpoints,
+        PrefixMode mode = PrefixMode.Always,
+        Action<string, string>? onDiagnostic = null)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        List<string> names = [];
-        Dictionary<string, EndpointDescriptor> claimed = new(StringComparer.Ordinal);
-        foreach (EndpointDescriptor endpoint in Deduplicate(endpoints, e => e))
+        List<EndpointDescriptor> operations = [.. Deduplicate(endpoints, e => e)];
+        List<string> names = [.. operations.Select(e => Create(e, mode))];
+
+        if (mode == PrefixMode.OnCollision)
         {
-            string name = Create(endpoint);
-            if (claimed.TryGetValue(name, out EndpointDescriptor? owner))
+            Dictionary<string, List<int>> groups = new(StringComparer.Ordinal);
+            for (int index = 0; index < operations.Count; index++)
+            {
+                if (operations[index].ToolName is not null)
+                {
+                    continue;
+                }
+                if (!groups.TryGetValue(names[index], out List<int>? group))
+                {
+                    groups[names[index]] = [index];
+                }
+                else
+                {
+                    group.Add(index);
+                }
+            }
+            foreach ((string body, List<int> group) in groups)
+            {
+                if (group.Count < 2)
+                {
+                    continue;
+                }
+                foreach (int index in group)
+                {
+                    EndpointDescriptor endpoint = operations[index];
+                    string prefixed = ApplyPrefix(body, DerivePrefix(endpoint));
+                    if (string.Equals(prefixed, body, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    names[index] = prefixed;
+                    onDiagnostic?.Invoke(
+                        NameDisambiguated,
+                        $"Tool name '{body}' collided; {endpoint.Method} {endpoint.Route} is exposed as '{prefixed}'.");
+                }
+            }
+        }
+
+        Dictionary<string, EndpointDescriptor> claimed = new(StringComparer.Ordinal);
+        for (int index = 0; index < operations.Count; index++)
+        {
+            if (claimed.TryGetValue(names[index], out EndpointDescriptor? owner))
             {
                 throw new SkMcpCatalogException(
                     SkMcpCatalogException.NameCollision,
-                    $"Tool name '{name}' is produced by both {owner.Method} {owner.Route} and {endpoint.Method} {endpoint.Route}; define an operationId on one of them.");
+                    $"Tool name '{names[index]}' is produced by both {owner.Method} {owner.Route} and {operations[index].Method} {operations[index].Route}; declare a tool name on one of them.");
             }
-            claimed[name] = endpoint;
-            names.Add(name);
+            claimed[names[index]] = operations[index];
         }
         return names;
     }

@@ -1,0 +1,27 @@
+{
+  "kind": "naming",
+  "description": "tam ad beyani en ozeldir: prefix uygulanmaz, govde uretilmez",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "Delete",
+        "container": "PushProviderConfigController",
+        "toolName": "delete_push_config",
+        "method": "POST",
+        "route": "/Rest/PushProviderConfig/Delete/{id}"
+      },
+      {
+        "operationId": "Delete",
+        "container": "NotificationController",
+        "method": "POST",
+        "route": "/Rest/Notification/Delete/{id}"
+      }
+    ]
+  },
+  "expected": {
+    "names": [
+      "delete_push_config",
+      "notification_delete"
+    ]
+  }
+}
