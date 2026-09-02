@@ -1,0 +1,11 @@
+{
+  "kind": "selection",
+  "description": "container seviyesindeki celiski, daha ozel operation isareti onu ezecek olsa bile hatadir",
+  "input": {
+    "default": "exclude",
+    "operations": [
+      { "id": "get_a", "container": "both", "operation": "include" }
+    ]
+  },
+  "expected": { "error": "ambiguous_selection" }
+}

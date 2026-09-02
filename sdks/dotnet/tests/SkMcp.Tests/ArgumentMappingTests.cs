@@ -230,7 +230,7 @@ public class ArgumentMappingTests
     [Fact]
     public void A11_ConformanceFixtures_AllPass()
     {
-        string dir = Path.Combine(AppContext.BaseDirectory, "Fixtures");
+        string dir = Path.Combine(AppContext.BaseDirectory, "Fixtures", "argument-mapping");
         string[] files = Directory.GetFiles(dir, "*.json");
         Assert.NotEmpty(files);
 

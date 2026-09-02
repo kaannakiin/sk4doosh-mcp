@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "kimlik isteyen endpoint kimliksiz caginara gizlidir",
+  "input": {
+    "auth": { "anonymous": false, "policies": [], "imperative": false },
+    "caller": { "identity": "absent" }
+  },
+  "expected": { "decision": "deny" }
+}

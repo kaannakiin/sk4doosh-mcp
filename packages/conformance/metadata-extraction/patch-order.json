@@ -1,0 +1,28 @@
+{
+  "kind": "metadata-extraction",
+  "description": "PATCH destructive ama idempotent degil; idempotentHint alani yazilmaz",
+  "input": {
+    "method": "PATCH",
+    "route": "/orders/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    ],
+    "auth": { "anonymous": false, "policies": [], "imperative": true }
+  },
+  "expected": {
+    "name": "patch_orders_by_id",
+    "description": "PATCH /orders/{id}",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "id": { "type": "integer" } },
+      "required": ["id"]
+    },
+    "annotations": { "destructiveHint": true },
+    "auth": { "anonymous": false, "policies": [], "imperative": true }
+  }
+}

@@ -4,7 +4,7 @@
   "input": {
     "method": "GET",
     "route": "/ping",
-    "auth": { "anonymous": true, "policies": [] },
+    "auth": { "anonymous": true, "policies": [], "imperative": false },
     "responses": {
       "200": {
         "schema": {
@@ -20,6 +20,6 @@
     "description": "GET /ping",
     "inputSchema": { "type": "object", "properties": {}, "required": [] },
     "annotations": { "readOnlyHint": true, "idempotentHint": true },
-    "auth": { "anonymous": true, "policies": [] }
+    "auth": { "anonymous": true, "policies": [], "imperative": false }
   }
 }

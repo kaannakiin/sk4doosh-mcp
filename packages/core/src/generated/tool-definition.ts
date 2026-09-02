@@ -16,4 +16,5 @@ export interface ToolAnnotations {
 export interface Auth {
   anonymous: boolean;
   policies: string[];
+  imperative: boolean;
 }

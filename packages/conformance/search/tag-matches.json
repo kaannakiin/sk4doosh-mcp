@@ -1,0 +1,12 @@
+{
+  "kind": "search",
+  "description": "tag alani aranir: 'orders' yalniz Orders tag'li tool'u bulur",
+  "input": {
+    "tools": [
+      { "name": "ping", "tags": ["Orders"], "route": "/ping" },
+      { "name": "health", "tags": ["System"], "route": "/health" }
+    ],
+    "query": "orders"
+  },
+  "expected": { "names": ["ping"] }
+}

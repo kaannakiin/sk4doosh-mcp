@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "global include; container ve operation seviyeleri ayri ayri istisna oyar",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_a" },
+      { "id": "get_b", "operation": "exclude" },
+      { "id": "get_c", "container": "exclude" }
+    ]
+  },
+  "expected": { "selected": ["get_a"] }
+}

@@ -1,0 +1,21 @@
+{
+  "kind": "naming",
+  "description": "ayni operationId farkli container'da iki AYRI operasyondur; sessizce birlesmez, hata verir",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "Delete",
+        "container": "Notification",
+        "method": "POST",
+        "route": "/Rest/Notification/Delete/{id}"
+      },
+      {
+        "operationId": "Delete",
+        "container": "PushProviderConfig",
+        "method": "POST",
+        "route": "/Rest/PushProviderConfig/Delete/{id}"
+      }
+    ]
+  },
+  "expected": { "error": "name_collision" }
+}

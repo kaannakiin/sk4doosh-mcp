@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "anonim endpoint kimliksiz caginara gorunur",
+  "input": {
+    "auth": { "anonymous": true, "policies": [], "imperative": false },
+    "caller": { "identity": "absent" }
+  },
+  "expected": { "decision": "allow" }
+}

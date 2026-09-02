@@ -1,0 +1,15 @@
+{
+  "kind": "search",
+  "description": "limit sonucu keser; esit skorda ad ordinal sirasi belirler",
+  "input": {
+    "tools": [
+      { "name": "order_d", "route": "/d" },
+      { "name": "order_c", "route": "/c" },
+      { "name": "order_b", "route": "/b" },
+      { "name": "order_a", "route": "/a" }
+    ],
+    "query": "order",
+    "limit": 2
+  },
+  "expected": { "names": ["order_a", "order_b"] }
+}

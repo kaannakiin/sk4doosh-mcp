@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "verdicti kod olan yetki mantigi deklaratif olarak degerlendirilemez",
+  "input": {
+    "auth": { "anonymous": false, "policies": [], "imperative": true },
+    "caller": { "identity": "present" }
+  },
+  "expected": { "decision": "unknown" }
+}

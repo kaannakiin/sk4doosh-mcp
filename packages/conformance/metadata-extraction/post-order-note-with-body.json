@@ -1,0 +1,53 @@
+{
+  "kind": "metadata-extraction",
+  "description": "POST + body: body property'leri ust seviyeye duzlesir, required birlesir (once parametreler sonra body); POST destructiveHint false",
+  "input": {
+    "operationId": "AddOrderNote",
+    "method": "POST",
+    "route": "/orders/{id}/notes",
+    "description": "Bir siparise not ekler.",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" },
+        "description": "Siparis id'si"
+      },
+      {
+        "name": "notify",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "boolean" },
+        "description": "Siparis sahibine bildirim gitsin mi"
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": { "text": { "type": "string", "description": "Not metni" } },
+        "required": ["text"]
+      }
+    },
+    "auth": { "anonymous": false, "policies": ["OrdersRead"], "imperative": false },
+    "tags": ["orders"]
+  },
+  "expected": {
+    "name": "add_order_note",
+    "description": "Bir siparise not ekler.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "Siparis id'si" },
+        "notify": {
+          "type": "boolean",
+          "description": "Siparis sahibine bildirim gitsin mi"
+        },
+        "text": { "type": "string", "description": "Not metni" }
+      },
+      "required": ["id", "text"]
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": false, "policies": ["OrdersRead"], "imperative": false }
+  }
+}

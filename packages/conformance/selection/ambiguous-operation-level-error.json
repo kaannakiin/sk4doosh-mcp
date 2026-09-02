@@ -1,0 +1,9 @@
+{
+  "kind": "selection",
+  "description": "ayni seviyede hem include hem exclude isareti hatadir",
+  "input": {
+    "default": "exclude",
+    "operations": [{ "id": "get_a", "operation": "both" }]
+  },
+  "expected": { "error": "ambiguous_selection" }
+}

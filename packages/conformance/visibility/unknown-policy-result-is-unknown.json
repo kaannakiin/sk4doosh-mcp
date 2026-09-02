@@ -1,0 +1,12 @@
+{
+  "kind": "visibility",
+  "description": "degerlendirilemeyen policy (ornek: kaynaga bakan requirement) karari bilinmez yapar",
+  "input": {
+    "auth": { "anonymous": false, "policies": ["A", "B"], "imperative": false },
+    "caller": {
+      "identity": "present",
+      "policyResults": { "A": "allow", "B": "unknown" }
+    }
+  },
+  "expected": { "decision": "unknown" }
+}

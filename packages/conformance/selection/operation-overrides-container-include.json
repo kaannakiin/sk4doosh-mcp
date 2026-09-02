@@ -1,0 +1,12 @@
+{
+  "kind": "selection",
+  "description": "container exclude, operation include; istisna tek endpointi acar",
+  "input": {
+    "default": "exclude",
+    "operations": [
+      { "id": "get_a", "container": "exclude", "operation": "include" },
+      { "id": "get_b", "container": "exclude" }
+    ]
+  },
+  "expected": { "selected": ["get_a"] }
+}

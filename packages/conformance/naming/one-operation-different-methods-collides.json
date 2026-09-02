@@ -1,0 +1,21 @@
+{
+  "kind": "naming",
+  "description": "ayni operationId farkli metodla iki ayri operasyondur; ad ayni oldugu icin hata verir",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "Save",
+        "container": "Task",
+        "method": "POST",
+        "route": "/Rest/Task/Save"
+      },
+      {
+        "operationId": "Save",
+        "container": "Task",
+        "method": "PUT",
+        "route": "/Rest/Task/Save"
+      }
+    ]
+  },
+  "expected": { "error": "name_collision" }
+}

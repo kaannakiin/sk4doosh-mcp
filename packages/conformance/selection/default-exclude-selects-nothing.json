@@ -1,0 +1,9 @@
+{
+  "kind": "selection",
+  "description": "isaretsiz endpointler global default exclude ile kapali kalir",
+  "input": {
+    "default": "exclude",
+    "operations": [{ "id": "get_a" }, { "id": "get_b" }]
+  },
+  "expected": { "selected": [] }
+}

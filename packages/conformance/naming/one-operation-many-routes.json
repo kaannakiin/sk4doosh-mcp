@@ -1,0 +1,21 @@
+{
+  "kind": "naming",
+  "description": "ayni container + operationId + metod tek operasyondur: tek tool uretilir, cakisma degil",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "Logout",
+        "container": "SystemSoft",
+        "method": "POST",
+        "route": "/Rest/Auth/Logout"
+      },
+      {
+        "operationId": "Logout",
+        "container": "SystemSoft",
+        "method": "POST",
+        "route": "/Rest/Logout"
+      }
+    ]
+  },
+  "expected": { "names": ["logout"] }
+}

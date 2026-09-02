@@ -1,5 +1,6 @@
 export interface EndpointDescriptor {
   operationId?: string;
+  container?: string;
   method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   route: string;
   description?: string;
@@ -32,4 +33,5 @@ export interface ResponseBody {
 export interface Auth {
   anonymous: boolean;
   policies: string[];
+  imperative: boolean;
 }

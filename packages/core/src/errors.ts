@@ -22,3 +22,16 @@ export class SkMcpArgumentError extends Error {
     this.name = "SkMcpArgumentError";
   }
 }
+
+export type SkMcpCatalogErrorCode =
+  "name_collision" | "invalid_name" | "ambiguous_selection";
+
+export class SkMcpCatalogError extends Error {
+  constructor(
+    readonly code: SkMcpCatalogErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "SkMcpCatalogError";
+  }
+}

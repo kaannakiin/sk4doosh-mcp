@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "sonucu bildirilmeyen policy uydurulmaz; karar bilinmezdir",
+  "input": {
+    "auth": { "anonymous": false, "policies": ["A"], "imperative": false },
+    "caller": { "identity": "present", "policyResults": {} }
+  },
+  "expected": { "decision": "unknown" }
+}

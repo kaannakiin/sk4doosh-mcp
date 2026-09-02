@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "gen": "node scripts/generate-types.mjs",
     "build": "dotnet build",
     "test": "dotnet test",
     "lint": "dotnet format --verify-no-changes"

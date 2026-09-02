@@ -7,6 +7,7 @@
   "required": ["method", "route", "auth"],
   "properties": {
     "operationId": { "type": "string", "minLength": 1 },
+    "container": { "type": "string", "minLength": 1 },
     "method": {
       "type": "string",
       "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
@@ -65,10 +66,11 @@
       "title": "Auth",
       "type": "object",
       "additionalProperties": false,
-      "required": ["anonymous", "policies"],
+      "required": ["anonymous", "policies", "imperative"],
       "properties": {
         "anonymous": { "type": "boolean" },
-        "policies": { "type": "array", "items": { "type": "string" } }
+        "policies": { "type": "array", "items": { "type": "string" } },
+        "imperative": { "type": "boolean" }
       }
     },
     "JsonSchemaObject": {

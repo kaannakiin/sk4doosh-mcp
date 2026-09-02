@@ -2,7 +2,12 @@
   "$schema": "https://turborepo.com/schema.json",
   "extends": ["//"],
   "tasks": {
+    "gen": {
+      "inputs": ["scripts/**", "$TURBO_ROOT$/packages/spec/schemas/**"],
+      "outputs": ["src/SkMcp.AspNetCore/Generated/**"]
+    },
     "build": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"],
       "outputs": [
         "samples/**/bin/**",
         "samples/**/obj/**",
@@ -11,6 +16,9 @@
         "tests/**/bin/**",
         "tests/**/obj/**"
       ]
+    },
+    "lint": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
     }
   }
 }

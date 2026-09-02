@@ -1,0 +1,12 @@
+{
+  "kind": "search",
+  "description": "route'taki camelCase parcalanir, sorgudaki cogul s duser: 'presences' route'taki GetPortalPresence ile eslesir",
+  "input": {
+    "tools": [
+      { "name": "get_portal_presence", "route": "/Rest/Presence/GetPortalPresence" },
+      { "name": "report_status", "route": "/Rest/Status/Report" }
+    ],
+    "query": "presences"
+  },
+  "expected": { "names": ["get_portal_presence"] }
+}

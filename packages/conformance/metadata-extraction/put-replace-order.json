@@ -1,0 +1,44 @@
+{
+  "kind": "metadata-extraction",
+  "description": "PUT yerine-koymadir: destructive ama idempotent; parametre description'i sema kendi description'ini tasiyorsa ezilmez",
+  "input": {
+    "operationId": "ReplaceOrder",
+    "method": "PUT",
+    "route": "/orders/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "description": "sema kaynakli" },
+        "description": "parametre kaynakli"
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "item": { "type": "string" },
+          "quantity": { "type": "integer" }
+        },
+        "required": ["item"]
+      }
+    },
+    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+  },
+  "expected": {
+    "name": "replace_order",
+    "description": "PUT /orders/{id}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "sema kaynakli" },
+        "item": { "type": "string" },
+        "quantity": { "type": "integer" }
+      },
+      "required": ["id", "item"]
+    },
+    "annotations": { "destructiveHint": true, "idempotentHint": true },
+    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+  }
+}

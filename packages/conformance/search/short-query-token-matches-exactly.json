@@ -1,0 +1,12 @@
+{
+  "kind": "search",
+  "description": "3 karakterden kisa sorgu token'i yalniz tam eslesir: 'id' route'taki {id} ile eslesir, 'identity' ile eslesmez",
+  "input": {
+    "tools": [
+      { "name": "get_order", "route": "/orders/{id}" },
+      { "name": "whoami", "route": "/identity" }
+    ],
+    "query": "id"
+  },
+  "expected": { "names": ["get_order"] }
+}

@@ -1,0 +1,12 @@
+{
+  "kind": "selection",
+  "description": "container include, operation exclude; en ozel seviye kazanir",
+  "input": {
+    "default": "exclude",
+    "operations": [
+      { "id": "get_a", "container": "include", "operation": "exclude" },
+      { "id": "get_b", "container": "include" }
+    ]
+  },
+  "expected": { "selected": ["get_b"] }
+}

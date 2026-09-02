@@ -1,6 +1,6 @@
 # Karar 003 — Sentetik İstek Üstverisi
 
-Tarih: 2026-08-28. Durum: **kabul edildi, kodla kanıtlandı** (test matrisi M1-M7; süit toplamı 32/32).
+Tarih: 2026-08-28 (M8-M9: 2026-09-02). Durum: **kabul edildi, kodla kanıtlandı** (test matrisi M1-M7; M8-M9 V20 ile).
 
 ## Cetvel
 
@@ -20,10 +20,16 @@ Yansıtma, "kaynak her zaman dış istek, uydurma yok" değişmezinin uzantısı
 
 - **Trace korelasyonu (M6):** dış isteğin `traceparent`/`tracestate` header'ları ve `TraceIdentifier`'ı sentetik isteğe her zaman taşınır — agent çağrısı ile tetiklediği iç istek loglarda eşleşir. Kapatma düğmesi yok: kapatan yalnız kendi audit'ini köreltir.
 - **`Accept-Encoding` asla taşınmaz (M7):** dispatcher body'yi düz okur; compression devreye girerse kırılır. İç mekanik, config'e kapalı.
+- **İstek kaynağı (M8):** dış isteğin bağlantı bilgisi (ASP.NET: `Connection.RemoteIpAddress`/`RemotePort`, `LocalIpAddress`/`LocalPort`) sentetik isteğe taşınır; dış istek yoksa boş kalır. Uydurulmaz — özellikle loopback yazılmaz: IP allowlist'i olan backend'de loopback yetki yükseltmesidir. Boş bırakmak da nötr değildi: motokurye'nin global rate limiter'ı partition anahtarını `RemoteIpAddress?.ToString() ?? "unknown"` ile kuruyor, yani tüm agent trafiği tek kovaya düşüp birbirini kilitliyordu. Platform karşılığı olmayan yerde kural bunu dayatmaz (karar 004'ün `TraceIdentifier` genellemesi).
+- **Sentetik istek kendini tanıtır (M9):** istek bağlamında bir işaret taşınır (C#: `HttpContext.Items`, `IsSkMcpRequest()`), probe bayrağının kardeşi. Host tarayıcıya özgü dönüşümlerini (gövde şifreleme, compression, oturum dokunuşu, erişim logu, rate limit) bu işaretle atlayabilir. **`UserAgent` bu iş için kullanılamaz:** dış istek onu taklit edebilir, o yüzden gözlemlenebilirlik sinyalidir, güvenlik dalı değil. İşaret dışarıdan set edilemez (V17).
 
 ## Bilinçli eklenmeyen
 
 Genel `Customize(outer, synthetic)` hook'u — `Identity.Project` kimlik kompozisyonu için yeterli; genel müdahale kancası talep kanıtlanmadan eklenmez (spec'i n=1'le yazma dersinin config hali).
+
+Gövde/yanıt dönüşüm hook'ları (`TransformRequest`/`TransformResponse`) — motokurye'nin AES+gzip formatter'ları ilk gerçek talep gibi görünüyordu, ama sentetik istek hiç kablo görmez: gövde aynı process içinde `MemoryStream`. Şifrelemek sıfır güvenlik değeri, saf maliyet. Doğru cevap dönüşümü taklit etmek değil, **agent'ı ayrı bir client tipi olarak tanıtmak** (M9) — host tarayıcı varsayımını kendi kodunda atlar. Hook'lar ancak formatter'ına dokunamayan bir host çıkarsa açılır.
+
+Backend'in `Authorization` dışında beklediği header'lar için ayrı mekanizma — MCP'nin tek standart kimlik kanalı `Authorization`'dır; tenant/portal header'ının karşılığı yok ve her client özel header göndermeye izin vermez. Bu yüzden çözüm client'tan istemek değil, host'un `Identity.Project` ile **türetmesi**: değer tokendan/kullanıcının default'undan/sabit kurulum değerinden çıkar. `Forward(name)` client'ın gönderdiği durum için zaten var; yeni ayar gerekmedi.
 
 ## NestJS doğrulaması (2026-08-28)
 

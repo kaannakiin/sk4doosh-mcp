@@ -1,0 +1,13 @@
+{
+  "kind": "search",
+  "description": "bos sorgu liste demektir: tum tool'lar ada gore ordinal sirali",
+  "input": {
+    "tools": [
+      { "name": "get_order", "route": "/orders/{id}" },
+      { "name": "add_order_note", "route": "/orders/{id}/notes" },
+      { "name": "ping", "route": "/ping" }
+    ],
+    "query": ""
+  },
+  "expected": { "names": ["add_order_note", "get_order", "ping"] }
+}

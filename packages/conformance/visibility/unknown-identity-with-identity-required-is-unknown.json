@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "kimlik cozulemiyorsa (authentication scheme yok) kimlik gerektiren endpoint bilinmezdir; absent'e kirilmaz",
+  "input": {
+    "auth": { "anonymous": false, "policies": [], "imperative": false },
+    "caller": { "identity": "unknown" }
+  },
+  "expected": { "decision": "unknown" }
+}

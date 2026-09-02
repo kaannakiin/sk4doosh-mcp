@@ -1,0 +1,16 @@
+{
+  "kind": "metadata-extraction",
+  "description": "HEAD, GET ile ayni satiri paylasir: readOnly + idempotent",
+  "input": {
+    "method": "HEAD",
+    "route": "/ping",
+    "auth": { "anonymous": true, "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "head_ping",
+    "description": "HEAD /ping",
+    "inputSchema": { "type": "object", "properties": {}, "required": [] },
+    "annotations": { "readOnlyHint": true, "idempotentHint": true },
+    "auth": { "anonymous": true, "policies": [], "imperative": false }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "kind": "metadata-extraction",
+  "description": "DELETE destructive ve idempotent; readOnlyHint yazilmaz",
+  "input": {
+    "operationId": "DeleteOrder",
+    "method": "DELETE",
+    "route": "/orders/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    ],
+    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+  },
+  "expected": {
+    "name": "delete_order",
+    "description": "DELETE /orders/{id}",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "id": { "type": "integer" } },
+      "required": ["id"]
+    },
+    "annotations": { "destructiveHint": true, "idempotentHint": true },
+    "auth": { "anonymous": false, "policies": ["OrdersWrite"], "imperative": false }
+  }
+}

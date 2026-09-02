@@ -21,7 +21,14 @@ const validate = ajv.compile(
 let checked = 0;
 let failed = 0;
 
-for (const dir of ["naming", "metadata-extraction", "argument-mapping"]) {
+for (const dir of [
+  "naming",
+  "metadata-extraction",
+  "argument-mapping",
+  "selection",
+  "visibility",
+  "search",
+]) {
   let files = [];
   try {
     files = readdirSync(path.join(here, dir)).filter((f) =>

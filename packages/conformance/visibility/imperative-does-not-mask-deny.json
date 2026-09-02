@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "kesin deklaratif red, imperatif belirsizligin onunde gelir",
+  "input": {
+    "auth": { "anonymous": false, "policies": ["A"], "imperative": true },
+    "caller": { "identity": "present", "policyResults": { "A": "deny" } }
+  },
+  "expected": { "decision": "deny" }
+}

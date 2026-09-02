@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "anonim biti kimlik hakkindadir; endpointte imperatif kapi varsa karar bilinmezdir",
+  "input": {
+    "auth": { "anonymous": true, "policies": [], "imperative": true },
+    "caller": { "identity": "absent" }
+  },
+  "expected": { "decision": "unknown" }
+}

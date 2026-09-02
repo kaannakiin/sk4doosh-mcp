@@ -1,0 +1,9 @@
+{
+  "kind": "visibility",
+  "description": "policy tasimayan kimlik-yeter endpoint kimlikli caginara gorunur",
+  "input": {
+    "auth": { "anonymous": false, "policies": [], "imperative": false },
+    "caller": { "identity": "present" }
+  },
+  "expected": { "decision": "allow" }
+}

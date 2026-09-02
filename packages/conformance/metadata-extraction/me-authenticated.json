@@ -4,7 +4,7 @@
   "input": {
     "method": "GET",
     "route": "/me",
-    "auth": { "anonymous": false, "policies": [] },
+    "auth": { "anonymous": false, "policies": [], "imperative": false },
     "responses": {
       "200": {
         "schema": {
@@ -20,6 +20,6 @@
     "description": "GET /me",
     "inputSchema": { "type": "object", "properties": {}, "required": [] },
     "annotations": { "readOnlyHint": true, "idempotentHint": true },
-    "auth": { "anonymous": false, "policies": [] }
+    "auth": { "anonymous": false, "policies": [], "imperative": false }
   }
 }

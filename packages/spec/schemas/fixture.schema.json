@@ -5,7 +5,10 @@
   "oneOf": [
     { "$ref": "#/$defs/NamingFixture" },
     { "$ref": "#/$defs/MetadataExtractionFixture" },
-    { "$ref": "#/$defs/ArgumentMappingFixture" }
+    { "$ref": "#/$defs/ArgumentMappingFixture" },
+    { "$ref": "#/$defs/SelectionFixture" },
+    { "$ref": "#/$defs/VisibilityFixture" },
+    { "$ref": "#/$defs/SearchFixture" }
   ],
   "$defs": {
     "NamingFixture": {
@@ -66,6 +69,7 @@
       "required": ["method", "route"],
       "properties": {
         "operationId": { "type": "string", "minLength": 1 },
+        "container": { "type": "string", "minLength": 1 },
         "method": {
           "type": "string",
           "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
@@ -182,6 +186,164 @@
           "enum": ["string", "integer", "number", "boolean"]
         },
         "array": { "type": "boolean" }
+      }
+    },
+    "SelectionFixture": {
+      "title": "SelectionFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": { "const": "selection" },
+        "description": { "type": "string", "minLength": 1 },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default", "operations"],
+          "properties": {
+            "default": { "$ref": "#/$defs/SelectionDefault" },
+            "operations": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/SelectionOperation" }
+            }
+          }
+        },
+        "expected": {
+          "oneOf": [
+            {
+              "title": "SelectionExpectedIds",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["selected"],
+              "properties": {
+                "selected": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            {
+              "title": "SelectionExpectedError",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["error"],
+              "properties": {
+                "error": { "type": "string", "enum": ["ambiguous_selection"] }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "SelectionOperation": {
+      "title": "SelectionOperation",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "container": { "$ref": "#/$defs/SelectionMarker" },
+        "operation": { "$ref": "#/$defs/SelectionMarker" }
+      }
+    },
+    "SelectionDefault": {
+      "type": "string",
+      "enum": ["include", "exclude"]
+    },
+    "SelectionMarker": {
+      "type": "string",
+      "enum": ["include", "exclude", "both"]
+    },
+    "VisibilityFixture": {
+      "title": "VisibilityFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": { "const": "visibility" },
+        "description": { "type": "string", "minLength": 1 },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["auth", "caller"],
+          "properties": {
+            "auth": { "$ref": "endpoint-descriptor.schema.json#/$defs/Auth" },
+            "caller": { "$ref": "#/$defs/CallerFacts" }
+          }
+        },
+        "expected": {
+          "title": "VisibilityExpectation",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["decision"],
+          "properties": {
+            "decision": { "$ref": "#/$defs/VisibilityDecision" }
+          }
+        }
+      }
+    },
+    "CallerFacts": {
+      "title": "CallerFacts",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/CallerIdentity" },
+        "policyResults": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/VisibilityDecision" }
+        }
+      }
+    },
+    "CallerIdentity": {
+      "type": "string",
+      "enum": ["present", "absent", "unknown"]
+    },
+    "VisibilityDecision": {
+      "type": "string",
+      "enum": ["allow", "deny", "unknown"]
+    },
+    "SearchFixture": {
+      "title": "SearchFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": { "const": "search" },
+        "description": { "type": "string", "minLength": 1 },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tools", "query"],
+          "properties": {
+            "tools": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/SearchTool" }
+            },
+            "query": { "type": "string" },
+            "limit": { "type": "integer", "minimum": 1, "maximum": 50 }
+          }
+        },
+        "expected": {
+          "title": "SearchExpectation",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["names"],
+          "properties": {
+            "names": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "SearchTool": {
+      "title": "SearchTool",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "route"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,255}$" },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "route": { "type": "string", "pattern": "^/" }
       }
     }
   }

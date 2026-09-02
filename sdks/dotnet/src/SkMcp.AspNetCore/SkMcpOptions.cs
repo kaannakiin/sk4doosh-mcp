@@ -1,4 +1,6 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Http;
+using SkMcp.AspNetCore.Discovery;
 
 namespace SkMcp.AspNetCore;
 
@@ -6,6 +8,31 @@ public sealed class SkMcpOptions
 {
     public IdentityForwardingOptions Identity { get; } = new();
     public SyntheticRequestOptions Synthetic { get; } = new();
+    public SelectionOptions Selection { get; } = new();
+    public SchemaOptions Schema { get; } = new();
+    public VisibilityOptions Visibility { get; } = new();
+}
+
+public enum UnknownVisibility { Show, Hide }
+
+public enum VisibilityTier { Declarative, Probe }
+
+public sealed class VisibilityOptions
+{
+    public UnknownVisibility OnUnknown { get; set; } = UnknownVisibility.Show;
+    public VisibilityTier Tier { get; set; } = VisibilityTier.Declarative;
+    public int ProbeTopK { get; set; } = 25;
+    public Dictionary<string, string> ProbeValues { get; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class SelectionOptions
+{
+    public SelectionDefault Default { get; set; } = SelectionDefault.Exclude;
+}
+
+public sealed class SchemaOptions
+{
+    public Func<PropertyInfo, string>? PropertyName { get; set; }
 }
 
 public sealed class SyntheticRequestOptions
