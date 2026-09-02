@@ -96,6 +96,9 @@ public sealed class VisibilityController : ControllerBase
     [Authorize]
     public IActionResult VisBare() => Ok();
 
+    [HttpGet("undeclared")]
+    public IActionResult VisUndeclared() => Ok();
+
     [HttpGet("claim")]
     [Authorize(Policy = "OrdersRead")]
     public IActionResult VisClaim() => Ok();
@@ -207,6 +210,12 @@ public sealed class VisibilityTests
         {
             bool gated = context.GetEndpoint()?.Metadata.GetMetadata<CustomGateAttribute>() is not null;
             if (gated && context.Request.Headers["X-Gate"] != "open")
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+            if (context.Request.Path.StartsWithSegments("/vis/undeclared")
+                && !context.Request.Headers.ContainsKey("Authorization"))
             {
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
@@ -466,6 +475,34 @@ public sealed class VisibilityTests
         string body = await response.Content.ReadAsStringAsync();
         Assert.Contains("\"probe\":false", body);
         Assert.Contains("\"synthetic\":false", body);
+    }
+
+    [Fact]
+    public async Task V22_UndeclaredEndpoint_IsUnknownNotAnonymous()
+    {
+        await using Harness host = await HostAsync();
+        (HashSet<string> names, HashSet<string> uncertain, _, _) = await SearchAsync(host.ToolsFor(Mint("alice")));
+        (HashSet<string> anonymous, HashSet<string> anonymousUncertain, _, _) = await SearchAsync(host.ToolsFor(null));
+
+        Assert.Contains("vis_undeclared", names);
+        Assert.Contains("vis_undeclared", uncertain);
+        Assert.Contains("vis_undeclared", anonymous);
+        Assert.Contains("vis_undeclared", anonymousUncertain);
+        Assert.Contains("vis_anon", names);
+        Assert.DoesNotContain("vis_anon", uncertain);
+    }
+
+    [Fact]
+    public async Task V23_Probe_ResolvesUndeclaredEndpointFromMiddlewareVerdict()
+    {
+        await using Harness host = await ProbeHostAsync();
+        (HashSet<string> identified, HashSet<string> identifiedUncertain, _, _) =
+            await SearchAsync(host.ToolsFor(Mint("alice")));
+        (HashSet<string> anonymous, _, _, _) = await SearchAsync(host.ToolsFor(null));
+
+        Assert.Contains("vis_undeclared", identified);
+        Assert.DoesNotContain("vis_undeclared", identifiedUncertain);
+        Assert.DoesNotContain("vis_undeclared", anonymous);
     }
 
     [Fact]

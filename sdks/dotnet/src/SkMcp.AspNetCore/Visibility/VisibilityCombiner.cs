@@ -21,7 +21,7 @@ public static class VisibilityCombiner
         ArgumentNullException.ThrowIfNull(auth);
         ArgumentNullException.ThrowIfNull(caller);
 
-        if (!auth.Anonymous && caller.Identity == CallerIdentity.Absent)
+        if (auth.Anonymous == Anonymity.No && caller.Identity == CallerIdentity.Absent)
         {
             return VisibilityDecision.Deny;
         }
@@ -33,7 +33,11 @@ public static class VisibilityCombiner
         {
             return VisibilityDecision.Unknown;
         }
-        if (!auth.Anonymous && caller.Identity == CallerIdentity.Unknown)
+        if (auth.Anonymous == Anonymity.Unknown)
+        {
+            return VisibilityDecision.Unknown;
+        }
+        if (auth.Anonymous == Anonymity.No && caller.Identity == CallerIdentity.Unknown)
         {
             return VisibilityDecision.Unknown;
         }

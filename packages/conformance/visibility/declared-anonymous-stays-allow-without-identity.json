@@ -1,14 +1,14 @@
 {
   "kind": "visibility",
-  "description": "policy tasimayan kimlik-yeter endpoint kimlikli caginara gorunur",
+  "description": "IAllowAnonymous gibi acik bir anonim isareti kesin bilgidir: kimliksiz cagiranda da allow",
   "input": {
     "auth": {
-      "anonymous": "no",
+      "anonymous": "yes",
       "policies": [],
       "imperative": false
     },
     "caller": {
-      "identity": "present"
+      "identity": "absent"
     }
   },
   "expected": {

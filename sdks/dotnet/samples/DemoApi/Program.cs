@@ -44,6 +44,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+    .AllowAnonymous()
     .WithMetadata(new McpToolAttribute(), new EndpointDescriptionAttribute("Servis sağlık durumu; kimlik gerektirmez."));
 app.MapSkMcp("/mcp");
 

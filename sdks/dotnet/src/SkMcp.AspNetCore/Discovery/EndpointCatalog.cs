@@ -315,11 +315,15 @@ public static partial class EndpointCatalog
             }
         }
 
-        bool anonymous = allowAnonymous || (!hasAuthorizeData && !hasFallbackPolicy);
+        Anonymity anonymous = allowAnonymous
+            ? Anonymity.Yes
+            : hasAuthorizeData || hasFallbackPolicy
+                ? Anonymity.No
+                : Anonymity.Unknown;
         return new Auth
         {
             Anonymous = anonymous,
-            Policies = anonymous ? [] : policies,
+            Policies = anonymous == Anonymity.Yes ? [] : policies,
             Imperative = imperative,
         };
     }

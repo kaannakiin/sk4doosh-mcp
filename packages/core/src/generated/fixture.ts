@@ -6,6 +6,7 @@ export type Fixture =
   | VisibilityFixture
   | SearchFixture;
 export type PrefixMode = "always" | "onCollision";
+export type Anonymity = "yes" | "no" | "unknown";
 
 export interface NamingFixture {
   kind: "naming";
@@ -74,7 +75,7 @@ export interface ResponseBody {
   description?: string;
 }
 export interface Auth {
-  anonymous: boolean;
+  anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
 }

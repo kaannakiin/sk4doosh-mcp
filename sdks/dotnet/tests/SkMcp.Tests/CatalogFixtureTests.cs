@@ -17,10 +17,11 @@ public sealed class CatalogFixtureTests
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
     private static readonly Auth UnusedAuth =
-        new() { Anonymous = true, Policies = [], Imperative = false };
+        new() { Anonymous = Anonymity.Yes, Policies = [], Imperative = false };
 
     private static IEnumerable<JsonElement> Fixtures(string kind)
     {

@@ -2,8 +2,16 @@
   "kind": "visibility",
   "description": "anonim endpoint icin kimliğin bilinmezligi onemsizdir",
   "input": {
-    "auth": { "anonymous": true, "policies": [], "imperative": false },
-    "caller": { "identity": "unknown" }
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    },
+    "caller": {
+      "identity": "unknown"
+    }
   },
-  "expected": { "decision": "allow" }
+  "expected": {
+    "decision": "allow"
+  }
 }

@@ -9,7 +9,7 @@ namespace SkMcp.Tests;
 public sealed class NamingDryRunTests(ITestOutputHelper output)
 {
     private static readonly Auth UnusedAuth =
-        new() { Anonymous = true, Policies = [], Imperative = false };
+        new() { Anonymous = Anonymity.Yes, Policies = [], Imperative = false };
 
     [Fact]
     public void C4_NamingDryRun_ReportsCollisionsAndInvalidNames()

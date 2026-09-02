@@ -8,20 +8,20 @@
 
 OpenAPI'nin küçük, katı bir alt kümesi. Yeni ontoloji değil; bilinen kelime dağarcığının daraltılmış hali. Alanlar:
 
-| Alan          | Zorunlu | Anlam                                                                                      |
-| ------------- | ------- | ------------------------------------------------------------------------------------------ |
-| `operationId` | hayır   | Framework'ün stabil operasyon kimliği (C#: action adı / `[EndpointName]`; Nest: metod adı) |
-| `container` | hayır | Operasyonu barındıran birim (C#: controller tipinin tam adı; Nest: controller sınıfı). Operasyon kimliğinin ve tool adı prefix'inin kaynağı |
-| `containerPrefix` | hayır | Container prefix'i beyanı; verilmezse container adından türetilir ([isimlendirme.md](isimlendirme.md)) |
-| `toolName` | hayır | Tam ad beyanı; verilirse gövde üretilmez ve prefix uygulanmaz |
-| `method`      | evet    | `GET/HEAD/POST/PUT/PATCH/DELETE`                                                           |
-| `route`       | evet    | `/` ile başlayan route şablonu; path parametreleri süslü parantezli                        |
-| `description` | hayır   | İnsan-yazımı açıklama (C#: XML doc / `[Description]`; Nest: Swagger decorator'ları)        |
-| `parameters`  | hayır   | `{name, in: path\|query\|header, required, schema, description?}`                          |
-| `requestBody` | hayır   | `{schema, description?}`                                                                   |
-| `responses`   | hayır   | Status kodu → `{schema?, description?}`                                                    |
-| `auth`        | evet    | Aşağıda                                                                                    |
-| `tags`        | hayır   | Gruplama (C#: controller adı; Nest: controller / `@ApiTags`)                               |
+| Alan              | Zorunlu | Anlam                                                                                                                                       |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `operationId`     | hayır   | Framework'ün stabil operasyon kimliği (C#: action adı / `[EndpointName]`; Nest: metod adı)                                                  |
+| `container`       | hayır   | Operasyonu barındıran birim (C#: controller tipinin tam adı; Nest: controller sınıfı). Operasyon kimliğinin ve tool adı prefix'inin kaynağı |
+| `containerPrefix` | hayır   | Container prefix'i beyanı; verilmezse container adından türetilir ([isimlendirme.md](isimlendirme.md))                                      |
+| `toolName`        | hayır   | Tam ad beyanı; verilirse gövde üretilmez ve prefix uygulanmaz                                                                               |
+| `method`          | evet    | `GET/HEAD/POST/PUT/PATCH/DELETE`                                                                                                            |
+| `route`           | evet    | `/` ile başlayan route şablonu; path parametreleri süslü parantezli                                                                         |
+| `description`     | hayır   | İnsan-yazımı açıklama (C#: XML doc / `[Description]`; Nest: Swagger decorator'ları)                                                         |
+| `parameters`      | hayır   | `{name, in: path\|query\|header, required, schema, description?}`                                                                           |
+| `requestBody`     | hayır   | `{schema, description?}`                                                                                                                    |
+| `responses`       | hayır   | Status kodu → `{schema?, description?}`                                                                                                     |
+| `auth`            | evet    | Aşağıda                                                                                                                                     |
+| `tags`            | hayır   | Gruplama (C#: controller adı; Nest: controller / `@ApiTags`)                                                                                |
 
 Dil kuralı: alan adları ve tool adları İngilizce; `description` içerikleri serbest (backend'in dili).
 
@@ -35,7 +35,7 @@ Dil kuralı: alan adları ve tool adları İngilizce; `description` içerikleri 
 
 Üç alan, üç ayrı soru. Bu temsil bir yetki modeli tanımlamaz; backend'in kendi kararlarının **okunabilir kısmını** taşır.
 
-- `anonymous` — endpoint kimliksiz erişilebilir mi. `true` ise `policies` boş olmalıdır. Yalnız **kimlik** hakkındadır: anonim bir endpoint'te lisans/feature gibi başka bir kapı durabilir, onu `imperative` taşır.
+- `anonymous` — üç değerli: `yes` (framework anonim işareti var), `no` (framework yetki beyanı veya fallback policy var), `unknown` (hiçbir beyan yok; koruma framework dışında olabilir). `yes` ise `policies` boş olmalıdır. Yalnız **kimlik** hakkındadır: anonim bir endpoint'te lisans/feature gibi başka bir kapı durabilir, onu `imperative` taşır. `unknown`'ın neden `yes`'e kırılmadığı [gorunurluk.md](gorunurluk.md) T0 bölümünde.
 - `policies` — yalnızca **ad** taşır, içerik taşımaz. Görünürlük filtresi adları backend'in kendi değerlendiricisine verir ([gorunurluk.md](gorunurluk.md)); içeriği bilmek gerekmez. Birleşim semantiği AND: framework'ün hiyerarşisinden (global + container + endpoint) düzleştirilen etkin küme buraya yazılır. Buraya yalnız **değerlendirilebilir** adlar girer.
 - `imperative` — endpoint'te verdict'i kod olan yetki mantığı var mı. `true` ise deklaratif değerlendirme o endpoint hakkında kesin `allow` üretemez. İmperatif mantık `policies`'e ad **yazmaz**; yalnız bu bayrağı kaldırır — böylece "bu ad değerlendirilebilir mi" sorusu hiç doğmaz.
 

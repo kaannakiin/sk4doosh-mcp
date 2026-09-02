@@ -4,22 +4,43 @@
   "input": {
     "method": "GET",
     "route": "/ping",
-    "auth": { "anonymous": true, "policies": [], "imperative": false },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    },
     "responses": {
       "200": {
         "schema": {
           "type": "object",
-          "properties": { "pong": { "type": "boolean" } }
+          "properties": {
+            "pong": {
+              "type": "boolean"
+            }
+          }
         }
       }
     },
-    "tags": ["orders"]
+    "tags": [
+      "orders"
+    ]
   },
   "expected": {
     "name": "get_ping",
     "description": "GET /ping",
-    "inputSchema": { "type": "object", "properties": {}, "required": [] },
-    "annotations": { "readOnlyHint": true, "idempotentHint": true },
-    "auth": { "anonymous": true, "policies": [], "imperative": false }
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
   }
 }

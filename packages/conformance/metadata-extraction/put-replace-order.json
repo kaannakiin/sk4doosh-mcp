@@ -10,7 +10,10 @@
         "name": "id",
         "in": "path",
         "required": true,
-        "schema": { "type": "integer", "description": "sema kaynakli" },
+        "schema": {
+          "type": "integer",
+          "description": "sema kaynakli"
+        },
         "description": "parametre kaynakli"
       }
     ],
@@ -18,15 +21,23 @@
       "schema": {
         "type": "object",
         "properties": {
-          "item": { "type": "string" },
-          "quantity": { "type": "integer" }
+          "item": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          }
         },
-        "required": ["item"]
+        "required": [
+          "item"
+        ]
       }
     },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersWrite"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
       "imperative": false
     }
   },
@@ -36,16 +47,31 @@
     "inputSchema": {
       "type": "object",
       "properties": {
-        "id": { "type": "integer", "description": "sema kaynakli" },
-        "item": { "type": "string" },
-        "quantity": { "type": "integer" }
+        "id": {
+          "type": "integer",
+          "description": "sema kaynakli"
+        },
+        "item": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "integer"
+        }
       },
-      "required": ["id", "item"]
+      "required": [
+        "id",
+        "item"
+      ]
     },
-    "annotations": { "destructiveHint": true, "idempotentHint": true },
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true
+    },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersWrite"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
       "imperative": false
     }
   }

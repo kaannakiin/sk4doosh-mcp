@@ -1,3 +1,5 @@
+export type Anonymity = "yes" | "no" | "unknown";
+
 export interface EndpointDescriptor {
   operationId?: string;
   container?: string;
@@ -33,7 +35,7 @@ export interface ResponseBody {
   description?: string;
 }
 export interface Auth {
-  anonymous: boolean;
+  anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
 }

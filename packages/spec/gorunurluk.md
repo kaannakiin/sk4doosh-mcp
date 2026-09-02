@@ -47,34 +47,49 @@ Değerlendirme iki parçaya ayrılır. Bu ayrım fixture'lanabilirliğin şartı
 
 **Saf tarafı (spec'li, dil bağımsız):** `(auth, callerFacts) → decision`. Kurallar **sırayla** uygulanır, ilk eşleşen kazanır:
 
-1. `auth.anonymous` false ve `callerFacts.identity` `absent` → `deny`
+1. `auth.anonymous` `no` ve `callerFacts.identity` `absent` → `deny`
 2. `auth.policies` içindeki herhangi bir adın sonucu `deny` → `deny`
 3. `auth.imperative` true → `unknown`
-4. `auth.anonymous` false ve `callerFacts.identity` `unknown` → `unknown`
-5. `auth.policies` içindeki herhangi bir ad için sonuç bildirilmemiş veya `unknown` → `unknown`
-6. aksi halde → `allow`
+4. `auth.anonymous` `unknown` → `unknown`
+5. `auth.anonymous` `no` ve `callerFacts.identity` `unknown` → `unknown`
+6. `auth.policies` içindeki herhangi bir ad için sonuç bildirilmemiş veya `unknown` → `unknown`
+7. aksi halde → `allow`
 
 Sıra gerekçeleri:
 
 - **1 önce:** kimlik yokluğu en ucuz ve en kesin reddir.
 - **2, 3'ten önce:** policy birleşim semantiği AND'dir; kesin bir red, her belirsizlikten bağımsız olarak sonucu belirler. Aksi sıra, hakkında kesin bilgi olan endpoint'i belirsize düşürürdü.
-- **3, 4 ve 5** hep `unknown` üretir; aralarındaki sıra sonucu değiştirmez, kural okunurluğu için sabitlenmiştir.
-- **Sonuç bildirilmemiş policy `allow` sayılmaz** (kural 5). SDK değer uydurmaz — [karar 001](../../docs/kararlar/001-kimlik-tasiyicilari.md)'in "uydurma yok" değişmezinin görünürlük hali. Aynı ilke kimlik için kural 4'tür.
+- **3, 4, 5 ve 6** hep `unknown` üretir; aralarındaki sıra sonucu değiştirmez, kural okunurluğu için sabitlenmiştir.
+- **Sonuç bildirilmemiş policy `allow` sayılmaz** (kural 6). SDK değer uydurmaz — [karar 001](../../docs/kararlar/001-kimlik-tasiyicilari.md)'in "uydurma yok" değişmezinin görünürlük hali. Aynı ilke kimlik için kural 5, anonimlik için kural 4'tür.
 
-`auth.anonymous` yalnız **kimlik** hakkındadır, yetkinin tamamı hakkında değil: anonim bir endpoint'te lisans/feature kapısı gibi imperatif bir kontrol durabilir. Bu yüzden kural 1 `allow` üretmez, yalnız kural 3'e yol verir.
+`auth.anonymous` yalnız **kimlik** hakkındadır, yetkinin tamamı hakkında değil: anonim bir endpoint'te lisans/feature kapısı gibi imperatif bir kontrol durabilir. Bu yüzden `yes` tek başına `allow` üretmez, yalnız sonraki kurallara yol verir.
 
 ## Değerlendirme merdiveni
 
 Katmanlar framework sözleşmeleri üzerinden tanımlıdır; SDK hiçbir host'a özgü tip tanımaz.
 
-| Katman        | Ne okur                                                                                      | Üretir                    |
-| ------------- | -------------------------------------------------------------------------------------------- | ------------------------- |
-| T0 anonim     | Endpoint metadata'sındaki framework anonim işareti                                           | `auth.anonymous`          |
-| T1 deklaratif | Framework'ün deklaratif yetki verisi → birleşik policy → değerlendirilebilir requirement'lar | `policyResults` girdileri |
-| T2 probe      | Sentetik istek gerçek pipeline'a sokulur, **handler'dan önce** kesilir; status okunur        | `allow` / `deny`          |
-| T3            | Yukarıdakiler karar vermediyse                                                               | `unknown`                 |
+| Katman        | Ne okur                                                                                      | Üretir                        |
+| ------------- | -------------------------------------------------------------------------------------------- | ----------------------------- |
+| T0 anonim     | Endpoint metadata'sındaki framework anonim/yetki işaretleri                                  | `auth.anonymous` (üç değerli) |
+| T1 deklaratif | Framework'ün deklaratif yetki verisi → birleşik policy → değerlendirilebilir requirement'lar | `policyResults` girdileri     |
+| T2 probe      | Sentetik istek gerçek pipeline'a sokulur, **handler'dan önce** kesilir; status okunur        | `allow` / `deny`              |
+| T3            | Yukarıdakiler karar vermediyse                                                               | `unknown`                     |
 
-T0 framework'ün **gerçek** anonimlik kuralını okur, yalnız açık işareti değil: endpoint anonimdir eğer anonim işareti taşıyorsa **veya** hiç deklaratif yetki verisi taşımıyor ve uygulamada fallback policy yoksa. (ASP.NET'te `[Authorize]`'sız ve fallback'siz bir endpoint'i authorization middleware'i hiç değerlendirmez — anonimdir.) Auth'u tamamen custom middleware'de yaşayan backend'de bu, endpoint'lerin framework gözüyle anonim görünmesi demektir; SDK backend'in kendi kararını okur, yaptırım invoke anındaki middleware'dedir.
+T0 üç değerli okur, çünkü metadata'nın söylediği ile backend'in yaptığı aynı şey değildir:
+
+| Endpoint metadata'sı                                             | `auth.anonymous` | Gerekçe                                                      |
+| ---------------------------------------------------------------- | ---------------- | ------------------------------------------------------------ |
+| Anonim işareti var (`IAllowAnonymous`)                           | `yes`            | Kesin bilgi: framework bu endpoint'i kimlik aramadan geçirir |
+| Deklaratif yetki verisi var, veya uygulamada fallback policy var | `no`             | Kesin bilgi: framework kimlik arar                           |
+| Hiçbiri yok                                                      | `unknown`        | **Bilgi yok**                                                |
+
+Üçüncü satır bu spec'in en kolay yanlış yazılan kuralıydı. Önceki sürüm onu `yes` sayıyordu, gerekçe olarak da framework'ün kendi davranışını gösteriyordu: ASP.NET'te `[Authorize]`'sız ve fallback'siz bir endpoint'i authorization middleware'i hiç değerlendirmez. Bu doğru ama **dar** bir gerçektir: yalnız framework'ün authorization katmanı hakkında konuşur, "bu endpoint'i hiçbir şey engellemez" demez.
+
+Koruma pekâlâ framework'ün dışında olabilir. Middleware endpoint metadata'sına **yazmaz**, yalnız okur: `app.UseMiddleware<...>()` bir endpoint'e değil pipeline'a bağlanır, dolayısıyla "beni bu middleware koruyor" diye bir işaret yoktur. Kimliği global bir middleware'de kuran bir backend'de metadata'da yalnız negatif işaret (anonim muafiyeti) bulunur, pozitif işaret hiç bulunmaz. Ölçüm: 718 endpoint'lik gerçek bir backend'de 698 tool'un tamamı `yes` çıkıyordu; 447'si imperatif işaret taşıdığı için yine de `unknown`'a düşüyordu ama kalan 251'i `allow` görünüyor, kimliksiz çağıranın listesine giriyor ve invoke'da 401 alıyordu.
+
+`unknown` bu bilgisizliği dürüstçe temsil eder ve kararı probe'a devreder: sentetik istek gerçek pipeline'a girer, custom middleware'in 401'i **bayrak işaretlenmeden** görülür ve `deny` olarak okunur. Yani okunamayan koruma koşturularak ölçülür. Deklaratif yazan backend hiçbir maliyet ödemez; `[Authorize]` ve `[AllowAnonymous]` yazıldığı sürece cevap statiktir.
+
+Bilinçli sınır: probe'un kesme noktası olmayan endpoint'ler (yetki beyanı taşımayan minimal API / route handler) `unknown` kalır ve `authUncertain` ile gösterilir. Orada tek satırlık `[AllowAnonymous]` cevabı kesinleştirir — SDK'ya değil, framework'e yazılan bir satır.
 
 Roller deklaratiftir ve değerlendirilebilir: framework'ün rol gereksinimi `auth.policies`'e `roles:<ad>[,<ad>]` biçiminde ad olarak yazılır; T1 bu öneki tanıyıp rol policy'si kurar. Nest'in roles decorator'ları aynı biçime düşer.
 

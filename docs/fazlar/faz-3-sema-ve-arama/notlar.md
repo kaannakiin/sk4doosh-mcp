@@ -145,7 +145,7 @@ Buradaki asıl soru şu: **ASP.NET aynı isimlerle hiç çakışma yaşamıyor, 
 
 **Düzeltme (uygulandı, aşağıdaki bölüm):** çakışmada deterministik ayrıştırma — çakışan **her iki** tarafa container'dan türetilmiş prefix eklenir (`notification_delete` + `push_provider_config_delete`), `name_disambiguated` uyarısı üretilir, prefix'ten sonra da çakışma varsa fatal kalır. Bu "sessiz çözüm yasak" kuralını bozmaz: kural agent'ın yanlış tool'u seçmesine yol açan görünmez düzeltmeyi (`delete_2` gibi anlamsız sonek) yasaklıyordu; container prefix'i hem uyarı üretir hem agent'a gerçek ayrımı verir. Tek tarafa eklemek asimetrik ve keyfi olurdu.
 
-**İkinci bulgu: framework anonimliği bu backend'de yanlış pozitif.** 698 tool'un tamamı `anonymous: true` çıktı, çünkü hiçbir endpoint `IAuthorizeData` taşımıyor ve fallback policy yok — T0 kuralının harfi. Gerçekte hepsini `JwtAuthenticationMiddleware` koruyor. 447'si `imperative` olduğu için görünürlük onları `unknown` bırakıp probe'a gönderiyor (doğru), ama kalan ~250 tool `allow` görünüyor: kimliksiz bir çağıran onları listede görür ve invoke'da 401 alır. Yaptırım açığı değil, liste kirliliği. Doğru çözüm host beyanı (karar 003 cetveli: cevap backend'e göre değişiyorsa politika kod yazanın): `Visibility.AssumeAuthenticationRequired` gibi bir anahtar, "bu backend'de kimlik framework dışında yaşıyor, anonimliği `IAllowAnonymous` dışında varsayma" demeli. Fallback policy tanımlamak da çözer ama host'un authz davranışını değiştirir.
+**İkinci bulgu: framework anonimliği bu backend'de yanlış pozitif.** 698 tool'un tamamı `anonymous: true` çıktı, çünkü hiçbir endpoint `IAuthorizeData` taşımıyor ve fallback policy yok — T0 kuralının harfi. Gerçekte hepsini `JwtAuthenticationMiddleware` koruyor. 447'si `imperative` olduğu için görünürlük onları `unknown` bırakıp probe'a gönderiyor (doğru), ama kalan ~250 tool `allow` görünüyor: kimliksiz bir çağıran onları listede görür ve invoke'da 401 alır. Yaptırım açığı değil, liste kirliliği. **Düzeltildi (aşağıdaki bölüm):** çözüm host beyanı değil, kuralın kendisiydi — anonimlik üç değerli yapıldı, beyansız durum `unknown` oldu ve probe'a devredildi. Host'a knob eklenmedi.
 
 ### Container prefix'i: çakışma duvarı kaldırıldı (2026-09-02)
 
@@ -158,6 +158,36 @@ Prefix çözümü en özelden genele, seçim hiyerarşisinin aynı deseni: opera
 **Gerçek backend doğrulaması.** motokurye'de eklenen 5 `[EndpointName]` **geri alındı** ve yeniden ölçüldü: 718 keşif, 698 tool, **0 `name_collision`**. Yani prefix kuralı, dört çakışmayı host'a tek satır yazdırmadan çözüyor — önerinin asıl vaadi buydu. Adlar `bpm_validate_definition`, `push_provider_config_list` gibi container'ını taşıyor. Maliyet ölçüldü: tek bir `long_tool_name` uyarısı (66 karakter), yani prefix uzunluk tavanını 698 adın birinde zorluyor. Kabul edilebilir, çünkü tavan uyarı seviyesinde.
 
 Korpus 53 → 60 fixture (naming 7 → 12, `same-name-different-container-collides` → `...-disambiguates` olarak yeniden yazıldı). Core TS 60/60, C# fixture koşucusu 5/5, V matrisi 20/20, M matrisi 10/10, üç TFM build yeşil. `VisibilityController` test host'unda `[McpTool(Prefix = "vis")]` ile işaretlendi: bastırma sayesinde 20 testin beklediği adlar korundu ve prefix beyanı da dolaylı doğrulandı.
+
+### Anonimlik üç değerli oldu (2026-09-02)
+
+Yukarıda "ikinci bulgu" olarak yazılan yanlış pozitif düzeltildi. `auth.anonymous` artık `boolean` değil `yes | no | unknown`:
+
+| Endpoint metadata'sı | Değer | Neden |
+| --- | --- | --- |
+| `IAllowAnonymous` var | `yes` | Kesin: framework kimlik aramadan geçirir |
+| `IAuthorizeData` veya fallback policy var | `no` | Kesin: framework kimlik arar |
+| Hiçbiri yok | `unknown` | Bilgi yok |
+
+Eski kural üçüncü satırı `true` sayıyordu ve gerekçesi framework'ün kendi davranışıydı: `[Authorize]`'sız, fallback'siz bir endpoint'i authorization middleware hiç değerlendirmez. Bu doğru ama dar bir gerçek — yalnız **framework'ün authorization katmanı** hakkında konuşuyor, "bu endpoint'i hiçbir şey engellemez" demiyor. **Middleware endpoint metadata'sına yazmaz, yalnız okur:** `app.UseMiddleware<...>()` bir endpoint'e değil pipeline'a bağlanır, dolayısıyla "beni şu middleware koruyor" diye bir işaret hiç oluşmaz. Kimliği global middleware'de kuran backend'de metadata'da sadece negatif işaret (anonim muafiyeti) bulunur.
+
+Kural değişince görünürlük sıralaması yediye çıktı (`anonymous == unknown → unknown`, imperatif kontrolünden hemen sonra). `unknown` probe'a devrediliyor ve probe custom middleware'in 401'ini **bayrak işaretlenmeden** okuyup `deny` diyor — bu davranış zaten vardı (V18), artık kapsamı genişledi.
+
+**Gerçek backend ölçümü, öncesi ve sonrası.** motokurye'de 698 tool:
+
+| | Eski kural | Yeni kural |
+| --- | --- | --- |
+| `yes` (kesin anonim) | 698 | 34 |
+| `no` (kesin korumalı) | 0 | 0 |
+| `unknown` | 0 | 664 |
+| Probe'a giden | 447 (yalnız imperatif) | 664 |
+| Kimliksiz çağırana `allow` görünen | 251 | 34 |
+
+34 sayısı host'un tek satırlık `AllowAnonymousAttribute : IAllowAnonymous` değişikliğinin karşılığı: o endpoint'ler artık kesin bilgiyle işaretli. Yeni probe adayı 217 endpoint (664 eksi zaten imperatif olan 447). Probe bütçesi top-K olduğu için maliyet arama başına sabit kalıyor.
+
+**Ödenen bedel dürüst.** Yetki beyanı taşımayan minimal API / route handler'lar probe edilemiyor (kesme noktası yok) ve `unknown` kalıp `authUncertain` ile gösteriliyor. Çıkış yolu SDK'ya değil framework'e yazılan tek satır: `.AllowAnonymous()`. DemoApi'nin `/health` endpoint'i bu yüzden güncellendi. Deklaratif yazan backend hiçbir maliyet ödemiyor.
+
+C# tip üreticisi bu tur string enum desteği kazandı (`$defs` içindeki `type: string` + `enum` → C# `enum`); `JsonStringEnumConverter` + camelCase ile tel biçimi korunuyor. V matrisi 20 → 22: V22 beyansız endpoint'in `unknown` kaldığını, V23 probe açıkken aynı endpoint'in kimlikli çağırana görünüp kimliksize görünmediğini sabitliyor — motokurye'nin JWT middleware deseninin minyatürü. Korpus 60 → 63. Core TS 63/63, C# 30/30, üç TFM yeşil.
 
 ## Ertelenenler
 

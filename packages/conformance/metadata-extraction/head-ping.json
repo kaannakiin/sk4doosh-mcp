@@ -4,13 +4,28 @@
   "input": {
     "method": "HEAD",
     "route": "/ping",
-    "auth": { "anonymous": true, "policies": [], "imperative": false }
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
   },
   "expected": {
     "name": "head_ping",
     "description": "HEAD /ping",
-    "inputSchema": { "type": "object", "properties": {}, "required": [] },
-    "annotations": { "readOnlyHint": true, "idempotentHint": true },
-    "auth": { "anonymous": true, "policies": [], "imperative": false }
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
   }
 }

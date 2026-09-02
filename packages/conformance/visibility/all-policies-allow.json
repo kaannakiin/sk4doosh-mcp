@@ -2,11 +2,23 @@
   "kind": "visibility",
   "description": "policy birlesim semantigi AND; hepsi saglaniyorsa gorunur",
   "input": {
-    "auth": { "anonymous": false, "policies": ["A", "B"], "imperative": false },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "A",
+        "B"
+      ],
+      "imperative": false
+    },
     "caller": {
       "identity": "present",
-      "policyResults": { "A": "allow", "B": "allow" }
+      "policyResults": {
+        "A": "allow",
+        "B": "allow"
+      }
     }
   },
-  "expected": { "decision": "allow" }
+  "expected": {
+    "decision": "allow"
+  }
 }

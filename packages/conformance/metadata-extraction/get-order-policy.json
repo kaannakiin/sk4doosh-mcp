@@ -11,7 +11,9 @@
         "name": "id",
         "in": "path",
         "required": true,
-        "schema": { "type": "integer" },
+        "schema": {
+          "type": "integer"
+        },
         "description": "Sipariş id'si"
       }
     ],
@@ -20,21 +22,33 @@
         "schema": {
           "type": "object",
           "properties": {
-            "id": { "type": "integer" },
-            "item": { "type": "string" },
-            "quantity": { "type": "integer" },
-            "owner": { "type": "string" }
+            "id": {
+              "type": "integer"
+            },
+            "item": {
+              "type": "string"
+            },
+            "quantity": {
+              "type": "integer"
+            },
+            "owner": {
+              "type": "string"
+            }
           }
         }
       },
       "404": {}
     },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersRead"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
       "imperative": false
     },
-    "tags": ["orders"]
+    "tags": [
+      "orders"
+    ]
   },
   "expected": {
     "name": "get_order",
@@ -42,14 +56,24 @@
     "inputSchema": {
       "type": "object",
       "properties": {
-        "id": { "type": "integer", "description": "Sipariş id'si" }
+        "id": {
+          "type": "integer",
+          "description": "Sipariş id'si"
+        }
       },
-      "required": ["id"]
+      "required": [
+        "id"
+      ]
     },
-    "annotations": { "readOnlyHint": true, "idempotentHint": true },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersRead"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
       "imperative": false
     }
   }

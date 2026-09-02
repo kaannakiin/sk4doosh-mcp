@@ -1,9 +1,9 @@
 {
   "kind": "visibility",
-  "description": "policy tasimayan kimlik-yeter endpoint kimlikli caginara gorunur",
+  "description": "cerceve beyani yoksa anonimlik bilinmez: koruma cerceve disinda olabilir, karar belirsizdir",
   "input": {
     "auth": {
-      "anonymous": "no",
+      "anonymous": "unknown",
       "policies": [],
       "imperative": false
     },
@@ -12,6 +12,6 @@
     }
   },
   "expected": {
-    "decision": "allow"
+    "decision": "unknown"
   }
 }

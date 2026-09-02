@@ -4,22 +4,46 @@
   "input": {
     "method": "GET",
     "route": "/me",
-    "auth": { "anonymous": false, "policies": [], "imperative": false },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    },
     "responses": {
       "200": {
         "schema": {
           "type": "object",
-          "properties": { "name": { "type": ["string", "null"] } }
+          "properties": {
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
         }
       }
     },
-    "tags": ["orders"]
+    "tags": [
+      "orders"
+    ]
   },
   "expected": {
     "name": "get_me",
     "description": "GET /me",
-    "inputSchema": { "type": "object", "properties": {}, "required": [] },
-    "annotations": { "readOnlyHint": true, "idempotentHint": true },
-    "auth": { "anonymous": false, "policies": [], "imperative": false }
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
   }
 }

@@ -1,9 +1,9 @@
 {
   "kind": "visibility",
-  "description": "kimlik isteyen endpoint kimliksiz caginara gizlidir",
+  "description": "beyan yoksa kimliksiz cagiranda da deny denmez: endpoint gercekten anonim olabilir",
   "input": {
     "auth": {
-      "anonymous": "no",
+      "anonymous": "unknown",
       "policies": [],
       "imperative": false
     },
@@ -12,6 +12,6 @@
     }
   },
   "expected": {
-    "decision": "deny"
+    "decision": "unknown"
   }
 }

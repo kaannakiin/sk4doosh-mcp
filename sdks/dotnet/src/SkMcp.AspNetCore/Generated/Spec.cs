@@ -41,10 +41,12 @@ public sealed record ResponseBody
 
 public sealed record Auth
 {
-    public required bool Anonymous { get; init; }
+    public required Anonymity Anonymous { get; init; }
     public required IReadOnlyList<string> Policies { get; init; }
     public required bool Imperative { get; init; }
 }
+
+public enum Anonymity { Yes, No, Unknown }
 
 public sealed record ToolDefinition
 {

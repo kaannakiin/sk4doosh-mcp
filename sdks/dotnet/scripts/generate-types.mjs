@@ -59,6 +59,11 @@ function csharpType(schema, currentFile) {
   throw new Error(`Unsupported schema node: ${JSON.stringify(schema)}`);
 }
 
+function emitEnum(name, schema) {
+  const members = schema.enum.map((value) => `${pascal(value)}`).join(", ");
+  return `public enum ${name} { ${members} }`;
+}
+
 function emitRecord(name, schema, currentFile) {
   const required = new Set(schema.required ?? []);
   const lines = [`public sealed record ${name}`, "{"];
@@ -85,7 +90,14 @@ for (const [file, schema] of schemas) {
     ]),
   ];
   for (const [name, node] of candidates) {
-    if (inlineTypes[name] || emitted.has(name) || node.type !== "object") {
+    if (inlineTypes[name] || emitted.has(name)) {
+      continue;
+    }
+    if (node.type === "string" && Array.isArray(node.enum)) {
+      emitted.set(name, emitEnum(name, node));
+      continue;
+    }
+    if (node.type !== "object") {
       continue;
     }
     emitted.set(name, emitRecord(name, node, file));

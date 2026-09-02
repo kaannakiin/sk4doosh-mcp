@@ -2,8 +2,21 @@
   "kind": "visibility",
   "description": "kesin policy reddi kimlik belirsizliginin onunde gelir (kural 2, kural 4'ten once)",
   "input": {
-    "auth": { "anonymous": false, "policies": ["A"], "imperative": false },
-    "caller": { "identity": "unknown", "policyResults": { "A": "deny" } }
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "A"
+      ],
+      "imperative": false
+    },
+    "caller": {
+      "identity": "unknown",
+      "policyResults": {
+        "A": "deny"
+      }
+    }
   },
-  "expected": { "decision": "deny" }
+  "expected": {
+    "decision": "deny"
+  }
 }

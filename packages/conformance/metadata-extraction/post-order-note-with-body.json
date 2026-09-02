@@ -11,14 +11,18 @@
         "name": "id",
         "in": "path",
         "required": true,
-        "schema": { "type": "integer" },
+        "schema": {
+          "type": "integer"
+        },
         "description": "Siparis id'si"
       },
       {
         "name": "notify",
         "in": "query",
         "required": false,
-        "schema": { "type": "boolean" },
+        "schema": {
+          "type": "boolean"
+        },
         "description": "Siparis sahibine bildirim gitsin mi"
       }
     ],
@@ -26,17 +30,26 @@
       "schema": {
         "type": "object",
         "properties": {
-          "text": { "type": "string", "description": "Not metni" }
+          "text": {
+            "type": "string",
+            "description": "Not metni"
+          }
         },
-        "required": ["text"]
+        "required": [
+          "text"
+        ]
       }
     },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersRead"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
       "imperative": false
     },
-    "tags": ["orders"]
+    "tags": [
+      "orders"
+    ]
   },
   "expected": {
     "name": "add_order_note",
@@ -44,19 +57,32 @@
     "inputSchema": {
       "type": "object",
       "properties": {
-        "id": { "type": "integer", "description": "Siparis id'si" },
+        "id": {
+          "type": "integer",
+          "description": "Siparis id'si"
+        },
         "notify": {
           "type": "boolean",
           "description": "Siparis sahibine bildirim gitsin mi"
         },
-        "text": { "type": "string", "description": "Not metni" }
+        "text": {
+          "type": "string",
+          "description": "Not metni"
+        }
       },
-      "required": ["id", "text"]
+      "required": [
+        "id",
+        "text"
+      ]
     },
-    "annotations": { "destructiveHint": false },
+    "annotations": {
+      "destructiveHint": false
+    },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersRead"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
       "imperative": false
     }
   }

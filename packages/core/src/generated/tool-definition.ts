@@ -1,3 +1,5 @@
+export type Anonymity = "yes" | "no" | "unknown";
+
 export interface ToolDefinition {
   name: string;
   description: string;
@@ -14,7 +16,7 @@ export interface ToolAnnotations {
   idempotentHint?: boolean;
 }
 export interface Auth {
-  anonymous: boolean;
+  anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
 }

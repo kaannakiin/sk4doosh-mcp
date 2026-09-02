@@ -2,11 +2,23 @@
   "kind": "visibility",
   "description": "AND semantigi: tek policy reddi tum karari reddeder",
   "input": {
-    "auth": { "anonymous": false, "policies": ["A", "B"], "imperative": false },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "A",
+        "B"
+      ],
+      "imperative": false
+    },
     "caller": {
       "identity": "present",
-      "policyResults": { "A": "allow", "B": "deny" }
+      "policyResults": {
+        "A": "allow",
+        "B": "deny"
+      }
     }
   },
-  "expected": { "decision": "deny" }
+  "expected": {
+    "decision": "deny"
+  }
 }

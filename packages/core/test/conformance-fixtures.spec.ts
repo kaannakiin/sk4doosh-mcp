@@ -50,7 +50,7 @@ function catalogErrorCode(run: () => unknown): string {
 }
 
 const unusedAuth: EndpointDescriptor["auth"] = {
-  anonymous: true,
+  anonymous: "yes",
   policies: [],
   imperative: false,
 };

@@ -10,7 +10,7 @@ export interface CallerFacts {
 }
 
 export function evaluateVisibility(auth: Auth, caller: CallerFacts): VisibilityDecision {
-  if (!auth.anonymous && caller.identity === "absent") {
+  if (auth.anonymous === "no" && caller.identity === "absent") {
     return "deny";
   }
   const results = caller.policyResults ?? {};
@@ -20,7 +20,10 @@ export function evaluateVisibility(auth: Auth, caller: CallerFacts): VisibilityD
   if (auth.imperative) {
     return "unknown";
   }
-  if (!auth.anonymous && caller.identity === "unknown") {
+  if (auth.anonymous === "unknown") {
+    return "unknown";
+  }
+  if (auth.anonymous === "no" && caller.identity === "unknown") {
     return "unknown";
   }
   if (auth.policies.some((policy) => results[policy] !== "allow")) {

@@ -10,12 +10,16 @@
         "name": "id",
         "in": "path",
         "required": true,
-        "schema": { "type": "integer" }
+        "schema": {
+          "type": "integer"
+        }
       }
     ],
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersWrite"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
       "imperative": false
     }
   },
@@ -24,13 +28,24 @@
     "description": "DELETE /orders/{id}",
     "inputSchema": {
       "type": "object",
-      "properties": { "id": { "type": "integer" } },
-      "required": ["id"]
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
     },
-    "annotations": { "destructiveHint": true, "idempotentHint": true },
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true
+    },
     "auth": {
-      "anonymous": false,
-      "policies": ["OrdersWrite"],
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
       "imperative": false
     }
   }
