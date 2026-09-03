@@ -1,5 +1,17 @@
+export type SkMcpTemplateErrorCode =
+  | "empty_route"
+  | "body_not_allowed"
+  | "duplicate_argument"
+  | "identity_carrier_argument"
+  | "path_parameter_array"
+  | "argument_collision"
+  | "route_placeholder_mismatch";
+
 export class SkMcpTemplateError extends Error {
-  constructor(message: string) {
+  constructor(
+    readonly code: SkMcpTemplateErrorCode,
+    message: string,
+  ) {
     super(message);
     this.name = "SkMcpTemplateError";
   }

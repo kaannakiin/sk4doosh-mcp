@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Naming;
 using SkMcp.AspNetCore.Spec;
 
@@ -6,7 +7,7 @@ namespace SkMcp.AspNetCore.Tools;
 
 public static class ToolDefinitionFactory
 {
-    public static ToolDefinition Create(EndpointDescriptor endpoint)
+    public static ToolDefinition Create(EndpointDescriptor endpoint, bool strictArguments = true)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
@@ -16,33 +17,51 @@ public static class ToolDefinitionFactory
             Description = string.IsNullOrWhiteSpace(endpoint.Description)
                 ? $"{endpoint.Method} {endpoint.Route}"
                 : endpoint.Description,
-            InputSchema = BuildInputSchema(endpoint),
+            InputSchema = BuildInputSchema(endpoint, strictArguments),
             Annotations = Annotate(endpoint.Method),
             Auth = endpoint.Auth,
         };
     }
 
-    private static JsonObject BuildInputSchema(EndpointDescriptor endpoint)
+    private static JsonObject BuildInputSchema(EndpointDescriptor endpoint, bool strictArguments)
     {
         JsonObject properties = [];
         JsonArray required = [];
+        HashSet<string> claimed = new(StringComparer.Ordinal);
+
+        void Require(string name)
+        {
+            if (claimed.Add(name))
+            {
+                required.Add(name);
+            }
+        }
 
         foreach (Parameter parameter in endpoint.Parameters ?? [])
         {
             properties[parameter.Name] = Describe(parameter.Schema, parameter.Description);
             if (parameter.Required)
             {
-                required.Add(parameter.Name);
+                Require(parameter.Name);
             }
         }
 
+        bool allowsAdditional = false;
         if (endpoint.RequestBody is not null)
         {
             JsonObject body = endpoint.RequestBody.Schema;
+            allowsAdditional = RequestBodyShape.AllowsAdditional(body);
+
             if (body["properties"] is JsonObject bodyProperties)
             {
                 foreach ((string name, JsonNode? schema) in bodyProperties)
                 {
+                    if (strictArguments && properties.ContainsKey(name))
+                    {
+                        throw new SkMcpTemplateException(
+                            SkMcpTemplateException.ArgumentCollision,
+                            $"Body property '{name}' collides with a parameter name on {endpoint.Method} {endpoint.Route}; rename one of them.");
+                    }
                     properties[name] = schema?.DeepClone();
                 }
             }
@@ -50,7 +69,10 @@ public static class ToolDefinitionFactory
             {
                 foreach (JsonNode? name in bodyRequired)
                 {
-                    required.Add(name?.DeepClone());
+                    if (name?.GetValue<string>() is { } entry && properties.ContainsKey(entry))
+                    {
+                        Require(entry);
+                    }
                 }
             }
         }
@@ -60,6 +82,7 @@ public static class ToolDefinitionFactory
             ["type"] = "object",
             ["properties"] = properties,
             ["required"] = required,
+            ["additionalProperties"] = allowsAdditional,
         };
     }
 

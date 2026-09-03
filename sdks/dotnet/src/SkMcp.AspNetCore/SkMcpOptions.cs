@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
 using ModelContextProtocol.Authentication;
 using SkMcp.AspNetCore.Discovery;
@@ -18,6 +19,27 @@ public sealed class SkMcpOptions
     public CacheOptions Cache { get; } = new();
     public ErrorMappingOptions Errors { get; } = new();
     public ResourceServerOptions ResourceServer { get; } = new();
+    public DiagnosticsOptions Diagnostics { get; } = new();
+}
+
+public sealed class DiagnosticsOptions
+{
+    public CatalogSeverity FailOn { get; set; } = CatalogSeverity.Fatal;
+    public HashSet<string> Downgrade { get; } = new(StringComparer.Ordinal);
+    public HashSet<string> Escalate { get; } = new(StringComparer.Ordinal);
+
+    public CatalogSeverity SeverityOf(string code)
+    {
+        if (Escalate.Contains(code))
+        {
+            return CatalogSeverity.Fatal;
+        }
+        if (Downgrade.Contains(code))
+        {
+            return CatalogSeverity.Warning;
+        }
+        return DiagnosticCodes.SeverityOf(code);
+    }
 }
 
 public sealed class ResourceServerOptions
@@ -58,6 +80,8 @@ public sealed class NamingOptions
 public sealed class SchemaOptions
 {
     public Func<PropertyInfo, string>? PropertyName { get; set; }
+    public Func<Type, JsonObject>? EnumSchema { get; set; }
+    public bool DropReadOnlyProperties { get; set; } = true;
 }
 
 public sealed class SyntheticRequestOptions

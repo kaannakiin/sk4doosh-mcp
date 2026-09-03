@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,13 +26,6 @@ public sealed class SkMcpCatalogProvider(
 {
     private const string NewtonsoftInputFormatter =
         "Microsoft.AspNetCore.Mvc.Formatters.NewtonsoftJsonInputFormatter";
-
-    private static readonly HashSet<string> FatalCodes = new(StringComparer.Ordinal)
-    {
-        SkMcpCatalogException.NameCollision,
-        SkMcpCatalogException.AmbiguousSelection,
-        SkMcpCatalogException.InvalidName,
-    };
 
     private sealed record Snapshot(
         CatalogBuildResult Result,
@@ -114,13 +108,17 @@ public sealed class SkMcpCatalogProvider(
             snapshot.Result.Entries.Count, snapshot.Result.Diagnostics.Count);
         foreach (CatalogDiagnostic diagnostic in snapshot.Result.Diagnostics)
         {
-            if (FatalCodes.Contains(diagnostic.Code))
+            switch (options.Value.Diagnostics.SeverityOf(diagnostic.Code))
             {
-                logger.LogError("sk-mcp {Code}: {Message}", diagnostic.Code, diagnostic.Message);
-            }
-            else
-            {
-                logger.LogWarning("sk-mcp {Code}: {Message}", diagnostic.Code, diagnostic.Message);
+                case CatalogSeverity.Fatal:
+                    logger.LogCritical("sk-mcp {Code}: {Message}", diagnostic.Code, diagnostic.Message);
+                    break;
+                case CatalogSeverity.EndpointDropped:
+                    logger.LogError("sk-mcp {Code}: {Message}", diagnostic.Code, diagnostic.Message);
+                    break;
+                default:
+                    logger.LogWarning("sk-mcp {Code}: {Message}", diagnostic.Code, diagnostic.Message);
+                    break;
             }
         }
     }
@@ -144,20 +142,21 @@ public sealed class SkMcpCatalogProvider(
                 "sk-mcp catalog is not attached to routing. Call app.MapSkMcp(...) after routing is configured.");
         }
 
-        (Func<PropertyInfo, string> propertyName, CatalogDiagnostic? namingNote) = ResolvePropertyNaming();
+        (SchemaMapperOptions schema, IReadOnlyList<CatalogDiagnostic> schemaNotes) = ResolveSchemaBinding();
 
         EndpointDataSource endpoints = new CompositeEndpointDataSource(_dataSources);
         bool hasFallbackPolicy = policyProvider is not null
             && policyProvider.GetFallbackPolicyAsync().GetAwaiter().GetResult() is not null;
         CatalogBuildResult result = EndpointCatalog.Build(
             apiDescriptions, endpoints, options.Value.Selection.Default,
-            reservedRoutePrefix: _reservedPrefix, propertyName: propertyName,
+            reservedRoutePrefix: _reservedPrefix, schema: schema,
             hasFallbackPolicy: hasFallbackPolicy,
             prefixMode: options.Value.Naming.PrefixMode,
-            containerPrefix: options.Value.Naming.Prefix);
-        if (namingNote is not null)
+            containerPrefix: options.Value.Naming.Prefix,
+            severityOf: options.Value.Diagnostics.SeverityOf);
+        if (schemaNotes.Count > 0)
         {
-            result = result with { Diagnostics = [namingNote, .. result.Diagnostics] };
+            result = result with { Diagnostics = [.. schemaNotes, .. result.Diagnostics] };
         }
 
         Dictionary<string, CatalogEntry> byName = result.Entries
@@ -168,7 +167,8 @@ public sealed class SkMcpCatalogProvider(
             e.Descriptor.Tags ?? [],
             e.Descriptor.Route)));
         CatalogDiagnostic[] fatal = result.Diagnostics
-            .Where(d => FatalCodes.Contains(d.Code))
+            .Where(d => options.Value.Diagnostics.SeverityOf(d.Code)
+                >= options.Value.Diagnostics.FailOn)
             .ToArray();
         HashSet<string> policyNames = result.Entries
             .SelectMany(e => e.Descriptor.Auth.Policies)
@@ -177,26 +177,90 @@ public sealed class SkMcpCatalogProvider(
         return new Snapshot(result, byName, index, fatal, policyNames);
     }
 
-    private (Func<PropertyInfo, string>, CatalogDiagnostic?) ResolvePropertyNaming()
+    private (SchemaMapperOptions, IReadOnlyList<CatalogDiagnostic>) ResolveSchemaBinding()
     {
-        if (options.Value.Schema.PropertyName is { } declared)
-        {
-            return (declared, null);
-        }
-
+        List<CatalogDiagnostic> notes = [];
         bool newtonsoft = mvcOptions.Value.InputFormatters
             .Any(f => f.GetType().FullName == NewtonsoftInputFormatter);
-        if (newtonsoft)
+        JsonSerializerOptions serializer = jsonOptions.Value.JsonSerializerOptions;
+
+        Func<PropertyInfo, string> propertyName;
+        if (options.Value.Schema.PropertyName is { } declaredName)
         {
-            return (property => property.Name, new CatalogDiagnostic(
+            propertyName = declaredName;
+        }
+        else if (newtonsoft)
+        {
+            propertyName = property => property.Name;
+            notes.Add(new CatalogDiagnostic(
                 "naming_policy_unresolved",
                 "Newtonsoft.Json input formatter detected; body property names use CLR names. Set options.Schema.PropertyName to mirror your ContractResolver if it renames properties."));
         }
+        else
+        {
+            propertyName = property =>
+                property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name
+                ?? serializer.PropertyNamingPolicy?.ConvertName(property.Name)
+                ?? property.Name;
+        }
 
-        JsonSerializerOptions serializer = jsonOptions.Value.JsonSerializerOptions;
-        return (property =>
-            property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name
-            ?? serializer.PropertyNamingPolicy?.ConvertName(property.Name)
-            ?? property.Name, null);
+        Func<Type, JsonObject> enumSchema;
+        Func<PropertyInfo, JsonObject?>? enumOverride = null;
+        if (options.Value.Schema.EnumSchema is { } declaredEnum)
+        {
+            enumSchema = declaredEnum;
+        }
+        else if (newtonsoft)
+        {
+            enumSchema = EnumWireFormat.Unresolved;
+            notes.Add(new CatalogDiagnostic(
+                "enum_format_unresolved",
+                "Newtonsoft.Json input formatter detected; enum wire format cannot be read, so enums accept both the name and the number. Set options.Schema.EnumSchema to pin one form."));
+        }
+        else
+        {
+            enumSchema = enumType => EnumWireFormat.Describe(enumType, serializer);
+            enumOverride = property => PropertyEnumSchema(property, serializer);
+        }
+
+        SchemaMapperOptions mapper = new()
+        {
+            PropertyName = propertyName,
+            EnumSchema = EnumWireFormat.Cached(enumSchema),
+            PropertyEnumOverride = enumOverride,
+            DropReadOnlyProperties = options.Value.Schema.DropReadOnlyProperties,
+        };
+        return (mapper, notes);
+    }
+
+    private static JsonObject? PropertyEnumSchema(PropertyInfo property, JsonSerializerOptions serializer)
+    {
+        Type resolved = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+        if (!resolved.IsEnum
+            || property.GetCustomAttribute<JsonConverterAttribute>() is not { } attribute)
+        {
+            return null;
+        }
+
+        JsonConverter? converter;
+        try
+        {
+            converter = attribute.CreateConverter(resolved)
+                ?? (attribute.ConverterType is { } type
+                    ? Activator.CreateInstance(type) as JsonConverter
+                    : null);
+        }
+        catch (Exception ex) when (ex is MissingMethodException or InvalidOperationException or NotSupportedException)
+        {
+            return null;
+        }
+        if (converter is null)
+        {
+            return null;
+        }
+
+        JsonSerializerOptions scoped = new(serializer);
+        scoped.Converters.Insert(0, converter);
+        return EnumWireFormat.Describe(resolved, scoped);
     }
 }

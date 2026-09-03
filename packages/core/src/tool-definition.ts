@@ -3,17 +3,19 @@ import type {
   ToolAnnotations,
   ToolDefinition,
 } from "./generated/tool-definition.js";
+import { assertUniqueArgumentNames } from "./argument-names.js";
+import type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
+import {
+  allowsAdditional,
+  flattenableBody,
+  type ObjectSchema,
+} from "./json-schema.js";
 import { createToolName } from "./naming.js";
 
-type JsonRecord = Record<string, unknown>;
-
-const isRecord = (value: unknown): value is JsonRecord =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
 function describe(
-  schema: JsonRecord,
+  schema: JsonSchemaObject,
   description: string | undefined,
-): JsonRecord {
+): JsonSchemaObject {
   const clone = structuredClone(schema);
   if (
     description !== undefined &&
@@ -25,39 +27,53 @@ function describe(
   return clone;
 }
 
-function buildInputSchema(endpoint: EndpointDescriptor): JsonRecord {
-  const properties: JsonRecord = {};
-  const required: string[] = [];
+function buildInputSchema(endpoint: EndpointDescriptor): ObjectSchema {
+  const parameters = endpoint.parameters ?? [];
+  const body = endpoint.requestBody?.schema;
+  const flattened = flattenableBody(body);
 
-  for (const parameter of endpoint.parameters ?? []) {
+  assertUniqueArgumentNames(
+    parameters.map((parameter) => parameter.name),
+    flattened === undefined ? [] : Object.keys(flattened.properties),
+  );
+
+  const properties: Record<string, JsonSchemaObject> = {};
+  const required: string[] = [];
+  const claimed = new Set<string>();
+  const require = (name: string): void => {
+    if (!claimed.has(name)) {
+      claimed.add(name);
+      required.push(name);
+    }
+  };
+
+  for (const parameter of parameters) {
     properties[parameter.name] = describe(
       parameter.schema,
       parameter.description,
     );
     if (parameter.required) {
-      required.push(parameter.name);
+      require(parameter.name);
     }
   }
 
-  const body = endpoint.requestBody?.schema;
-  if (body !== undefined) {
-    const bodyProperties = body["properties"];
-    if (isRecord(bodyProperties)) {
-      for (const [name, schema] of Object.entries(bodyProperties)) {
-        properties[name] = structuredClone(schema);
-      }
+  if (flattened !== undefined) {
+    for (const [name, schema] of Object.entries(flattened.properties)) {
+      properties[name] = structuredClone(schema);
     }
-    const bodyRequired = body["required"];
-    if (Array.isArray(bodyRequired)) {
-      for (const name of bodyRequired) {
-        if (typeof name === "string") {
-          required.push(name);
-        }
+    for (const name of flattened.required) {
+      if (Object.hasOwn(properties, name)) {
+        require(name);
       }
     }
   }
 
-  return { type: "object", properties, required };
+  return {
+    type: "object",
+    properties,
+    required,
+    additionalProperties: allowsAdditional(body),
+  };
 }
 
 function annotate(method: string): ToolAnnotations {

@@ -16,7 +16,8 @@
     "inputSchema": {
       "type": "object",
       "properties": {},
-      "required": []
+      "required": [],
+      "additionalProperties": false
     },
     "annotations": {
       "readOnlyHint": true,

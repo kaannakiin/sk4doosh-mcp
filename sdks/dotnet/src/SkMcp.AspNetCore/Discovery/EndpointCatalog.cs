@@ -34,6 +34,7 @@ public sealed record CatalogBuildResult
     public required IReadOnlyList<CatalogDiagnostic> Diagnostics { get; init; }
     public required int Discovered { get; init; }
     public required int Selected { get; init; }
+    public int Dropped { get; init; }
 }
 
 public static partial class EndpointCatalog
@@ -44,12 +45,15 @@ public static partial class EndpointCatalog
         SelectionDefault selectionDefault,
         bool useOperationIds = true,
         string? reservedRoutePrefix = null,
-        Func<PropertyInfo, string>? propertyName = null,
+        SchemaMapperOptions? schema = null,
         bool hasFallbackPolicy = false,
         PrefixMode prefixMode = PrefixMode.Always,
-        Func<string, string?>? containerPrefix = null)
+        Func<string, string?>? containerPrefix = null,
+        Func<string, CatalogSeverity>? severityOf = null)
     {
         ArgumentNullException.ThrowIfNull(apiDescriptions);
+        severityOf ??= DiagnosticCodes.SeverityOf;
+        int dropped = 0;
 
         Dictionary<ActionDescriptor, Endpoint> routed = new();
         foreach (Endpoint endpoint in endpoints?.Endpoints ?? [])
@@ -104,17 +108,20 @@ public static partial class EndpointCatalog
                 if (string.IsNullOrEmpty(api.HttpMethod))
                 {
                     diagnostics.Add(new CatalogDiagnostic(
-                        "missing_http_method", $"{route} has no HTTP method constraint."));
+                        DiagnosticCodes.MissingHttpMethod, $"{route} has no HTTP method constraint."));
+                    dropped += 1;
                     continue;
                 }
 
                 EndpointDescriptor? descriptor = Describe(
-                    api, route, action, metadata, useOperationIds, propertyName, hasFallbackPolicy,
+                    api, route, action, metadata, useOperationIds, schema, hasFallbackPolicy,
                     containerPrefix, diagnostics);
-                if (descriptor is not null)
+                if (descriptor is null)
                 {
-                    candidates.Add((endpoint, descriptor, OverridesFor(action, metadata)));
+                    dropped += 1;
+                    continue;
                 }
+                candidates.Add((endpoint, descriptor, OverridesFor(action, metadata)));
             }
         }
 
@@ -179,12 +186,23 @@ public static partial class EndpointCatalog
                     $"Tool name '{name}' is {name.Length} characters; long names cost agent context and weaken search."));
             }
 
+            (RequestTemplate? template, string? failure) = BuildTemplate(descriptor, diagnostics);
+            if (failure is not null && severityOf(failure) >= CatalogSeverity.EndpointDropped)
+            {
+                dropped += 1;
+                continue;
+            }
+
             entries.Add(new CatalogEntry
             {
-                Tool = Apply(ToolDefinitionFactory.Create(descriptor), overrides),
+                Tool = Apply(
+                    ToolDefinitionFactory.Create(
+                        descriptor,
+                        severityOf(DiagnosticCodes.ArgumentCollision) >= CatalogSeverity.EndpointDropped),
+                    overrides),
                 Descriptor = descriptor,
                 Endpoint = endpoint,
-                Template = BuildTemplate(descriptor, diagnostics),
+                Template = template,
             });
         }
 
@@ -194,6 +212,7 @@ public static partial class EndpointCatalog
             Diagnostics = diagnostics,
             Discovered = discovered,
             Selected = selected,
+            Dropped = dropped,
         };
     }
 
@@ -203,13 +222,20 @@ public static partial class EndpointCatalog
         ActionDescriptor action,
         IReadOnlyList<object> metadata,
         bool useOperationIds,
-        Func<PropertyInfo, string>? propertyName,
+        SchemaMapperOptions? mapper,
         bool hasFallbackPolicy,
         Func<string, string?>? containerPrefix,
         List<CatalogDiagnostic> diagnostics)
     {
         List<Parameter> parameters = [];
         RequestBody? body = null;
+        SchemaMapperOptions schema = (mapper ?? new SchemaMapperOptions
+        {
+            PropertyName = property => property.Name,
+        }) with
+        {
+            Report = diagnostics.Add,
+        };
 
         foreach (ApiParameterDescription parameter in api.ParameterDescriptions)
         {
@@ -218,9 +244,16 @@ public static partial class EndpointCatalog
             {
                 if (parameter.Source == BindingSource.Body)
                 {
+                    if (body is not null)
+                    {
+                        diagnostics.Add(new CatalogDiagnostic(
+                            DiagnosticCodes.MultipleBodyBindings,
+                            $"{api.HttpMethod} {route} declares more than one request body; endpoint skipped."));
+                        return null;
+                    }
                     body = new RequestBody
                     {
-                        Schema = JsonSchemaMapper.Map(parameter.Type ?? typeof(object), propertyName),
+                        Schema = JsonSchemaMapper.Map(parameter.Type ?? typeof(object), schema),
                         Description = ParameterDescription(parameter),
                     };
                 }
@@ -228,7 +261,7 @@ public static partial class EndpointCatalog
                     || parameter.Source == BindingSource.FormFile)
                 {
                     diagnostics.Add(new CatalogDiagnostic(
-                        "unsupported_binding",
+                        DiagnosticCodes.UnsupportedBinding,
                         $"{api.HttpMethod} {route} binds '{parameter.Name}' from a form; form bodies are out of scope, endpoint skipped."));
                     return null;
                 }
@@ -239,9 +272,17 @@ public static partial class EndpointCatalog
                 Name = parameter.Name,
                 In = location,
                 Required = parameter.IsRequired,
-                Schema = JsonSchemaMapper.Map(parameter.Type ?? typeof(string), propertyName),
+                Schema = JsonSchemaMapper.Map(parameter.Type ?? typeof(string), schema),
                 Description = ParameterDescription(parameter),
             });
+        }
+
+        if (body is not null && !RequestBodyShape.IsObject(body.Schema))
+        {
+            diagnostics.Add(new CatalogDiagnostic(
+                DiagnosticCodes.NonObjectBody,
+                $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it could never be invoked, endpoint skipped."));
+            return null;
         }
 
         Dictionary<string, ResponseBody> responses = new(StringComparer.Ordinal);
@@ -255,7 +296,7 @@ public static partial class EndpointCatalog
             bool hasSchema = response.Type is not null && response.Type != typeof(void);
             responses[status] = new ResponseBody
             {
-                Schema = hasSchema ? JsonSchemaMapper.Map(response.Type!, propertyName) : null,
+                Schema = hasSchema ? JsonSchemaMapper.Map(response.Type!, schema) : null,
             };
         }
 
@@ -503,7 +544,7 @@ public static partial class EndpointCatalog
         return RoutePlaceholder().Replace(route, m => "{" + m.Groups[1].Value.TrimStart('*') + "}");
     }
 
-    private static RequestTemplate? BuildTemplate(
+    private static (RequestTemplate? Template, string? FailureCode) BuildTemplate(
         EndpointDescriptor descriptor, List<CatalogDiagnostic> diagnostics)
     {
         try
@@ -511,30 +552,41 @@ public static partial class EndpointCatalog
             List<ParameterBinding> bindings = [];
             foreach (Parameter parameter in descriptor.Parameters ?? [])
             {
-                JsonNode? type = parameter.Schema["type"];
-                bool isArray = type?.GetValue<string>() == "array";
-                JsonNode? scalar = isArray ? parameter.Schema["items"]?["type"] : type;
+                string? type = RequestBodyShape.TypeOf(parameter.Schema["type"]);
+                bool isArray = type == "array";
+                string? scalar = isArray
+                    ? RequestBodyShape.TypeOf(parameter.Schema["items"]?["type"])
+                    : type;
                 bindings.Add(new ParameterBinding(
                     parameter.Name,
                     Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true),
-                    Kind(scalar?.GetValue<string>()),
+                    Kind(scalar),
                     isArray));
             }
 
             List<string>? bodyProperties = null;
-            if (descriptor.RequestBody?.Schema["properties"] is JsonObject properties)
+            bool allowsAdditional = false;
+            if (descriptor.RequestBody?.Schema is { } bodySchema)
             {
-                bodyProperties = [.. properties.Select(p => p.Key)];
+                if (bodySchema["properties"] is JsonObject properties)
+                {
+                    bodyProperties = [.. properties.Select(p => p.Key)];
+                }
+                allowsAdditional = RequestBodyShape.AllowsAdditional(bodySchema);
             }
 
-            return RequestTemplate.Create(
-                new HttpMethod(descriptor.Method), descriptor.Route, bindings, bodyProperties);
+            return (RequestTemplate.Create(
+                new HttpMethod(descriptor.Method), descriptor.Route, bindings, bodyProperties,
+                allowsAdditional), null);
         }
         catch (Exception ex) when (ex is SkMcpTemplateException or ArgumentException or FormatException)
         {
+            string code = ex is SkMcpTemplateException template
+                ? template.Code
+                : DiagnosticCodes.TemplateRejected;
             diagnostics.Add(new CatalogDiagnostic(
-                "template_rejected", $"{descriptor.Method} {descriptor.Route}: {ex.Message}"));
-            return null;
+                code, $"{descriptor.Method} {descriptor.Route}: {ex.Message}"));
+            return (null, code);
         }
     }
 

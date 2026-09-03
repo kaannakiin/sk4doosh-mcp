@@ -35,7 +35,8 @@
       },
       "required": [
         "id"
-      ]
+      ],
+      "additionalProperties": false
     },
     "annotations": {
       "destructiveHint": true,

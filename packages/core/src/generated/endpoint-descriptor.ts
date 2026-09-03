@@ -24,6 +24,18 @@ export interface Parameter {
   description?: string;
 }
 export interface JsonSchemaObject {
+  type?:
+    | ("object" | "array" | "string" | "integer" | "number" | "boolean" | "null")
+    | ("object" | "array" | "string" | "integer" | "number" | "boolean" | "null")[];
+  description?: string;
+  format?: string;
+  properties?: {
+    [k: string]: JsonSchemaObject;
+  };
+  required?: string[];
+  items?: JsonSchemaObject;
+  enum?: unknown[];
+  additionalProperties?: boolean | JsonSchemaObject;
   [k: string]: unknown;
 }
 export interface RequestBody {

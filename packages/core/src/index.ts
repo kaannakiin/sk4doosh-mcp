@@ -9,6 +9,7 @@ export {
 export type {
   SkMcpArgumentErrorCode,
   SkMcpCatalogErrorCode,
+  SkMcpTemplateErrorCode,
 } from "./errors.js";
 export { createRequestTemplate } from "./request-template.js";
 export type {
@@ -30,6 +31,21 @@ export {
 export { combineMarkers, isSelected } from "./selection.js";
 export type { SelectionDefault, SelectionMarker } from "./selection.js";
 export { createToolDefinition } from "./tool-definition.js";
+export { assertUniqueArgumentNames } from "./argument-names.js";
+export {
+  allowsAdditional,
+  flattenableBody,
+  isObjectSchema,
+  typeOf,
+} from "./json-schema.js";
+export type {
+  FlattenableBody,
+  JsonSchemaType,
+  ObjectSchema,
+} from "./json-schema.js";
+export type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
+export { createRequestTemplateFromEndpoint, createTool } from "./tool.js";
+export type { Tool } from "./tool.js";
 export { ToolIndex, tokenize } from "./search.js";
 export type { SearchDocument } from "./search.js";
 export { evaluateVisibility } from "./visibility.js";

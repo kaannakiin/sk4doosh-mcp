@@ -65,6 +65,9 @@ Kaynak eşlemesi: C#'ta `policies` framework'ün deklaratif yetki verisinden, `i
 - Her parametre bir property'dir; property şeması parametrenin `schema`'sıdır.
 - Parametrenin `description`'ı property şemasına yalnız **şema kendi `description`'ını taşımıyorsa** eklenir. Şema kaynağı önceliklidir; parametre açıklaması yedektir.
 - `requestBody.schema.properties` üst seviyeye düzleşir ([karar 002](../../docs/kararlar/002-arguman-eslemesi.md)); `requestBody.schema.required` girdileri `required` listesine eklenir.
+- `inputSchema` kökü `additionalProperties` yazar; değeri `requestBody.schema`'nın serbest olup olmadığından türetilir (bkz. [sema-donusum-kurallari.md](sema-donusum-kurallari.md) Tablo 6). Sabit `false` değildir.
+- `required` yinelenen girdi taşımaz ve `properties`'te bulunmayan bir adı listelemez; parametre adı ile gövde alanı adının çakışması tool üretimini `argument_collision` ile durdurur.
+- `requestBody.description` bilinçli olarak düşürülür: gövde alanları üst seviyeye düzleştiği için ona ait bir yuva kalmaz.
 - `required` sırası: önce parametreler bildirim sırasıyla, sonra body property'leri bildirim sırasıyla. Sıra normatiftir — fixture karşılaştırması dizi sırasına duyarlıdır.
 - Body property adları backend'in **wire** adlarıdır, sınıf üyesi adları değil: şemadaki ad, backend'in gerçekte kabul ettiği JSON anahtarıdır. SDK bunu framework'ün serileştirme ayarından okur (C#: `JsonOptions` naming policy + `[JsonPropertyName]`); okuyamadığı kurulumda (C#: Newtonsoft) tahmin etmez — sınıf üyesi adını kullanır ve `naming_policy_unresolved` tanısı üretir, host bir çözümleyici beyan eder.
 

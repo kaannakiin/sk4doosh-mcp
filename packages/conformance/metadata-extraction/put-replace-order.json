@@ -61,7 +61,8 @@
       "required": [
         "id",
         "item"
-      ]
+      ],
+      "additionalProperties": false
     },
     "annotations": {
       "destructiveHint": true,

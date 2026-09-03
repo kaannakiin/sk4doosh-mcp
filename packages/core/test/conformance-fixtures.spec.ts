@@ -12,6 +12,7 @@ import {
   mapInvokeResult,
   SkMcpArgumentError,
   SkMcpCatalogError,
+  SkMcpTemplateError,
   ToolIndex,
   type BackendResponse,
   type EndpointDescriptor,
@@ -151,10 +152,27 @@ describe("conformance: selection", () => {
   }
 });
 
+function templateErrorCode(run: () => unknown): string {
+  try {
+    run();
+  } catch (error) {
+    expect(error).toBeInstanceOf(SkMcpTemplateError);
+    return (error as SkMcpTemplateError).code;
+  }
+  return expect.unreachable("expected a template error");
+}
+
 describe("conformance: metadata-extraction", () => {
   for (const [file, fixture] of fixturesOf("metadata-extraction")) {
     it(file, () => {
-      expect(createToolDefinition(fixture.input)).toEqual(fixture.expected);
+      const expected = fixture.expected;
+      if ("error" in expected) {
+        expect(templateErrorCode(() => createToolDefinition(fixture.input))).toBe(
+          expected.error,
+        );
+        return;
+      }
+      expect(createToolDefinition(fixture.input)).toEqual(expected);
     });
   }
 });

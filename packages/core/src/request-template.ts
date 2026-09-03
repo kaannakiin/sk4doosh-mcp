@@ -1,3 +1,4 @@
+import { assertUniqueArgumentNames } from "./argument-names.js";
 import { SkMcpTemplateError } from "./errors.js";
 
 export type ParameterLocation = "path" | "query" | "header";
@@ -36,7 +37,10 @@ export function createRequestTemplate(
 ): RequestTemplate {
   const method = input.method.toUpperCase();
   if (!input.route || input.route.trim().length === 0) {
-    throw new SkMcpTemplateError("Route template must not be empty.");
+    throw new SkMcpTemplateError(
+      "empty_route",
+      "Route template must not be empty.",
+    );
   }
   const parameters = input.parameters ?? [];
   const bodyAllowsAdditionalProperties =
@@ -45,41 +49,33 @@ export function createRequestTemplate(
     input.bodyProperties !== undefined || bodyAllowsAdditionalProperties;
 
   if (hasBody && (method === "GET" || method === "HEAD")) {
-    throw new SkMcpTemplateError(`A ${method} request cannot declare a body.`);
+    throw new SkMcpTemplateError(
+      "body_not_allowed",
+      `A ${method} request cannot declare a body.`,
+    );
   }
 
-  const names = new Set<string>();
+  const bodyProperties = assertUniqueArgumentNames(
+    parameters.map((parameter) => parameter.name),
+    input.bodyProperties ?? [],
+  );
+
   for (const parameter of parameters) {
-    if (names.has(parameter.name)) {
-      throw new SkMcpTemplateError(
-        `Duplicate argument name '${parameter.name}'.`,
-      );
-    }
-    names.add(parameter.name);
     if (
       parameter.location === "header" &&
       reservedHeaderNames.has(parameter.name.toLowerCase())
     ) {
       throw new SkMcpTemplateError(
+        "identity_carrier_argument",
         `Header parameter '${parameter.name}' collides with an identity carrier; identity is never an argument.`,
       );
     }
     if (parameter.location === "path" && parameter.isArray) {
       throw new SkMcpTemplateError(
+        "path_parameter_array",
         `Path parameter '${parameter.name}' cannot be an array.`,
       );
     }
-  }
-
-  const bodyProperties = new Set<string>();
-  for (const property of input.bodyProperties ?? []) {
-    if (names.has(property)) {
-      throw new SkMcpTemplateError(
-        `Body property '${property}' collides with a parameter name; rename one of them.`,
-      );
-    }
-    names.add(property);
-    bodyProperties.add(property);
   }
 
   const normalizedRoute = input.route.replace(
@@ -93,6 +89,7 @@ export function createRequestTemplate(
   for (const parameter of parameters) {
     if (parameter.location === "path" && !placeholders.has(parameter.name)) {
       throw new SkMcpTemplateError(
+        "route_placeholder_mismatch",
         `Path parameter '${parameter.name}' has no '{${parameter.name}}' placeholder in route '${input.route}'.`,
       );
     }
@@ -102,6 +99,7 @@ export function createRequestTemplate(
       !parameters.some((p) => p.location === "path" && p.name === placeholder)
     ) {
       throw new SkMcpTemplateError(
+        "route_placeholder_mismatch",
         `Route placeholder '{${placeholder}}' has no declared path parameter.`,
       );
     }

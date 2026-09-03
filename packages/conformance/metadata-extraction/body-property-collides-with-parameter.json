@@ -1,0 +1,28 @@
+{
+  "kind": "metadata-extraction",
+  "description": "path id ile govde id ayni ada sahipse tool uretimi argument_collision ile durur",
+  "input": {
+    "operationId": "ReplaceOrder",
+    "method": "PUT",
+    "route": "/orders/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "item": { "type": "string" }
+        }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": { "error": "argument_collision" }
+}

@@ -132,10 +132,19 @@ public sealed class CatalogFixtureTests
             Assert.Equal("metadata-extraction", root.GetProperty("kind").GetString());
             EndpointDescriptor endpoint = root.GetProperty("input")
                 .Deserialize<EndpointDescriptor>(Neutral)!;
+            JsonElement expectation = root.GetProperty("expected");
+
+            if (expectation.TryGetProperty("error", out JsonElement error))
+            {
+                SkMcpTemplateException failure = Assert.Throws<SkMcpTemplateException>(
+                    () => ToolDefinitionFactory.Create(endpoint));
+                Assert.Equal(error.GetString(), failure.Code);
+                continue;
+            }
 
             JsonNode produced = JsonSerializer.SerializeToNode(
                 ToolDefinitionFactory.Create(endpoint), Neutral)!;
-            JsonNode expected = JsonNode.Parse(root.GetProperty("expected").GetRawText())!;
+            JsonNode expected = JsonNode.Parse(expectation.GetRawText())!;
 
             Assert.True(
                 JsonNode.DeepEquals(expected, produced),

@@ -46,7 +46,9 @@ public sealed partial class RequestTemplate
 
         if (hasBody && (method == HttpMethod.Get || method == HttpMethod.Head))
         {
-            throw new SkMcpTemplateException($"A {method.Method} request cannot declare a body.");
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.BodyNotAllowed,
+                $"A {method.Method} request cannot declare a body.");
         }
 
         HashSet<string> names = new(StringComparer.Ordinal);
@@ -54,17 +56,22 @@ public sealed partial class RequestTemplate
         {
             if (!names.Add(parameter.Name))
             {
-                throw new SkMcpTemplateException($"Duplicate argument name '{parameter.Name}'.");
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.DuplicateArgument,
+                    $"Duplicate argument name '{parameter.Name}'.");
             }
             if (parameter.Location == ParameterLocation.Header
                 && ReservedHeaderNames.Contains(parameter.Name))
             {
                 throw new SkMcpTemplateException(
+                    SkMcpTemplateException.IdentityCarrierArgument,
                     $"Header parameter '{parameter.Name}' collides with an identity carrier; identity is never an argument.");
             }
             if (parameter.Location == ParameterLocation.Path && parameter.IsArray)
             {
-                throw new SkMcpTemplateException($"Path parameter '{parameter.Name}' cannot be an array.");
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.PathParameterArray,
+                    $"Path parameter '{parameter.Name}' cannot be an array.");
             }
         }
 
@@ -76,6 +83,7 @@ public sealed partial class RequestTemplate
                 if (!names.Add(property))
                 {
                     throw new SkMcpTemplateException(
+                        SkMcpTemplateException.ArgumentCollision,
                         $"Body property '{property}' collides with a parameter name; rename one of them.");
                 }
                 body.Add(property);
@@ -91,6 +99,7 @@ public sealed partial class RequestTemplate
             if (parameter.Location == ParameterLocation.Path && !placeholders.Contains(parameter.Name))
             {
                 throw new SkMcpTemplateException(
+                    SkMcpTemplateException.RoutePlaceholderMismatch,
                     $"Path parameter '{parameter.Name}' has no '{{{parameter.Name}}}' placeholder in route '{routeTemplate}'.");
             }
         }
@@ -99,6 +108,7 @@ public sealed partial class RequestTemplate
             if (!parameters.Any(p => p.Location == ParameterLocation.Path && p.Name == placeholder))
             {
                 throw new SkMcpTemplateException(
+                    SkMcpTemplateException.RoutePlaceholderMismatch,
                     $"Route placeholder '{{{placeholder}}}' has no declared path parameter.");
             }
         }

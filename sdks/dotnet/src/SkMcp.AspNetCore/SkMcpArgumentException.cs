@@ -1,6 +1,16 @@
 namespace SkMcp.AspNetCore;
 
-public sealed class SkMcpTemplateException(string message) : Exception(message);
+public sealed class SkMcpTemplateException(string code, string message) : Exception(message)
+{
+    public string Code { get; } = code;
+
+    public const string ArgumentCollision = "argument_collision";
+    public const string DuplicateArgument = "duplicate_argument";
+    public const string IdentityCarrierArgument = "identity_carrier_argument";
+    public const string BodyNotAllowed = "body_not_allowed";
+    public const string PathParameterArray = "path_parameter_array";
+    public const string RoutePlaceholderMismatch = "route_placeholder_mismatch";
+}
 
 public sealed class SkMcpArgumentException(string code, string message) : Exception(message)
 {
