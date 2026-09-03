@@ -4,12 +4,13 @@
 
 ## Package Boundaries
 
-| Package                 | Role                                                                         | Rule                                                                                                                                                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/spec`         | Normative spec: Turkish prose + `schemas/*.schema.json`                      | No runtime code; schemas are the single source of truth for all languages                                                                                                                                 |
-| `packages/conformance`  | Pure JSON fixture corpus + `validate.mjs`                                    | SDKs read JSON from paths; no runtime dependencies may be added here                                                                                                                                      |
-| `packages/core`         | TS reference implementation (including composer/template runtime)            | Types for spec concepts are GENERATED via `pnpm gen`; never write them manually                                                                                                                           |
-| `sdks/*`                | Language SDKs (dotnet, nestjs)                                               | Do not put SDKs under `packages/`; the NestJS synthetic context is created by the SDK — `light-my-request` is FORBIDDEN (it poisons Express, see [decision 004](docs/kararlar/004-nestjs-dogrulamasi.md)) |
+| Package                | Role                                                              | Rule                                                                                                                                                                                                                                                    |
+| ---------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/spec`        | Normative spec: Turkish prose + `schemas/*.schema.json`           | No runtime code; schemas are the single source of truth for all languages                                                                                                                                                                               |
+| `packages/conformance` | Pure JSON fixture corpus + `validate.mjs`                         | SDKs read JSON from paths; no runtime dependencies may be added here                                                                                                                                                                                    |
+| `packages/core`        | TS reference implementation (including composer/template runtime) | Types for spec concepts are GENERATED via `pnpm gen`; never write them manually                                                                                                                                                                         |
+| `packages/excel-mcp`   | Standalone, publishable MCP server that reads local Excel files   | Not a core consumer: `EndpointDescriptor` is HTTP-only. Publishable shape (`bin`, `files`, `publishConfig`, `exports.types → dist`) deviates from the internal convention on purpose; see [decision 005](docs/kararlar/005-excel-okuma-semantikleri.md) |
+| `sdks/*`               | Language SDKs (dotnet, nestjs)                                    | Do not put SDKs under `packages/`; the NestJS synthetic context is created by the SDK — `light-my-request` is FORBIDDEN (it poisons Express, see [decision 004](docs/kararlar/004-nestjs-dogrulamasi.md))                                               |
 
 ## Immutable Rules
 
@@ -39,6 +40,8 @@
 
 - dotnet side: `pnpm turbo run build --filter=@sk-mcp/sdk-dotnet` (the shim invokes `dotnet build`)
 
-- DemoApi: `dotnet run` — located in `sdks/dotnet/samples/DemoApi`; MCP endpoint `/mcp`; demo token: `POST /auth/token {"user":"alice"|"bob"}`
+- DemoApi: `dotnet run` — located in `sdks/dotnet/samples/DemoApi`, listens on `http://127.0.0.1:5178`; MCP endpoint `/mcp` (requires a bearer token); demo shortcut `POST /auth/token {"user":"alice"|"bob"|"carol"}`; full OAuth 2.1 flow via the in-repo `samples/DemoAuthServer` mounted at `/oauth` (PRM at `/.well-known/oauth-protected-resource/mcp`)
+
+- example-agent-client: `node apps/example-agent-client/dist/main.js --scenario smoke|validation-retry|error-envelope`; `SKMCP_AUTH=oauth|token|bearer` (`bearer` reads `SKMCP_TOKEN`, for a real backend), `SKMCP_USER`, `SKMCP_BASE_URL`
 
 - Nest demo: located in `sdks/nestjs/samples/demo-api`; run with `node dist/main.js` (first run `pnpm turbo run build --filter=@sk-mcp/demo-nestjs`); same `/mcp` + `/auth/token` contract

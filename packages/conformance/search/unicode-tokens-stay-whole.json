@@ -3,7 +3,11 @@
   "description": "Turkce harfler kelimenin parcasidir, ayirici degil: 'sipariş' aciklamadaki 'sipariş' ile eslesir, 'siparis' eslesmez",
   "input": {
     "tools": [
-      { "name": "get_order", "description": "Bir sipariş getirir.", "route": "/orders/{id}" },
+      {
+        "name": "get_order",
+        "description": "Bir sipariş getirir.",
+        "route": "/orders/{id}"
+      },
       { "name": "ping", "description": "Sağlık kontrolü.", "route": "/ping" }
     ],
     "query": "sipariş"

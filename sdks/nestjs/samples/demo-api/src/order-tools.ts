@@ -1,11 +1,31 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   createRequestTemplate,
+  isMappedError,
   type DispatchResult,
+  type InvokeResultMapper,
   type OuterRequest,
   type SkMcpDispatcher,
 } from "@sk-mcp/sdk-nestjs";
 import { z } from "zod";
+
+const createOrderShape = {
+  item: z.string(),
+  quantity: z.number().int().min(1).max(100),
+};
+const getOrderShape = { id: z.number().int() };
+const addOrderNoteShape = {
+  id: z.number().int(),
+  text: z.string(),
+  notify: z.boolean().optional(),
+};
+
+const createOrderTemplate = createRequestTemplate({
+  method: "POST",
+  route: "/orders",
+  parameters: [],
+  bodyProperties: ["item", "quantity"],
+});
 
 const getOrderTemplate = createRequestTemplate({
   method: "GET",
@@ -23,46 +43,86 @@ const addOrderNoteTemplate = createRequestTemplate({
   bodyProperties: ["text"],
 });
 
-function toToolResult(result: DispatchResult) {
+interface RequestInfoLike {
+  readonly requestInfo?: {
+    readonly headers: Record<string, string | string[] | undefined>;
+  };
+}
+
+function outerFromExtra(extra: RequestInfoLike): OuterRequest {
   return {
-    content: [
-      {
-        type: "text" as const,
-        text: JSON.stringify({ status: result.status, body: result.body }),
-      },
-    ],
-    isError: result.status >= 400,
+    headers: (extra.requestInfo?.headers ?? {}) as OuterRequest["headers"],
+  };
+}
+
+function toToolResult(
+  mapper: InvokeResultMapper,
+  result: DispatchResult,
+  knownFields: readonly string[],
+) {
+  const outcome = mapper.map(result, knownFields);
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(outcome) }],
+    isError: isMappedError(outcome),
   };
 }
 
 export function registerOrderTools(
   server: McpServer,
   dispatcher: SkMcpDispatcher,
-  outer: OuterRequest,
-) {
+  mapper: InvokeResultMapper,
+): void {
+  server.registerTool(
+    "create_order",
+    {
+      description: "Create an order for an item and quantity.",
+      inputSchema: createOrderShape,
+    },
+    async (args, extra) =>
+      toToolResult(
+        mapper,
+        await dispatcher.dispatch(
+          createOrderTemplate,
+          args,
+          outerFromExtra(extra),
+        ),
+        Object.keys(createOrderShape),
+      ),
+  );
+
   server.registerTool(
     "get_order",
     {
       description: "Get an order by id.",
-      inputSchema: { id: z.number().int() },
+      inputSchema: getOrderShape,
     },
-    async ({ id }) =>
-      toToolResult(await dispatcher.dispatch(getOrderTemplate, { id }, outer)),
+    async ({ id }, extra) =>
+      toToolResult(
+        mapper,
+        await dispatcher.dispatch(
+          getOrderTemplate,
+          { id },
+          outerFromExtra(extra),
+        ),
+        Object.keys(getOrderShape),
+      ),
   );
 
   server.registerTool(
     "add_order_note",
     {
       description: "Add a note to an order; optionally notify the customer.",
-      inputSchema: {
-        id: z.number().int(),
-        text: z.string(),
-        notify: z.boolean().optional(),
-      },
+      inputSchema: addOrderNoteShape,
     },
-    async (args) =>
+    async (args, extra) =>
       toToolResult(
-        await dispatcher.dispatch(addOrderNoteTemplate, args, outer),
+        mapper,
+        await dispatcher.dispatch(
+          addOrderNoteTemplate,
+          args,
+          outerFromExtra(extra),
+        ),
+        Object.keys(addOrderNoteShape),
       ),
   );
 }

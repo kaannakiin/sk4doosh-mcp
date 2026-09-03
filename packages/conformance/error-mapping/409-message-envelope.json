@@ -1,0 +1,17 @@
+{
+  "kind": "error-mapping",
+  "description": "409 message zarfi (errors/problemDetails/nest sekli degil); dogrudan iletilir, retryable false",
+  "input": {
+    "status": 409,
+    "contentType": "application/json",
+    "body": {
+      "message": "Order already has a pending shipment; cancel it before creating a new one."
+    }
+  },
+  "expected": {
+    "error": "conflict",
+    "message": "Order already has a pending shipment; cancel it before creating a new one.",
+    "status": 409,
+    "retryable": false
+  }
+}

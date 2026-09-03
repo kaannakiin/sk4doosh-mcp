@@ -1,0 +1,14 @@
+{
+  "kind": "error-mapping",
+  "description": "302 yonlendirme; location header'i basari sonucuna tasinir",
+  "input": {
+    "status": 302,
+    "headers": {
+      "location": "/orders/42"
+    }
+  },
+  "expected": {
+    "status": 302,
+    "location": "/orders/42"
+  }
+}

@@ -10,16 +10,16 @@ Search-first keşfin üç meta-tool'unu ve `search_tools`'un sıralama kurallar�
 
 ## Meta-tool sözleşmesi
 
-| Tool           | Girdi                                                           | Çıktı                                             |
-| -------------- | --------------------------------------------------------------- | ------------------------------------------------- |
-| `search_tools` | `query: string` (boş olabilir), `limit: int` (1-50, default 20) | `{ total, results: Card[] }`                      |
-| `load_tool`    | `name: string`                                                  | `{ name, description, inputSchema, annotations }` |
-| `invoke_tool`  | `name: string`, `arguments: object`                             | `{ status, body }` veya `{ error, message }`      |
+| Tool           | Girdi                                                           | Çıktı                                                                 |
+| -------------- | --------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `search_tools` | `query: string` (boş olabilir), `limit: int` (1-50, default 20) | `{ total, results: Card[] }`                                          |
+| `load_tool`    | `name: string`                                                  | `{ name, description, inputSchema, annotations }`                     |
+| `invoke_tool`  | `name: string`, `arguments: object`                             | `InvokeSuccess` ya da `CallToolResult.isError = true` + `MappedError` |
 
 - `search_tools`'ta boş sorgu **liste** demektir: tüm tool'lar ada göre ordinal sıralı, `limit`'e kadar. Ayrı bir `list` tool'u yoktur.
 - `load_tool` çıktısında `auth` **yoktur** — [gorunurluk.md](gorunurluk.md) değişmez 3: policy adları agent'a sızmaz. `load_tool` görünürlük filtresine tabidir: gizli tool için cevap var olmayan tool'un cevabıyla aynıdır.
 - `search_tools` ve `load_tool` çıktılarında `authUncertain: true`, kararın `unknown` olduğunu söyler; `total` çağıranın görebildiği tool sayısıdır.
-- `invoke_tool` görünürlük filtresine bakmaz ([gorunurluk.md](gorunurluk.md) değişmez 1); yaptırım gerçek pipeline'dadır. Hata kodları: `unknown_tool`, `not_invocable` ve [arguman-eslemesi.md](arguman-eslemesi.md)'nin argüman kodları.
+- `invoke_tool` görünürlük filtresine bakmaz ([gorunurluk.md](gorunurluk.md) değişmez 1); yaptırım gerçek pipeline'dadır. Sonuç zarfı ve hata kodları (backend'in HTTP hataları, SDK-taraflı `unknown_tool`/`not_invocable` ve [arguman-eslemesi.md](arguman-eslemesi.md)'nin argüman kodları) [hata-eslemesi.md](hata-eslemesi.md)'de normatiftir.
 - Meta-tool'ların kendi açıklamaları İngilizcedir; SDK'nın dilidir, backend'in değil.
 
 ## Kompakt kart
@@ -41,9 +41,17 @@ Sorgu ve belge aynı işlemden geçer:
 
 1. Harf veya rakam olmayan her karakter ayırıcıdır (Unicode; Türkçe harfler kelimenin parçasıdır).
 2. Kelime içi büyük harf sınırı ayırıcıdır — [isimlendirme.md](isimlendirme.md)'nin snake_case kuralıyla aynı: önceki karakter küçük harfse, veya önceki büyük **ve** sonraki küçükse. `GetPortalPresence` → `get`, `portal`, `presence`; `getQRDetails` → `get`, `qr`, `details`.
-3. Tümü küçük harfe çevrilir.
+3. Token **katlanır**: NFD ayrıştırması → birleştirici işaretlerin (`\p{Mn}`) atılması → küçük harfe çevrim → NFC birleştirme. Bu sırayla, ve token bir bütün olarak (karakter karakter değil).
 4. 2 karakterden kısa token atılır.
 5. 3 karakterden uzun ve `s` ile biten token'ın son `s`'i düşer (`orders` → `order`, `notes` → `note`). Başka gövdeleme yoktur.
+
+### Katlamanın gerekçesi ve sınırı
+
+Kural 3'ün "tümü küçük harfe çevrilir" hâli hangi küçültme algoritmasının kullanılacağını söylemiyordu ve iki implementasyon sessizce ayrışıyordu: JS `toLowerCase` tam eşleme yapıp `İ`'yi `i` + U+0307'ye açıyor, .NET `char.ToLowerInvariant` basit eşleme yapıp `i` üretiyordu. `İSTANBUL` açıklaması TS'te `istanbul` sorgusuyla eşleşmiyor, C#'ta eşleşiyordu — ikisi de eski kurala uygundu.
+
+NFD önce uygulandığında `İ` zaten `I` + U+0307'ye ayrışır, birleştirici işaret atılır ve geriye iki tarafın da aynı şekilde küçülttüğü `I` kalır. Aksanlar da aynı adımda düşer (`sipariş` → `siparis`), bu ekli dillerde önek eşleşmesini güçlendirir.
+
+Katlama **dil-bağımsızdır**; Türkçe'ye özel eşleme tablosu yoktur. Bunun bilinçli sınırı: noktasız `ı` ile `i` ayrı harfler olarak kalır ve `ß` `ss`'e açılmaz — .NET'in invariant büyük harf tablosu bu iki karakteri çevirmediği için, katlamayı oraya genişletmek iki SDK'yı ayrıştırırdı. Sınır `dotless-i-stays-distinct.json` fixture'ıyla sabitlenir.
 
 ## Eşleşme: önek
 

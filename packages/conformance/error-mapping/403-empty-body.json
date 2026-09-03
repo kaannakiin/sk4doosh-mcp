@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "govdesi olmayan 403; standart forbidden mesaji uretir",
+  "input": {
+    "status": 403
+  },
+  "expected": {
+    "error": "forbidden",
+    "message": "The caller is authenticated but not permitted to perform this operation (403).",
+    "status": 403,
+    "retryable": false
+  }
+}

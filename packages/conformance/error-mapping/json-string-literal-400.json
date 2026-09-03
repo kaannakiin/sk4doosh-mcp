@@ -1,0 +1,15 @@
+{
+  "kind": "error-mapping",
+  "description": "motokurye BadRequest(\"...\") Accept: application/json yuzunden duz JSON string literal doner",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": "\"callId zorunludur.\""
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "callId zorunludur.",
+    "status": 400,
+    "retryable": false
+  }
+}

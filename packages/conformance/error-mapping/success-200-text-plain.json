@@ -1,0 +1,14 @@
+{
+  "kind": "error-mapping",
+  "description": "200 govdesi text/plain; parse edilmeden ham metin + contentType olarak tasinir",
+  "input": {
+    "status": 200,
+    "contentType": "text/plain",
+    "body": "OK, order created."
+  },
+  "expected": {
+    "status": 200,
+    "body": "OK, order created.",
+    "contentType": "text/plain"
+  }
+}

@@ -39,3 +39,48 @@ export type {
   VisibilityDecision,
 } from "./visibility.js";
 export type { Auth } from "./generated/endpoint-descriptor.js";
+export {
+  builtInRecognizers,
+  codeFor,
+  isMappedError,
+  mapInvokeResult,
+  parseBody,
+  retryableStatuses,
+} from "./error-mapping.js";
+export type {
+  BackendResponse,
+  ErrorMappingOptions,
+  InvokeOutcome,
+  ParsedBody,
+  Recognizer,
+} from "./error-mapping.js";
+export type {
+  BackendErrorCode,
+  FieldError,
+  InvokeResult,
+  InvokeSuccess,
+  MappedError,
+} from "./generated/invoke-result.js";
+export { forwardable, inspect } from "./leak-filter.js";
+export type { LeakRule, LeakVerdict } from "./leak-filter.js";
+export type {
+  CallerScopeKey,
+  CacheTag,
+  CallerScope,
+  CarrierHeaderLookup,
+} from "./cache/caller-scope.js";
+export {
+  digestInput,
+  deriveCallerScopeKey,
+  createCallerScope,
+} from "./cache/caller-scope.js";
+export type {
+  CacheKind,
+  CacheKey,
+  FlatCacheKey,
+  SkMcpCache,
+} from "./cache/cache.js";
+export { flattenCacheKey } from "./cache/cache.js";
+export { MemorySkMcpCache } from "./cache/memory-cache.js";
+export type { MemorySkMcpCacheOptions } from "./cache/memory-cache.js";
+export { SingleFlight } from "./cache/single-flight.js";

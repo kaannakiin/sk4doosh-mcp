@@ -1,0 +1,20 @@
+{
+  "kind": "error-mapping",
+  "description": "duz ProblemDetails (errors sozlugu yok); detail temizse dogrudan iletilir",
+  "input": {
+    "status": 400,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "The 'quantity' field must be greater than zero."
+    }
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "The 'quantity' field must be greater than zero.",
+    "status": 400,
+    "retryable": false
+  }
+}

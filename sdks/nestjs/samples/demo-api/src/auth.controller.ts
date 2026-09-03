@@ -1,14 +1,16 @@
 import { BadRequestException, Body, Controller, Post } from "@nestjs/common";
-import { mintToken } from "./auth.js";
+import { DemoOAuthProvider } from "./oauth-provider.js";
 
 @Controller("auth")
 export class AuthController {
+  constructor(private readonly provider: DemoOAuthProvider) {}
+
   @Post("token")
-  token(@Body() body: { user?: string }) {
+  async token(@Body() body: { user?: string }) {
     const user = body?.user;
     if (user !== "alice" && user !== "bob") {
       throw new BadRequestException("user must be 'alice' or 'bob'");
     }
-    return { token: mintToken(user, user === "alice" ? ["orders.read"] : []) };
+    return { access_token: await this.provider.mintDemoToken(user) };
   }
 }

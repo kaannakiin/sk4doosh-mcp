@@ -1,0 +1,10 @@
+{
+  "kind": "error-mapping",
+  "description": "204 govdesiz basari; yalniz status alani vardir",
+  "input": {
+    "status": 204
+  },
+  "expected": {
+    "status": 204
+  }
+}

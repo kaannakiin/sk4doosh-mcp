@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "govdesi olmayan 415; bad_request status-only fallback",
+  "input": {
+    "status": 415
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "The backend rejected the request (415) without usable details. Check the arguments against the input schema.",
+    "status": 415,
+    "retryable": false
+  }
+}

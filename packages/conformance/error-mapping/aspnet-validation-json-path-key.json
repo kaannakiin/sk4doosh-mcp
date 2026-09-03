@@ -1,0 +1,31 @@
+{
+  "kind": "error-mapping",
+  "description": "aspnet System.Text.Json path anahtari $. onekiyle gelir; strip edilip knownFields ile eslesir",
+  "input": {
+    "status": 400,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+      "title": "One or more validation errors occurred.",
+      "status": 400,
+      "errors": {
+        "$.quantity": [
+          "The JSON value could not be converted to System.Int32. Path: $.quantity | LineNumber: 0 | BytePositionInLine: 45."
+        ]
+      }
+    },
+    "knownFields": ["item", "quantity"]
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      {
+        "name": "quantity",
+        "message": "The JSON value could not be converted to System.Int32. Path: $.quantity | LineNumber: 0 | BytePositionInLine: 45."
+      }
+    ]
+  }
+}

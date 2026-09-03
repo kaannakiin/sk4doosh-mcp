@@ -1,0 +1,26 @@
+{
+  "kind": "error-mapping",
+  "description": "nest ValidationPipe varsayilan dizi mesaji; adsiz alanlara donusur",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "statusCode": 400,
+      "message": [
+        "item should not be empty",
+        "quantity must be a positive number"
+      ],
+      "error": "Bad Request"
+    }
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      { "message": "item should not be empty" },
+      { "message": "quantity must be a positive number" }
+    ]
+  }
+}

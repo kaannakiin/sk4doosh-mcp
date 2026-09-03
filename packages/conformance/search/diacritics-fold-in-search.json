@@ -1,0 +1,16 @@
+{
+  "kind": "search",
+  "description": "Aksanlar katlanir ve simetriktir: 'siparis' sorgusu 'siparis' token'ini bulur, onek eslesmesi kuraliyla birlikte calisir",
+  "input": {
+    "tools": [
+      {
+        "name": "get_order",
+        "description": "Bir siparişi id ile getirir.",
+        "route": "/orders/{id}"
+      },
+      { "name": "ping", "description": "Sağlık kontrolü.", "route": "/ping" }
+    ],
+    "query": "siparis"
+  },
+  "expected": { "names": ["get_order"] }
+}

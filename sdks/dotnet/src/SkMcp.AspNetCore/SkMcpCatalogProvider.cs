@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Search;
 
@@ -17,8 +19,9 @@ public sealed class SkMcpCatalogProvider(
     IOptions<SkMcpOptions> options,
     IOptions<JsonOptions> jsonOptions,
     IOptions<MvcOptions> mvcOptions,
+    ISkMcpCache cache,
     ILogger<SkMcpCatalogProvider> logger,
-    IAuthorizationPolicyProvider? policyProvider = null)
+    IAuthorizationPolicyProvider? policyProvider = null) : ISkMcpCatalogChangeSource
 {
     private const string NewtonsoftInputFormatter =
         "Microsoft.AspNetCore.Mvc.Formatters.NewtonsoftJsonInputFormatter";
@@ -34,12 +37,15 @@ public sealed class SkMcpCatalogProvider(
         CatalogBuildResult Result,
         IReadOnlyDictionary<string, CatalogEntry> ByName,
         ToolIndex Index,
-        IReadOnlyList<CatalogDiagnostic> Fatal);
+        IReadOnlyList<CatalogDiagnostic> Fatal,
+        IReadOnlySet<string> PolicyNames);
 
     private readonly object _gate = new();
     private ICollection<EndpointDataSource>? _dataSources;
     private string? _reservedPrefix;
     private Snapshot? _snapshot;
+    private CancellationTokenSource _changeSource = new();
+    private long _generation;
 
     public void Attach(ICollection<EndpointDataSource> dataSources, string reservedPrefix)
     {
@@ -50,6 +56,27 @@ public sealed class SkMcpCatalogProvider(
             _reservedPrefix = reservedPrefix;
             _snapshot = null;
         }
+    }
+
+    public long Generation => Interlocked.Read(ref _generation);
+
+    public IChangeToken GetChangeToken() => new CancellationChangeToken(Volatile.Read(ref _changeSource).Token);
+
+    public IReadOnlySet<string> PolicyNames => Current.PolicyNames;
+
+    public async ValueTask ReloadAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            _snapshot = Build();
+            Interlocked.Increment(ref _generation);
+        }
+        await cache.ClearAsync(cancellationToken);
+
+        CancellationTokenSource next = new();
+        CancellationTokenSource previous = Interlocked.Exchange(ref _changeSource, next);
+        previous.Cancel();
+        previous.Dispose();
     }
 
     public CatalogBuildResult Result => Current.Result;
@@ -143,8 +170,11 @@ public sealed class SkMcpCatalogProvider(
         CatalogDiagnostic[] fatal = result.Diagnostics
             .Where(d => FatalCodes.Contains(d.Code))
             .ToArray();
+        HashSet<string> policyNames = result.Entries
+            .SelectMany(e => e.Descriptor.Auth.Policies)
+            .ToHashSet(StringComparer.Ordinal);
 
-        return new Snapshot(result, byName, index, fatal);
+        return new Snapshot(result, byName, index, fatal, policyNames);
     }
 
     private (Func<PropertyInfo, string>, CatalogDiagnostic?) ResolvePropertyNaming()

@@ -1,0 +1,17 @@
+{
+  "kind": "error-mapping",
+  "description": "mesaj icinde connection string deseni (Server=...;Password=...;) sizinti filtresine takilir",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "message": "Failed: Server=db01;Database=Orders;User Id=sa;Password=Sup3rSecret;"
+    }
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "The backend rejected the request (400) without usable details. Check the arguments against the input schema.",
+    "status": 400,
+    "retryable": false
+  }
+}

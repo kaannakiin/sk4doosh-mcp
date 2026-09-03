@@ -1,0 +1,20 @@
+{
+  "kind": "search",
+  "description": "Noktali I dil-bagimsiz katlanir: aciklamadaki 'ISTANBUL' token'i 'istanbul' sorgusuyla eslesir. JS toLowerCase U+0307 uretirdi, C# char.ToLowerInvariant uretmezdi; NFD ayristirmasi ikisini de ayni sonuca getirir",
+  "input": {
+    "tools": [
+      {
+        "name": "get_city_report",
+        "description": "İSTANBUL sube raporlari",
+        "route": "/Rest/City/Report"
+      },
+      {
+        "name": "get_stock",
+        "description": "depo stogu",
+        "route": "/Rest/Stock/Get"
+      }
+    ],
+    "query": "istanbul"
+  },
+  "expected": { "names": ["get_city_report"] }
+}

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using SkMcp.AspNetCore.Discovery;
 
 namespace SkMcp.AspNetCore.Visibility.Probe;
@@ -18,23 +19,24 @@ public interface IProbeEvaluator
     Task<VisibilityDecision> ProbeAsync(CatalogEntry entry, HttpRequest? outerRequest, CancellationToken cancellationToken);
 }
 
-public sealed class ProbeEvaluator(
-    SkMcpDispatcher dispatcher,
-    IOptions<SkMcpOptions> options,
-    ILogger<ProbeEvaluator> logger) : IProbeEvaluator
+public sealed class ProbeEvaluator : IProbeEvaluator
 {
-    private sealed class CallerDecisions
-    {
-        public required DateTimeOffset Expires { get; init; }
-        public ConcurrentDictionary<string, VisibilityDecision> Tools { get; } = new(StringComparer.Ordinal);
-        public long LastUsed;
-    }
-
+    private readonly SkMcpDispatcher _dispatcher;
+    private readonly IOptions<SkMcpOptions> _options;
+    private readonly ILogger<ProbeEvaluator> _logger;
     private readonly ConcurrentDictionary<string, string> _disabled = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, CallerDecisions> _cache = new(StringComparer.Ordinal);
-    private long _clock;
 
-
+    public ProbeEvaluator(
+        SkMcpDispatcher dispatcher,
+        IOptions<SkMcpOptions> options,
+        ILogger<ProbeEvaluator> logger,
+        ISkMcpCatalogChangeSource changeSource)
+    {
+        _dispatcher = dispatcher;
+        _options = options;
+        _logger = logger;
+        ChangeToken.OnChange(changeSource.GetChangeToken, () => _disabled.Clear());
+    }
 
     public bool CanProbe(CatalogEntry entry)
     {
@@ -57,63 +59,17 @@ public sealed class ProbeEvaluator(
             return VisibilityDecision.Unknown;
         }
 
-        TimeSpan lifetime = options.Value.Visibility.ProbeCacheLifetime;
-        string? callerKey = lifetime > TimeSpan.Zero ? CallerKey(outerRequest) : null;
-        if (callerKey is not null && _cache.TryGetValue(callerKey, out CallerDecisions? caller))
-        {
-            if (caller.Expires <= DateTimeOffset.UtcNow)
-            {
-                _cache.TryRemove(callerKey, out _);
-            }
-            else
-            {
-                Volatile.Write(ref caller.LastUsed, Interlocked.Increment(ref _clock));
-                if (caller.Tools.TryGetValue(entry.Tool.Name, out VisibilityDecision cached))
-                {
-                    return cached;
-                }
-            }
-        }
-
         RouteEndpoint endpoint = (RouteEndpoint)entry.Endpoint!;
-        string path = ProbePath(endpoint.RoutePattern, options.Value.Visibility.ProbeValues);
-        ProbeOutcome outcome = await dispatcher.ProbeAsync(
+        string path = ProbePath(endpoint.RoutePattern, _options.Value.Visibility.ProbeValues);
+        ProbeOutcome outcome = await _dispatcher.ProbeAsync(
             new HttpMethod(entry.Descriptor.Method), path, outerRequest, cancellationToken);
-
-        void Remember(VisibilityDecision decision)
-        {
-            if (callerKey is null)
-            {
-                return;
-            }
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            CallerDecisions target = _cache.AddOrUpdate(
-                callerKey,
-                _ => new CallerDecisions
-                {
-                    Expires = now + lifetime,
-                    LastUsed = Interlocked.Increment(ref _clock),
-                },
-                (_, existing) => existing.Expires > now
-                    ? existing
-                    : new CallerDecisions
-                    {
-                        Expires = now + lifetime,
-                        LastUsed = Interlocked.Increment(ref _clock),
-                    });
-            target.Tools[entry.Tool.Name] = decision;
-            Volatile.Write(ref target.LastUsed, Interlocked.Increment(ref _clock));
-            Prune(now);
-        }
 
         if (outcome.Status is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
         {
-            Remember(VisibilityDecision.Deny);
             return VisibilityDecision.Deny;
         }
         if (outcome.ShortCircuited && outcome.Status < 400)
         {
-            Remember(VisibilityDecision.Allow);
             return VisibilityDecision.Allow;
         }
 
@@ -122,52 +78,11 @@ public sealed class ProbeEvaluator(
             : "response came back without the short-circuit marker, so the handler may have run";
         if (_disabled.TryAdd(entry.Tool.Name, reason))
         {
-            logger.LogWarning(
+            _logger.LogWarning(
                 "sk-mcp probe disabled for '{Tool}' ({Method} {Path} -> {Status}): {Reason}",
                 entry.Tool.Name, entry.Descriptor.Method, path, outcome.Status, reason);
         }
         return VisibilityDecision.Unknown;
-    }
-
-    private void Prune(DateTimeOffset now)
-    {
-        foreach ((string key, CallerDecisions entry) in _cache)
-        {
-            if (entry.Expires <= now)
-            {
-                _cache.TryRemove(key, out _);
-            }
-        }
-
-        int max = Math.Max(1, options.Value.Visibility.ProbeCacheMaxCallers);
-        int excess = _cache.Count - max;
-        if (excess <= 0)
-        {
-            return;
-        }
-        foreach (KeyValuePair<string, CallerDecisions> pair in _cache
-            .OrderBy(entry => Volatile.Read(ref entry.Value.LastUsed))
-            .Take(excess)
-            .ToList())
-        {
-            _cache.TryRemove(pair.Key, out _);
-        }
-    }
-
-    private string CallerKey(HttpRequest? outerRequest)
-    {
-        StringBuilder identity = new();
-        foreach (string carrier in options.Value.Identity.Carriers.OrderBy(c => c, StringComparer.OrdinalIgnoreCase))
-        {
-            identity.Append(carrier).Append('=');
-            if (outerRequest is not null && outerRequest.Headers.TryGetValue(carrier, out var value))
-            {
-                identity.Append(value.ToString());
-            }
-            identity.Append('\n');
-        }
-        byte[] digest = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(identity.ToString()));
-        return Convert.ToHexString(digest);
     }
 
     private static string ProbePath(RoutePattern pattern, IReadOnlyDictionary<string, string> overrides)

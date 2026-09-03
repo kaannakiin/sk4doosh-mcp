@@ -1,0 +1,18 @@
+{
+  "kind": "error-mapping",
+  "description": "content-type hic yok; JSON parse yine de denenir ve basarili olur",
+  "input": {
+    "status": 200,
+    "body": {
+      "id": 7,
+      "status": "created"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body": {
+      "id": 7,
+      "status": "created"
+    }
+  }
+}

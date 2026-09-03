@@ -10,9 +10,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.18.0"
+    "@modelcontextprotocol/sdk": "^1.30.0"
   },
   "devDependencies": {
+    "@sk-mcp/core": "workspace:*",
     "@sk-mcp/eslint-config": "workspace:*",
     "@sk-mcp/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",

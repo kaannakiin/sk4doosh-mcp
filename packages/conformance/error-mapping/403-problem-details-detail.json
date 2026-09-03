@@ -1,0 +1,20 @@
+{
+  "kind": "error-mapping",
+  "description": "403 asimetriktir: detail sizinti filtresinden temiz geciyorsa iletilir",
+  "input": {
+    "status": 403,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+      "title": "Forbidden",
+      "status": 403,
+      "detail": "This order belongs to a different caller."
+    }
+  },
+  "expected": {
+    "error": "forbidden",
+    "message": "This order belongs to a different caller.",
+    "status": 403,
+    "retryable": false
+  }
+}

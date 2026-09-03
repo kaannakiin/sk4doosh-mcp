@@ -15,6 +15,7 @@ const k1 = 1.2;
 const b = 0.75;
 
 const letterOrDigit = /[\p{L}\p{N}]/u;
+const nonSpacingMark = /\p{Mn}/gu;
 const upper = /\p{Lu}/u;
 const lower = /\p{Ll}/u;
 
@@ -24,14 +25,21 @@ interface IndexedDocument {
   readonly length: number;
 }
 
+export function foldToken(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(nonSpacingMark, "")
+    .toLowerCase()
+    .normalize("NFC");
+}
+
 function flush(tokens: string[], current: string): void {
-  if (current.length < 2) {
+  const folded = foldToken(current);
+  if (folded.length < 2) {
     return;
   }
   const token =
-    current.length > 3 && current.endsWith("s")
-      ? current.slice(0, -1)
-      : current;
+    folded.length > 3 && folded.endsWith("s") ? folded.slice(0, -1) : folded;
   tokens.push(token);
 }
 
@@ -59,7 +67,7 @@ export function tokenize(text: string | undefined): string[] {
       flush(tokens, current);
       current = "";
     }
-    current += character.toLowerCase();
+    current += character;
   }
   flush(tokens, current);
   return tokens;

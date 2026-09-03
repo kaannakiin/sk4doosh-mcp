@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "govdesi olmayan 400; hicbir recognizer eslesmez, status-only fallback calisir",
+  "input": {
+    "status": 400
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "The backend rejected the request (400) without usable details. Check the arguments against the input schema.",
+    "status": 400,
+    "retryable": false
+  }
+}

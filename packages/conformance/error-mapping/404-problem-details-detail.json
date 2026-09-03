@@ -1,0 +1,20 @@
+{
+  "kind": "error-mapping",
+  "description": "duz ProblemDetails 404; detail sizinti filtresinden temiz geciyorsa dogrudan iletilir",
+  "input": {
+    "status": 404,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+      "title": "Not Found",
+      "status": 404,
+      "detail": "No order matches id 4821."
+    }
+  },
+  "expected": {
+    "error": "not_found",
+    "message": "No order matches id 4821.",
+    "status": 404,
+    "retryable": false
+  }
+}

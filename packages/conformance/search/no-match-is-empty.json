@@ -3,7 +3,11 @@
   "description": "hicbir terim eslesmiyorsa sonuc bostur; skor sifir olan belge donmez",
   "input": {
     "tools": [
-      { "name": "get_order", "description": "Bir siparisi getirir.", "route": "/orders/{id}" }
+      {
+        "name": "get_order",
+        "description": "Bir siparisi getirir.",
+        "route": "/orders/{id}"
+      }
     ],
     "query": "zzz"
   },

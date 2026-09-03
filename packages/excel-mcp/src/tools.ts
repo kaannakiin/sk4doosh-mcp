@@ -1,0 +1,484 @@
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
+import { asExcelError, SkMcpExcelError } from "./errors.js";
+import { limits } from "./limits.js";
+import {
+  formatFor,
+  listWorkbooks,
+  resolveWorkbookPath,
+  type WorkbookRoot,
+} from "./paths.js";
+import { findInSheet, readSheet } from "./read-sheet.js";
+import { collectValidations } from "./validations.js";
+import {
+  csvReportOf,
+  describeDocument,
+  loadDocument,
+  type LoadedDocument,
+} from "./document.js";
+import { aggregateSheet } from "./aggregate.js";
+import type { CsvReport, DelimiterName, EncodingName } from "./csv.js";
+import { selectWorksheet } from "./workbook.js";
+
+const readOnly = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
+const filePath = z
+  .string()
+  .describe(
+    "Workbook path relative to the server root, as returned by list_workbooks.",
+  );
+const sheetName = z
+  .string()
+  .optional()
+  .describe("Worksheet name. Defaults to the first visible sheet.");
+const columnRef = z
+  .string()
+  .describe(
+    "Header text of the column, or its A1 letter such as C. Header text is matched case- and accent-insensitively.",
+  );
+
+export const toolDefinitions = {
+  list_workbooks: {
+    description:
+      "List readable .xlsx and .xlsm files under the server root. Returns filePath values that other tools accept verbatim.",
+    inputSchema: z.object({
+      subdirectory: z
+        .string()
+        .optional()
+        .describe("Folder under the root to list."),
+      pattern: z
+        .string()
+        .optional()
+        .describe("Glob over the relative path, for example q1/*.xlsx."),
+      maxResults: z.int().min(1).max(limits.maxListResults).optional(),
+    }),
+    annotations: readOnly,
+  },
+  describe_workbook: {
+    description:
+      "Summarise a workbook: sheets, used ranges, merge and validation counts, formula cache coverage and defined names. Call this before reading data.",
+    inputSchema: z.object({
+      filePath,
+      includeDefinedNames: z.boolean().optional(),
+      delimiter: z
+        .enum(["comma", "semicolon", "tab", "pipe"])
+        .optional()
+        .describe("CSV field separator. Sniffed and echoed back when omitted."),
+      encoding: z
+        .enum([
+          "utf-8",
+          "utf-16le",
+          "utf-16be",
+          "windows-1254",
+          "iso-8859-9",
+          "windows-1252",
+        ])
+        .optional()
+        .describe(
+          "CSV text encoding. Detected from the byte-order mark, else utf-8.",
+        ),
+    }),
+    annotations: readOnly,
+  },
+  read_sheet: {
+    description:
+      "Read a rectangular cell range as a compact grid: hoisted column headers plus row arrays. Pass nextCursor back to continue a truncated read.",
+    inputSchema: z.object({
+      filePath,
+      sheetName,
+      range: z
+        .string()
+        .optional()
+        .describe(
+          "A1 range such as B2:D40, B:D or 2:40. Defaults to the used range.",
+        ),
+      cursor: z
+        .string()
+        .optional()
+        .describe(
+          "Opaque token from a previous response. Cannot be combined with sheetName or range.",
+        ),
+      maxCells: z.int().min(1).max(limits.maxCellsHard).optional(),
+      valueMode: z.enum(["values", "formulas", "both"]).optional(),
+      mergedCells: z.enum(["master", "repeat"]).optional(),
+      headerRow: z
+        .int()
+        .min(0)
+        .optional()
+        .describe("Row treated as headers. 0 disables."),
+      includeHyperlinks: z.boolean().optional(),
+      delimiter: z
+        .enum(["comma", "semicolon", "tab", "pipe"])
+        .optional()
+        .describe("CSV field separator. Sniffed and echoed back when omitted."),
+      encoding: z
+        .enum([
+          "utf-8",
+          "utf-16le",
+          "utf-16be",
+          "windows-1254",
+          "iso-8859-9",
+          "windows-1252",
+        ])
+        .optional()
+        .describe(
+          "CSV text encoding. Detected from the byte-order mark, else utf-8.",
+        ),
+    }),
+    annotations: readOnly,
+  },
+  get_merged_ranges: {
+    description: "List the merged cell ranges of a worksheet.",
+    inputSchema: z.object({ filePath, sheetName }),
+    annotations: readOnly,
+  },
+  get_data_validations: {
+    description:
+      "List the data validation rules of a worksheet, grouped back into rectangular ranges.",
+    inputSchema: z.object({ filePath, sheetName }),
+    annotations: readOnly,
+  },
+  aggregate_sheet: {
+    description:
+      "Group rows and compute totals, averages, extremes and counts over a sheet in one call. Use this instead of paging a large sheet. Columns are named by header text or by A1 letter.",
+    inputSchema: z.object({
+      filePath,
+      sheetName,
+      range: z.string().optional(),
+      groupBy: z
+        .array(columnRef)
+        .max(limits.maxMetrics)
+        .optional()
+        .describe("Columns to group by. Omit for a single whole-range total."),
+      metrics: z
+        .array(
+          z.object({
+            fn: z.enum([
+              "count",
+              "countValues",
+              "countDistinct",
+              "sum",
+              "avg",
+              "min",
+              "max",
+              "stddev",
+            ]),
+            column: columnRef.optional(),
+          }),
+        )
+        .min(1)
+        .max(limits.maxMetrics),
+      where: z
+        .array(
+          z.object({
+            column: columnRef,
+            op: z.enum([
+              "eq",
+              "ne",
+              "lt",
+              "lte",
+              "gt",
+              "gte",
+              "contains",
+              "startsWith",
+              "endsWith",
+              "in",
+              "between",
+              "isEmpty",
+              "isNotEmpty",
+              "isError",
+              "isNumber",
+              "isText",
+            ]),
+            value: z.union([z.string(), z.number(), z.boolean()]).optional(),
+            values: z
+              .array(z.union([z.string(), z.number(), z.boolean()]))
+              .min(1)
+              .max(limits.maxInValues)
+              .optional(),
+          }),
+        )
+        .max(limits.maxConditions)
+        .optional()
+        .describe(
+          "Row filter. A cell of a different kind from the operand never matches and is counted as skipped.",
+        ),
+      match: z.enum(["all", "any"]).optional(),
+      headerRow: z.int().min(0).optional(),
+      columnMode: z.enum(["auto", "header", "letter"]).optional(),
+      caseSensitive: z.boolean().optional(),
+      coerceText: z
+        .boolean()
+        .optional()
+        .describe(
+          'Treat numeric text such as "1234.50" as a number. Off by default.',
+        ),
+      mergedCells: z.enum(["master", "repeat"]).optional(),
+      orderBy: z.enum(["group", "metric"]).optional(),
+      orderByMetric: z.int().min(1).max(limits.maxMetrics).optional(),
+      descending: z.boolean().optional(),
+      maxGroups: z.int().min(1).max(limits.maxGroupsHard).optional(),
+    }),
+    annotations: readOnly,
+  },
+  find_in_sheet: {
+    description:
+      "Find cells whose value or formula matches a query. Use this instead of paging a large sheet.",
+    inputSchema: z.object({
+      filePath,
+      query: z.string().min(1),
+      sheetName,
+      matchMode: z.enum(["contains", "exact", "regex"]).optional(),
+      caseSensitive: z.boolean().optional(),
+      searchIn: z.enum(["values", "formulas", "both"]).optional(),
+      range: z.string().optional(),
+      maxResults: z.int().min(1).max(limits.maxFindResults).optional(),
+      delimiter: z
+        .enum(["comma", "semicolon", "tab", "pipe"])
+        .optional()
+        .describe("CSV field separator. Sniffed and echoed back when omitted."),
+      encoding: z
+        .enum([
+          "utf-8",
+          "utf-16le",
+          "utf-16be",
+          "windows-1254",
+          "iso-8859-9",
+          "windows-1252",
+        ])
+        .optional()
+        .describe(
+          "CSV text encoding. Detected from the byte-order mark, else utf-8.",
+        ),
+    }),
+    annotations: readOnly,
+  },
+} as const;
+
+export type ToolName = keyof typeof toolDefinitions;
+
+type ToolInput<K extends ToolName> = z.infer<
+  (typeof toolDefinitions)[K]["inputSchema"]
+>;
+
+export type ToolHandlers = {
+  readonly [K in ToolName]: (args: ToolInput<K>) => Promise<CallToolResult>;
+};
+
+function json(payload: unknown): CallToolResult {
+  return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+}
+
+export function toToolError(error: SkMcpExcelError): CallToolResult {
+  return {
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({
+          error: error.code,
+          message: error.message,
+          ...(error.recovery === undefined ? {} : { recovery: error.recovery }),
+        }),
+      },
+    ],
+    isError: true,
+  };
+}
+
+export function guard<A>(
+  handler: (args: A) => Promise<CallToolResult>,
+): (args: A) => Promise<CallToolResult> {
+  return async (args) => {
+    try {
+      return await handler(args);
+    } catch (error) {
+      return toToolError(asExcelError(error));
+    }
+  };
+}
+
+export function createHandlers(root: WorkbookRoot): ToolHandlers {
+  const openFor = async (
+    path: string,
+    csv: { delimiter?: DelimiterName; encoding?: EncodingName } = {},
+  ) => loadDocument(await resolveWorkbookPath(root, path), csv);
+
+  const openXlsx = async (path: string, tool: string) => {
+    const resolved = await resolveWorkbookPath(root, path);
+    const format = formatFor(resolved);
+    if (format !== "xlsx") {
+      throw new SkMcpExcelError(
+        "unsupported_for_format",
+        `${tool} is not available for ${format} files; the format cannot carry that information.`,
+        "Call describe_workbook and read the capabilities block.",
+      );
+    }
+    const loaded = await loadDocument(resolved);
+    if (loaded.format !== "xlsx") {
+      throw new SkMcpExcelError(
+        "unsupported_for_format",
+        `${tool} needs a workbook.`,
+      );
+    }
+    return loaded;
+  };
+
+  const rejectForCsv = (
+    loaded: LoadedDocument,
+    field: string,
+    value: unknown,
+    filePath: string,
+  ) => {
+    if (loaded.format === "csv" && value !== undefined) {
+      throw new SkMcpExcelError(
+        "unsupported_for_format",
+        `CSV files cannot carry that information; ${field} is not available for '${filePath}'.`,
+        `Omit ${field}, or read an .xlsx file.`,
+      );
+    }
+  };
+
+  const withCsv = <T extends object>(
+    payload: T,
+    report: CsvReport | undefined,
+  ) => (report === undefined ? payload : { ...payload, csv: report });
+
+  return {
+    list_workbooks: guard(async (args) => {
+      const listing = await listWorkbooks(root, {
+        ...(args.subdirectory === undefined
+          ? {}
+          : { subdirectory: args.subdirectory }),
+        ...(args.pattern === undefined ? {} : { pattern: args.pattern }),
+        maxResults: args.maxResults ?? limits.defaultListResults,
+      });
+      return json({ root: root.real, ...listing });
+    }),
+
+    describe_workbook: guard(async (args) => {
+      const loaded = await openFor(args.filePath, {
+        ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
+        ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+      });
+      return json(
+        describeDocument(
+          loaded,
+          {
+            filePath: args.filePath,
+            sizeBytes: loaded.sizeBytes,
+            modifiedAt: loaded.modifiedAt,
+          },
+          args.includeDefinedNames ?? true,
+        ),
+      );
+    }),
+
+    read_sheet: guard(async (args) => {
+      const loaded = await openFor(args.filePath, {
+        ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
+        ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+      });
+      rejectForCsv(loaded, "valueMode", args.valueMode, args.filePath);
+      rejectForCsv(loaded, "mergedCells", args.mergedCells, args.filePath);
+      rejectForCsv(
+        loaded,
+        "includeHyperlinks",
+        args.includeHyperlinks === true ? true : undefined,
+        args.filePath,
+      );
+      return json(
+        withCsv(
+          readSheet(loaded, {
+            ...(args.sheetName === undefined
+              ? {}
+              : { sheetName: args.sheetName }),
+            ...(args.range === undefined ? {} : { range: args.range }),
+            ...(args.cursor === undefined ? {} : { cursor: args.cursor }),
+            maxCells: args.maxCells ?? limits.maxCellsDefault,
+            valueMode: args.valueMode ?? "values",
+            mergedCells: args.mergedCells ?? "master",
+            headerRow: args.headerRow ?? 1,
+            includeHyperlinks: args.includeHyperlinks ?? false,
+          }),
+          csvReportOf(loaded),
+        ),
+      );
+    }),
+
+    get_merged_ranges: guard(async (args) => {
+      const loaded = await openXlsx(args.filePath, "get_merged_ranges");
+      const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+      const merges = worksheet.model.merges;
+      return json({ sheet: worksheet.name, merges, count: merges.length });
+    }),
+
+    get_data_validations: guard(async (args) => {
+      const loaded = await openXlsx(args.filePath, "get_data_validations");
+      const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+      return json(collectValidations(worksheet));
+    }),
+
+    aggregate_sheet: guard(async (args) => {
+      const loaded = await openFor(args.filePath);
+      return json(
+        withCsv(
+          aggregateSheet(loaded, {
+            ...(args.sheetName === undefined
+              ? {}
+              : { sheetName: args.sheetName }),
+            ...(args.range === undefined ? {} : { range: args.range }),
+            ...(args.groupBy === undefined ? {} : { groupBy: args.groupBy }),
+            metrics: args.metrics,
+            ...(args.where === undefined ? {} : { where: args.where }),
+            match: args.match ?? "all",
+            headerRow: args.headerRow ?? 1,
+            columnMode: args.columnMode ?? "auto",
+            caseSensitive: args.caseSensitive ?? false,
+            coerceText: args.coerceText ?? false,
+            mergedCells: args.mergedCells ?? "master",
+            orderBy: args.orderBy ?? "group",
+            ...(args.orderByMetric === undefined
+              ? {}
+              : { orderByMetric: args.orderByMetric }),
+            descending: args.descending ?? false,
+            maxGroups: args.maxGroups ?? limits.maxGroupsDefault,
+          }),
+          csvReportOf(loaded),
+        ),
+      );
+    }),
+
+    find_in_sheet: guard(async (args) => {
+      const loaded = await openFor(args.filePath, {
+        ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
+        ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+      });
+      rejectForCsv(
+        loaded,
+        "searchIn",
+        args.searchIn === "values" ? undefined : args.searchIn,
+        args.filePath,
+      );
+      return json(
+        withCsv(
+          findInSheet(loaded, {
+            query: args.query,
+            ...(args.sheetName === undefined
+              ? {}
+              : { sheetName: args.sheetName }),
+            ...(args.range === undefined ? {} : { range: args.range }),
+            matchMode: args.matchMode ?? "contains",
+            caseSensitive: args.caseSensitive ?? false,
+            searchIn: args.searchIn ?? "values",
+            maxResults: args.maxResults ?? limits.defaultFindResults,
+          }),
+          csvReportOf(loaded),
+        ),
+      );
+    }),
+  };
+}

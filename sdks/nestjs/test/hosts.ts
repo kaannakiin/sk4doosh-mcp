@@ -21,6 +21,7 @@ import jwt from "jsonwebtoken";
 import {
   SkMcpDispatcher,
   SkMcpModule,
+  type ExtensionOverrides,
   type OuterRequest,
   type SkMcpOptions,
 } from "../src/index.js";
@@ -170,9 +171,10 @@ export interface TestApp {
 
 export async function createApp(
   configure?: (options: SkMcpOptions) => void,
+  overrides?: ExtensionOverrides,
 ): Promise<TestApp> {
   const moduleRef = await Test.createTestingModule({
-    imports: [SkMcpModule.forRoot(configure)],
+    imports: [SkMcpModule.forRoot(configure, overrides)],
     controllers: [ProbeController],
   }).compile();
   const app = moduleRef.createNestApplication({ logger: false });

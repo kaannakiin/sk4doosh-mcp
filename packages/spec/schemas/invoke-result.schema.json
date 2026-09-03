@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "invoke-result.schema.json",
+  "title": "InvokeResult",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/InvokeSuccess"
+    },
+    {
+      "$ref": "#/$defs/MappedError"
+    }
+  ],
+  "$defs": {
+    "BackendErrorCode": {
+      "title": "BackendErrorCode",
+      "type": "string",
+      "enum": [
+        "validation_failed",
+        "bad_request",
+        "unauthenticated",
+        "forbidden",
+        "not_found",
+        "conflict",
+        "rate_limited",
+        "backend_error",
+        "backend_unavailable"
+      ]
+    },
+    "FieldError": {
+      "title": "FieldError",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "MappedError": {
+      "title": "MappedError",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "message", "status", "retryable"],
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/BackendErrorCode"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldError"
+          }
+        },
+        "retryAfterSeconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "InvokeSuccess": {
+      "title": "InvokeSuccess",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 399
+        },
+        "body": {},
+        "contentType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -20,9 +20,76 @@
     },
     {
       "$ref": "#/$defs/SearchFixture"
+    },
+    {
+      "$ref": "#/$defs/ErrorMappingFixture"
     }
   ],
   "$defs": {
+    "ErrorMappingFixture": {
+      "title": "ErrorMappingFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": {
+          "const": "error-mapping"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {
+          "$ref": "#/$defs/BackendResponseSpec"
+        },
+        "expected": {
+          "$ref": "invoke-result.schema.json"
+        }
+      }
+    },
+    "BackendResponseSpec": {
+      "title": "BackendResponseSpec",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "contentType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "body": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object"
+            },
+            {
+              "type": "array"
+            }
+          ]
+        },
+        "knownFields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
     "NamingFixture": {
       "title": "NamingFixture",
       "type": "object",
@@ -212,7 +279,8 @@
                     "invalid_path_type",
                     "missing_path_parameter",
                     "header_injection",
-                    "null_not_allowed"
+                    "null_not_allowed",
+                    "invalid_type"
                   ]
                 }
               }

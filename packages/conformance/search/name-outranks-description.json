@@ -3,8 +3,16 @@
   "description": "ad alani (3.0) aciklama alanindan (1.5) agirdir: ayni terim adda gecen tool once gelir",
   "input": {
     "tools": [
-      { "name": "list_items", "description": "Lists order lines", "route": "/items" },
-      { "name": "get_order", "description": "Returns one record", "route": "/orders/{id}" }
+      {
+        "name": "list_items",
+        "description": "Lists order lines",
+        "route": "/items"
+      },
+      {
+        "name": "get_order",
+        "description": "Returns one record",
+        "route": "/orders/{id}"
+      }
     ],
     "query": "order"
   },

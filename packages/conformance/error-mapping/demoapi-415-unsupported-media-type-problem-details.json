@@ -1,0 +1,20 @@
+{
+  "kind": "error-mapping",
+  "description": "demoapi gercek govdesi: POST /orders'a text/plain govde gonderilince donen 415 ProblemDetails; title temiz gectigi icin iletilir",
+  "input": {
+    "status": 415,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.16",
+      "title": "Unsupported Media Type",
+      "status": 415,
+      "traceId": "00-2b6dbc2bb199111b7b6f684be8c27317-66c09b22de308d61-00"
+    }
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "Unsupported Media Type",
+    "status": 415,
+    "retryable": false
+  }
+}

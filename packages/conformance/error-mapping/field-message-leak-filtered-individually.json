@@ -1,0 +1,33 @@
+{
+  "kind": "error-mapping",
+  "description": "alan hatalari ayri ayri sizinti filtresinden gecer; bir alan temiz kalirken digeri stack frame icerdigi icin ayri ayri degistirilir",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "errors": {
+        "item": ["Item value rejected"],
+        "quantity": [
+          "at OrderValidator.Validate(Order o) in /src/OrderValidator.cs:line 45"
+        ]
+      }
+    },
+    "knownFields": ["item", "quantity"]
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      {
+        "name": "item",
+        "message": "Item value rejected"
+      },
+      {
+        "name": "quantity",
+        "message": "The value was rejected; details were withheld."
+      }
+    ]
+  }
+}

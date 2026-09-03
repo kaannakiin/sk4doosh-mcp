@@ -5,10 +5,11 @@
 ```text
 sk-mcp/
 ├── apps/                     # Faz 3'e kadar boş (sonra example-agent-client; web yalnız Faz 7)
-├── packages/                 # sadece paylaşılan çekirdek — SDK yok
+├── packages/                 # paylaşılan çekirdek + bağımsız yayınlanabilir ürün paketleri — SDK yok
 │   ├── spec/                 # @sk-mcp/spec — normatif markdown + JSON kural tabloları (kod yok)
 │   ├── conformance/          # @sk-mcp/conformance — saf JSON fixture korpusu (runtime bağımlılığı yok)
 │   ├── core/                 # @sk-mcp/core — TS referans implementasyonu (Faz 3+'ta doldurulur)
+│   ├── excel-mcp/            # @sk-mcp/excel-mcp — bağımsız MCP sunucusu (core'a bağımlı değil)
 │   ├── eslint-config/        # @sk-mcp/eslint-config
 │   └── typescript-config/    # @sk-mcp/typescript-config
 ├── sdks/                     # TÜM SDK'lar burada, dilden bağımsız (rol bazlı ayrım)
@@ -24,8 +25,18 @@ sk-mcp/
 
 ## Ayrım ilkesi: rol bazlı
 
-- `packages/` = paylaşılan çekirdek (spec, fixture'lar, referans implementasyon, config'ler).
+- `packages/` = paylaşılan çekirdek (spec, fixture'lar, referans implementasyon, config'ler) **ve** bağımsız yayınlanabilir ürün paketleri.
 - `sdks/` = tüm SDK'lar, dil fark etmeksizin. `sdks/*` workspace globunda olduğundan TS SDK'lar (nestjs) orada da native pnpm paketidir; dotnet gibi yabancı toolchain'ler package.json shim'iyle girer.
+
+## Ürün paketleri (`excel-mcp` ve devamı)
+
+`packages/excel-mcp` (ve gelecekte `packages/pdf-mcp`) ne SDK ne de çekirdek: kendi başına `npx` ile kurulan, kendi semver'i olan, MCP sunucusu olan **ürün paketleri**. `packages/` altında durmalarının sebebi `sdks/`'in rolünün "mevcut bir backend'e gömülen dil SDK'sı" olması — bu paketlerin gömüleceği bir backend yok.
+
+Çekirdekten üç farkı vardır ve üçü de bilinçlidir:
+
+- `private: true` **değildir**; gerçek semver taşır (`0.1.0`), `bin` + `files` + `publishConfig.access: public` beyan eder.
+- `exports.types` `./src/index.ts` yerine `./dist/index.d.ts`'e bakar. İç konvansiyon dış tüketicide çalışmaz: `src` yayınlanmaz ve dış tüketicinin `tsc`'si bizim compiler option'larımıza sahip değildir. Aynı sebeple `declarationMap` kapalıdır — açık olsaydı yayınlanan her `.d.ts.map` kırık referans olurdu.
+- `packages/core`'a bağımlı olmak zorunda değildir. `excel-mcp` değildir: `EndpointDescriptor` HTTP `method` + `route` zorunlu kılar, dosya okuyan bir sunucunun replay edeceği pipeline yoktur.
 
 ## Neden spec / conformance / core üç ayrı paket?
 

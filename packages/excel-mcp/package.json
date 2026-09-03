@@ -1,0 +1,48 @@
+{
+  "name": "@sk-mcp/excel-mcp",
+  "version": "0.2.0",
+  "description": "Read-only MCP server for Excel workbooks.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "sk-mcp-excel": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "csv-parse": "^7.0.2",
+    "exceljs": "^4.4.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "10.9.1",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

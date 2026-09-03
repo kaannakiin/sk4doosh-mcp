@@ -4,9 +4,21 @@ export type Fixture =
   | ArgumentMappingFixture
   | SelectionFixture
   | VisibilityFixture
-  | SearchFixture;
+  | SearchFixture
+  | ErrorMappingFixture;
 export type PrefixMode = "always" | "onCollision";
 export type Anonymity = "yes" | "no" | "unknown";
+export type InvokeResult = InvokeSuccess | MappedError;
+export type BackendErrorCode =
+  | "validation_failed"
+  | "bad_request"
+  | "unauthenticated"
+  | "forbidden"
+  | "not_found"
+  | "conflict"
+  | "rate_limited"
+  | "backend_error"
+  | "backend_unavailable";
 
 export interface NamingFixture {
   kind: "naming";
@@ -123,7 +135,13 @@ export interface ComposedRequestExpectation {
   bodyJson?: {};
 }
 export interface ArgumentMappingError {
-  error: "unknown_argument" | "invalid_path_type" | "missing_path_parameter" | "header_injection" | "null_not_allowed";
+  error:
+    | "unknown_argument"
+    | "invalid_path_type"
+    | "missing_path_parameter"
+    | "header_injection"
+    | "null_not_allowed"
+    | "invalid_type";
 }
 export interface SelectionFixture {
   kind: "selection";
@@ -181,4 +199,38 @@ export interface SearchTool {
 }
 export interface SearchExpectation {
   names: string[];
+}
+export interface ErrorMappingFixture {
+  kind: "error-mapping";
+  description: string;
+  input: BackendResponseSpec;
+  expected: InvokeResult;
+}
+export interface BackendResponseSpec {
+  status: number;
+  contentType?: string;
+  headers?: {
+    [k: string]: string;
+  };
+  body?: string | {} | unknown[];
+  knownFields?: string[];
+}
+export interface InvokeSuccess {
+  status: number;
+  body?: unknown;
+  contentType?: string;
+  location?: string;
+}
+export interface MappedError {
+  error: BackendErrorCode;
+  message: string;
+  status: number;
+  retryable: boolean;
+  fields?: FieldError[];
+  retryAfterSeconds?: number;
+  reference?: string;
+}
+export interface FieldError {
+  name?: string;
+  message: string;
 }

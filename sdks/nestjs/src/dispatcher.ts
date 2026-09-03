@@ -16,6 +16,8 @@ import { createSyntheticContext } from "./synthetic-context.js";
 export interface DispatchResult {
   readonly status: number;
   readonly body: string;
+  readonly contentType?: string;
+  readonly headers: Readonly<Record<string, string>>;
 }
 
 type PipelineFunction = (req: unknown, res: unknown) => void;

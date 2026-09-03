@@ -9,9 +9,11 @@ import {
   createToolNames,
   evaluateVisibility,
   isSelected,
+  mapInvokeResult,
   SkMcpArgumentError,
   SkMcpCatalogError,
   ToolIndex,
+  type BackendResponse,
   type EndpointDescriptor,
   type Fixture,
   type ParameterBinding,
@@ -163,6 +165,40 @@ describe("conformance: visibility", () => {
       expect(evaluateVisibility(fixture.input.auth, fixture.input.caller)).toBe(
         fixture.expected.decision,
       );
+    });
+  }
+});
+
+function rawBody(
+  body: FixtureOf<"error-mapping">["input"]["body"],
+): string | undefined {
+  if (body === undefined) return undefined;
+  return typeof body === "string" ? body : JSON.stringify(body);
+}
+
+function backendResponseFrom(
+  input: FixtureOf<"error-mapping">["input"],
+): BackendResponse {
+  const body = rawBody(input.body);
+  return {
+    status: input.status,
+    ...(input.contentType === undefined
+      ? {}
+      : { contentType: input.contentType }),
+    headers: input.headers ?? {},
+    ...(body === undefined ? {} : { body }),
+  };
+}
+
+describe("conformance: error-mapping", () => {
+  for (const [file, fixture] of fixturesOf("error-mapping")) {
+    it(file, () => {
+      const response = backendResponseFrom(fixture.input);
+      const options =
+        fixture.input.knownFields === undefined
+          ? {}
+          : { knownFields: fixture.input.knownFields };
+      expect(mapInvokeResult(response, options)).toEqual(fixture.expected);
     });
   }
 });

@@ -7,16 +7,11 @@ import {
   type ExecutionContext,
 } from "@nestjs/common";
 import jwt from "jsonwebtoken";
-
-export const jwtSecret = "demo-api-secret-0123456789abcdef";
+import { demoOAuthSecret } from "./oauth-provider.js";
 
 export interface AuthedRequest {
   headers: IncomingHttpHeaders;
   user?: jwt.JwtPayload;
-}
-
-export function mintToken(user: string, scopes: string[]): string {
-  return jwt.sign({ sub: user, scope: scopes.join(" ") }, jwtSecret, { expiresIn: 3600 });
 }
 
 @Injectable()
@@ -28,7 +23,10 @@ export class JwtGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     try {
-      request.user = jwt.verify(header.slice("Bearer ".length), jwtSecret) as jwt.JwtPayload;
+      request.user = jwt.verify(
+        header.slice("Bearer ".length),
+        demoOAuthSecret,
+      ) as jwt.JwtPayload;
     } catch {
       throw new UnauthorizedException();
     }
@@ -40,7 +38,10 @@ export class JwtGuard implements CanActivate {
 export class OrdersReadGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthedRequest>();
-    const scopes = typeof request.user?.scope === "string" ? request.user.scope.split(" ") : [];
+    const scopes =
+      typeof request.user?.scope === "string"
+        ? request.user.scope.split(" ")
+        : [];
     if (!scopes.includes("orders.read")) {
       throw new ForbiddenException();
     }

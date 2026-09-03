@@ -1,0 +1,23 @@
+{
+  "kind": "error-mapping",
+  "description": "200 govdesi application/json ise parse edilmis deger olarak dogrudan tasinir",
+  "input": {
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "id": 42,
+      "item": "Widget",
+      "quantity": 3,
+      "status": "created"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body": {
+      "id": 42,
+      "item": "Widget",
+      "quantity": 3,
+      "status": "created"
+    }
+  }
+}

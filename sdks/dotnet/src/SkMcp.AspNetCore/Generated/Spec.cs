@@ -63,3 +63,30 @@ public sealed record ToolAnnotations
     public bool? DestructiveHint { get; init; }
     public bool? IdempotentHint { get; init; }
 }
+
+public enum BackendErrorCode { ValidationFailed, BadRequest, Unauthenticated, Forbidden, NotFound, Conflict, RateLimited, BackendError, BackendUnavailable }
+
+public sealed record FieldError
+{
+    public string? Name { get; init; }
+    public required string Message { get; init; }
+}
+
+public sealed record MappedError
+{
+    public required BackendErrorCode Error { get; init; }
+    public required string Message { get; init; }
+    public required int Status { get; init; }
+    public required bool Retryable { get; init; }
+    public IReadOnlyList<FieldError>? Fields { get; init; }
+    public int? RetryAfterSeconds { get; init; }
+    public string? Reference { get; init; }
+}
+
+public sealed record InvokeSuccess
+{
+    public required int Status { get; init; }
+    public JsonNode? Body { get; init; }
+    public string? ContentType { get; init; }
+    public string? Location { get; init; }
+}

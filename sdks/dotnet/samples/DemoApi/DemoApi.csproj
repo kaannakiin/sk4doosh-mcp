@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SkMcp.AspNetCore\SkMcp.AspNetCore.csproj" />
+    <ProjectReference Include="..\DemoAuthServer\DemoAuthServer.csproj" />
   </ItemGroup>
 
 </Project>

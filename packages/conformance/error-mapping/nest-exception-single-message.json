@@ -1,0 +1,19 @@
+{
+  "kind": "error-mapping",
+  "description": "nest HttpException tek string mesaj; dogrudan iletilir",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "statusCode": 400,
+      "message": "Quantity must be a positive integer",
+      "error": "Bad Request"
+    }
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "Quantity must be a positive integer",
+    "status": 400,
+    "retryable": false
+  }
+}

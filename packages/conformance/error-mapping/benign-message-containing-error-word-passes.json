@@ -1,0 +1,17 @@
+{
+  "kind": "error-mapping",
+  "description": "mesaj 'Error' kelimesini tasir ama exception_type deseni yalnizca *Exception/TypeError vb. yakalar; masum mesaj temiz geciyor",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "message": "Error: quantity must be positive"
+    }
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "Error: quantity must be positive",
+    "status": 400,
+    "retryable": false
+  }
+}

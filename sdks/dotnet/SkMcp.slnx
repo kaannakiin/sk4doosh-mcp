@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/samples/">
     <Project Path="samples/DemoApi/DemoApi.csproj" />
+    <Project Path="samples/DemoAuthServer/DemoAuthServer.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/SkMcp.AspNetCore/SkMcp.AspNetCore.csproj" />

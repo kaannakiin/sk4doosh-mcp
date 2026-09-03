@@ -1,0 +1,22 @@
+{
+  "kind": "error-mapping",
+  "description": "500 govdesi stack trace tasisa bile hic okunmaz; yalnizca ProblemDetails traceId referansa tasinir",
+  "input": {
+    "status": 500,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+      "title": "An error occurred while processing your request.",
+      "status": 500,
+      "detail": "System.NullReferenceException: Object reference not set to an instance of an object.\n   at DemoApi.Controllers.OrdersController.CreateOrder(CreateOrderRequest request) in /src/DemoApi/Controllers/OrdersController.cs:line 42",
+      "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    }
+  },
+  "expected": {
+    "error": "backend_error",
+    "message": "The backend failed while handling the call (500). Details were withheld. Reference: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01.",
+    "status": 500,
+    "retryable": false,
+    "reference": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+  }
+}

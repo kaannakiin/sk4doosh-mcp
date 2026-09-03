@@ -1,0 +1,15 @@
+{
+  "kind": "error-mapping",
+  "description": "content-type text/plain; temiz duz metin dogrudan iletilir",
+  "input": {
+    "status": 400,
+    "contentType": "text/plain",
+    "body": "Quantity must be a positive integer."
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "Quantity must be a positive integer.",
+    "status": 400,
+    "retryable": false
+  }
+}

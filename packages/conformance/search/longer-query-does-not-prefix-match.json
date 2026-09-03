@@ -3,7 +3,11 @@
   "description": "onek tek yonludur: belge token'indan uzun sorgu token'i eslesmez",
   "input": {
     "tools": [
-      { "name": "get_order", "description": "Bir siparişi id ile getirir.", "route": "/orders/{id}" }
+      {
+        "name": "get_order",
+        "description": "Bir siparişi id ile getirir.",
+        "route": "/orders/{id}"
+      }
     ],
     "query": "siparişleri"
   },

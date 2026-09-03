@@ -1,0 +1,322 @@
+import { describe, expect, inject, it } from "vitest";
+import { aggregateSheet, type AggregateOptions } from "../src/aggregate.js";
+import { loadDocument, type LoadedDocument } from "../src/document.js";
+import type { SkMcpExcelError } from "../src/errors.js";
+import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
+import { largeRowCount } from "./fixtures/build.js";
+
+const base: AggregateOptions = {
+  metrics: [{ fn: "count" }],
+  match: "all",
+  headerRow: 1,
+  columnMode: "auto",
+  caseSensitive: false,
+  coerceText: false,
+  mergedCells: "master",
+  orderBy: "group",
+  descending: false,
+  maxGroups: 50,
+};
+
+async function open(file: string): Promise<LoadedDocument> {
+  const fixtures = inject("fixtures");
+  const root = await createWorkbookRoot(fixtures.root);
+  return loadDocument(await resolveWorkbookPath(root, file));
+}
+
+async function codeOf(
+  action: () => Promise<unknown> | unknown,
+): Promise<string> {
+  try {
+    await action();
+  } catch (error) {
+    return (error as SkMcpExcelError).code;
+  }
+  return "no-error";
+}
+
+describe("whole-sheet totals", () => {
+  it("sums exactly over 20k integer rows", async () => {
+    const result = aggregateSheet(await open("large.xlsx"), {
+      ...base,
+      metrics: [{ fn: "sum", column: "amount" }],
+    });
+    expect(result.rows[0]?.[0]).toBe(
+      ((largeRowCount - 1) * largeRowCount * 3) / 2,
+    );
+    expect(result.scannedRows).toBe(largeRowCount - 1);
+    expect(result.matchedRows).toBe(largeRowCount - 1);
+  });
+
+  it("stays small on the wire", async () => {
+    const result = aggregateSheet(await open("large.xlsx"), {
+      ...base,
+      metrics: [{ fn: "sum", column: "amount" }, { fn: "count" }],
+    });
+    expect(JSON.stringify(result).length).toBeLessThan(700);
+  });
+});
+
+describe("accounting", () => {
+  it("keeps counted plus skipped equal to the matched rows", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      columnMode: "letter",
+      metrics: [{ fn: "sum", column: "B" }],
+    });
+    const metric = result.columns.find((column) => column.role === "metric");
+    expect((metric?.counted ?? 0) + (metric?.skipped ?? 0)).toBe(
+      result.matchedRows,
+    );
+  });
+
+  it("excludes error, boolean and text cells and reports why", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      columnMode: "letter",
+      metrics: [{ fn: "sum", column: "B" }],
+    });
+    expect(result.rows[0]?.[0]).toBe(30.5);
+    expect(result.columnStats?.["B"]).toMatchObject({
+      numbers: 2,
+      texts: 1,
+      booleans: 1,
+      errors: 1,
+    });
+  });
+
+  it("warns about numeric text instead of silently dropping it", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      metrics: [{ fn: "sum", column: "Amount" }],
+    });
+    expect(result.rows[0]?.[0]).toBeNull();
+    expect(
+      result.warnings?.some((entry) => entry.includes("numeric text")),
+    ).toBe(true);
+  });
+
+  it("includes numeric text once coerceText is on", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      coerceText: true,
+      metrics: [{ fn: "sum", column: "Amount" }],
+    });
+    expect(result.rows[0]?.[0]).toBe(1234.5 + 7 + 8 + 9);
+  });
+});
+
+describe("null, not zero", () => {
+  it("returns null for a sum with nothing to add", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      columnMode: "letter",
+      metrics: [
+        { fn: "sum", column: "B" },
+        { fn: "avg", column: "B" },
+      ],
+      where: [{ column: "A", op: "eq", value: "Bos" }],
+    });
+    expect(result.rows[0]?.[0]).toBeNull();
+    expect(result.rows[0]?.[1]).toBeNull();
+  });
+
+  it("returns one row with count zero when nothing matches", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      columnMode: "letter",
+      metrics: [{ fn: "count" }, { fn: "sum", column: "B" }],
+      where: [{ column: "A", op: "eq", value: "nowhere" }],
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toEqual([0, null]);
+    expect(result.matchedRows).toBe(0);
+  });
+});
+
+describe("floating point", () => {
+  it("sums 500 tenths to exactly 50", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      sheetName: "Floats",
+      metrics: [{ fn: "sum", column: "small" }],
+    });
+    expect(result.rows[0]?.[0]).toBe(50);
+  });
+
+  it("beats naive summation on a mixed-magnitude column", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      sheetName: "Floats",
+      metrics: [{ fn: "sum", column: "mixed" }],
+    });
+    let naive = 0;
+    for (let row = 2; row <= 501; row += 1) {
+      naive += row % 100 === 0 ? 1e9 : 0.001;
+    }
+    const exact = 5 * 1e9 + 495 * 0.001;
+    expect(Math.abs((result.rows[0]?.[0] as number) - exact)).toBeLessThan(
+      Math.abs(naive - exact) + 1e-9,
+    );
+  });
+});
+
+describe("min and max", () => {
+  it("works on dates and echoes the kind used", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      metrics: [
+        { fn: "min", column: "Date" },
+        { fn: "max", column: "Date" },
+      ],
+    });
+    expect(result.rows[0]?.[0]).toBe("2026-01-10");
+    expect(result.rows[0]?.[1]).toBe("2026-01-15");
+    expect(result.columns[0]?.kindUsed).toBe("date");
+  });
+});
+
+describe("grouping", () => {
+  it("keeps case and accent variants apart and says so", async () => {
+    const result = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      groupBy: ["Region"],
+      metrics: [{ fn: "count" }],
+    });
+    const labels = result.rows.map((row) => row[0]);
+    expect(labels).toContain("İSTANBUL");
+    expect(labels).toContain("istanbul");
+    expect(
+      result.warnings?.some((entry) => entry.includes("differ only by case")),
+    ).toBe(true);
+  });
+
+  it("orders deterministically across runs", async () => {
+    const loaded = await open("analysis.xlsx");
+    const first = aggregateSheet(loaded, { ...base, groupBy: ["Region"] });
+    const second = aggregateSheet(loaded, { ...base, groupBy: ["Region"] });
+    expect(second.rows).toEqual(first.rows);
+  });
+
+  it("caps an exploding group-by and points at the fix", async () => {
+    const result = aggregateSheet(await open("large.xlsx"), {
+      ...base,
+      groupBy: ["name"],
+      metrics: [{ fn: "sum", column: "amount" }],
+    });
+    expect(result.groupCount).toBe(largeRowCount - 1);
+    expect(result.returnedGroups).toBe(50);
+    expect(result.truncated).toBe(true);
+    expect(result.truncationReason).toBe("maxGroups");
+    expect(result.hint).toContain("orderBy");
+  });
+
+  it("returns the true top group when ordered by metric", async () => {
+    const result = aggregateSheet(await open("large.xlsx"), {
+      ...base,
+      groupBy: ["name"],
+      metrics: [{ fn: "sum", column: "amount" }],
+      orderBy: "metric",
+      orderByMetric: 1,
+      descending: true,
+      maxGroups: 1,
+    });
+    expect(result.rows[0]).toEqual([
+      `name-${largeRowCount - 1}`,
+      (largeRowCount - 1) * 3,
+    ]);
+  });
+
+  it("groups merged continuation rows under null under the master policy", async () => {
+    const master = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      sheetName: "Merged",
+      groupBy: ["Region"],
+      metrics: [{ fn: "sum", column: "Total" }],
+    });
+    expect(master.rows).toContainEqual([null, 5]);
+
+    const repeated = aggregateSheet(await open("analysis.xlsx"), {
+      ...base,
+      sheetName: "Merged",
+      mergedCells: "repeat",
+      groupBy: ["Region"],
+      metrics: [{ fn: "sum", column: "Total" }],
+    });
+    expect(repeated.rows).toEqual([["EMEA", 6]]);
+  });
+});
+
+describe("filtering", () => {
+  it("intersects with match all and unions with match any", async () => {
+    const loaded = await open("analysis.xlsx");
+    const all = aggregateSheet(loaded, {
+      ...base,
+      columnMode: "letter",
+      where: [
+        { column: "A", op: "eq", value: "Ankara" },
+        { column: "B", op: "gt", value: 15 },
+      ],
+    });
+    expect(all.matchedRows).toBe(1);
+
+    const any = aggregateSheet(loaded, {
+      ...base,
+      columnMode: "letter",
+      match: "any",
+      where: [
+        { column: "A", op: "eq", value: "Ankara" },
+        { column: "B", op: "gt", value: 15 },
+      ],
+    });
+    expect(any.matchedRows).toBe(3);
+  });
+});
+
+describe("failures", () => {
+  it("refuses a duplicate header", async () => {
+    const loaded = await open("analysis.xlsx");
+    expect(
+      await codeOf(() =>
+        aggregateSheet(loaded, { ...base, groupBy: ["Total"] }),
+      ),
+    ).toBe("ambiguous_column");
+  });
+
+  it("refuses an unknown column", async () => {
+    const loaded = await open("analysis.xlsx");
+    expect(
+      await codeOf(() =>
+        aggregateSheet(loaded, { ...base, groupBy: ["Nope"] }),
+      ),
+    ).toBe("unknown_column");
+  });
+
+  it("refuses a metric without a column", async () => {
+    const loaded = await open("analysis.xlsx");
+    expect(
+      await codeOf(() =>
+        aggregateSheet(loaded, { ...base, metrics: [{ fn: "sum" }] }),
+      ),
+    ).toBe("invalid_argument");
+  });
+
+  it("refuses an empty sheet", async () => {
+    const loaded = await open("empty.xlsx");
+    expect(await codeOf(() => aggregateSheet(loaded, base))).toBe(
+      "empty_sheet",
+    );
+  });
+});
+
+describe("csv", () => {
+  it("aggregates a csv with coerceText", async () => {
+    const result = aggregateSheet(await open("csv/big.csv"), {
+      ...base,
+      coerceText: true,
+      metrics: [{ fn: "sum", column: "amount" }, { fn: "count" }],
+    });
+    expect(result.rows[0]?.[0]).toBe((999 * 1000 * 3) / 2);
+    expect(result.rows[0]?.[1]).toBe(999);
+  });
+});

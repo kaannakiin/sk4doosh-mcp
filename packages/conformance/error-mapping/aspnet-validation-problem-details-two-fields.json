@@ -1,0 +1,32 @@
+{
+  "kind": "error-mapping",
+  "description": "aspnet ValidationProblemDetails iki alan hatasi tasir; anahtarlar knownFields ile case-insensitive eslesir",
+  "input": {
+    "status": 400,
+    "contentType": "application/problem+json",
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+      "title": "One or more validation errors occurred.",
+      "status": 400,
+      "errors": {
+        "Item": ["The Item field is required."],
+        "Quantity": ["The field Quantity must be between 1 and 100."]
+      },
+      "traceId": "00-8f1c2b3a4d5e6f70-01"
+    },
+    "knownFields": ["item", "quantity"]
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      { "name": "item", "message": "The Item field is required." },
+      {
+        "name": "quantity",
+        "message": "The field Quantity must be between 1 and 100."
+      }
+    ]
+  }
+}

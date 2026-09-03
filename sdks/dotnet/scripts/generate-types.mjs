@@ -10,6 +10,7 @@ const outDir = path.resolve(here, "../src/SkMcp.AspNetCore/Generated");
 const sources = [
   "endpoint-descriptor.schema.json",
   "tool-definition.schema.json",
+  "invoke-result.schema.json",
 ];
 
 const inlineTypes = { JsonSchemaObject: "JsonObject" };
@@ -46,8 +47,17 @@ function csharpType(schema, currentFile) {
   if (schema.type === "boolean") {
     return "bool";
   }
+  if (schema.type === "integer") {
+    return "int";
+  }
+  if (schema.type === "number") {
+    return "double";
+  }
   if (schema.type === "string" || schema.const !== undefined) {
     return "string";
+  }
+  if (schema.type === undefined) {
+    return "JsonNode";
   }
   if (schema.type === "object") {
     if (schema.patternProperties) {

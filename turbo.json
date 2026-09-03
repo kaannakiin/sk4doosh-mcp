@@ -1,10 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": [
-    "SKMCP_BASE_URL",
-    "SKMCP_USER"
-  ],
+  "globalEnv": ["SKMCP_BASE_URL", "SKMCP_USER", "SKMCP_AUTH", "SKMCP_TOKEN"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

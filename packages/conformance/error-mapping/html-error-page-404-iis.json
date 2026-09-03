@@ -1,0 +1,15 @@
+{
+  "kind": "error-mapping",
+  "description": "IIS 404 html hata sayfasi; html govde iletilmez, standart not_found mesaji kullanilir",
+  "input": {
+    "status": 404,
+    "contentType": "text/html",
+    "body": "<html><head><title>404 - File or directory not found.</title></head><body><div id=\"content\"><h3>404 - File or directory not found.</h3></div></body></html>"
+  },
+  "expected": {
+    "error": "not_found",
+    "message": "No resource matched these arguments (404). The operation exists; check identifier arguments.",
+    "status": 404,
+    "retryable": false
+  }
+}

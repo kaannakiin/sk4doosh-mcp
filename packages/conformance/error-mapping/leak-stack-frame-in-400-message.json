@@ -1,0 +1,17 @@
+{
+  "kind": "error-mapping",
+  "description": "message icinde .NET stack frame'i sizinti filtresine takilir; tum mesaj status-standart mesajla degistirilir",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "message": "Unhandled exception: NullReferenceException: Object reference not set to an instance of an object.\n   at DemoApi.Services.OrderService.Validate(Order order) in /src/DemoApi/Services/OrderService.cs:line 88"
+    }
+  },
+  "expected": {
+    "error": "bad_request",
+    "message": "The backend rejected the request (400) without usable details. Check the arguments against the input schema.",
+    "status": 400,
+    "retryable": false
+  }
+}

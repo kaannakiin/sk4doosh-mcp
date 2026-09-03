@@ -11,6 +11,7 @@ const outDir = path.resolve(here, "../src/generated");
 const schemas = [
   "endpoint-descriptor.schema.json",
   "tool-definition.schema.json",
+  "invoke-result.schema.json",
   "fixture.schema.json",
 ];
 

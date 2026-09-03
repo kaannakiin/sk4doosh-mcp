@@ -1,11 +1,16 @@
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkMcp.AspNetCore.Discovery;
 
 namespace DemoApi.Controllers;
 
-public sealed record AddNoteRequest([property: Description("Not metni")] string Text);
+public sealed record AddNoteRequest([Required][property: Description("Not metni")] string Text);
+
+public sealed record CreateOrderRequest(
+    [Required, MinLength(1)][property: Description("Ürün adı")] string Item,
+    [Range(1, 100)][property: Description("Adet")] int Quantity);
 
 [ApiController]
 [McpTool]
@@ -77,5 +82,17 @@ public sealed class OrdersController : ControllerBase
         }
         list.Add(request.Text);
         return Ok(new { id, notes = list, notified = notify });
+    }
+
+    [HttpPost("/orders")]
+    [EndpointName("CreateOrder")]
+    [Authorize(Policy = "OrdersRead")]
+    [Description("Yeni bir sipariş oluşturur.")]
+    public IActionResult CreateOrder([FromBody] CreateOrderRequest request)
+    {
+        int id = Orders.Count == 0 ? 1 : Orders.Keys.Max() + 1;
+        var order = new { id, item = request.Item, quantity = request.Quantity, owner = User.Identity?.Name };
+        Orders[id] = order;
+        return Ok(order);
     }
 }

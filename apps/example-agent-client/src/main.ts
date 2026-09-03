@@ -1,118 +1,165 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { AuthFailure, connect, type AuthMode, type McpSession } from "./mcp.js";
+import {
+  AssertionFailure,
+  scenarios,
+  SetupFailure,
+  type ScenarioName,
+} from "./scenarios.js";
 
-const base = process.env["SKMCP_BASE_URL"] ?? "http://127.0.0.1:5199";
-const user = process.env["SKMCP_USER"] ?? "alice";
-const [query = "sipariş", requestedTool, rawArguments = "{}"] =
-  process.argv.slice(2);
-
-interface ErrorResponse {
-  readonly error: string;
-  readonly message: string;
+interface ParsedArgs {
+  readonly scenario: ScenarioName;
+  readonly tool?: string;
+  readonly query?: string;
+  readonly argumentsJson: string;
 }
 
-interface SearchResponse {
-  readonly total: number;
-  readonly results: ReadonlyArray<{
-    readonly name: string;
-    readonly description: string;
-    readonly parameters: string;
-  }>;
+interface Env {
+  readonly base: string;
+  readonly user: string;
+  readonly authMode: AuthMode;
+  readonly token?: string;
 }
 
-type LoadResponse =
-  | {
-      readonly name: string;
-      readonly description: string;
-      readonly inputSchema: unknown;
+const scenarioNames: ReadonlySet<string> = new Set<ScenarioName>([
+  "smoke",
+  "validation-retry",
+  "error-envelope",
+]);
+
+function isScenarioName(value: string): value is ScenarioName {
+  return scenarioNames.has(value);
+}
+
+const authModes: ReadonlySet<string> = new Set<AuthMode>([
+  "oauth",
+  "token",
+  "bearer",
+]);
+
+function isAuthMode(value: string): value is AuthMode {
+  return authModes.has(value);
+}
+
+function parseFlags(argv: readonly string[]): ParsedArgs {
+  let scenario: ScenarioName | undefined;
+  let tool: string | undefined;
+  let query: string | undefined;
+  let argumentsJson = "{}";
+
+  for (let i = 0; i < argv.length; i += 2) {
+    const flag = argv[i];
+    const value = argv[i + 1];
+    if (flag === undefined || value === undefined) {
+      throw new Error(`missing value for flag "${flag ?? ""}"`);
     }
-  | ErrorResponse;
-
-type InvokeResponse =
-  { readonly status: number; readonly body: string } | ErrorResponse;
-
-const isError = (value: object): value is ErrorResponse => "error" in value;
-
-function textOf(result: unknown): string {
-  const content = (result as { content?: unknown }).content;
-  if (Array.isArray(content)) {
-    const first = content[0] as { type?: unknown; text?: unknown } | undefined;
-    if (first?.type === "text" && typeof first.text === "string") {
-      return first.text;
+    if (flag === "--scenario") {
+      if (!isScenarioName(value)) {
+        throw new Error(`unknown scenario "${value}"`);
+      }
+      scenario = value;
+    } else if (flag === "--tool") {
+      tool = value;
+    } else if (flag === "--query") {
+      query = value;
+    } else if (flag === "--arguments") {
+      argumentsJson = value;
+    } else {
+      throw new Error(`unknown flag "${flag}"`);
     }
   }
-  throw new Error(`unexpected tool result: ${JSON.stringify(result)}`);
-}
 
-function step(label: string, detail: string): void {
-  console.log(`\n[${label}]\n${detail}`);
-}
-
-async function token(): Promise<string> {
-  const response = await fetch(`${base}/auth/token`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ user }),
-  });
-  if (!response.ok) {
-    throw new Error(`token request failed: ${response.status}`);
+  if (scenario === undefined) {
+    throw new Error("--scenario is required");
   }
-  const body = (await response.json()) as { access_token: string };
-  return body.access_token;
+  return { scenario, tool, query, argumentsJson };
 }
 
-async function call<T>(
-  client: Client,
-  name: string,
-  args: Record<string, unknown>,
-): Promise<T> {
-  const result = await client.callTool({ name, arguments: args });
-  return JSON.parse(textOf(result)) as T;
+function parseLegacyPositional(argv: readonly string[]): ParsedArgs {
+  const [query, tool, argumentsJson] = argv;
+  return {
+    scenario: "smoke",
+    tool,
+    query,
+    argumentsJson: argumentsJson ?? "{}",
+  };
+}
+
+export function parseArgs(argv: readonly string[]): ParsedArgs {
+  if (argv.some((arg) => arg.startsWith("--"))) {
+    return parseFlags(argv);
+  }
+  return parseLegacyPositional(argv);
+}
+
+function readEnv(): Env {
+  const base = process.env["SKMCP_BASE_URL"] ?? "http://127.0.0.1:5178";
+  const user = process.env["SKMCP_USER"] ?? "alice";
+  const rawAuthMode = process.env["SKMCP_AUTH"] ?? "oauth";
+  if (!isAuthMode(rawAuthMode)) {
+    throw new Error(
+      `unknown SKMCP_AUTH "${rawAuthMode}", expected oauth, token or bearer`,
+    );
+  }
+  return {
+    base,
+    user,
+    authMode: rawAuthMode,
+    token: process.env["SKMCP_TOKEN"],
+  };
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 async function main(): Promise<number> {
-  const bearer = await token();
-  const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
-    requestInit: { headers: { authorization: `Bearer ${bearer}` } },
-  });
-  const client = new Client({ name: "sk-mcp-example-agent", version: "0.0.0" });
-  await client.connect(transport);
+  let args: ParsedArgs;
+  let env: Env;
+  try {
+    args = parseArgs(process.argv.slice(2));
+    env = readEnv();
+  } catch (error) {
+    console.error(describeError(error));
+    return 2;
+  }
+
+  let session: McpSession;
+  try {
+    session = await connect({
+      base: env.base,
+      user: env.user,
+      authMode: env.authMode,
+      token: env.token,
+    });
+  } catch (error) {
+    if (error instanceof AuthFailure) {
+      console.error(error.message);
+      return 3;
+    }
+    throw error;
+  }
 
   try {
-    const listed = await client.listTools();
-    step("tools/list", listed.tools.map((t) => t.name).join(", "));
-
-    const search = await call<SearchResponse>(client, "search_tools", {
-      query,
+    const run = scenarios[args.scenario];
+    await run(session.client, {
+      tool: args.tool,
+      query: args.query,
+      argumentsJson: args.argumentsJson,
     });
-    step(
-      `search_tools "${query}" (${search.results.length}/${search.total})`,
-      search.results.map((r) => `${r.name}  ${r.parameters}`).join("\n"),
-    );
-
-    const chosen = requestedTool ?? search.results[0]?.name;
-    if (chosen === undefined) {
-      console.error("no tool matched the query");
+    return 0;
+  } catch (error) {
+    if (error instanceof SetupFailure) {
+      console.error(error.message);
       return 2;
     }
-
-    const loaded = await call<LoadResponse>(client, "load_tool", {
-      name: chosen,
-    });
-    if (isError(loaded)) {
-      step(`load_tool ${chosen}`, `${loaded.error}: ${loaded.message}`);
-      return 2;
+    if (error instanceof AssertionFailure) {
+      console.error(error.message);
+      return 1;
     }
-    step(`load_tool ${chosen}`, JSON.stringify(loaded.inputSchema));
-
-    const invoked = await call<InvokeResponse>(client, "invoke_tool", {
-      name: chosen,
-      arguments: JSON.parse(rawArguments) as Record<string, unknown>,
-    });
-    step(`invoke_tool ${chosen} as ${user}`, JSON.stringify(invoked));
-    return !isError(invoked) && invoked.status < 400 ? 0 : 1;
+    console.error(error);
+    return 1;
   } finally {
-    await client.close();
+    await session.close();
   }
 }
 

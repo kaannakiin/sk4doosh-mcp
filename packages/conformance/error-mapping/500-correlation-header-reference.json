@@ -1,0 +1,17 @@
+{
+  "kind": "error-mapping",
+  "description": "500 govdesi yok; reference ProblemDetails traceId'den degil x-correlation-id header'indan gelir",
+  "input": {
+    "status": 500,
+    "headers": {
+      "x-correlation-id": "corr-abc-123"
+    }
+  },
+  "expected": {
+    "error": "backend_error",
+    "message": "The backend failed while handling the call (500). Details were withheld. Reference: corr-abc-123.",
+    "status": 500,
+    "retryable": false,
+    "reference": "corr-abc-123"
+  }
+}

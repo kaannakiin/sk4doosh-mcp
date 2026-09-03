@@ -1,0 +1,20 @@
+{
+  "kind": "search",
+  "description": "Katlama sinirlidir: noktasiz 'ı' ile 'i' ayri harflerdir ve katlanmaz. .NET invariant buyuk harf tablosu U+0131'i cevirmedigi icin bu sinir iki SDK'da da ayni; katlama kurali dil-bagimsiz kalir",
+  "input": {
+    "tools": [
+      {
+        "name": "get_lamp",
+        "description": "ışık seviyesi",
+        "route": "/lights/{id}"
+      },
+      {
+        "name": "get_stock",
+        "description": "depo stogu",
+        "route": "/Rest/Stock/Get"
+      }
+    ],
+    "query": "isik"
+  },
+  "expected": { "names": [] }
+}

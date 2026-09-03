@@ -1,27 +1,32 @@
-import { Controller, Post, Req, Res } from "@nestjs/common";
+import { All, Controller, Inject, Req, Res } from "@nestjs/common";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { SkMcpDispatcher } from "@sk-mcp/sdk-nestjs";
+import {
+  extensionTokens,
+  SkMcpDispatcher,
+  SkMcpStreamableHttp,
+  type InvokeResultMapper,
+} from "@sk-mcp/sdk-nestjs";
 import type { Request, Response } from "express";
 import { registerOrderTools } from "./order-tools.js";
 
 @Controller()
 export class McpController {
-  constructor(private readonly dispatcher: SkMcpDispatcher) {}
+  constructor(
+    private readonly streamableHttp: SkMcpStreamableHttp,
+    private readonly dispatcher: SkMcpDispatcher,
+    @Inject(extensionTokens.invokeResultMapper)
+    private readonly mapper: InvokeResultMapper,
+  ) {}
 
-  @Post("mcp")
-  async handle(@Req() request: Request, @Res() response: Response) {
-    const server = new McpServer({ name: "demo-api", version: "0.0.0" });
-    registerOrderTools(server, this.dispatcher, request);
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
+  @All("mcp")
+  async handle(
+    @Req() request: Request,
+    @Res() response: Response,
+  ): Promise<void> {
+    await this.streamableHttp.handle(request, response, () => {
+      const server = new McpServer({ name: "demo-api", version: "0.0.0" });
+      registerOrderTools(server, this.dispatcher, this.mapper);
+      return server;
     });
-    response.on("close", () => {
-      void transport.close();
-      void server.close();
-    });
-    await server.connect(transport);
-    await transport.handleRequest(request, response, request.body);
   }
 }

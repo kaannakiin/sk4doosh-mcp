@@ -1,0 +1,18 @@
+{
+  "kind": "error-mapping",
+  "description": "motokurye GlobalErrorHandlerMiddleware 500 govdesi (Succeded yaziminda); iletilmez, referans da yok",
+  "input": {
+    "status": 500,
+    "contentType": "application/json",
+    "body": {
+      "Succeded": false,
+      "Message": "Veritabani baglantisi kurulamadi."
+    }
+  },
+  "expected": {
+    "error": "backend_error",
+    "message": "The backend failed while handling the call (500). Details were withheld.",
+    "status": 500,
+    "retryable": false
+  }
+}

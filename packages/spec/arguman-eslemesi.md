@@ -22,5 +22,5 @@ Agent'ın düz JSON argümanları HTTP isteğine deterministik dönüşür. Gird
 ## Değer biçimlendirme
 
 - Sayı/bool çevrimi **her zaman invariant** (`1.5` asla `1,5` olamaz) ve **kanonik en-kısa** serileştirmedir: kaynak metindeki artık gösterim korunmaz (`1.50` → `"1.5"`; fixture: `number-canonical-form`). Gerekçe: parse edilmiş değerle çalışan dillerde (JS) kaynak metin yoktur; kanonik form iki dilin doğal kesişimidir. Üstel gösterim gerektiren büyüklükler henüz fixture'lanmadı — pinlenmemiş alan.
-- `integer` tipi: kesirli değer ya da güvenli tam sayı aralığı (|n| ≤ 2^53−1) dışına taşan değer → tip hatası; `1.0` tam sayıdır → `"1"`. (Önceki "64-bit" sınırı JS'te temsil edilemiyordu; kural kesişime çekildi.)
+- Tip kapısı path dışındaki konumlarda `invalid_type` üretir: argüman nesnesi JSON nesnesi değilse, dizi beyanlı parametreye dizi olmayan değer gelirse, ya da skaler çevrim başarısız olursa. `integer` tipi: kesirli değer ya da güvenli tam sayı aralığı (|n| ≤ 2^53−1) dışına taşan değer → `invalid_type`; `1.0` tam sayıdır → `"1"`. (Önceki "64-bit" sınırı JS'te temsil edilemiyordu; kural kesişime çekildi.)
 - Semantik doğrulama (aralık, format, iş kuralı) SDK'nın işi DEĞİLDİR — backend'in kendi validation'ı çalışır; SDK yalnız güvenli kompozisyon yapar.

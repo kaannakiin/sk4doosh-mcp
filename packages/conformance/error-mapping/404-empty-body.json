@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "govdesi olmayan 404; status-only fallback standart not_found mesaji uretir",
+  "input": {
+    "status": 404
+  },
+  "expected": {
+    "error": "not_found",
+    "message": "No resource matched these arguments (404). The operation exists; check identifier arguments.",
+    "status": 404,
+    "retryable": false
+  }
+}

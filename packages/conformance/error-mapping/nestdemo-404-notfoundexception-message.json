@@ -1,0 +1,19 @@
+{
+  "kind": "error-mapping",
+  "description": "nest demo gercek govdesi: bilinmeyen siparis id'si icin NotFoundException tek mesaj; dogrudan iletilir",
+  "input": {
+    "status": 404,
+    "contentType": "application/json",
+    "body": {
+      "message": "order 999 does not exist",
+      "error": "Not Found",
+      "statusCode": 404
+    }
+  },
+  "expected": {
+    "error": "not_found",
+    "message": "order 999 does not exist",
+    "status": 404,
+    "retryable": false
+  }
+}

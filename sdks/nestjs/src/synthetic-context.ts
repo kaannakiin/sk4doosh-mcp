@@ -1,10 +1,24 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
+import type { DispatchResult } from "./dispatcher.js";
 
 export interface SyntheticContext {
   req: IncomingMessage;
   res: ServerResponse;
-  result: Promise<{ status: number; body: string }>;
+  result: Promise<DispatchResult>;
+}
+
+function captureHeaders(res: ServerResponse): Record<string, string> {
+  const headers: Record<string, string> = {};
+  for (const [name, value] of Object.entries(res.getHeaders())) {
+    if (value === undefined) {
+      continue;
+    }
+    headers[name.toLowerCase()] = Array.isArray(value)
+      ? value.join(", ")
+      : String(value);
+  }
+  return headers;
 }
 
 export function createSyntheticContext(
@@ -15,7 +29,6 @@ export function createSyntheticContext(
   body?: Buffer,
 ): SyntheticContext {
   const socket = new Socket();
-  Object.defineProperty(socket, "remoteAddress", { value: "127.0.0.1" });
   if (scheme === "https") {
     Object.defineProperty(socket, "encrypted", { value: true });
   }
@@ -32,7 +45,7 @@ export function createSyntheticContext(
 
   const res = new ServerResponse(req);
   const chunks: Buffer[] = [];
-  const result = new Promise<{ status: number; body: string }>((resolve) => {
+  const result = new Promise<DispatchResult>((resolve) => {
     const capture = (chunk: unknown, encoding: unknown): void => {
       if (typeof chunk === "string") {
         chunks.push(
@@ -70,9 +83,12 @@ export function createSyntheticContext(
       const done = [chunk, encoding, callback].find(
         (arg) => typeof arg === "function",
       );
+      const responseHeaders = captureHeaders(res);
       resolve({
         status: res.statusCode,
         body: Buffer.concat(chunks).toString("utf8"),
+        contentType: responseHeaders["content-type"],
+        headers: responseHeaders,
       });
       res.emit("finish");
       res.emit("close");

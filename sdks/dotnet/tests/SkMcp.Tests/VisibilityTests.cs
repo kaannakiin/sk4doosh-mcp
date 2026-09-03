@@ -1,284 +1,15 @@
-using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using SkMcp.AspNetCore;
-using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Tools;
-using SkMcp.AspNetCore.Visibility;
-using SkMcp.AspNetCore.Visibility.Probe;
+using static SkMcp.Tests.VisibilityHost;
 
 namespace SkMcp.Tests;
 
-public sealed class OwnerRequirement : IAuthorizationRequirement;
-
-public sealed class OwnerHandler : AuthorizationHandler<OwnerRequirement>
-{
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, OwnerRequirement requirement)
-    {
-        if (context.Resource is not null)
-        {
-            context.Succeed(requirement);
-        }
-        return Task.CompletedTask;
-    }
-}
-
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class AliceOnlyAttribute : Attribute, IAuthorizationFilter
-{
-    public void OnAuthorization(AuthorizationFilterContext context)
-    {
-        if (context.HttpContext.User.Identity?.Name != "alice")
-        {
-            context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
-        }
-    }
-}
-
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class CustomGateAttribute : Attribute, IAuthorizationFilter
-{
-    public void OnAuthorization(AuthorizationFilterContext context)
-    {
-    }
-}
-
-[ApiController]
-[Route("/vis")]
-[McpTool(Prefix = "vis")]
-public sealed class VisibilityController : ControllerBase
-{
-    public static int SideEffects;
-
-    [HttpGet("anon")]
-    [AllowAnonymous]
-    public IActionResult VisAnon() => Ok();
-
-    [HttpPost("effect")]
-    [Authorize]
-    [AliceOnly]
-    public IActionResult VisEffect()
-    {
-        Interlocked.Increment(ref SideEffects);
-        return Ok();
-    }
-
-    [HttpGet("gated")]
-    [CustomGate]
-    public IActionResult VisGated() => Ok();
-
-    [HttpGet("probeflag")]
-    [AllowAnonymous]
-    public IActionResult VisProbeFlag() => Ok(new
-    {
-        probe = HttpContext.IsSkMcpProbe(),
-        synthetic = HttpContext.IsSkMcpRequest(),
-        remote = HttpContext.Connection.RemoteIpAddress is { } ip
-            ? $"{ip}:{HttpContext.Connection.RemotePort}"
-            : null,
-    });
-
-    [HttpGet("bare")]
-    [Authorize]
-    public IActionResult VisBare() => Ok();
-
-    [HttpGet("undeclared")]
-    public IActionResult VisUndeclared() => Ok();
-
-    [HttpGet("claim")]
-    [Authorize(Policy = "OrdersRead")]
-    public IActionResult VisClaim() => Ok();
-
-    [HttpGet("role")]
-    [Authorize(Roles = "admin")]
-    public IActionResult VisRole() => Ok();
-
-    [HttpGet("assert")]
-    [Authorize(Policy = "Assertion")]
-    public IActionResult VisAssert() => Ok();
-
-    [HttpGet("owner")]
-    [Authorize(Policy = "Owner")]
-    public IActionResult VisOwner() => Ok();
-
-    [HttpGet("filter")]
-    [Authorize]
-    [AliceOnly]
-    public IActionResult VisFilter() => Ok();
-
-    [HttpGet("mine/{id:int}")]
-    [Authorize]
-    public IActionResult VisMine(int id) => id == 1 ? Ok() : Forbid();
-}
-
-internal sealed class FixedContext(HttpContext context) : IHttpContextAccessor
-{
-    public HttpContext? HttpContext { get => context; set { } }
-}
-
 public sealed class VisibilityTests
 {
-    private static int _undeclaredHits;
-
-
-    private sealed record Harness(WebApplication App, SkMcpDispatcher Dispatcher) : IAsyncDisposable
-    {
-        public SkMcpMetaTools ToolsFor(string? token, params (string Name, string Value)[] headers)
-        {
-            DefaultHttpContext outer = new();
-            if (token is not null)
-            {
-                outer.Request.Headers.Authorization = $"Bearer {token}";
-            }
-            foreach ((string name, string value) in headers)
-            {
-                outer.Request.Headers[name] = value;
-            }
-            return new SkMcpMetaTools(
-                App.Services.GetRequiredService<SkMcpCatalogProvider>(),
-                Dispatcher,
-                App.Services.GetRequiredService<IVisibilityEvaluator>(),
-                App.Services.GetRequiredService<IProbeEvaluator>(),
-                App.Services.GetRequiredService<IOptions<SkMcpOptions>>(),
-                new FixedContext(outer));
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await App.StopAsync();
-            await App.DisposeAsync();
-        }
-    }
-
-    private static string Mint(string name, bool ordersRead = false, string? role = null)
-    {
-        List<Claim> claims = [new(ClaimTypes.Name, name)];
-        if (ordersRead)
-        {
-            claims.Add(new Claim("orders.read", "true"));
-        }
-        if (role is not null)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
-        return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(1),
-            SigningCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Hosts.SigningKey)),
-                SecurityAlgorithms.HmacSha256),
-        });
-    }
-
-    private static async Task<Harness> HostAsync(bool authentication = true, Action<SkMcpOptions>? configure = null)
-    {
-        WebApplicationBuilder builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseTestServer();
-        builder.Logging.ClearProviders();
-        builder.Services.AddControllers().AddApplicationPart(typeof(VisibilityTests).Assembly);
-        if (authentication)
-        {
-            builder.Services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(o => o.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Hosts.SigningKey)),
-                });
-        }
-        builder.Services.AddAuthorization(o =>
-        {
-            o.AddPolicy("OrdersRead", p => p.RequireClaim("orders.read", "true"));
-            o.AddPolicy("Assertion", p => p.RequireAssertion(_ => true));
-            o.AddPolicy("Owner", p => p.AddRequirements(new OwnerRequirement()));
-        });
-        builder.Services.AddSingleton<IAuthorizationHandler, OwnerHandler>();
-        builder.Services.AddSkMcp(configure);
-
-        WebApplication app = builder.Build();
-        app.UseSkMcpCapture();
-        app.UseRouting();
-        app.Use(async (context, next) =>
-        {
-            bool gated = context.GetEndpoint()?.Metadata.GetMetadata<CustomGateAttribute>() is not null;
-            if (gated && context.Request.Headers["X-Gate"] != "open")
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return;
-            }
-            if (context.Request.Path.StartsWithSegments("/vis/undeclared"))
-            {
-                Interlocked.Increment(ref _undeclaredHits);
-            }
-            if (context.Request.Path.StartsWithSegments("/vis/undeclared")
-                && !context.Request.Headers.ContainsKey("Authorization"))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return;
-            }
-            await next();
-        });
-        if (authentication)
-        {
-            app.UseAuthentication();
-            app.UseAuthorization();
-        }
-        app.MapControllers();
-        app.MapGet("/vis/minimal", () => "ok")
-            .RequireAuthorization("OrdersRead")
-            .WithMetadata(new McpToolAttribute());
-        app.MapPost("/vis/minimal-post", () => "ok")
-            .RequireAuthorization("Assertion")
-            .WithMetadata(new McpToolAttribute());
-        app.MapSkMcp("/mcp");
-        await app.StartAsync();
-        return new Harness(app, app.Services.GetRequiredService<SkMcpDispatcher>());
-    }
-
-    private static async Task<(HashSet<string> Names, HashSet<string> Uncertain, int Total, string Raw)> SearchAsync(
-        SkMcpMetaTools tools, string query = "")
-    {
-        string raw = await tools.SearchTools(query, SkMcpMetaTools.MaxLimit);
-        using JsonDocument document = JsonDocument.Parse(raw);
-        HashSet<string> names = new(StringComparer.Ordinal);
-        HashSet<string> uncertain = new(StringComparer.Ordinal);
-        foreach (JsonElement card in document.RootElement.GetProperty("results").EnumerateArray())
-        {
-            string name = card.GetProperty("name").GetString()!;
-            names.Add(name);
-            if (card.TryGetProperty("authUncertain", out JsonElement flag) && flag.GetBoolean())
-            {
-                uncertain.Add(name);
-            }
-        }
-        return (names, uncertain, document.RootElement.GetProperty("total").GetInt32(), raw);
-    }
-
-    private static async Task<int> InvokeStatusAsync(SkMcpMetaTools tools, string name, object arguments)
-    {
-        string raw = await tools.InvokeTool(name, JsonSerializer.SerializeToElement(arguments), CancellationToken.None);
-        using JsonDocument document = JsonDocument.Parse(raw);
-        return document.RootElement.TryGetProperty("status", out JsonElement status)
-            ? status.GetInt32()
-            : throw new Xunit.Sdk.XunitException(raw);
-    }
-
     [Fact]
     public async Task V1_AnonymousEndpoint_VisibleWithoutIdentity()
     {
@@ -384,7 +115,7 @@ public sealed class VisibilityTests
 
         Assert.DoesNotContain("vis_assert", names);
         Assert.Empty(uncertain);
-        Assert.Contains("unknown_tool", await alice.LoadTool("vis_assert"));
+        Assert.Contains("unknown_tool", TextOf(await alice.LoadTool("vis_assert")));
     }
 
     [Fact]
@@ -393,7 +124,7 @@ public sealed class VisibilityTests
         await using Harness host = await HostAsync();
         SkMcpMetaTools alice = host.ToolsFor(Mint("alice", ordersRead: true, role: "admin"));
         (_, _, _, string search) = await SearchAsync(alice);
-        string loaded = await alice.LoadTool("vis_claim");
+        string loaded = TextOf(await alice.LoadTool("vis_claim"));
 
         foreach (string leak in (string[])["OrdersRead", "roles:", "policies", "imperative", "Assertion"])
         {
@@ -408,19 +139,16 @@ public sealed class VisibilityTests
         await using Harness host = await HostAsync();
         SkMcpMetaTools bob = host.ToolsFor(Mint("bob"));
 
-        Assert.Equal(
-            (await bob.LoadTool("vis_claim")).Replace("vis_claim", "x"),
-            (await bob.LoadTool("does_not_exist")).Replace("does_not_exist", "x"));
-        Assert.Contains("\"name\":\"vis_bare\"", await bob.LoadTool("vis_bare"));
-    }
+        CallToolResult hidden = await bob.LoadTool("vis_claim");
+        CallToolResult missing = await bob.LoadTool("does_not_exist");
+        Assert.Equal(TextOf(missing).Replace("does_not_exist", "x"), TextOf(hidden).Replace("vis_claim", "x"));
+        Assert.True(hidden.IsError);
+        Assert.True(missing.IsError);
 
-    private static Task<Harness> ProbeHostAsync(Action<SkMcpOptions>? configure = null) =>
-        HostAsync(configure: o =>
-        {
-            o.Visibility.Tier = VisibilityTier.Probe;
-            o.Identity.Forward("X-Gate");
-            configure?.Invoke(o);
-        });
+        CallToolResult visible = await bob.LoadTool("vis_bare");
+        Assert.Contains("\"name\":\"vis_bare\"", TextOf(visible));
+        Assert.False(visible.IsError ?? false);
+    }
 
     [Fact]
     public async Task V13_Probe_ResolvesImperativeFilterThroughMvcBackstop()
@@ -515,53 +243,6 @@ public sealed class VisibilityTests
         Assert.Contains("vis_undeclared", identified);
         Assert.DoesNotContain("vis_undeclared", identifiedUncertain);
         Assert.DoesNotContain("vis_undeclared", anonymous);
-    }
-
-    [Fact]
-    public async Task V24_ProbeCache_SkipsRepeatedProbesForSameCaller()
-    {
-        await using Harness host = await ProbeHostAsync();
-        SkMcpMetaTools tools = host.ToolsFor(Mint("alice"));
-        Interlocked.Exchange(ref _undeclaredHits, 0);
-
-        await SearchAsync(tools);
-        int afterFirst = Volatile.Read(ref _undeclaredHits);
-        await SearchAsync(tools);
-        int afterSecond = Volatile.Read(ref _undeclaredHits);
-
-        Assert.Equal(1, afterFirst);
-        Assert.Equal(1, afterSecond);
-
-        (HashSet<string> other, _, _, _) = await SearchAsync(host.ToolsFor(Mint("bob")));
-        Assert.Equal(2, Volatile.Read(ref _undeclaredHits));
-        Assert.Contains("vis_undeclared", other);
-    }
-
-    [Fact]
-    public async Task V26_ProbeCache_EvictsLeastRecentlyUsedCaller()
-    {
-        await using Harness host = await ProbeHostAsync(o => o.Visibility.ProbeCacheMaxCallers = 1);
-        SkMcpMetaTools alice = host.ToolsFor(Mint("alice"));
-        Interlocked.Exchange(ref _undeclaredHits, 0);
-
-        await SearchAsync(alice);
-        await SearchAsync(host.ToolsFor(Mint("bob")));
-        await SearchAsync(alice);
-
-        Assert.Equal(3, Volatile.Read(ref _undeclaredHits));
-    }
-
-    [Fact]
-    public async Task V25_ProbeCacheDisabled_ProbesEveryTime()
-    {
-        await using Harness host = await ProbeHostAsync(o => o.Visibility.ProbeCacheLifetime = TimeSpan.Zero);
-        SkMcpMetaTools tools = host.ToolsFor(Mint("alice"));
-        Interlocked.Exchange(ref _undeclaredHits, 0);
-
-        await SearchAsync(tools);
-        await SearchAsync(tools);
-
-        Assert.Equal(2, Volatile.Read(ref _undeclaredHits));
     }
 
     [Fact]

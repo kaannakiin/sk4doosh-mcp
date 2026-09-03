@@ -1,10 +1,15 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
+using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Visibility.Probe;
 
 namespace SkMcp.AspNetCore;
 
-public sealed record DispatchResult(int Status, string Body);
+public sealed record DispatchResult(int Status, string Body, string? ContentType, IReadOnlyDictionary<string, string> Headers)
+{
+    public BackendResponse ToBackendResponse() => new(Status, ContentType, Headers, Body);
+}
 
 public sealed record ProbeOutcome(int Status, bool ShortCircuited);
 
@@ -87,6 +92,13 @@ public sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFacto
         responseBody.Position = 0;
         using StreamReader reader = new(responseBody);
         string body = await reader.ReadToEndAsync(cancellationToken);
-        return new DispatchResult(context.Response.StatusCode, body);
+
+        Dictionary<string, string> headers = new(StringComparer.OrdinalIgnoreCase);
+        foreach ((string name, StringValues values) in context.Response.Headers)
+        {
+            headers[name] = string.Join(", ", values.ToArray());
+        }
+
+        return new DispatchResult(context.Response.StatusCode, body, context.Response.ContentType, headers);
     }
 }

@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "govdesi olmayan 503; backend_unavailable ailesinde retryable true",
+  "input": {
+    "status": 503
+  },
+  "expected": {
+    "error": "backend_unavailable",
+    "message": "The backend is temporarily unavailable (503). Retry later.",
+    "status": 503,
+    "retryable": true
+  }
+}

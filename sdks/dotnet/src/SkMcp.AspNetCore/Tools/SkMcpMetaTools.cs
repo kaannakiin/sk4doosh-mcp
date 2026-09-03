@@ -2,13 +2,14 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
+using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Visibility;
-using SkMcp.AspNetCore.Visibility.Probe;
 
 namespace SkMcp.AspNetCore.Tools;
 
@@ -16,8 +17,9 @@ namespace SkMcp.AspNetCore.Tools;
 public sealed class SkMcpMetaTools(
     SkMcpCatalogProvider catalog,
     SkMcpDispatcher dispatcher,
-    IVisibilityEvaluator visibility,
-    IProbeEvaluator probe,
+    IInvokeResultMapper mapper,
+    CallerVisibilityProvider visibility,
+    ICallerScopeResolver scopeResolver,
     IOptions<SkMcpOptions> options,
     IHttpContextAccessor httpContextAccessor)
 {
@@ -25,11 +27,7 @@ public sealed class SkMcpMetaTools(
     public const int MaxLimit = 50;
     public const int CardDescriptionBudget = 160;
 
-    private static readonly JsonSerializerOptions Wire = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+    private sealed record DecisionContext(Func<CatalogEntry, VisibilityDecision> Decide, CallerScope Scope, HttpRequest? Outer);
 
     [McpServerTool(Name = "search_tools", ReadOnly = true, Idempotent = true)]
     [Description("Search the backend's API operations by keyword. Returns compact cards: name, short description and a parameter summary. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Call load_tool for the full input schema before invoke_tool.")]
@@ -41,7 +39,7 @@ public sealed class SkMcpMetaTools(
         CancellationToken cancellationToken = default)
     {
         catalog.EnsureValid();
-        Func<CatalogEntry, VisibilityDecision> decide = await DecideAsync(cancellationToken);
+        DecisionContext context = await DecideAsync(cancellationToken);
         int capped = Math.Clamp(limit, 1, MaxLimit);
         int everything = Math.Max(1, catalog.Result.Entries.Count);
         int probeBudget = options.Value.Visibility.Tier == VisibilityTier.Probe
@@ -53,9 +51,9 @@ public sealed class SkMcpMetaTools(
         List<CatalogEntry> probeQueue = [];
         foreach (CatalogEntry entry in ranked)
         {
-            VisibilityDecision decision = decide(entry);
+            VisibilityDecision decision = context.Decide(entry);
             decisions[entry.Tool.Name] = decision;
-            if (decision == VisibilityDecision.Unknown && probeBudget > 0 && probe.CanProbe(entry))
+            if (decision == VisibilityDecision.Unknown && probeBudget > 0 && visibility.CanProbe(entry))
             {
                 probeBudget -= 1;
                 probeQueue.Add(entry);
@@ -64,7 +62,6 @@ public sealed class SkMcpMetaTools(
 
         if (probeQueue.Count > 0)
         {
-            HttpRequest? outer = httpContextAccessor.HttpContext?.Request;
             int concurrency = Math.Max(1, options.Value.Visibility.ProbeConcurrency);
             using SemaphoreSlim gate = new(concurrency);
             VisibilityDecision[] probed = new VisibilityDecision[probeQueue.Count];
@@ -73,7 +70,7 @@ public sealed class SkMcpMetaTools(
                 await gate.WaitAsync(cancellationToken);
                 try
                 {
-                    probed[index] = await probe.ProbeAsync(entry, outer, cancellationToken);
+                    probed[index] = await visibility.ProbeAsync(context.Scope, context.Outer, entry, cancellationToken);
                 }
                 finally
                 {
@@ -100,14 +97,14 @@ public sealed class SkMcpMetaTools(
                 break;
             }
         }
-        int total = catalog.Result.Entries.Count(entry => IsVisible(decide(entry)));
+        int total = catalog.Result.Entries.Count(entry => IsVisible(context.Decide(entry)));
 
-        return JsonSerializer.Serialize(new { total, results }, Wire);
+        return JsonSerializer.Serialize(new { total, results }, SkMcpJson.Wire);
     }
 
     [McpServerTool(Name = "load_tool", ReadOnly = true, Idempotent = true)]
     [Description("Load the full definition of one operation: description, JSON input schema and behavior hints. Use the exact name returned by search_tools.")]
-    public async Task<string> LoadTool(
+    public async Task<CallToolResult> LoadTool(
         [Description("Operation name exactly as returned by search_tools.")]
         string name,
         CancellationToken cancellationToken = default)
@@ -118,31 +115,32 @@ public sealed class SkMcpMetaTools(
         {
             return UnknownTool(name);
         }
-        VisibilityDecision decision = (await DecideAsync(cancellationToken))(entry);
+        DecisionContext context = await DecideAsync(cancellationToken);
+        VisibilityDecision decision = context.Decide(entry);
         if (decision == VisibilityDecision.Unknown
             && options.Value.Visibility.Tier == VisibilityTier.Probe
             && options.Value.Visibility.ProbeTopK > 0
-            && probe.CanProbe(entry))
+            && visibility.CanProbe(entry))
         {
-            decision = await probe.ProbeAsync(entry, httpContextAccessor.HttpContext?.Request, cancellationToken);
+            decision = await visibility.ProbeAsync(context.Scope, context.Outer, entry, cancellationToken);
         }
         if (!IsVisible(decision))
         {
             return UnknownTool(name);
         }
-        return JsonSerializer.Serialize(new
+        return TextResult(JsonSerializer.Serialize(new
         {
             entry.Tool.Name,
             entry.Tool.Description,
             entry.Tool.InputSchema,
             entry.Tool.Annotations,
             AuthUncertain = Uncertain(decision),
-        }, Wire);
+        }, SkMcpJson.Wire), isError: false);
     }
 
     [McpServerTool(Name = "invoke_tool")]
     [Description("Invoke one operation with a JSON object of arguments that matches its input schema from load_tool. The call runs through the backend's own request pipeline with the caller's identity; the result carries the HTTP status and response body.")]
-    public async Task<string> InvokeTool(
+    public async Task<CallToolResult> InvokeTool(
         [Description("Operation name exactly as returned by search_tools.")]
         string name,
         [Description("Arguments as a JSON object whose keys are the input schema's properties.")]
@@ -157,29 +155,33 @@ public sealed class SkMcpMetaTools(
         }
         if (entry.Template is null)
         {
-            return Error("not_invocable", $"Operation '{name}' cannot be invoked through sk-mcp; see the catalog diagnostics.");
+            return ErrorResult("not_invocable", $"Operation '{name}' cannot be invoked through sk-mcp; see the catalog diagnostics.");
         }
 
         try
         {
             DispatchResult result = await dispatcher.DispatchAsync(
                 entry.Template, arguments, httpContextAccessor.HttpContext?.Request, cancellationToken);
-            return JsonSerializer.Serialize(new { result.Status, result.Body }, Wire);
+            InvokeOutcome outcome = mapper.Map(result.ToBackendResponse(), KnownFields(entry));
+            return outcome switch
+            {
+                InvokeSucceeded succeeded => TextResult(JsonSerializer.Serialize(succeeded.Success, SkMcpJson.Wire), isError: false),
+                InvokeFailed failed => TextResult(JsonSerializer.Serialize(failed.Error, SkMcpJson.Wire), isError: true),
+                _ => throw new InvalidOperationException($"Unhandled invoke outcome: {outcome.GetType()}"),
+            };
         }
         catch (SkMcpArgumentException ex)
         {
-            return Error(ex.Code, ex.Message);
+            return ErrorResult(ex.Code, ex.Message);
         }
     }
 
-    private async Task<Func<CatalogEntry, VisibilityDecision>> DecideAsync(CancellationToken cancellationToken)
+    private async Task<DecisionContext> DecideAsync(CancellationToken cancellationToken)
     {
-        HashSet<string> policyNames = catalog.Result.Entries
-            .SelectMany(entry => entry.Descriptor.Auth.Policies)
-            .ToHashSet(StringComparer.Ordinal);
-        CallerFacts facts = await visibility.ResolveAsync(
-            httpContextAccessor.HttpContext?.Request, policyNames, cancellationToken);
-        return entry => VisibilityCombiner.Evaluate(entry.Descriptor.Auth, facts);
+        HttpRequest? outer = httpContextAccessor.HttpContext?.Request;
+        CallerScope scope = scopeResolver.Resolve(outer);
+        CallerFacts facts = await visibility.FactsAsync(scope, outer, catalog.PolicyNames, cancellationToken);
+        return new DecisionContext(entry => VisibilityCombiner.Evaluate(entry.Descriptor.Auth, facts), scope, outer);
     }
 
     private bool IsVisible(VisibilityDecision decision) => decision switch
@@ -244,9 +246,28 @@ public sealed class SkMcpMetaTools(
         return summary.ToString();
     }
 
-    private static string UnknownTool(string name) =>
-        Error("unknown_tool", $"No operation named '{name}'. Use search_tools to find the exact name.");
+    private static IReadOnlySet<string> KnownFields(CatalogEntry entry)
+    {
+        HashSet<string> fields = new(StringComparer.Ordinal);
+        if (entry.Tool.InputSchema["properties"] is JsonObject properties)
+        {
+            foreach ((string propertyName, _) in properties)
+            {
+                fields.Add(propertyName);
+            }
+        }
+        return fields;
+    }
 
-    private static string Error(string code, string message) =>
-        JsonSerializer.Serialize(new { error = code, message }, Wire);
+    private static CallToolResult TextResult(string json, bool isError) => new()
+    {
+        IsError = isError,
+        Content = [new TextContentBlock { Text = json }],
+    };
+
+    private static CallToolResult ErrorResult(string code, string message) =>
+        TextResult(JsonSerializer.Serialize(new { error = code, message, retryable = false }, SkMcpJson.Wire), isError: true);
+
+    private static CallToolResult UnknownTool(string name) =>
+        ErrorResult("unknown_tool", $"No operation named '{name}'. Use search_tools to find the exact name.");
 }

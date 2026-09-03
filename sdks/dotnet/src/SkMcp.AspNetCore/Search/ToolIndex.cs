@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace SkMcp.AspNetCore.Search;
 
 public sealed record SearchDocument(
@@ -117,7 +120,7 @@ public sealed class ToolIndex
         }
 
         List<string> tokens = [];
-        System.Text.StringBuilder current = new();
+        StringBuilder current = new();
         for (int index = 0; index < text.Length; index++)
         {
             char character = text[index];
@@ -136,21 +139,34 @@ public sealed class ToolIndex
             {
                 Flush(tokens, current);
             }
-            current.Append(char.ToLowerInvariant(character));
+            current.Append(character);
         }
         Flush(tokens, current);
         return tokens;
     }
 
-    private static void Flush(List<string> tokens, System.Text.StringBuilder current)
+    public static string FoldToken(string text)
     {
-        if (current.Length >= 2)
+        string decomposed = text.Normalize(NormalizationForm.FormD);
+        StringBuilder stripped = new(decomposed.Length);
+        foreach (char character in decomposed)
         {
-            string token = current.ToString();
-            if (token.Length > 3 && token.EndsWith('s'))
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
             {
-                token = token[..^1];
+                stripped.Append(character);
             }
+        }
+        return stripped.ToString().ToLowerInvariant().Normalize(NormalizationForm.FormC);
+    }
+
+    private static void Flush(List<string> tokens, StringBuilder current)
+    {
+        string folded = FoldToken(current.ToString());
+        if (folded.Length >= 2)
+        {
+            string token = folded.Length > 3 && folded.EndsWith('s')
+                ? folded[..^1]
+                : folded;
             tokens.Add(token);
         }
         current.Clear();

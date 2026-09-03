@@ -1,6 +1,8 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Http;
+using ModelContextProtocol.Authentication;
 using SkMcp.AspNetCore.Discovery;
+using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Naming;
 
 namespace SkMcp.AspNetCore;
@@ -13,6 +15,20 @@ public sealed class SkMcpOptions
     public SchemaOptions Schema { get; } = new();
     public NamingOptions Naming { get; } = new();
     public VisibilityOptions Visibility { get; } = new();
+    public CacheOptions Cache { get; } = new();
+    public ErrorMappingOptions Errors { get; } = new();
+    public ResourceServerOptions ResourceServer { get; } = new();
+}
+
+public sealed class ResourceServerOptions
+{
+    public ProtectedResourceMetadata? Metadata { get; set; }
+}
+
+public sealed class CacheOptions
+{
+    public TimeSpan Lifetime { get; set; } = TimeSpan.FromSeconds(30);
+    public int MaxCallers { get; set; } = 128;
 }
 
 public enum UnknownVisibility { Show, Hide }
@@ -25,8 +41,6 @@ public sealed class VisibilityOptions
     public VisibilityTier Tier { get; set; } = VisibilityTier.Declarative;
     public int ProbeTopK { get; set; } = 25;
     public int ProbeConcurrency { get; set; } = 4;
-    public TimeSpan ProbeCacheLifetime { get; set; } = TimeSpan.FromSeconds(30);
-    public int ProbeCacheMaxCallers { get; set; } = 128;
     public Dictionary<string, string> ProbeValues { get; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
