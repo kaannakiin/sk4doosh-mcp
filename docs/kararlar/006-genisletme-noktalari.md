@@ -28,7 +28,9 @@ Her yeni nokta test çarpanı + doküman + NestJS eşleniği + fixture maliyeti 
 
 Delegate biçimli küçük hook'lar (mevcut stille aynı): `options.Errors.Recognize(ErrorRecognizer)` (mapper zincirinin önüne koşar — [karar 007](007-hata-eslemesi.md)), var olan `Identity.Project`, `Naming.Prefix`, `Schema.PropertyName`.
 
-**Giriş noktaları** (host çağırır, değiştirmez): `ISkMcpCacheInvalidator` (`InvalidateCallerAsync`/`InvalidateTagAsync`/`InvalidateAllAsync`), `ISkMcpCatalogChangeSource { long Generation; IChangeToken GetChangeToken(); }` (+ `SkMcpCatalogProvider.ReloadAsync`).
+**Giriş noktaları** (host çağırır, değiştirmez): `ISkMcpCacheInvalidator` (`InvalidateCallerAsync`/`InvalidateTagAsync`/`InvalidateAllAsync`), `ISkMcpCatalogChangeSource { long Generation; IChangeToken GetChangeToken(); ValueTask ReloadAsync(CancellationToken); }`.
+
+`ReloadAsync` Faz 5'te bu arayüze taşındı. Önce yalnız `SkMcpCatalogProvider` üzerinde duruyordu; o sınıf aşağıdaki "sealed kalanlar" listesinde olduğu için alpha'da `internal` yapılınca host giriş noktasını çağıramaz hale gelmişti. Giriş noktası arayüzde, tesisat sınıfta.
 
 ## Nest `ExtensionPoints`
 

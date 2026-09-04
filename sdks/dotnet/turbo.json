@@ -17,6 +17,15 @@
         "tests/**/obj/**"
       ]
     },
+    "test": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"],
+      "inputs": ["src/**", "tests/**", "samples/**", "$TURBO_ROOT$/packages/conformance/**"],
+      "outputs": []
+    },
+    "pack": {
+      "dependsOn": ["$TURBO_EXTENDS$", "gen"],
+      "outputs": ["local/nupkg-feed/**"]
+    },
     "lint": {
       "dependsOn": ["$TURBO_EXTENDS$", "gen"]
     }

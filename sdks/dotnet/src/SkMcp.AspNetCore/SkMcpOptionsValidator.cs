@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 
 namespace SkMcp.AspNetCore;
 
-public sealed class SkMcpOptionsValidator : IValidateOptions<SkMcpOptions>
+internal sealed class SkMcpOptionsValidator : IValidateOptions<SkMcpOptions>
 {
     public ValidateOptionsResult Validate(string? name, SkMcpOptions options)
     {

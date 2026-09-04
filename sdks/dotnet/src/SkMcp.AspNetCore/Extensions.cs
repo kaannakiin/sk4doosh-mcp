@@ -93,6 +93,7 @@ public static class SkMcpApplicationBuilderExtensions
     public static IApplicationBuilder UseSkMcpCapture(this IApplicationBuilder app)
     {
         PipelineHolder holder = app.ApplicationServices.GetRequiredService<PipelineHolder>();
+        holder.Registered = true;
         app.UseMiddleware<ResourceServerMiddleware>();
         return app.Use(next =>
         {
@@ -105,6 +106,14 @@ public static class SkMcpApplicationBuilderExtensions
         this IEndpointRouteBuilder endpoints, string pattern = "/mcp")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
+
+        PipelineHolder holder = endpoints.ServiceProvider.GetRequiredService<PipelineHolder>();
+        if (!holder.Registered)
+        {
+            throw new InvalidOperationException(
+                "MapSkMcp() requires app.UseSkMcpCapture() earlier in the pipeline, before UseRouting(), "
+                + "UseAuthentication() and UseAuthorization(). Add app.UseSkMcpCapture() near the top of the pipeline.");
+        }
 
         SkMcpCatalogProvider catalog = endpoints.ServiceProvider.GetRequiredService<SkMcpCatalogProvider>();
         catalog.Attach(endpoints.DataSources, pattern);

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Nodes;
 using SkMcp.AspNetCore;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Discovery;
 
 namespace SkMcp.Tests;

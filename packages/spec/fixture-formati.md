@@ -20,6 +20,9 @@ Fixture'lar [packages/conformance](../conformance) altında yaşar; her SDK'nın
 - `kind: "naming"` — `input.endpoints`: isimlendirmeye giren endpoint kümesi (`operationId?`, `method`, `route`). `expected` iki biçimden biri: `{"names": [...]}` (endpoints ile aynı sırada) ya da `{"error": "name_collision" | "invalid_name"}`. Küme halinde verilir çünkü çakışma tek endpoint'in değil kümenin özelliğidir.
 - `kind: "metadata-extraction"` — `input`: tam `EndpointDescriptor`; `expected`: tam `ToolDefinition`.
 - `kind: "argument-mapping"` — `input`: `{template, arguments}` (şablon: metod/route/parametre beyanları + body beyanı); `expected`: `{pathAndQuery, headers?, bodyJson?}` ya da `{"error": "unknown_argument" | "invalid_path_type" | "missing_path_parameter" | "header_injection" | "null_not_allowed"}`. Kurallar: [arguman-eslemesi.md](arguman-eslemesi.md).
+- `kind: "selection"` — `input`: `{default, operations[]}` (her operation `id` + `container?` / `operation?` işaretleri); `expected`: `{"selected": [...]}` ya da `{"error": "ambiguous_selection"}`. Kurallar: [secim-hiyerarsisi.md](secim-hiyerarsisi.md).
+- `kind: "visibility"` — `input`: `{auth, caller}` (`auth`: `anonymous` üç değerli, `policies`, `imperative`; `caller`: `identity` üç değerli, `policyResults`); `expected`: `{"decision": "allow" | "deny" | "unknown"}`. Kurallar: [gorunurluk.md](gorunurluk.md).
+- `kind: "search"` — `input`: `{tools[], query}` (her tool `name` + `route`, opsiyonel açıklama alanları); `expected`: `{"names": [...]}`, beklenen sırada. Kurallar: [arama-semantigi.md](arama-semantigi.md).
 - `kind: "error-mapping"` — `input`: bir `BackendResponseSpec` (`status`, `contentType?`, `headers?`, `body?`, `knownFields?`); `expected`: [invoke-result.schema.json](schemas/invoke-result.schema.json)'a uyan `InvokeSuccess` ya da `MappedError`. Kurallar: [hata-eslemesi.md](hata-eslemesi.md).
 
 ## Kurallar

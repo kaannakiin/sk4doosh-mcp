@@ -6,6 +6,9 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const schemasDir = path.resolve(here, "../../../packages/spec/schemas");
 const outDir = path.resolve(here, "../src/SkMcp.AspNetCore/Generated");
+const specVersion = JSON.parse(
+  readFileSync(path.resolve(here, "../../../packages/spec/package.json"), "utf8"),
+).version;
 
 const sources = [
   "endpoint-descriptor.schema.json",
@@ -121,6 +124,8 @@ await writeFile(
     "using System.Text.Json.Nodes;",
     "",
     "namespace SkMcp.AspNetCore.Spec;",
+    "",
+    `public static class SkMcpSpec\n{\n    public const string Version = "${specVersion}";\n}`,
     "",
     [...emitted.values()].join("\n\n"),
     "",

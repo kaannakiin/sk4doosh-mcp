@@ -2,6 +2,11 @@ using System.Text.Json.Nodes;
 
 namespace SkMcp.AspNetCore.Spec;
 
+public static class SkMcpSpec
+{
+    public const string Version = "0.1.0";
+}
+
 public sealed record EndpointDescriptor
 {
     public string? OperationId { get; init; }

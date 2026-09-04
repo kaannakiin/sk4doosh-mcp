@@ -1,8 +1,8 @@
 export const limits = {
-  maxFileBytes: 50 * 1024 * 1024,
+  maxFileBytes: 50 * 1024 * 1024, // 50 MB
   maxCellsHard: 10_000,
   maxCellsDefault: 2_000,
-  maxPayloadBytes: 512 * 1024,
+  maxPayloadBytes: 512 * 1024, // 512 KB
   maxStringChars: 512,
   maxListResults: 200,
   defaultListResults: 50,
@@ -12,10 +12,10 @@ export const limits = {
   maxRegexSource: 256,
   maxRangesPerRule: 64,
   documentCacheSize: 4,
-  maxCsvBytes: 16 * 1024 * 1024,
+  maxCsvBytes: 16 * 1024 * 1024, // 16 MB
   maxCsvCells: 2_000_000,
-  csvNulScanBytes: 8 * 1024,
-  csvSniffBytes: 64 * 1024,
+  csvNulScanBytes: 8 * 1024, // 8 KB
+  csvSniffBytes: 64 * 1024, // 64 KB
   csvSniffLines: 20,
   maxGroupsDefault: 50,
   maxGroupsHard: 500,

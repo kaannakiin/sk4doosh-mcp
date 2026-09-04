@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace SkMcp.AspNetCore;
 
-public static class SkMcpJson
+internal static class SkMcpJson
 {
     public static readonly JsonSerializerOptions Wire = new()
     {

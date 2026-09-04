@@ -14,7 +14,7 @@ public sealed record CallerFacts(
         new(CallerIdentity.Unknown, new Dictionary<string, VisibilityDecision>());
 }
 
-public static class VisibilityCombiner
+internal static class VisibilityCombiner
 {
     public static VisibilityDecision Evaluate(Auth auth, CallerFacts caller)
     {

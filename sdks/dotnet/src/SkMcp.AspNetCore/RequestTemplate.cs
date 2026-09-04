@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace SkMcp.AspNetCore;
+namespace SkMcp.AspNetCore.Requests;
 
 public enum ParameterLocation { Path, Query, Header }
 

@@ -2,18 +2,19 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using SkMcp.AspNetCore.Errors;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Visibility.Probe;
 
 namespace SkMcp.AspNetCore;
 
-public sealed record DispatchResult(int Status, string Body, string? ContentType, IReadOnlyDictionary<string, string> Headers)
+internal sealed record DispatchResult(int Status, string Body, string? ContentType, IReadOnlyDictionary<string, string> Headers)
 {
     public BackendResponse ToBackendResponse() => new(Status, ContentType, Headers, Body);
 }
 
-public sealed record ProbeOutcome(int Status, bool ShortCircuited);
+internal sealed record ProbeOutcome(int Status, bool ShortCircuited);
 
-public sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFactory requests)
+internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFactory requests)
 {
     private static readonly IReadOnlyDictionary<string, string> NoHeaders =
         new Dictionary<string, string>();

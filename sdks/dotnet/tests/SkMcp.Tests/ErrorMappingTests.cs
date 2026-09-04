@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using ModelContextProtocol.Protocol;
 using SkMcp.AspNetCore;
 using SkMcp.AspNetCore.Errors;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Spec;
 using SkMcp.AspNetCore.Tools;
 using static SkMcp.Tests.VisibilityHost;

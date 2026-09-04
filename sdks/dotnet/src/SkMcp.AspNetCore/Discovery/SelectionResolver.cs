@@ -2,9 +2,9 @@ namespace SkMcp.AspNetCore.Discovery;
 
 public enum SelectionDefault { Exclude, Include }
 
-public enum SelectionMarker { Include, Exclude, Both }
+internal enum SelectionMarker { Include, Exclude, Both }
 
-public static class SelectionResolver
+internal static class SelectionResolver
 {
     public static bool IsSelected(
         SelectionDefault defaultDecision,

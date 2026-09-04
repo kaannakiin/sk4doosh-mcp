@@ -7,4 +7,6 @@ public interface ISkMcpCatalogChangeSource
     long Generation { get; }
 
     IChangeToken GetChangeToken();
+
+    ValueTask ReloadAsync(CancellationToken cancellationToken = default);
 }

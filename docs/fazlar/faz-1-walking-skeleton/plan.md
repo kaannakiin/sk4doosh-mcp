@@ -1,5 +1,7 @@
 # Faz 1 — Walking Skeleton
 
+Durum: **tamamlandı** — bkz. [notlar.md](notlar.md).
+
 ## Hedef
 
 Projenin tek en riskli bahsini kanıtlamak: **sentetik `HttpContext` ile in-process dispatch, ASP.NET Core'un `[Authorize]`/policy davranışını birebir korur.** Bu kanıtlanmadan spec yazmak, SDK genelleştirmek anlamsız — her şey bu mekanizmanın üstüne oturuyor.

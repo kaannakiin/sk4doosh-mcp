@@ -14,7 +14,7 @@ using SkMcp.AspNetCore.Visibility;
 namespace SkMcp.AspNetCore.Tools;
 
 [McpServerToolType]
-public sealed class SkMcpMetaTools(
+internal sealed class SkMcpMetaTools(
     SkMcpCatalogProvider catalog,
     SkMcpDispatcher dispatcher,
     IInvokeResultMapper mapper,

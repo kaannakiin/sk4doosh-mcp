@@ -1,5 +1,7 @@
 # Faz 4 — Hata Eşleme, Cache, Transport Sertleştirme
 
+Durum: **tamamlandı** — bkz. [notlar.md](notlar.md).
+
 ## Hedef
 
 SDK'yı "demo çalışıyor"dan "gerçek bir backend'e gömülebilir"e taşımak: agent'ın kendini düzeltebildiği hatalar, kimlik başına cache, dışarıdan gerçek OAuth ile bağlanılabilen transport.

@@ -50,7 +50,7 @@ Her anahtar `skmcp:v1:{scope}:{kind}[:{subkey}]` biçiminde seri hale getirilir 
 
 **Uçuş kuralı:** bir geçersiz kılma çağrısı tamamlandıktan sonra, bu process içinde, çağrıdan **önce** yazılmış hiçbir girdi etkilenen scope'lar için bir daha gözlenmez. Çağrı sırasında **uçuşta** olan (okuma başlamış, henüz yazılmamış) bir hesaplama tamamlanabilir, ama epoch guard'ı onu geri yazmaz (aşağıya bkz — cache-aside okuma anında gözlenen epoch hâlâ güncelse yazar).
 
-**Katalog reload'u tümünü temizler:** `SkMcpCatalogProvider.ReloadAsync()` sırası — yeni snapshot inşa edilir → `Generation` artar → `ISkMcpCache.ClearAsync()` çağrılır → değişiklik token'ı sinyallenir. Bu, `facts`/`probe` ayrımı gözetmeden **tüm** önbelleği temizler; katalog değiştiyse eski bir tool için önbelleklenmiş verdict artık anlamsızdır.
+**Katalog reload'u tümünü temizler:** `ISkMcpCatalogChangeSource.ReloadAsync()` sırası — yeni snapshot inşa edilir → `Generation` artar → `ISkMcpCache.ClearAsync()` çağrılır → değişiklik token'ı sinyallenir. Bu, `facts`/`probe` ayrımı gözetmeden **tüm** önbelleği temizler; katalog değiştiyse eski bir tool için önbelleklenmiş verdict artık anlamsızdır.
 
 **`_disabled` probe kümesi yalnız katalog değişiminde temizlenir**, hiçbir yetki geçersiz kılma operasyonunda değil. Bu küme, probe'un kalıcı olarak vazgeçtiği endpoint'leri tutar (işaretsiz `2xx` gibi belirsiz bir yanıt görüldüğünde — [gorunurluk.md](gorunurluk.md) T2 "Karar"). Neden yalnız katalog: küme **yapısal bir gerçeği** kaydeder (route eşleşmedi ya da işaretsiz bir başarı görüldü — handler koşmuş olabilir), yetki durumunu değil; bir yetki olayında yeniden açmak, handler'ın koşma riskini geri getirir ki bunun için katalog gerçekten değişmiş (yeni deploy, yeni endpoint kaydı) olmalıdır.
 

@@ -1,128 +1,42 @@
-# Turborepo starter
+# sk-mcp
 
-This Turborepo starter is maintained by the Turborepo core team.
+Ajanlar için Swagger. Mevcut bir backend'e gömülen bir MCP katmanı: endpoint'lerinizi arama-öncelikli bir tool kataloğu olarak açar, çağrıyı backend'in **kendi pipeline'ından** geçirir. Yaptırım nerede yaşıyorsa orada kalır — sk-mcp yetki mantığını ne kopyalar ne de yeniden yazar.
 
-## Using this example
+Spec dilden bağımsızdır; her dil kendi SDK'sını aynı fixture korpusuna karşı doğrular.
 
-Run the following command:
+- Ne olduğu ve neden: [docs/00-genel-bakis.md](docs/00-genel-bakis.md)
+- Nasıl çalışıyor (yaptırım vs görünürlük): [docs/nasil-calisiyor.md](docs/nasil-calisiyor.md)
+- Paket sınırları: [docs/paket-yerlesimi.md](docs/paket-yerlesimi.md)
+- Kararlar: [docs/kararlar/](docs/kararlar/) · Fazlar: [docs/fazlar/](docs/fazlar/)
 
-```sh
-npx create-turbo@latest
+## Repo haritası
+
+| Yol                                                    | Rol                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [packages/spec](packages/spec)                         | Normatif spec: Türkçe metin + `schemas/*.schema.json`. Tüm diller için tek doğruluk kaynağı |
+| [packages/conformance](packages/conformance)           | Saf JSON fixture korpusu (7 tür, 105 fixture) + `validate.mjs`                              |
+| [packages/core](packages/core)                         | TS referans implementasyonu; spec tipleri üretilir, elle yazılmaz                           |
+| [sdks/dotnet](sdks/dotnet)                             | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                 |
+| [sdks/nestjs](sdks/nestjs)                             | NestJS SDK — istek katmanı hazır, keşif/arama Faz 6'da                                      |
+| [packages/excel-mcp](packages/excel-mcp)               | Bağımsız, yayınlanmış ürün: yerel Excel dosyalarını okuyan MCP sunucusu                     |
+| [apps/example-agent-client](apps/example-agent-client) | Senaryolu MCP istemcisi (smoke, validation-retry, error-envelope)                           |
+
+`packages/eslint-config` ve `packages/typescript-config` iç yapılandırma paketleridir.
+
+## Build ve test
+
+```bash
+pnpm install
+pnpm build          # turbo run build
+pnpm lint           # lint + conformance fixture doğrulaması
+pnpm check-types
 ```
 
-## What's inside?
+TS testleri: `pnpm --filter @sk-mcp/core test`, `pnpm --filter @sk-mcp/sdk-nestjs test` (Vitest).
+C# tarafı: `pnpm turbo run test --filter=@sk-mcp/sdk-dotnet` (net8.0 + net10.0).
 
-This Turborepo includes the following packages/apps:
+Spec tipleri üretilir: şemayı değiştirin, `pnpm turbo run gen` koşun. `packages/core/src/generated/` ve `sdks/dotnet/src/SkMcp.AspNetCore/Generated/` elle düzenlenmez.
 
-### Apps and Packages
+## Lisans
 
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-pnpm exec turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters), e.g. `turbo build --filter=<package-name>`.
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters), e.g. `turbo dev --filter=<package-name>`.
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+MIT — [LICENSE](LICENSE).

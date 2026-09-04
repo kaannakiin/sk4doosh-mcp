@@ -19,7 +19,7 @@ public interface IProbeEvaluator
     Task<VisibilityDecision> ProbeAsync(CatalogEntry entry, HttpRequest? outerRequest, CancellationToken cancellationToken);
 }
 
-public sealed class ProbeEvaluator : IProbeEvaluator
+internal sealed class ProbeEvaluator : IProbeEvaluator
 {
     private readonly SkMcpDispatcher _dispatcher;
     private readonly IOptions<SkMcpOptions> _options;

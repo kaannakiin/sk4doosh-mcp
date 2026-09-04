@@ -29,7 +29,7 @@ Stateless modda server→client bildirim mekanizması yoktur; `listChanged` bu m
 sk-mcp'nin üç meta-tool'u (`search_tools`, `load_tool`, `invoke_tool`) katalog değiştiğinde **değişmez** — arkalarındaki backend endpoint kataloğu değişir. Bu yüzden değişikliği taşıyan, meta-tool listesinin kendisi değil, her meta-tool'un `_meta` alanıdır:
 
 - `tools.listChanged` kapasitesi her zaman `true` ilan edilir.
-- Her meta-tool'un tanımına `_meta["sk-mcp/catalogGeneration"]` damgalanır — katalog snapshot'ının jenerasyon sayacı ([onbellek.md](onbellek.md) "Geçersiz kılma" — `SkMcpCatalogProvider.ReloadAsync` → `Generation++`).
+- Her meta-tool'un tanımına `_meta["sk-mcp/catalogGeneration"]` damgalanır — katalog snapshot'ının jenerasyon sayacı ([onbellek.md](onbellek.md) "Geçersiz kılma" — `ISkMcpCatalogChangeSource.ReloadAsync` → `Generation++`).
 - Bildirim **yalnız** katalog reload'unda tetiklenir; yetki geçersiz kılma operasyonları (`InvalidateCallerAsync` vb.) katalog kataloğunu değiştirmediği için `listChanged` **tetiklemez**. `tools/list` çağrısının döndürdüğü payload, jenerasyon değiştiğinde gerçekten farklılaşır (`_meta` damgası artar) — bildirim dürüsttür, boş bir "bir şey değişti" sinyali değildir.
 
 **.NET mekanizması:** `McpServerOptions.ToolCollection.Changed` olayı SDK'nın kendi `SendListChangedNotificationAsync`'ini tetikler (pre-SEP-2575 broadcast + 2026-07-28 `subscriptions/listen` yönlendirmesi ikisini de kapsar). sk-mcp kendi oturum kayıt defterini kurmaz — SDK'nın tek slotlu `RunSessionHandler`/`ConfigureSessionOptions`'ını gasp etmek, SDK'nın zaten yaptığı fan-out'u yeniden yazmak olurdu. Tek `NotifyChanged()` çağrısı her modda her canlı oturuma ulaşır; stateless'ta dinleyen yoksa sessizce hiçbir şey olmaz.

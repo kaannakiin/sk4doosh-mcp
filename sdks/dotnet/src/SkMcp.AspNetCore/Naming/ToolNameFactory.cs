@@ -6,7 +6,7 @@ namespace SkMcp.AspNetCore.Naming;
 
 public enum PrefixMode { Always, OnCollision }
 
-public static partial class ToolNameFactory
+internal static partial class ToolNameFactory
 {
     public const int LongNameThreshold = 64;
     public const string NameDisambiguated = "name_disambiguated";

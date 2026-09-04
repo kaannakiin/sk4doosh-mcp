@@ -9,7 +9,7 @@ using System.Text.Json.Nodes;
 
 namespace SkMcp.AspNetCore.Discovery;
 
-public static class JsonSchemaMapper
+internal static class JsonSchemaMapper
 {
     public const int MaxDepth = 3;
 

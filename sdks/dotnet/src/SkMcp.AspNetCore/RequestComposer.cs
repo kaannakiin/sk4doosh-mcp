@@ -3,12 +3,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace SkMcp.AspNetCore;
+namespace SkMcp.AspNetCore.Requests;
 
-public sealed record ComposedRequest(
+internal sealed record ComposedRequest(
     string PathAndQuery, IReadOnlyDictionary<string, string> Headers, byte[]? Body);
 
-public static class RequestComposer
+internal static class RequestComposer
 {
     public static ComposedRequest Compose(RequestTemplate template, JsonElement arguments)
     {

@@ -3,10 +3,10 @@ using System.Text;
 
 namespace SkMcp.AspNetCore.Search;
 
-public sealed record SearchDocument(
+internal sealed record SearchDocument(
     string Name, string? Description, IReadOnlyList<string> Tags, string Route);
 
-public sealed class ToolIndex
+internal sealed class ToolIndex
 {
     public const double NameWeight = 3.0;
     public const double DescriptionWeight = 1.5;

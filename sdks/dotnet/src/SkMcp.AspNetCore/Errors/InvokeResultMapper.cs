@@ -17,7 +17,7 @@ public interface IInvokeResultMapper
     InvokeOutcome Map(BackendResponse response, IReadOnlySet<string> knownFields);
 }
 
-public sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvokeResultMapper
+internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvokeResultMapper
 {
     private const string FieldLeakMessage = "The value was rejected; details were withheld.";
 

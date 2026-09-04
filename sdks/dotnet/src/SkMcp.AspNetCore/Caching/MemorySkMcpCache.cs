@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace SkMcp.AspNetCore.Caching;
 
-public sealed class MemorySkMcpCache(IOptions<SkMcpOptions> options, TimeProvider timeProvider) : ISkMcpCache
+internal sealed class MemorySkMcpCache(IOptions<SkMcpOptions> options, TimeProvider timeProvider) : ISkMcpCache
 {
     private sealed class ScopeEntry
     {

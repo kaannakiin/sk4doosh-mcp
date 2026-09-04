@@ -7,7 +7,7 @@ using SkMcp.AspNetCore.Visibility.Probe;
 
 namespace SkMcp.AspNetCore.Visibility;
 
-public sealed class CallerVisibilityProvider(
+internal sealed class CallerVisibilityProvider(
     IVisibilityEvaluator evaluator,
     IProbeEvaluator probe,
     ISkMcpCache cache,

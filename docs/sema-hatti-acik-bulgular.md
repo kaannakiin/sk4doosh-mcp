@@ -1,5 +1,7 @@
 # Şema Hattı — Açık Bulgular
 
+> Statü: **kısmen çözüldü.** Bulgu 1, 4 ve 5 kodda düzeltildi ([karar 009](kararlar/009-sema-donusum-ve-tani-siniflari.md)); bulgu 3 tanı sınıflarıyla ele alındı. Bu belgenin "Spec boşluğu" bölümünde eksik denen [sema-donusum-kurallari.md](../packages/spec/sema-donusum-kurallari.md) artık yazıldı. Açık kalan tek konu wrapper soyma / derinlik-inline / `$ref` recursion; o dosyanın "Pinlenmemiş alanlar" bölümü bunları normatif olarak tanımsız ilan eder.
+
 Tarih: 2026-09-03. Kapsam: endpoint → `ToolDefinition.inputSchema` hattı. Kaynak: Faz 4 sonrası yapılan denetim; her bulgu gerçek `JsonSchemaMapper` derlenip koşturularak ya da canlı MCP oturumuyla kanıtlandı. Bu döküman yalnız **sorunu** kaydeder; çözüm ve sıralama açık bırakılmıştır.
 
 Hat: [JsonSchemaMapper.cs](../sdks/dotnet/src/SkMcp.AspNetCore/Discovery/JsonSchemaMapper.cs) (CLR tipi → JSON Schema) → [EndpointCatalog.cs](../sdks/dotnet/src/SkMcp.AspNetCore/Discovery/EndpointCatalog.cs) (ApiExplorer → `EndpointDescriptor`) → [ToolDefinitionFactory.cs](../sdks/dotnet/src/SkMcp.AspNetCore/Tools/ToolDefinitionFactory.cs) (parametre + gövde → tek `inputSchema`). TS karşılığı: [tool-definition.ts](../packages/core/src/tool-definition.ts).

@@ -1,5 +1,7 @@
 # Faz 2 — Spec Çıkarma v0
 
+Durum: **tamamlandı** — bkz. [notlar.md](notlar.md).
+
 ## Hedef
 
 Faz 1'in kanıtladığı davranışı, kapsam genişletmeden **önce**, dil bağımsız spec parçalarına ve ilk conformance fixture'larına genellemek. Bu faz atlanır ya da ertelenirse spec "C# kodunun düzyazısı"na dönüşür — NestJS ve sonrası için drift garantisi. Bilinçli olarak en ucuz faz: iki gerçek geri bildirim üreten fazın (1 ve 3) arasına sıkıştırılmış saf genelleme işi.

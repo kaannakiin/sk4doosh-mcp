@@ -63,7 +63,7 @@ public sealed class SchemaHost : IAsyncDisposable
         Catalog = catalog;
     }
 
-    public SkMcpCatalogProvider Catalog { get; }
+    internal SkMcpCatalogProvider Catalog { get; }
 
     public static async Task<SchemaHost> StartAsync(
         Action<Microsoft.AspNetCore.Mvc.JsonOptions>? json = null,

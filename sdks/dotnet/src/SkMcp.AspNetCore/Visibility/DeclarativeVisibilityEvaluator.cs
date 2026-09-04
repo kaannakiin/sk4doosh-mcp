@@ -13,7 +13,7 @@ public interface IVisibilityEvaluator
         HttpRequest? outerRequest, IReadOnlySet<string> policyNames, CancellationToken cancellationToken);
 }
 
-public sealed class DeclarativeVisibilityEvaluator(SyntheticRequestFactory requests) : IVisibilityEvaluator
+internal sealed class DeclarativeVisibilityEvaluator(SyntheticRequestFactory requests) : IVisibilityEvaluator
 {
     public const string RolesPrefix = "roles:";
 

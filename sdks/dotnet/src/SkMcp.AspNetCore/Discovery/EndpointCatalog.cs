@@ -13,12 +13,13 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
 using SkMcp.AspNetCore.Naming;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Spec;
 using SkMcp.AspNetCore.Tools;
 
 namespace SkMcp.AspNetCore.Discovery;
 
-public sealed record CatalogDiagnostic(string Code, string Message);
+internal sealed record CatalogDiagnostic(string Code, string Message);
 
 public sealed record CatalogEntry
 {
@@ -28,7 +29,7 @@ public sealed record CatalogEntry
     public RequestTemplate? Template { get; init; }
 }
 
-public sealed record CatalogBuildResult
+internal sealed record CatalogBuildResult
 {
     public required IReadOnlyList<CatalogEntry> Entries { get; init; }
     public required IReadOnlyList<CatalogDiagnostic> Diagnostics { get; init; }
@@ -37,7 +38,7 @@ public sealed record CatalogBuildResult
     public int Dropped { get; init; }
 }
 
-public static partial class EndpointCatalog
+internal static partial class EndpointCatalog
 {
     public static CatalogBuildResult Build(
         IApiDescriptionGroupCollectionProvider apiDescriptions,

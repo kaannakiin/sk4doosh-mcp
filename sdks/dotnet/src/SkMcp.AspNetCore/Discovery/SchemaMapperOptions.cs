@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace SkMcp.AspNetCore.Discovery;
 
-public sealed record SchemaMapperOptions
+internal sealed record SchemaMapperOptions
 {
     public required Func<PropertyInfo, string> PropertyName { get; init; }
 

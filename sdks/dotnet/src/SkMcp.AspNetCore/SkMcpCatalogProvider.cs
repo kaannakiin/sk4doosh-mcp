@@ -15,7 +15,7 @@ using SkMcp.AspNetCore.Search;
 
 namespace SkMcp.AspNetCore;
 
-public sealed class SkMcpCatalogProvider(
+internal sealed class SkMcpCatalogProvider(
     IApiDescriptionGroupCollectionProvider apiDescriptions,
     IOptions<SkMcpOptions> options,
     IOptions<JsonOptions> jsonOptions,

@@ -5,7 +5,7 @@ using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Tools;
 
-public static class ToolDefinitionFactory
+internal static class ToolDefinitionFactory
 {
     public static ToolDefinition Create(EndpointDescriptor endpoint, bool strictArguments = true)
     {

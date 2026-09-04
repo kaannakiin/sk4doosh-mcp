@@ -4,14 +4,14 @@ using Microsoft.Extensions.Options;
 
 namespace SkMcp.AspNetCore;
 
-public sealed class SyntheticRequest(AsyncServiceScope scope, DefaultHttpContext context) : IAsyncDisposable
+internal sealed class SyntheticRequest(AsyncServiceScope scope, DefaultHttpContext context) : IAsyncDisposable
 {
     public DefaultHttpContext Context { get; } = context;
 
     public ValueTask DisposeAsync() => scope.DisposeAsync();
 }
 
-public sealed class SyntheticRequestFactory(
+internal sealed class SyntheticRequestFactory(
     IServiceScopeFactory scopeFactory,
     IOptions<SkMcpOptions> options)
 {

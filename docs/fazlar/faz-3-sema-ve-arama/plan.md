@@ -1,5 +1,7 @@
 # Faz 3 — Şema Sadeleştirme + Search-First Keşif
 
+Durum: **kısmen tamamlandı** — keşif, isimlendirme, görünürlük ve arama bitti ([notlar.md](notlar.md)). Şema sadeleştirmesinin üç alanı bilinçli olarak pinlenmedi: [sema-donusum-kurallari.md](../../../packages/spec/sema-donusum-kurallari.md) "Pinlenmemiş alanlar". `schema-simplification/` fixture dizini bu yüzden yok.
+
 ## Hedef
 
 Ürünün kendisi olan iki özelliği kurmak ve C# SDK'yı elle bağlanmış slice'tan gerçek, genelleştirilmiş SDK'ya dönüştürmek:

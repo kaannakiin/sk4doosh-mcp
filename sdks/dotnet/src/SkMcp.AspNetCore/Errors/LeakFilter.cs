@@ -2,11 +2,11 @@ using System.Text.RegularExpressions;
 
 namespace SkMcp.AspNetCore.Errors;
 
-public enum LeakRule { StackFrame, ExceptionType, FilePath, ConnectionString, Credential, TooLong }
+internal enum LeakRule { StackFrame, ExceptionType, FilePath, ConnectionString, Credential, TooLong }
 
-public readonly record struct LeakVerdict(string Normalized, LeakRule? Rule);
+internal readonly record struct LeakVerdict(string Normalized, LeakRule? Rule);
 
-public static class LeakFilter
+internal static class LeakFilter
 {
     private const int MaxForwardableLength = 1000;
 
