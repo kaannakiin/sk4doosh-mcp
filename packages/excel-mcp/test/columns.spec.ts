@@ -105,3 +105,43 @@ describe("unknown columns", () => {
     );
   });
 });
+
+describe("a header row that carries no text", () => {
+  const blank = buildColumnIndex(
+    "Sales!A1:H10",
+    bounds,
+    1,
+    headers.map(() => null),
+  );
+
+  it("names the row that was read", () => {
+    try {
+      resolveColumn(blank, "Region");
+      expect.unreachable();
+    } catch (error) {
+      expect((error as SkMcpExcelError).recovery).toContain(
+        "row 1 (headerRow)",
+      );
+    }
+  });
+
+  it("offers the next call that would work", () => {
+    try {
+      resolveColumn(blank, "Region");
+      expect.unreachable();
+    } catch (error) {
+      expect((error as SkMcpExcelError).recovery).toContain("Pass headerRow");
+    }
+  });
+
+  it("does not offer headerRow advice when the sheet has headers", () => {
+    try {
+      resolveColumn(index, "Nope");
+      expect.unreachable();
+    } catch (error) {
+      expect((error as SkMcpExcelError).recovery).not.toContain(
+        "Pass headerRow",
+      );
+    }
+  });
+});

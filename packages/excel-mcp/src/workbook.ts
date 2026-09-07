@@ -12,11 +12,37 @@ export interface DocumentMeta {
   readonly modifiedAt: string;
 }
 
-export async function parseXlsx(handle: FileHandle): Promise<Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.read(
-    handle.createReadStream({ start: 0, autoClose: false }),
+function mapXlsxError(error: unknown, path: string): SkMcpExcelError {
+  if (error instanceof SkMcpExcelError) {
+    return error;
+  }
+  const detail = error instanceof Error ? error.message : String(error);
+  return new SkMcpExcelError(
+    "corrupt_workbook",
+    `'${path}' could not be parsed as .xlsx: ${detail}`,
+    "Open the file in Excel and re-save it as .xlsx.",
   );
+}
+
+export async function parseXlsx(
+  handle: FileHandle,
+  path: string,
+): Promise<Workbook> {
+  const workbook = new ExcelJS.Workbook();
+  try {
+    await workbook.xlsx.read(
+      handle.createReadStream({ start: 0, autoClose: false }),
+    );
+  } catch (error) {
+    throw mapXlsxError(error, path);
+  }
+  if (workbook.properties === undefined) {
+    throw new SkMcpExcelError(
+      "corrupt_workbook",
+      `'${path}' is a zip archive but carries no workbook part.`,
+      "The file is probably not a spreadsheet; check what it really is before reading it.",
+    );
+  }
   return workbook;
 }
 

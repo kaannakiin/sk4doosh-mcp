@@ -29,7 +29,7 @@ jobs:
             10.0.x
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo run build check-types lint validate format:check
-      - run: pnpm turbo run test --filter=@sk-mcp/core --filter=@sk-mcp/sdk-nestjs
+      - run: pnpm turbo run test --filter=@sk-mcp/core --filter=@sk-mcp/sdk-nestjs --filter=@sk-mcp/excel-mcp
 
   dotnet:
     name: dotnet test (net8.0 + net10.0)

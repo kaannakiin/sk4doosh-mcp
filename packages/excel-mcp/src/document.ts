@@ -115,7 +115,7 @@ export async function loadDocument(
     const magic = Buffer.alloc(8);
     await handle.read(magic, 0, 8, 0);
     assertReadableFormat(magic, path);
-    const workbook = await parseXlsx(handle);
+    const workbook = await parseXlsx(handle, path);
     return remember(key, { format, workbook, ...base });
   } finally {
     await handle.close();

@@ -7,6 +7,11 @@ import {
 } from "./columns.js";
 import { documentSheet, type LoadedDocument } from "./document.js";
 import { SkMcpExcelError } from "./errors.js";
+import {
+  headerWarnings,
+  readHeaderRow,
+  type HeaderRowSource,
+} from "./header.js";
 import { limits } from "./limits.js";
 import {
   classify,
@@ -61,6 +66,7 @@ export interface AggregateOptions {
   readonly orderByMetric?: number;
   readonly descending: boolean;
   readonly maxGroups: number;
+  readonly headerRowSource: HeaderRowSource;
 }
 
 export interface AggregateColumn {
@@ -78,12 +84,15 @@ export interface AggregateResult {
   readonly range: string;
   readonly usedRange: string;
   readonly headerRow: number;
+  readonly headerRowSource: HeaderRowSource;
   readonly columns: readonly AggregateColumn[];
   readonly rows: readonly (readonly CellScalar[])[];
   readonly groupCount: number;
   readonly returnedGroups: number;
   readonly scannedRows: number;
   readonly matchedRows: number;
+  readonly firstScannedRow: number;
+  readonly blankRows: number;
   readonly columnStats?: Readonly<Record<string, Partial<Census>>>;
   readonly truncated: boolean;
   readonly truncationReason?: "maxGroups";
@@ -239,21 +248,11 @@ export function aggregateSheet(
   const used = requireSheetBounds(sheet);
   const bounds = resolveRange(used, options.range);
 
-  const headers: (string | null)[] = [];
-  const headerRowView =
-    options.headerRow > 0 ? sheet.rowAt(options.headerRow) : undefined;
-  for (let column = bounds.left; column <= bounds.right; column += 1) {
-    const snapshot = headerRowView?.cellAt(column);
-    const value =
-      snapshot === undefined
-        ? null
-        : normalizeCell(snapshot, {
-            valueMode: "values",
-            mergePolicy: "master",
-            includeHyperlinks: false,
-          }).value;
-    headers.push(typeof value === "string" ? value : null);
-  }
+  const headers = readHeaderRow(sheet, bounds, options.headerRow, {
+    valueMode: "values",
+    mergePolicy: options.mergedCells,
+    includeHyperlinks: false,
+  });
   const index: ColumnIndex = buildColumnIndex(
     `${sheet.name}!${formatRange(bounds)}`,
     bounds,
@@ -313,9 +312,33 @@ export function aggregateSheet(
   let scannedRows = 0;
   let matchedRows = 0;
   let uncachedFormulas = 0;
+  let blankRows = 0;
 
   for (let row = startRow; row <= bounds.bottom; row += 1) {
     scannedRows += 1;
+    const rowView = sheet.rowAt(row);
+    let blank = true;
+    if (rowView !== undefined) {
+      for (let column = bounds.left; column <= bounds.right; column += 1) {
+        const snapshot = rowView.cellAt(column);
+        if (snapshot === undefined) {
+          continue;
+        }
+        if (
+          normalizeCell(snapshot, {
+            valueMode: "values",
+            mergePolicy: options.mergedCells,
+            includeHyperlinks: false,
+          }).value !== null
+        ) {
+          blank = false;
+          break;
+        }
+      }
+    }
+    if (blank) {
+      blankRows += 1;
+    }
     const cellAt = (column: number): CellScalar => {
       const read = readGrid(sheet, row, column, options.mergedCells);
       if (read.uncachedFormula) {
@@ -506,7 +529,16 @@ export function aggregateSheet(
     }
   }
 
-  const warnings: string[] = [];
+  const warnings: string[] = [
+    ...headerWarnings(
+      sheet,
+      bounds,
+      options.headerRow,
+      headers,
+      options.range !== undefined,
+      options.mergedCells,
+    ),
+  ];
   const collisions = new Map<string, Set<string>>();
   for (const group of ordered) {
     const label = group.key
@@ -557,12 +589,15 @@ export function aggregateSheet(
     range: formatRange(bounds),
     usedRange: formatRange(used),
     headerRow: options.headerRow,
+    headerRowSource: options.headerRowSource,
     columns,
     rows,
     groupCount: ordered.length,
     returnedGroups: page.length,
     scannedRows,
     matchedRows,
+    firstScannedRow: startRow,
+    blankRows,
     ...(Object.keys(stats).length > 0 ? { columnStats: stats } : {}),
     truncated,
     ...(truncated ? { truncationReason: "maxGroups" as const } : {}),

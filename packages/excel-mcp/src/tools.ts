@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { asExcelError, SkMcpExcelError } from "./errors.js";
+import { asExcelError, type ErrorContext, SkMcpExcelError } from "./errors.js";
 import { limits } from "./limits.js";
 import {
   formatFor,
@@ -13,12 +13,20 @@ import { collectValidations } from "./validations.js";
 import {
   csvReportOf,
   describeDocument,
+  documentSheet,
   loadDocument,
   type LoadedDocument,
 } from "./document.js";
 import { aggregateSheet } from "./aggregate.js";
+import {
+  declaredHeaderRow,
+  scanHeaderRow,
+  type HeaderRowSource,
+} from "./header.js";
+import { formatRange, resolveRange } from "./range.js";
+
 import type { CsvReport, DelimiterName, EncodingName } from "./csv.js";
-import { selectWorksheet } from "./workbook.js";
+import { requireSheetBounds, selectWorksheet } from "./workbook.js";
 
 const readOnly = {
   readOnlyHint: true,
@@ -109,7 +117,15 @@ export const toolDefinitions = {
         .int()
         .min(0)
         .optional()
-        .describe("Row treated as headers. 0 disables."),
+        .describe(
+          "Row treated as headers, never detected. Defaults to 1; 0 disables.",
+        ),
+      headerScan: z
+        .boolean()
+        .optional()
+        .describe(
+          "Prove the header row from the sheet instead of assuming row 1. Cannot be combined with headerRow. Fails rather than guessing.",
+        ),
       includeHyperlinks: z.boolean().optional(),
       delimiter: z
         .enum(["comma", "semicolon", "tab", "pipe"])
@@ -208,7 +224,19 @@ export const toolDefinitions = {
           "Row filter. A cell of a different kind from the operand never matches and is counted as skipped.",
         ),
       match: z.enum(["all", "any"]).optional(),
-      headerRow: z.int().min(0).optional(),
+      headerRow: z
+        .int()
+        .min(0)
+        .optional()
+        .describe(
+          "Row treated as headers, never detected. Defaults to 1; 0 disables.",
+        ),
+      headerScan: z
+        .boolean()
+        .optional()
+        .describe(
+          "Prove the header row from the sheet instead of assuming row 1. Cannot be combined with headerRow. Fails rather than guessing.",
+        ),
       columnMode: z.enum(["auto", "header", "letter"]).optional(),
       caseSensitive: z.boolean().optional(),
       coerceText: z
@@ -290,13 +318,21 @@ export function toToolError(error: SkMcpExcelError): CallToolResult {
 }
 
 export function guard<A>(
+  context: ErrorContext,
   handler: (args: A) => Promise<CallToolResult>,
 ): (args: A) => Promise<CallToolResult> {
   return async (args) => {
     try {
       return await handler(args);
     } catch (error) {
-      return toToolError(asExcelError(error));
+      if (!(error instanceof SkMcpExcelError)) {
+        const raw =
+          error instanceof Error
+            ? (error.stack ?? error.message)
+            : String(error);
+        process.stderr.write(`${context.tool ?? "excel-mcp"}: ${raw}\n`);
+      }
+      return toToolError(asExcelError(error, context));
     }
   };
 }
@@ -342,42 +378,118 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
     }
   };
 
+  const assertHeaderScan = (
+    args: {
+      readonly headerScan?: boolean;
+      readonly headerRow?: number;
+      readonly cursor?: string;
+    },
+    path: string,
+  ) => {
+    if (args.headerScan !== true) {
+      return;
+    }
+    if (args.headerRow !== undefined) {
+      throw new SkMcpExcelError(
+        "invalid_argument",
+        "headerScan cannot be combined with headerRow.",
+        "Pass headerScan to prove the header row, or headerRow to name it.",
+      );
+    }
+    if (args.cursor !== undefined) {
+      throw new SkMcpExcelError(
+        "invalid_argument",
+        "headerScan cannot be combined with cursor.",
+        "The cursor already carries the header row resolved for the first page.",
+      );
+    }
+    const format = formatFor(path);
+    if (format !== "xlsx") {
+      throw new SkMcpExcelError(
+        "unsupported_for_format",
+        `headerScan is not available for ${format} files; every cell is text, so no row can be disqualified.`,
+        "Pass headerRow explicitly for delimited files.",
+      );
+    }
+  };
+
+  const resolveHeader = (
+    loaded: LoadedDocument,
+    args: {
+      readonly headerScan?: boolean;
+      readonly headerRow?: number;
+      readonly sheetName?: string;
+      readonly range?: string;
+    },
+  ): { headerRow: number; headerRowSource: HeaderRowSource } => {
+    if (args.headerScan !== true) {
+      return {
+        headerRow: args.headerRow ?? 1,
+        headerRowSource: args.headerRow === undefined ? "default" : "explicit",
+      };
+    }
+    const sheet = documentSheet(loaded, args.sheetName);
+    const bounds = resolveRange(requireSheetBounds(sheet), args.range);
+    const declared = declaredHeaderRow(sheet, bounds);
+    if (declared !== undefined) {
+      return { headerRow: declared.row, headerRowSource: "declared" };
+    }
+    return {
+      headerRow: scanHeaderRow(
+        sheet,
+        bounds,
+        "master",
+        `${sheet.name}!${formatRange(bounds)}`,
+      ),
+      headerRowSource: "scanned",
+    };
+  };
+
   const withCsv = <T extends object>(
     payload: T,
     report: CsvReport | undefined,
   ) => (report === undefined ? payload : { ...payload, csv: report });
 
   return {
-    list_workbooks: guard(async (args) => {
-      const listing = await listWorkbooks(root, {
-        ...(args.subdirectory === undefined
-          ? {}
-          : { subdirectory: args.subdirectory }),
-        ...(args.pattern === undefined ? {} : { pattern: args.pattern }),
-        maxResults: args.maxResults ?? limits.defaultListResults,
-      });
-      return json({ root: root.real, ...listing });
-    }),
+    list_workbooks: guard(
+      { root: root.real, tool: "list_workbooks" },
+      async (args) => {
+        const listing = await listWorkbooks(root, {
+          ...(args.subdirectory === undefined
+            ? {}
+            : { subdirectory: args.subdirectory }),
+          ...(args.pattern === undefined ? {} : { pattern: args.pattern }),
+          maxResults: args.maxResults ?? limits.defaultListResults,
+        });
+        return json({ root: root.real, ...listing });
+      },
+    ),
 
-    describe_workbook: guard(async (args) => {
-      const loaded = await openFor(args.filePath, {
-        ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
-        ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
-      });
-      return json(
-        describeDocument(
-          loaded,
-          {
-            filePath: args.filePath,
-            sizeBytes: loaded.sizeBytes,
-            modifiedAt: loaded.modifiedAt,
-          },
-          args.includeDefinedNames ?? true,
-        ),
-      );
-    }),
+    describe_workbook: guard(
+      { root: root.real, tool: "describe_workbook" },
+      async (args) => {
+        const loaded = await openFor(args.filePath, {
+          ...(args.delimiter === undefined
+            ? {}
+            : { delimiter: args.delimiter }),
+          ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+        });
+        return json(
+          describeDocument(
+            loaded,
+            {
+              filePath: args.filePath,
+              sizeBytes: loaded.sizeBytes,
+              modifiedAt: loaded.modifiedAt,
+            },
+            args.includeDefinedNames ?? true,
+          ),
+        );
+      },
+    ),
 
-    read_sheet: guard(async (args) => {
+    read_sheet: guard({ root: root.real, tool: "read_sheet" }, async (args) => {
+      assertHeaderScan(args, args.filePath);
       const loaded = await openFor(args.filePath, {
         ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
         ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
@@ -401,7 +513,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
             maxCells: args.maxCells ?? limits.maxCellsDefault,
             valueMode: args.valueMode ?? "values",
             mergedCells: args.mergedCells ?? "master",
-            headerRow: args.headerRow ?? 1,
+            ...resolveHeader(loaded, args),
             includeHyperlinks: args.includeHyperlinks ?? false,
           }),
           csvReportOf(loaded),
@@ -409,76 +521,91 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       );
     }),
 
-    get_merged_ranges: guard(async (args) => {
-      const loaded = await openXlsx(args.filePath, "get_merged_ranges");
-      const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-      const merges = worksheet.model.merges;
-      return json({ sheet: worksheet.name, merges, count: merges.length });
-    }),
+    get_merged_ranges: guard(
+      { root: root.real, tool: "get_merged_ranges" },
+      async (args) => {
+        const loaded = await openXlsx(args.filePath, "get_merged_ranges");
+        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        const merges = worksheet.model.merges;
+        return json({ sheet: worksheet.name, merges, count: merges.length });
+      },
+    ),
 
-    get_data_validations: guard(async (args) => {
-      const loaded = await openXlsx(args.filePath, "get_data_validations");
-      const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-      return json(collectValidations(worksheet));
-    }),
+    get_data_validations: guard(
+      { root: root.real, tool: "get_data_validations" },
+      async (args) => {
+        const loaded = await openXlsx(args.filePath, "get_data_validations");
+        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        return json(collectValidations(worksheet));
+      },
+    ),
 
-    aggregate_sheet: guard(async (args) => {
-      const loaded = await openFor(args.filePath);
-      return json(
-        withCsv(
-          aggregateSheet(loaded, {
-            ...(args.sheetName === undefined
-              ? {}
-              : { sheetName: args.sheetName }),
-            ...(args.range === undefined ? {} : { range: args.range }),
-            ...(args.groupBy === undefined ? {} : { groupBy: args.groupBy }),
-            metrics: args.metrics,
-            ...(args.where === undefined ? {} : { where: args.where }),
-            match: args.match ?? "all",
-            headerRow: args.headerRow ?? 1,
-            columnMode: args.columnMode ?? "auto",
-            caseSensitive: args.caseSensitive ?? false,
-            coerceText: args.coerceText ?? false,
-            mergedCells: args.mergedCells ?? "master",
-            orderBy: args.orderBy ?? "group",
-            ...(args.orderByMetric === undefined
-              ? {}
-              : { orderByMetric: args.orderByMetric }),
-            descending: args.descending ?? false,
-            maxGroups: args.maxGroups ?? limits.maxGroupsDefault,
-          }),
-          csvReportOf(loaded),
-        ),
-      );
-    }),
+    aggregate_sheet: guard(
+      { root: root.real, tool: "aggregate_sheet" },
+      async (args) => {
+        assertHeaderScan(args, args.filePath);
+        const loaded = await openFor(args.filePath);
+        return json(
+          withCsv(
+            aggregateSheet(loaded, {
+              ...(args.sheetName === undefined
+                ? {}
+                : { sheetName: args.sheetName }),
+              ...(args.range === undefined ? {} : { range: args.range }),
+              ...(args.groupBy === undefined ? {} : { groupBy: args.groupBy }),
+              metrics: args.metrics,
+              ...(args.where === undefined ? {} : { where: args.where }),
+              match: args.match ?? "all",
+              ...resolveHeader(loaded, args),
+              columnMode: args.columnMode ?? "auto",
+              caseSensitive: args.caseSensitive ?? false,
+              coerceText: args.coerceText ?? false,
+              mergedCells: args.mergedCells ?? "master",
+              orderBy: args.orderBy ?? "group",
+              ...(args.orderByMetric === undefined
+                ? {}
+                : { orderByMetric: args.orderByMetric }),
+              descending: args.descending ?? false,
+              maxGroups: args.maxGroups ?? limits.maxGroupsDefault,
+            }),
+            csvReportOf(loaded),
+          ),
+        );
+      },
+    ),
 
-    find_in_sheet: guard(async (args) => {
-      const loaded = await openFor(args.filePath, {
-        ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
-        ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
-      });
-      rejectForCsv(
-        loaded,
-        "searchIn",
-        args.searchIn === "values" ? undefined : args.searchIn,
-        args.filePath,
-      );
-      return json(
-        withCsv(
-          findInSheet(loaded, {
-            query: args.query,
-            ...(args.sheetName === undefined
-              ? {}
-              : { sheetName: args.sheetName }),
-            ...(args.range === undefined ? {} : { range: args.range }),
-            matchMode: args.matchMode ?? "contains",
-            caseSensitive: args.caseSensitive ?? false,
-            searchIn: args.searchIn ?? "values",
-            maxResults: args.maxResults ?? limits.defaultFindResults,
-          }),
-          csvReportOf(loaded),
-        ),
-      );
-    }),
+    find_in_sheet: guard(
+      { root: root.real, tool: "find_in_sheet" },
+      async (args) => {
+        const loaded = await openFor(args.filePath, {
+          ...(args.delimiter === undefined
+            ? {}
+            : { delimiter: args.delimiter }),
+          ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+        });
+        rejectForCsv(
+          loaded,
+          "searchIn",
+          args.searchIn === "values" ? undefined : args.searchIn,
+          args.filePath,
+        );
+        return json(
+          withCsv(
+            findInSheet(loaded, {
+              query: args.query,
+              ...(args.sheetName === undefined
+                ? {}
+                : { sheetName: args.sheetName }),
+              ...(args.range === undefined ? {} : { range: args.range }),
+              matchMode: args.matchMode ?? "contains",
+              caseSensitive: args.caseSensitive ?? false,
+              searchIn: args.searchIn ?? "values",
+              maxResults: args.maxResults ?? limits.defaultFindResults,
+            }),
+            csvReportOf(loaded),
+          ),
+        );
+      },
+    ),
   };
 }

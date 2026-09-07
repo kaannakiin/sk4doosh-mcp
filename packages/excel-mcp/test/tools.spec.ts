@@ -102,6 +102,38 @@ describe("handlers", () => {
     expect(payload(result)["matchedRows"]).toBeGreaterThan(0);
   });
 
+  it("says who chose the header row", async () => {
+    const fallback = await handlers.read_sheet({ filePath: "title-band.xlsx" });
+    expect(payload(fallback)["headerRowSource"]).toBe("default");
+    const explicit = await handlers.read_sheet({
+      filePath: "title-band.xlsx",
+      headerRow: 3,
+    });
+    expect(payload(explicit)["headerRowSource"]).toBe("explicit");
+  });
+
+  it("proves the header row on request", async () => {
+    const result = await handlers.read_sheet({
+      filePath: "title-band.xlsx",
+      sheetName: "Faturalar",
+      headerScan: true,
+    });
+    const body = payload(result);
+    expect(body["headerRow"]).toBe(3);
+    expect(body["headerRowSource"]).toBe("scanned");
+  });
+
+  it("reads the header row a table declares", async () => {
+    const result = await handlers.read_sheet({
+      filePath: "title-band.xlsx",
+      sheetName: "Declared",
+      headerScan: true,
+    });
+    const body = payload(result);
+    expect(body["headerRow"]).toBe(3);
+    expect(body["headerRowSource"]).toBe("declared");
+  });
+
   it("finds cells", async () => {
     const result = await handlers.find_in_sheet({
       filePath: "q1/sample.xlsx",
@@ -128,6 +160,41 @@ describe("error surfacing", () => {
     const result = await handlers.describe_workbook({ filePath });
     expect(result.isError).toBe(true);
     expect(payload(result)["error"]).toBe(code);
+  });
+
+  it("refuses headerScan combined with headerRow", async () => {
+    const result = await handlers.read_sheet({
+      filePath: "title-band.xlsx",
+      headerScan: true,
+      headerRow: 3,
+    });
+    expect(payload(result)["error"]).toBe("invalid_argument");
+  });
+
+  it("refuses headerScan combined with a cursor", async () => {
+    const result = await handlers.read_sheet({
+      filePath: "title-band.xlsx",
+      headerScan: true,
+      cursor: "x",
+    });
+    expect(payload(result)["error"]).toBe("invalid_argument");
+  });
+
+  it("refuses headerScan for a delimited file", async () => {
+    const result = await handlers.read_sheet({
+      filePath: "csv/simple.csv",
+      headerScan: true,
+    });
+    expect(payload(result)["error"]).toBe("unsupported_for_format");
+  });
+
+  it("reports a missing subdirectory as file_not_found, not a corrupt workbook", async () => {
+    const result = await handlers.list_workbooks({ subdirectory: "nope" });
+    expect(result.isError).toBe(true);
+    const body = payload(result);
+    expect(body["error"]).toBe("file_not_found");
+    expect(String(body["message"])).not.toContain("could not be read");
+    expect(String(body["recovery"])).not.toContain("re-save");
   });
 
   it("surfaces an ambiguous column as a tool error", async () => {

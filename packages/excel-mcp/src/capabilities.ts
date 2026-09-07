@@ -9,6 +9,7 @@ export interface FormatCapabilities {
   readonly multipleSheets: boolean;
   readonly definedNames: boolean;
   readonly typedValues: boolean;
+  readonly headerScan: boolean;
 }
 
 export const capabilities: Readonly<
@@ -23,6 +24,7 @@ export const capabilities: Readonly<
     multipleSheets: true,
     definedNames: true,
     typedValues: true,
+    headerScan: true,
   },
   csv: {
     merges: false,
@@ -33,5 +35,6 @@ export const capabilities: Readonly<
     multipleSheets: false,
     definedNames: false,
     typedValues: false,
+    headerScan: false,
   },
 };

@@ -49,7 +49,9 @@ function describeColumns(index: ColumnIndex): string {
     .filter((entry): entry is string => entry !== null);
   const range = `${columnToLetters(index.bounds.left)}..${columnToLetters(index.bounds.right)}`;
   if (named.length === 0) {
-    return `Columns ${range} are in range; none of them has header text.`;
+    return index.headerRow === 0
+      ? `Columns ${range} are in range; none of them has header text.`
+      : `Columns ${range} are in range; row ${index.headerRow} (headerRow) has no text in any of them.`;
   }
   return `Columns ${range} are in range. Named columns: ${named.join(", ")}.`;
 }
@@ -127,9 +129,13 @@ function unknownColumn(
         : mode === "letter"
           ? 'columnMode is "letter", so only A1 letters resolve here. '
           : "";
+  const adjust =
+    index.byHeader.size === 0 && index.headerRow > 0
+      ? " Pass headerRow to name the row that carries the column headers, or headerScan true to prove it."
+      : "";
   return new SkMcpExcelError(
     "unknown_column",
     `'${reference}' is not a column of ${index.sheet}.`,
-    `${scope}${describeColumns(index)}`,
+    `${scope}${describeColumns(index)}${adjust}`,
   );
 }

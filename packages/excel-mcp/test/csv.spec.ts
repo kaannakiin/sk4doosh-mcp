@@ -9,6 +9,7 @@ const base: ReadSheetOptions = {
   valueMode: "values",
   mergedCells: "master",
   headerRow: 1,
+  headerRowSource: "default",
   includeHyperlinks: false,
 };
 

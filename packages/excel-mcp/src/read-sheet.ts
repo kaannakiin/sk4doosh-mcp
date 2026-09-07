@@ -13,6 +13,11 @@ import {
 } from "./cursor.js";
 import { documentSheet, type LoadedDocument } from "./document.js";
 import { SkMcpExcelError } from "./errors.js";
+import {
+  headerWarnings,
+  readHeaderRow,
+  type HeaderRowSource,
+} from "./header.js";
 import { limits } from "./limits.js";
 import {
   columnToLetters,
@@ -41,6 +46,7 @@ export interface ReadSheetOptions {
   readonly valueMode: ValueMode;
   readonly mergedCells: MergePolicy;
   readonly headerRow: number;
+  readonly headerRowSource: HeaderRowSource;
   readonly includeHyperlinks: boolean;
 }
 
@@ -49,6 +55,7 @@ export interface ReadSheetResult {
   readonly range: string;
   readonly usedRange: string;
   readonly headerRow: number;
+  readonly headerRowSource: HeaderRowSource;
   readonly columns: readonly ColumnInfo[];
   readonly values: readonly (readonly CellScalar[])[];
   readonly cellNotes?: Readonly<Record<string, CellNote>>;
@@ -70,6 +77,7 @@ interface Window {
   readonly valueMode: ValueMode;
   readonly mergedCells: MergePolicy;
   readonly headerRow: number;
+  readonly headerRowSource: HeaderRowSource;
 }
 
 function resolveWindow(
@@ -93,6 +101,7 @@ function resolveWindow(
       valueMode: options.valueMode,
       mergedCells: options.mergedCells,
       headerRow,
+      headerRowSource: options.headerRowSource,
     };
   }
   if (options.sheetName !== undefined || options.range !== undefined) {
@@ -127,32 +136,8 @@ function resolveWindow(
     valueMode: cursor.m,
     mergedCells: cursor.g,
     headerRow: cursor.h,
+    headerRowSource: "cursor",
   };
-}
-
-function readHeader(
-  window: Window,
-  options: NormalizeOptions,
-): (string | null)[] {
-  const headers: (string | null)[] = [];
-  const row =
-    window.headerRow > 0 ? window.sheet.rowAt(window.headerRow) : undefined;
-  for (
-    let column = window.bounds.left;
-    column <= window.bounds.right;
-    column += 1
-  ) {
-    const snapshot = row?.cellAt(column);
-    if (snapshot === undefined) {
-      headers.push(null);
-      continue;
-    }
-    const normalized = normalizeCell(snapshot, options);
-    headers.push(
-      typeof normalized.value === "string" ? normalized.value : null,
-    );
-  }
-  return headers;
 }
 
 function overlaps(merge: string, bounds: GridBounds): boolean {
@@ -181,7 +166,12 @@ export function readSheet(
     includeHyperlinks: options.includeHyperlinks,
   };
   const width = window.bounds.right - window.bounds.left + 1;
-  const headers = readHeader(window, normalizeOptions);
+  const headers = readHeaderRow(
+    window.sheet,
+    window.bounds,
+    window.headerRow,
+    normalizeOptions,
+  );
   const numberFormats: (string | null)[] = new Array(width).fill(null);
   const values: CellScalar[][] = [];
   const cellNotes: Record<string, CellNote> = {};
@@ -260,6 +250,25 @@ export function readSheet(
   );
   const remaining = window.bounds.bottom - nextRow + 1;
 
+  const warnings: string[] = [];
+  if (uncachedFormulas > 0) {
+    warnings.push(
+      `${uncachedFormulas} formula cells have no cached value; this workbook has not been recalculated by Excel.`,
+    );
+  }
+  if (options.cursor === undefined) {
+    warnings.push(
+      ...headerWarnings(
+        window.sheet,
+        window.bounds,
+        window.headerRow,
+        headers,
+        options.range !== undefined,
+        window.mergedCells,
+      ),
+    );
+  }
+
   return {
     sheet: window.sheet.name,
     range: formatRange({
@@ -270,6 +279,7 @@ export function readSheet(
     }),
     usedRange: formatRange(window.used),
     headerRow: window.headerRow,
+    headerRowSource: window.headerRowSource,
     columns,
     values,
     ...(Object.keys(cellNotes).length > 0 ? { cellNotes } : {}),
@@ -294,13 +304,7 @@ export function readSheet(
           hint: `${remaining} rows remain. Prefer aggregate_sheet for totals, find_in_sheet to locate a value, or a narrower range over paging.`,
         }
       : {}),
-    ...(uncachedFormulas > 0
-      ? {
-          warnings: [
-            `${uncachedFormulas} formula cells have no cached value; this workbook has not been recalculated by Excel.`,
-          ],
-        }
-      : {}),
+    ...(warnings.length > 0 ? { warnings } : {}),
   };
 }
 

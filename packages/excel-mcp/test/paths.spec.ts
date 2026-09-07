@@ -180,6 +180,44 @@ describe("listWorkbooks", () => {
     expect(listing.total).toBeGreaterThan(1);
   });
 
+  it("reports a missing subdirectory without blaming the workbook", async () => {
+    const fixtures = inject("fixtures");
+    const root = await createWorkbookRoot(fixtures.root);
+    expect(
+      await codeOf(() =>
+        listWorkbooks(root, { subdirectory: "nope", maxResults: 5 }),
+      ),
+    ).toBe("file_not_found");
+    try {
+      await listWorkbooks(root, { subdirectory: "nope", maxResults: 5 });
+    } catch (error) {
+      const failure = error as SkMcpExcelError;
+      expect(failure.message).toContain("nope");
+      expect(failure.message).not.toContain(fixtures.root);
+      expect(failure.recovery).toContain("list_workbooks");
+    }
+  });
+
+  it("reports a file passed as a subdirectory", async () => {
+    const fixtures = inject("fixtures");
+    const root = await createWorkbookRoot(fixtures.root);
+    expect(
+      await codeOf(() =>
+        listWorkbooks(root, {
+          subdirectory: "q1/sample.xlsx",
+          maxResults: 5,
+        }),
+      ),
+    ).toBe("not_a_file");
+  });
+
+  it("does not report unreadable entries when nothing vanished", async () => {
+    const fixtures = inject("fixtures");
+    const root = await createWorkbookRoot(fixtures.root);
+    const listing = await listWorkbooks(root, { maxResults: 200 });
+    expect(listing.unreadable).toBeUndefined();
+  });
+
   it("rejects a subdirectory outside the root", async () => {
     const fixtures = inject("fixtures");
     const root = await createWorkbookRoot(fixtures.root);
@@ -187,6 +225,118 @@ describe("listWorkbooks", () => {
       await codeOf(() =>
         listWorkbooks(root, { subdirectory: "..", maxResults: 5 }),
       ),
+    ).toBe("path_outside_root");
+  });
+});
+
+describe("listWorkbooks and symlinked subdirectories", () => {
+  let root: WorkbookRoot;
+  let linkedRoot: WorkbookRoot;
+
+  beforeAll(async () => {
+    const base = await mkdtemp(join(tmpdir(), "sk-list-"));
+    const outside = `${base}-outside`;
+    await mkdir(outside);
+    await writeFile(join(outside, "secret.xlsx"), "PK");
+    await mkdir(join(base, "root"));
+    await mkdir(join(base, "root", "archive"));
+    await writeFile(join(base, "root", "here.xlsx"), "PK");
+    await writeFile(join(base, "root", "archive", "old.xlsx"), "PK");
+    await symlink(outside, join(base, "root", "escape"));
+    await symlink(join(base, "root", "archive"), join(base, "root", "inside"));
+    await symlink(
+      join(base, "root", "here.xlsx"),
+      join(base, "root", "linked-inside.xlsx"),
+    );
+    await symlink(
+      join(outside, "secret.xlsx"),
+      join(base, "root", "linked-outside.xlsx"),
+    );
+    await symlink(
+      join(base, "root", "gone.xlsx"),
+      join(base, "root", "linked-broken.xlsx"),
+    );
+    root = await createWorkbookRoot(join(base, "root"));
+
+    const real = await mkdtemp(join(tmpdir(), "sk-realroot-"));
+    await writeFile(join(real, "data.xlsx"), "PK");
+    await symlink(real, join(base, "rootlink"));
+    linkedRoot = await createWorkbookRoot(join(base, "rootlink"));
+  });
+
+  it("refuses a subdirectory that symlinks out of the root", async () => {
+    expect(
+      await codeOf(() =>
+        listWorkbooks(root, { subdirectory: "escape", maxResults: 10 }),
+      ),
+    ).toBe("path_outside_root");
+  });
+
+  it("does not leak the names of files outside the root", async () => {
+    try {
+      await listWorkbooks(root, { subdirectory: "escape", maxResults: 10 });
+      expect.unreachable();
+    } catch (error) {
+      expect((error as SkMcpExcelError).message).not.toContain("secret");
+    }
+  });
+
+  it("still follows a symlink that stays inside the root", async () => {
+    const listing = await listWorkbooks(root, {
+      subdirectory: "inside",
+      maxResults: 10,
+    });
+    expect(listing.files.map((file) => file.filePath)).toEqual([
+      "archive/old.xlsx",
+    ]);
+  });
+
+  it("leaves a root that is itself a symlink working", async () => {
+    const listing = await listWorkbooks(linkedRoot, { maxResults: 10 });
+    expect(listing.files.map((file) => file.filePath)).toEqual(["data.xlsx"]);
+  });
+
+  it("does not descend into a symlinked directory during a plain scan", async () => {
+    const listing = await listWorkbooks(root, { maxResults: 50 });
+    const found = listing.files.map((file) => file.filePath);
+    expect(found).toContain("here.xlsx");
+    expect(found.some((path) => path.includes("secret"))).toBe(false);
+  });
+  it("lists a symlinked workbook that resolves inside the root", async () => {
+    const listing = await listWorkbooks(root, { maxResults: 50 });
+    expect(listing.files.map((file) => file.filePath)).toContain(
+      "linked-inside.xlsx",
+    );
+  });
+
+  it("does not list a symlinked workbook that resolves outside the root", async () => {
+    const listing = await listWorkbooks(root, { maxResults: 50 });
+    const found = listing.files.map((file) => file.filePath);
+    expect(found).not.toContain("linked-outside.xlsx");
+    expect(found.some((path) => path.includes("secret"))).toBe(false);
+  });
+
+  it("skips a broken symlink instead of failing the whole listing", async () => {
+    const listing = await listWorkbooks(root, { maxResults: 50 });
+    const found = listing.files.map((file) => file.filePath);
+    expect(found).not.toContain("linked-broken.xlsx");
+    expect(found).toContain("here.xlsx");
+  });
+
+  it("returns a symlink path the reader accepts", async () => {
+    const listing = await listWorkbooks(root, { maxResults: 50 });
+    const linked = listing.files.find(
+      (file) => file.filePath === "linked-inside.xlsx",
+    );
+    expect(linked).toBeDefined();
+    await expect(
+      resolveWorkbookPath(root, linked?.filePath ?? ""),
+    ).resolves.toContain("here.xlsx");
+  });
+
+  it("still refuses to read a symlink that escapes", async () => {
+    expect(
+      await codeOf(() => resolveWorkbookPath(root, "linked-outside.xlsx")),
     ).toBe("path_outside_root");
   });
 });

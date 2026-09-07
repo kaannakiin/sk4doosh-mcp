@@ -419,6 +419,8 @@ export function csvSheetView(table: CsvTable): SheetView {
     name: csvSheetName,
     bounds: table.bounds,
     merges: [],
+    tables: [],
+    autoFilter: undefined,
     rowAt(row): RowView | undefined {
       const record = table.rows[row - 1];
       if (record === undefined) {

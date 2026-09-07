@@ -1,6 +1,7 @@
 import { describe, expect, inject, it } from "vitest";
 import { aggregateSheet, type AggregateOptions } from "../src/aggregate.js";
 import { loadDocument, type LoadedDocument } from "../src/document.js";
+import { readSheet } from "../src/read-sheet.js";
 import type { SkMcpExcelError } from "../src/errors.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
 import { largeRowCount } from "./fixtures/build.js";
@@ -9,6 +10,7 @@ const base: AggregateOptions = {
   metrics: [{ fn: "count" }],
   match: "all",
   headerRow: 1,
+  headerRowSource: "default",
   columnMode: "auto",
   caseSensitive: false,
   coerceText: false,
@@ -318,5 +320,134 @@ describe("csv", () => {
     });
     expect(result.rows[0]?.[0]).toBe((999 * 1000 * 3) / 2);
     expect(result.rows[0]?.[1]).toBe(999);
+  });
+});
+
+describe("a title band shifts the header row", () => {
+  const invoices = async (headerRow: number) =>
+    aggregateSheet(await open("title-band.xlsx"), {
+      ...base,
+      sheetName: "Faturalar",
+      headerRow,
+      headerRowSource: "explicit",
+      metrics: [{ fn: "count" }],
+    });
+
+  it("counts the blank row and the header row as data at the default", async () => {
+    const result = await invoices(1);
+    expect(result.rows[0]?.[0]).toBe(8);
+    expect(result.blankRows).toBe(1);
+    expect(result.firstScannedRow).toBe(2);
+  });
+
+  it("still counts the header row as data one row down", async () => {
+    expect((await invoices(2)).rows[0]?.[0]).toBe(7);
+  });
+
+  it("counts only the data rows on the real header row", async () => {
+    const result = await invoices(3);
+    expect(result.rows[0]?.[0]).toBe(6);
+    expect(result.blankRows).toBe(0);
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it("warns and names the real header row at the default", async () => {
+    const result = await invoices(1);
+    expect(result.warnings?.[0]).toContain("headerRow 1");
+    expect(result.warnings?.[0]).toContain("Row 3");
+  });
+
+  it("echoes where the header row came from", async () => {
+    expect((await invoices(3)).headerRowSource).toBe("explicit");
+  });
+
+  it("stays silent on a sheet whose header row is row 1", async () => {
+    const result = aggregateSheet(await open("q1/sample.xlsx"), base);
+    expect(result.warnings).toBeUndefined();
+  });
+});
+
+describe("merged header cells follow the requested merge policy", () => {
+  const twoRow = async (extra: Partial<AggregateOptions>) =>
+    aggregateSheet(await open("title-band.xlsx"), {
+      ...base,
+      sheetName: "IkiSatir",
+      headerRow: 2,
+      headerRowSource: "explicit",
+      groupBy: ["Bolge"],
+      metrics: [{ fn: "count" }, { fn: "sum", column: "Toplam" }],
+      ...extra,
+    });
+
+  it("resolves a vertically merged header under repeat", async () => {
+    const result = await twoRow({ mergedCells: "repeat" });
+    expect(result.rows).toEqual([["EMEA", 3, 36]]);
+  });
+
+  it("cannot resolve that header under the default master policy", async () => {
+    expect(await codeOf(() => twoRow({ mergedCells: "master" }))).toBe(
+      "unknown_column",
+    );
+  });
+
+  it("agrees with read_sheet about the headers under repeat", async () => {
+    const loaded = await open("title-band.xlsx");
+    const grid = readSheet(loaded, {
+      sheetName: "IkiSatir",
+      maxCells: 2000,
+      valueMode: "values",
+      mergedCells: "repeat",
+      headerRow: 2,
+      headerRowSource: "explicit",
+      includeHyperlinks: false,
+    });
+    expect(grid.columns.map((column) => column.header)).toEqual([
+      "Bolge",
+      "Ocak",
+      "Subat",
+      "Toplam",
+    ]);
+    const totals = await twoRow({ mergedCells: "repeat" });
+    expect(totals.columns[0]?.label).toBe("Bolge");
+  });
+
+  it("refuses a horizontally merged group label under repeat", async () => {
+    const failure = await codeOf(() =>
+      twoRow({
+        headerRow: 1,
+        mergedCells: "repeat",
+        groupBy: ["Ceyrek 1"],
+        metrics: [{ fn: "count" }],
+      }),
+    );
+    expect(failure).toBe("ambiguous_column");
+  });
+
+  it("names the letters that would disambiguate it", async () => {
+    try {
+      await twoRow({
+        headerRow: 1,
+        mergedCells: "repeat",
+        groupBy: ["Ceyrek 1"],
+        metrics: [{ fn: "count" }],
+      });
+      expect.unreachable();
+    } catch (error) {
+      const failure = error as SkMcpExcelError;
+      expect(failure.recovery).toContain('"B"');
+      expect(failure.recovery).toContain('"C"');
+    }
+  });
+
+  it("leaves an unmerged sheet identical under both policies", async () => {
+    const asMaster = aggregateSheet(await open("q1/sample.xlsx"), {
+      ...base,
+      mergedCells: "master",
+    });
+    const asRepeat = aggregateSheet(await open("q1/sample.xlsx"), {
+      ...base,
+      mergedCells: "repeat",
+    });
+    expect(asRepeat.rows).toEqual(asMaster.rows);
   });
 });

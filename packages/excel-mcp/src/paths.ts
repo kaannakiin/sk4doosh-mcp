@@ -184,6 +184,31 @@ function globToRegExp(pattern: string): RegExp {
   return new RegExp(`^${source}$`);
 }
 
+function errnoOf(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code: unknown }).code)
+    : undefined;
+}
+
+function mapDirectoryError(error: unknown, label: string): SkMcpExcelError {
+  const errno = errnoOf(error);
+  if (errno === "ENOENT") {
+    return new SkMcpExcelError(
+      "file_not_found",
+      `No directory at '${label}' under the workbook root.`,
+      "Call list_workbooks without subdirectory to see the readable files under the root.",
+    );
+  }
+  if (errno === "ENOTDIR") {
+    return new SkMcpExcelError(
+      "not_a_file",
+      `'${label}' is a file, not a directory.`,
+      "Pass a folder under the workbook root, or omit subdirectory.",
+    );
+  }
+  throw error;
+}
+
 export interface WorkbookEntry {
   readonly filePath: string;
   readonly sizeBytes: number;
@@ -200,30 +225,47 @@ export interface WorkbookListing {
   readonly files: readonly WorkbookEntry[];
   readonly total: number;
   readonly truncated: boolean;
+  readonly unreadable?: number;
 }
 
 export async function listWorkbooks(
   root: WorkbookRoot,
   options: ListOptions,
 ): Promise<WorkbookListing> {
-  const base = options.subdirectory
+  const label = options.subdirectory ?? ".";
+  const joined = options.subdirectory
     ? resolve(root.real, options.subdirectory)
     : root.real;
+  const outside = new SkMcpExcelError(
+    "path_outside_root",
+    `'${options.subdirectory ?? ""}' resolves outside the workbook root.`,
+    "Use a subdirectory inside the workbook root.",
+  );
+  if (!isContained(root.real, joined)) {
+    throw outside;
+  }
+  let base: string;
+  try {
+    base = await realpath(joined);
+  } catch (error) {
+    throw mapDirectoryError(error, label);
+  }
   if (!isContained(root.real, base)) {
-    throw new SkMcpExcelError(
-      "path_outside_root",
-      `'${options.subdirectory ?? ""}' resolves outside the workbook root.`,
-      "Use a subdirectory inside the workbook root.",
-    );
+    throw outside;
   }
   const matcher = globToRegExp(fold(options.pattern ?? "*"));
-  const entries = await readdir(base, { recursive: true, withFileTypes: true });
+  let entries;
+  try {
+    entries = await readdir(base, { recursive: true, withFileTypes: true });
+  } catch (error) {
+    throw mapDirectoryError(error, label);
+  }
   const candidates: string[] = [];
   for (const entry of entries) {
     if (candidates.length >= limits.maxListScan) {
       break;
     }
-    if (!entry.isFile()) {
+    if (!entry.isFile() && !entry.isSymbolicLink()) {
       continue;
     }
     if (!readableExtensions.has(asciiLower(extname(entry.name)))) {
@@ -234,12 +276,42 @@ export async function listWorkbooks(
     if (!matcher.test(fold(filePath)) && !matcher.test(fold(entry.name))) {
       continue;
     }
+    if (entry.isSymbolicLink()) {
+      let target: string;
+      try {
+        target = await realpath(absolute);
+      } catch {
+        continue;
+      }
+      if (!isContained(root.real, target)) {
+        continue;
+      }
+      let info;
+      try {
+        info = await stat(target);
+      } catch {
+        continue;
+      }
+      if (!info.isFile()) {
+        continue;
+      }
+    }
     candidates.push(absolute);
   }
   candidates.sort();
   const files: WorkbookEntry[] = [];
+  let unreadable = 0;
   for (const absolute of candidates.slice(0, options.maxResults)) {
-    const info = await stat(absolute);
+    let info;
+    try {
+      info = await stat(absolute);
+    } catch (error) {
+      if (errnoOf(error) === "ENOENT") {
+        unreadable += 1;
+        continue;
+      }
+      throw error;
+    }
     files.push({
       filePath: relative(root.real, absolute),
       sizeBytes: info.size,
@@ -249,6 +321,7 @@ export async function listWorkbooks(
   return {
     files,
     total: candidates.length,
-    truncated: candidates.length > files.length,
+    truncated: candidates.length > files.length + unreadable,
+    ...(unreadable > 0 ? { unreadable } : {}),
   };
 }

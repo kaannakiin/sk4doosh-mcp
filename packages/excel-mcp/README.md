@@ -34,16 +34,38 @@ npx @modelcontextprotocol/inspector node packages/excel-mcp/dist/cli.js /Users/m
 
 ## Tool'lar
 
-| Tool                   | İş                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------------ |
-| `list_workbooks`       | Kök altındaki okunabilir dosyaları listeler. Döndürdüğü `filePath` diğer tool'lara aynen verilir |
-| `describe_workbook`    | Sheet'ler, used range, merge/validation sayıları, formül önbellek kapsamı, tanımlı adlar         |
-| `read_sheet`           | Hücre aralığını kompakt grid olarak okur: hoist edilmiş kolon başlıkları + satır dizileri        |
-| `get_merged_ranges`    | Birleştirilmiş hücre aralıkları                                                                  |
-| `get_data_validations` | Doğrulama kuralları, dikdörtgen aralıklara geri gruplanmış                                       |
-| `find_in_sheet`        | Değere veya formüle göre hücre arar                                                              |
+| Tool                   | İş                                                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| `list_workbooks`       | Kök altındaki okunabilir dosyaları listeler. Döndürdüğü `filePath` diğer tool'lara aynen verilir          |
+| `describe_workbook`    | Sheet'ler, used range, merge/validation sayıları, formül önbellek kapsamı, tanımlı adlar                  |
+| `read_sheet`           | Hücre aralığını kompakt grid olarak okur: hoist edilmiş kolon başlıkları + satır dizileri                 |
+| `get_merged_ranges`    | Birleştirilmiş hücre aralıkları                                                                           |
+| `get_data_validations` | Doğrulama kuralları, dikdörtgen aralıklara geri gruplanmış                                                |
+| `aggregate_sheet`      | Sunucu tarafında sayım/toplam/ortalama ve gruplama; büyük sheet'te `read_sheet` sayfalamanın yerine geçer |
+| `find_in_sheet`        | Değere veya formüle göre hücre arar                                                                       |
 
 Büyük bir sheet'i `read_sheet` ile sayfalamak yerine `aggregate_sheet`, `find_in_sheet` veya dar bir `range` tercih edin; `describe_workbook` ve `read_sheet` bunu `guidance`/`hint` alanlarıyla söyler.
+
+## Başlık satırı
+
+`mergedCells` başlık satırını da etkiler. Varsayılan `master` altında birleşik bir hücrenin
+yalnız ilk kolonu başlık taşır; `repeat` altında birleşmenin kapsadığı her kolon aynı başlığı
+alır. İki satırlı başlıklarda ilk kolon çoğu zaman dikey birleşiktir (`A1:A2`) ve o başlık
+ancak `repeat` ile isimle adreslenebilir. Yatay bir grup etiketi (`B1:C1`) ise `repeat` altında
+birden çok kolona aynı adı verir ve `ambiguous_column` döner — harfle adresleyin.
+
+`headerRow` **hiçbir zaman kendiliğinden sezilmez**; verilmezse 1'dir. Her yanıt `headerRowSource`
+ile satırı kimin seçtiğini söyler: `"explicit"` (siz verdiniz), `"declared"` (sayfadaki Excel
+Table veya autofilter beyan etti), `"scanned"` (`headerScan` ile ispatlandı), `"default"`
+(kimse seçmedi, 1 varsayıldı), `"cursor"` (sayfalama token'ından geldi).
+
+Birleşik bir başlık bandı + boş satır + gerçek başlık, Excel çıktılarında yaygındır ve
+varsayılan `headerRow: 1` orada sessizce yanlış sayar. İki savunma var: yanıt böyle bir durumda
+`warnings` ile gerçek başlık satırını adlandırır, ve `headerScan: true` satırı tek çağrıda
+ispatlar. `headerScan` ispatlayamazsa **tahmin etmez**: aday yoksa `unknown_header_row`, birden
+fazla aday varsa `ambiguous_header_row` döner ve `recovery` aday satırların metnini yazar.
+`headerScan`, `headerRow` veya `cursor` ile birlikte verilemez ve CSV'de `unsupported_for_format`
+döner.
 
 ## CSV
 
@@ -62,3 +84,5 @@ Sabittir, yapılandırılamaz: dosya 50 MB (CSV 16 MB, 2M hücre) · yanıt 10.0
 ## Hatalar
 
 Hatalar `isError: true` ile ve `{error, message, recovery}` gövdesiyle döner. `error` alanı makine-okunur bir koddur; `recovery` bir sonraki çağrının nasıl düzeltileceğini söyler.
+
+Sunucunun kendi kusurundan doğan, sınıflandırılamayan bir hata `internal_error` döner ve **`recovery` taşımaz** — bilinen bir "sonraki çağrı" yoktur, ve olmadığı halde varmış gibi yapmak ajanı sağlam bir dosyayı onarmaya yollar. Ham ayrıntı stderr'e yazılır.

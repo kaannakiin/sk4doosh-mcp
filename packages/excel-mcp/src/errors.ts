@@ -1,3 +1,5 @@
+import { sep } from "node:path";
+
 export type SkMcpExcelErrorCode =
   | "invalid_argument"
   | "path_outside_root"
@@ -5,7 +7,6 @@ export type SkMcpExcelErrorCode =
   | "file_not_found"
   | "not_a_file"
   | "file_too_large"
-  | "legacy_xls_format"
   | "encrypted_workbook"
   | "corrupt_workbook"
   | "undecodable_text"
@@ -16,11 +17,14 @@ export type SkMcpExcelErrorCode =
   | "unknown_sheet"
   | "ambiguous_sheet"
   | "empty_sheet"
+  | "unknown_header_row"
+  | "ambiguous_header_row"
   | "invalid_range"
   | "invalid_pattern"
   | "range_outside_used_range"
   | "invalid_cursor"
-  | "stale_cursor";
+  | "stale_cursor"
+  | "internal_error";
 
 export class SkMcpExcelError extends Error {
   constructor(
@@ -33,14 +37,30 @@ export class SkMcpExcelError extends Error {
   }
 }
 
-export function asExcelError(error: unknown): SkMcpExcelError {
+export interface ErrorContext {
+  readonly root?: string;
+  readonly tool?: string;
+}
+
+function withoutRoot(detail: string, root: string | undefined): string {
+  if (root === undefined || root === "") {
+    return detail;
+  }
+  return detail.split(`${root}${sep}`).join("").split(root).join(".");
+}
+
+export function asExcelError(
+  error: unknown,
+  context: ErrorContext = {},
+): SkMcpExcelError {
   if (error instanceof SkMcpExcelError) {
     return error;
   }
   const detail = error instanceof Error ? error.message : String(error);
+  const subject = context.tool ?? "The tool";
   return new SkMcpExcelError(
-    "corrupt_workbook",
-    `The workbook could not be read: ${detail}`,
-    "Open the file in Excel and re-save it as .xlsx.",
+    "internal_error",
+    `${subject} failed unexpectedly: ${withoutRoot(detail, context.root)}`,
+    "This is a fault in the excel-mcp server, not in the workbook. Retrying the same call will not help.",
   );
 }

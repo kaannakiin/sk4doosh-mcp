@@ -50,6 +50,8 @@ describe("declared capabilities match observed behaviour", () => {
       handlers.read_sheet({ filePath, mergedCells: "repeat" }),
     definedNames: (filePath) => handlers.describe_workbook({ filePath }),
     typedValues: (filePath) => handlers.read_sheet({ filePath }),
+    headerScan: (filePath) =>
+      handlers.read_sheet({ filePath, headerScan: true }),
   };
 
   const gated: readonly (keyof FormatCapabilities)[] = [
@@ -57,6 +59,7 @@ describe("declared capabilities match observed behaviour", () => {
     "dataValidations",
     "formulas",
     "hyperlinks",
+    "headerScan",
   ];
 
   for (const format of ["xlsx", "csv"] as const) {

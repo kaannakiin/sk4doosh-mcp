@@ -1,6 +1,6 @@
 # Karar 005 — Excel Okuma Semantikleri
 
-Tarih: 2026-09-02, 0.2.0 ile genişletildi 2026-09-03. Durum: **kabul edildi, kodla kanıtlandı** ([packages/excel-mcp](../../packages/excel-mcp), 231/231 test, dosya dosya koşuldu).
+Tarih: 2026-09-02, 0.2.0 ile genişletildi 2026-09-03, 0.3.0 ile genişletildi 2026-09-07. Durum: **kabul edildi, kodla kanıtlandı** ([packages/excel-mcp](../../packages/excel-mcp), 292/292 test, dosya dosya koşuldu).
 
 ## Ne yapıldı
 
@@ -70,7 +70,7 @@ TSV kompakt biçime göre %12,5 daha küçük ama **reddedildi**: her sayı, boo
 
 Bağlı kararlar:
 
-- Header satırı `columns[]`'a hoist edilir, `values`'a girmez. `headerRow` yanıtta echo'lanır — otomatik header sezgisi yok.
+- Header satırı `columns[]`'a hoist edilir, `values`'a girmez. `headerRow` yanıtta echo'lanır — **kendiliğinden** header sezgisi yok. 0.3.0 bunu korur ve iki şey ekler: `headerRowSource` satırı kimin seçtiğini söyler, `headerScan` ise ajan **açıkça isterse** satırı ispatlar. Bkz. "Başlık satırı: sezgi değil, kaynak ve ispat".
 - `numberFormat` hücrede değil **kolonda** durur: 20 string, 1000 değil. `0.15`'in yüzde, `1234.5`'in para olduğunu ajana bayt başına en çok bilgiyle söyleyen alan budur.
 - Nadir tipler (formül, hyperlink href, kesilmiş string) `cellNotes` sidecar'ında, adres anahtarlı.
 - Aralık içi seyrek satırlar `null` dolu dizi olarak korunur; atlanırsa `columns[]` ile pozisyonel hizalama, yani kompakt biçimin tüm temeli bozulur.
@@ -132,7 +132,9 @@ Containment'in `realpath`'ten **önce** de yapılması bilinçli: aksi halde kö
 
 Kontrolden sonra okuma **handle üzerinden** yapılır (`handle.createReadStream`), yol üzerinden değil: kontrol ile açma arasında yol takas edilemez.
 
-Magic byte tablosu — bu kontrol olmadan şifreli bir `.xlsx`, unzipper'ın `invalid signature: 0xe011cfd0` mesajıyla patlar; teknik olarak doğru, ajan için tamamen kullanılamaz:
+Magic byte tablosu — bu kontrol olmadan şifreli bir `.xlsx`, zip katmanının `invalid signature: 0xe011cfd0` mesajıyla patlar; teknik olarak doğru, ajan için tamamen kullanılamaz:
+
+(0.3.0 düzeltmesi: bu mesaj `stream.xlsx.WorkbookReader`'ın kullandığı unzipper'a aitti, oysa yukarıda :45'te o okuyucunun bilinçli olarak hiç çalıştırılmadığı yazıyor. Fiilen çalışan yol `workbook.xlsx.read` → **JSZip**'tir; ölçülen mesajları aşağıdaki 0.3.0 bölümünde.)
 
 | ilk baytlar               | anlam                                 | kod                  |
 | ------------------------- | ------------------------------------- | -------------------- |
@@ -146,14 +148,16 @@ Magic byte tablosu — bu kontrol olmadan şifreli bir `.xlsx`, unzipper'ın `in
 
 [packages/core/src/errors.ts](../../packages/core/src/errors.ts) ev stili (`readonly code` ilk parametre, string-literal union, `this.name`), üstüne bir alan: `recovery`.
 
-15 kod, her biri tam olarak bir doğrulama aşamasına karşılık gelir: `invalid_argument`, `path_outside_root`, `unsupported_extension`, `file_not_found`, `not_a_file`, `file_too_large`, `legacy_xls_format`, `encrypted_workbook`, `corrupt_workbook`, `unknown_sheet`, `empty_sheet`, `invalid_range`, `range_outside_used_range`, `invalid_cursor`, `stale_cursor`.
+24 kod, her biri tam olarak bir doğrulama aşamasına karşılık gelir: `invalid_argument`, `path_outside_root`, `unsupported_extension`, `file_not_found`, `not_a_file`, `file_too_large`, `encrypted_workbook`, `corrupt_workbook`, `undecodable_text`, `ambiguous_delimiter`, `unsupported_for_format`, `unknown_column`, `ambiguous_column`, `unknown_sheet`, `ambiguous_sheet`, `empty_sheet`, `unknown_header_row`, `ambiguous_header_row`, `invalid_range`, `invalid_pattern`, `range_outside_used_range`, `invalid_cursor`, `stale_cursor`, `internal_error`.
+
+(Bu satır 0.2.0'da bayatlamıştı: "15 kod" yazarken union'da 22 vardı. 0.3.0'da `legacy_xls_format` **çıktı** — `.xls` uzantı allowlist'ini hiç geçemediği için CFB imzası her zaman `encrypted_workbook`'a düşüyordu, yani kod üretilemezdi; `internal_error`, `unknown_header_row` ve `ambiguous_header_row` girdi.)
 
 `recovery` bu tasarımın ajan ergonomisi açısından en yüksek kaldıraçlı parçası — başarısız bir çağrıyı yeniden deneme döngüsü yerine başarılı bir sonraki çağrıya çevirir: `unknown_sheet` mevcut sheet'leri **gizli olanlar dahil** listeler (göremediğini isteyemez), `invalid_range` sheet'in gerçek used range'ini söyler, `file_not_found` `list_workbooks`'a yönlendirir.
 
 Yüzeyleme: **`isError: true` + yapılandırılmış JSON gövde**, throw ederek değil.
 
 - `isError: true`, çıplak sonuç değil: `SkMcpMetaTools`'un `isError`'sız `{error,message}` deseni orada doğru — 403 `invoke_tool`'un meşru sonucudur. Burada `unknown_sheet` "hiçbir şey okunmadı" demek. İstemciler `isError: true`'yu başarısız çağrı olarak gösterir ve model bunu "farklı dene" diye işler; referansın düz `"Error: <msg>"` metni ise içeriği "Error" olan bir hücreden ayırt edilemez.
-- Throw edilmiyor, çünkü MCP SDK yakalayıp `createToolError(error.message)` üretiyor — **`code` alanı siliniyor**. Makine-okunur sözleşme handler sınırında catch gerektirir; `asExcelError` bilinmeyen throw'ları `corrupt_workbook`'a eşler.
+- Throw edilmiyor, çünkü MCP SDK yakalayıp `createToolError(error.message)` üretiyor — **`code` alanı siliniyor**. Makine-okunur sözleşme handler sınırında catch gerektirir. `asExcelError` sınıflandıramadığı throw'ları **`internal_error`**'a eşler ve `recovery` **vermez**; ayrıntı için aşağıdaki 0.3.0 bölümü. (0.2.0'da bu eşleme `corrupt_workbook`'tu ve yanlıştı.)
 - JSON-RPC protokol hatası kullanılmıyor: argüman **şekli** hataları zaten zod ile SDK katmanında protokol hatası oluyor; argüman **semantiği** hataları (olmayan sheet, veri dışı aralık) tool hatası kalıyor.
 
 ## Tipler: zod 4
@@ -245,7 +249,7 @@ CSV'de **zip bomb açığı yoktur**: cap içeriği birebir ölçer. Yukarıdaki
 
 20k satırlık bir sayfada "hangi bölge en yüksek toplama sahip?" sorusu 0.1.0'da ~10 `read_sheet` çağrısı ve ajanın kendi aritmetiği demekti. Ölçüm: tek çağrı **306 bayt ≈ 87 token**; tarama 20k satırda **3 ms**, parse **131 ms** — tarama parse'ın 1/40'ı. Bedeli `tools/list`'te ölçüldü: 4.213 → **8.114 bayt ≈ 2.318 token**.
 
-Birleşik `query_sheet` (metrics yoksa satır, varsa agregat) ölçüldü — 872 vs 1.659 token, %47 tasarruf — ve **reddedildi**: mod anahtarı dönüş şeklini sessizce değiştirir, `outputSchema` yok, ajan tek ad altında iki şekil taşımak zorunda kalırdı. `headerRow`'u otomatik sezmeyi reddeden paket bunu da reddeder. `sort_sheet` kalıcı olarak düştü (limitsiz sıralama sayfalamanın süslüsü). `profile_columns` düştü: kolon sansürü **etkilediği agregatın yanına** iliştirilir, ayrı çağrıya değil, ve ön-keşif `unknown_column`'ın recovery'sinden bedavaya gelir.
+Birleşik `query_sheet` (metrics yoksa satır, varsa agregat) ölçüldü — 872 vs 1.659 token, %47 tasarruf — ve **reddedildi**: mod anahtarı dönüş şeklini sessizce değiştirir, `outputSchema` yok, ajan tek ad altında iki şekil taşımak zorunda kalırdı. `headerRow`'u **kendiliğinden** sezmeyi reddeden paket bunu da reddeder. (0.3.0'ın `headerScan`'i bu cümleyi çürütmez: orada dönüş şekli sabit kalır ve hesaplama ajanın açık talebiyle yapılır.) `sort_sheet` kalıcı olarak düştü (limitsiz sıralama sayfalamanın süslüsü). `profile_columns` düştü: kolon sansürü **etkilediği agregatın yanına** iliştirilir, ayrı çağrıya değil, ve ön-keşif `unknown_column`'ın recovery'sinden bedavaya gelir.
 
 **Kolon adresleme.** Tek string: başlık metni veya A1 harfi, `columnMode` ile zorlanabilir. Başlık eşleşmesi `fold` ile. Yinelenen başlık `ambiguous_column` — asla "ilki kazanır". Başlık/harf çakışması da öyle; `columnMode` tam bunun içindir. Sayısal başlık (`2026`) **başlık değildir**: `readHeader` zaten string olmayanı `null` yapıyordu ve `read_sheet` bu sözleşmeyle shipped — böylece "2026 başlık mı veri mi" sorusu hiç sorulmaz, dürüst yanıt paketin bilemeyeceğidir.
 
@@ -270,3 +274,252 @@ CSV'de `coerceText` opt-in'dir: `numericTexts` sansürü sayısal metni sayar ve
 ## 0.2.0 kapsam sınırları
 
 `filter_sheet` ertelendi (iki çağrılık workaround'u var ve cursor cerrahisi gerektiren tek parça o), `median`/yüzdelikler ertelendi (O(satır) bellek isteyen ilk metrik), `caseInsensitiveGroups` ertelendi. Yazma işlemleri, biçimlendirme, chart, pivot, formül değerlendirme ve `.xls`/`.xlsb`/`.ods` hâlâ kapsam dışı.
+
+---
+
+# 0.3.0 düzeltmeleri
+
+Gerçek bir koşu iki kusuru aynı anda gösterdi: bir Ollama ajanı 1146 satırlık bir ERP
+çıktısına bağlandı ve **yanlış cevap** üretti. Aşağıdakilerin tamamı o dosyaya ve mevcut
+fixture korpusuna karşı ölçüldü.
+
+## `corrupt_workbook` catch-all'ı kalktı
+
+**Ölçüm.** Kök `/Users/kaanakin/Downloads` iken `list_workbooks {"subdirectory":"Downloads"}`
+şunu döndürüyordu:
+
+```json
+{
+  "error": "corrupt_workbook",
+  "message": "The workbook could not be read: ENOENT: no such file or directory, scandir '/Users/kaanakin/Downloads/Downloads'",
+  "recovery": "Open the file in Excel and re-save it as .xlsx."
+}
+```
+
+Ortada workbook yoktu; eksik olan bir klasördü. `recovery` ajanı **sağlam bir dosyayı
+onarmaya** yolluyordu — 005:151'in "başarısız çağrıyı başarılı bir sonrakine çevirir"
+vaadinin tam tersi. Sebep iki katmanlıydı: `paths.ts`'in `readdir`'ü sarmalanmamıştı ve
+`asExcelError` her sınıflandırılamayan throw'u `corrupt_workbook`'a eşliyordu.
+
+**Sıra neden bağlayıcı.** `asExcelError`'ın varsayılanını doğrudan değiştirmek gerçek bozuk
+dosya tespitini **regresyona uğratırdı**. Ölçüldü: magic-byte kapısını geçen bozuk bir
+`.xlsx` için exceljs düz bir `Error` fırlatıyor ve `code` alanı **yok** —
+
+```text
+Corrupted zip: can't find end of central directory   (kesilmiş dosya)
+Bug : uncompressed data size mismatch                (bit çevrilmiş dosya)
+```
+
+Node errno hatalarından ayırt edilebilecek tek yapısal alan `code`; bu hatalarda o alan
+bulunmadığı için mesaj dizesine bakmaktan başka yol kalmazdı, ki bu CLAUDE.md'nin yasakladığı
+sessiz sihirdir ve JSZip metinleri sürümler arası garantisizdir.
+
+Çözüm ayrımı **yapısal** yapmak: `corrupt_workbook` artık `parseXlsx`'in **içinde** üretiliyor
+(`mapXlsxError`), yani alanı bilen katman hatasını kendi sahipleniyor. Bu, `mapCsvError`'ın
+CSV tarafında zaten yaptığı şeyin xlsx ikizi; eksik olan simetriydi.
+
+Bu sırayı bozan bir değişikliği **mevcut testler yakalamazdı**: `corrupt.xlsx` fixture'ı düz
+metindir ve magic-byte kapısında elenir, `asExcelError`'a hiç ulaşmaz. Bu yüzden
+`truncated.xlsx` ve `flipped.xlsx` eklendi — ikisi de kapıyı geçip ayrıştırmada patlar.
+
+**Sonuç.** Sınıflandırılamayan throw `internal_error`; mesaj sandbox kökünden arındırılır,
+ham ayrıntı `process.stderr`'e yazılır (stdout MCP taşımasıdır, stderr operatörün kanalı) ve
+**`recovery` verilmez** — sınıflandırılamayan bir hata için bilinen bir "sonraki çağrı" yoktur,
+dolayısıyla 005:151'in vaadi burada tutulamaz ve tutuluyormuş gibi yapılmaz.
+
+`list_workbooks`'un `readdir`'ü artık `ENOENT` → `file_not_found`, `ENOTDIR` → `not_a_file`
+veriyor. Varlık-oracle yasağı (005:131) burada geçerli **değil**: `base` bu noktada zaten
+`isContained`'den geçmiştir, yani ispatlanabilir biçimde kök içindedir; yasak kök **dışı**
+yollar içindir. Mesajlar çözülmüş mutlak yolu değil çağıranın kendi göreli argümanını
+yankılar, `/Downloads/Downloads` katlanması böylece kaybolur.
+
+## Başlık satırı: sezgi değil, kaynak ve ispat
+
+**Ölçüm.** Dosyanın yapısı: satır 1 `A1:G1` birleşik tek başlık bandı, satır 2 boş, satır 3
+gerçek başlıklar, satır 4-1146 veri = **1143 satır**. `aggregate_sheet` sonuçları:
+
+| `headerRow`        | `startRow` | `scannedRows` | count  |
+| ------------------ | ---------- | ------------- | ------ |
+| 1 (varsayılan)     | 2          | 1145          | yanlış |
+| 2 (ajanın tahmini) | 3          | 1144          | yanlış |
+| 3                  | 4          | 1143          | doğru  |
+
+Yani varsayılan çağrı **iki** satır fazla sayıyordu, ajanın tahmini bir. Kusur veri katmanında
+değil, sinyal katmanındaydı: `headerRow` hiçbir zaman sezilmiyordu, yalnızca 1'e varsayılıyordu
+ve yanıt bunu söylemiyordu.
+
+**Neden bu 005:73 ile çelişmiyor.** Reddedilen şey sunucunun **sorulmadan ve söylemeden**
+karar vermesi. 005:226 sunucunun bir parametreyi yine de hesaplayabileceği koşulları koyuyor
+ve paket bunu `delimiter` için zaten sevk etmişti: hesaplama **istenir**, dosyadan
+**ispatlanır**, beraberlik **hatadır**, sonuç **kaynağıyla yankılanır**. `headerScan` dördünü
+de sağlar ve varsayılanı değiştirmez. `headerRowSource` ise `delimiterSource`'un birebir
+karşılığıdır.
+
+**Üç kanıt katmanı, güçlüden zayıfa.**
+
+1. **Beyan.** Sayfada gerçek bir Excel Table (`xl/tables/table1.xml`) varsa başlık satırı
+   ölçülmez, **okunur**: `tableRef`'in üst satırı + `headerRow: true`. exceljs bunu okumada
+   `worksheet.tables` üzerinden veriyor (`tableRef`, `headerRow`, `columns`), `autoFilter` de
+   ikinci bir beyan kaynağı. Bu tahmin değil, dosyanın kendi üstverisi. `headerRowSource`
+   `"declared"`.
+2. **Tarama.** Beyan yoksa metin kanıtı: bir satır **aday**dır ⟺ diskalifiye eden hücresi yok
+   (sayı, tarih, boolean, hata), örten birleşmesi yok, ve en az `min(2, genişlik)` adet
+   adlandıran metni var. Başlık satırı penceredeki **ilk aday**dır ve tarama yalnızca
+   **ondan sonraki ilk boş olmayan satır aday değilse** başarılıdır. `headerRowSource`
+   `"scanned"`.
+3. **Varsayım.** Hiçbiri istenmediyse `headerRow` 1'dir ve `headerRowSource` `"default"` —
+   ajana satırı **kimsenin seçmediğini** söyleyen tek kelime budur.
+
+**Neden bu kurallar, ölçümle.** Adaylık `typeof value === "string"` ile değil `classify()`'ın
+`"text"` türüyle tanımlı, çünkü tarihler ISO string'e serileştiriliyor ve saf-tarih bir satır
+aksi halde "hep metin" okunurdu; ayrıca böylece tarama ile agregasyon "başlık nedir" konusunda
+yapısal olarak anlaşamamazlık edemez. Kural `naming === filled` değil `disqualifying === 0`,
+çünkü `analysis.xlsx!Sales`'in gerçek başlık satırında bir boş string var ve daha katı bir
+kural onu yanlışlıkla elerdi. Kural "son aday" değil "ilk aday + sonrası aday değil", çünkü
+`turkish.xlsx!Şubeler`'de 1-4 satırların hepsi saf metindir ve naif kural sessizce **4**
+çözerdi; doğru cevap orada bir satır seçmek değil, `ambiguous_header_row` ile **reddetmektir**.
+
+**Uyarı yüklemi neden birleşmeye bakmıyor.** Meşru bir grup etiketi (`C1:E1` birleşik
+"Quarter 1", `headerRow: 1` doğru) da birleşme kaynaklı `null` üretir. Ayırt edici sinyal
+birleşme değil, **tam genişlik boyunca ≤1 non-null string başlık**. Yüklem böylece
+birleşmeden bağımsızdır, CSV ile xlsx aynı davranır (005:222 paritesi korunur) ve mevcut
+fixture korpusunun tamamında sessizdir.
+
+Uyarı ayrıca "ilk taranan satır başlığa benziyor" biçiminde **kurulamaz**: varsayılan çağrıda
+`startRow = 2`'dir ve o satır boştur, yani böyle bir yüklem asıl vakayı kaçırırdı.
+
+## `listWorkbooks` sembolik bağ sızıntısı kapatıldı
+
+**Ölçüm.** Kökün içindeki bir sembolik bağ `subdirectory` olarak verildiğinde, kök **dışındaki**
+dosyaların adı, boyutu ve değiştirilme tarihi listeleniyordu:
+
+```json
+{
+  "files": [
+    {
+      "filePath": "kacis/gizli-butce.xlsx",
+      "sizeBytes": 48308,
+      "modifiedAt": "2026-09-07T11:53:12.388Z"
+    }
+  ]
+}
+```
+
+İçerik sızmıyordu — aynı dosyayı okumak `resolveWorkbookPath`'in `realpath` adımına takılıp
+`path_outside_root` veriyordu. Yani ad/boyut/tarih sızıntısı.
+
+Sebep, iki kod yolunun ayrışması: `resolveWorkbookPath` 005:129'un tarif ettiği zinciri
+uyguluyordu (sözlüksel containment → `realpath` → **tekrar** containment), `listWorkbooks` ise
+yalnız ilk adımı. Zincirin eksik kalan yarısı listeleme tarafındaydı.
+
+**Kapsam ölçüldü, sanılandan dardı.** Argümansız özyinelemeli tarama zaten güvenliydi —
+`readdir`'in `recursive` modu sembolik bağlı dizine girmiyor — ve kökün **kendisi** bağ
+olduğunda `createWorkbookRoot` onu zaten `realpath`'liyor. Tek giriş noktası `subdirectory`'nin
+bir bağı göstermesiydi.
+
+**Düzeltme.** `listWorkbooks` artık aynı üç adımlı zinciri uyguluyor. Dışarı gösteren bağ
+`path_outside_root`; kök içine gösteren bağ **çalışmaya devam ediyor** ve dönen `filePath`
+gerçek konumu verdiği için doğrudan tekrar kullanılabilir; kök-symlink kurulumu etkilenmiyor.
+`resolveWorkbookPath`'teki gibi tek bir `outside` nesnesi iki yerden fırlatılıyor, böylece
+"kök dışında ve var" ile "kök dışında ve yok" ayırt edilemiyor (005:131).
+
+**Bağlı dosyalar da aynı zincire alındı.** `entry.isFile()` sembolik bağlar için `false`
+döndüğü için bağlı bir workbook hiç listelenmiyordu — ama kök içinde kaldığı sürece
+**okunabiliyordu**. Yani `list_workbooks` okuyabildiği bir dosyayı keşfedilemez kılıyordu, oysa
+sandbox'lı bir sunucuda keşfin tek yolu odur. Artık bağlı girdiler de aday sayılıyor,
+`realpath` + containment + "hedef gerçekten dosya mı" kontrolünden geçiyor: kök içine bağlı
+dosya listeleniyor ve dönen yol okuyucunun kabul ettiği yol; kök dışına bağlı olan ve kırık
+olan sessizce eleniyor — hata değil, çünkü listeleme bir filtredir, tek bir girdi yüzünden
+çağrının tamamı başarısız olmamalı.
+
+## Workbook parçası olmayan zip
+
+**Ölçüm.** Bir `.docx`'i ya da herhangi bir `.zip`'i `.xlsx` diye yeniden adlandırmak magic-byte
+kapısını geçiyor — o kapı yalnız "bu bir zip mi" diye bakar ve OOXML'in tamamı zip'tir. exceljs
+`workbook.xlsx.read()` de **hiç fırlatmıyor**: `xl/workbook.xml` bulamayınca sessizce boş bir
+workbook döndürüyor. Aynı dosya tool'a göre üç farklı yanlış cevap veriyordu:
+
+| çağrı               | eski sonuç                                                                    |
+| ------------------- | ----------------------------------------------------------------------------- |
+| `describe_workbook` | `internal_error` — `Cannot read properties of undefined (reading 'date1904')` |
+| `read_sheet`        | `unknown_sheet` — "The workbook has no worksheets."                           |
+
+İkisi de yanlış. `unknown_sheet`'in `recovery`'si normalde mevcut sheet'leri listeler ki ajan
+doğrusunu seçsin; burada seçilecek sheet **yok ve hiç olmayacak**, yani ajan sonuçsuz bir
+"başka sheet dene" döngüsüne giriyordu. `internal_error` ise kusuru sunucuya yıkıyordu, oysa
+kusur girdi dosyasında. Doğru olgu tek: zip açıldı, içinde workbook yok.
+
+Not: 0.3.0'ın catch-all düzeltmesi bu tek girdi için raporlanan kodu geçici olarak
+**geriletmişti** — önce TypeError catch-all'a düşüp `corrupt_workbook` diyordu, yani doğru kodu
+yanlış gerekçeyle veriyordu. Gerekçe düzelince kod bozuldu; aşağıdaki kontrol ikisini birden
+düzeltir.
+
+**Yüklem ölçümle seçildi.** `worksheets.length === 0` **yanlış pozitif** verir: exceljs sıfır
+sayfalı ama tamamen geçerli bir workbook yazabiliyor (ölçüldü, 5.330 bayt) ve onda
+`properties` **var**. Sahte zip'lerde ise `properties` `undefined`. Dolayısıyla ayırt edici tek
+başına `properties === undefined`; sayfa sayısına bakılmaz.
+
+| dosya                              | `properties`  | `worksheets` |
+| ---------------------------------- | ------------- | ------------ |
+| sıfır sayfalı **geçerli** workbook | var           | 0            |
+| `.docx` şekilli zip                | **undefined** | 0            |
+| yalnız `.txt` içeren zip           | **undefined** | 0            |
+| gerçek workbook                    | var           | 1            |
+
+**Düzeltme.** Kontrol `parseXlsx`'in içinde, `read`'den hemen sonra — `mapXlsxError`'ın zaten
+durduğu yerde. Her tool aynı `parseXlsx`'ten geçtiği için üç semptom da tek noktada kapanır ve
+hepsi `corrupt_workbook` döner. Gerçekten sıfır sayfalı geçerli bir workbook hâlâ
+`unknown_sheet` alır, ki o **doğrudur**: o bir workbook'tur, yalnızca sayfası yoktur.
+
+Fixture elle yazılmış bir ZIP'tir (`buildNotAWorkbook`): tek `stored` girdi, `node:zlib`'in
+`crc32`'siyle. Testin doğru sebeple geçtiğini `recovery` metni kanıtlar — şekil kontrolünün
+metni zip ayrıştırıcısınınkinden farklıdır, yani test bozuk zip'e değil eksik workbook parçasına
+bakar.
+
+## Başlık okumasında birleşme politikası
+
+0.3.0'ın ilk turunda `aggregate.ts`'in başlık okumasındaki sabit `mergePolicy: "master"`
+**bilinçli olarak korunmuştu**. Gerekçe şuydu: `mergedCells: "repeat"` altında `C1:E1` gibi
+yatay bir grup etiketi üç kolona aynı başlığı verir ve `ambiguous_column` doğar, oysa `master`
+temiz tek kolon döner; başlık bir etikettir, tekrarlamak yapay çakışma üretir.
+
+**Bu gerekçe yanlıştı ve tek bir şekilden genelleme yapıyordu.** Karşı ölçüm — Excel
+raporlarında çok yaygın olan iki satırlı başlık, ilk kolonu dikey birleşmiş:
+
+```text
+A1:A2 dikey "Bolge"   B1:C1 "Ceyrek 1"   D1:D2 dikey "Toplam"
+                      B2 "Ocak"  C2 "Subat"
+```
+
+| çağrı (`headerRow: 2`)       | sonuç                                  |
+| ---------------------------- | -------------------------------------- |
+| `read_sheet` + `master`      | `[null, "Ocak", "Subat", null]`        |
+| `read_sheet` + `repeat`      | `["Bolge", "Ocak", "Subat", "Toplam"]` |
+| `aggregate_sheet` + `repeat` | `unknown_column: 'Bolge'`              |
+
+Dikey birleşme **çakışma üretmez** — her kolona farklı başlık verir. `master` orada iki meşru
+başlığı `null` yapıp bilgi kaybediyordu, `repeat` ise kurtarıyordu. Ama `aggregate_sheet`
+politikayı dinlemediği için ajan `read_sheet`'te gördüğü kolonu agregasyonda bulamıyordu:
+**davranışla uyuşmayan üstveri**, yani bu belgenin baştan beri düzelttiği hatanın aynı sınıfı.
+
+Üç ek itiraz, hepsi bu paketin kendi kurallarından:
+
+- Açıkça verilen bir parametrenin yarısının sessizce atılması "sessiz sihir yok" ile çelişir;
+  paket `cursor` + `range` çakışmasında hata veriyor, sessiz seçim değil.
+- `master`'ın kendisi de bir sessiz çözümdür: yatay `C1:E1`'de sunucu "bu etiket C'nindir" diye
+  karar verir, D ve E isimle erişilemez kalır. Bu **"ilki kazanır"**, yani 005:254'ün yinelenen
+  başlık için açıkça yasakladığı desen.
+- `ambiguous_column` aslında dürüst cevaptır: `repeat` istendiğinde üç kolon gerçekten aynı
+  başlığı taşır ve recovery "harfle adresle: B veya C" diyerek çıkışı gösterir.
+
+**Düzeltme.** `mergedCells` başlık okumasına da geçiriliyor. Asıl kusur politika seçimi değil,
+`aggregate.ts`'in `read-sheet.ts`'teki döngüyü elle kopyalamış olmasıydı — iki uygulama
+kaçınılmaz olarak ayrışır. İkisi de artık `header.ts`'teki tek `readHeaderRow`'u çağırıyor;
+`NormalizeOptions` parametre olduğu için her çağıran kendi `valueMode`/`includeHyperlinks`
+bağlamını korur, paylaşılan olan yalnız döngüdür.
+
+**Kabul edilen bedel.** Bugün çalışan tek bir çağrı — `repeat` + yatay grup etiketiyle
+`groupBy` — artık `ambiguous_column` döner. Takas simetrik değil: bu kombinasyon nadir ve
+recovery'siyle kurtarılabilir, karşılığında düzelen iki satırlı başlık şekli yaygın ve şu an
+sessizce yanlış. Varsayılan `master` hiç değişmedi, dolayısıyla değişiklik yalnız `repeat`'i
+**açıkça isteyen** çağıranı etkiler.

@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { crc32 } from "node:zlib";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ExcelJS from "exceljs";
@@ -28,6 +29,10 @@ export interface Fixtures {
   readonly analysis: string;
   readonly corrupt: string;
   readonly encrypted: string;
+  readonly titleBand: string;
+  readonly truncated: string;
+  readonly flipped: string;
+  readonly notAWorkbook: string;
 }
 
 export const largeRowCount = 20_000;
@@ -288,6 +293,140 @@ async function buildLongStrings(path: string): Promise<void> {
   await workbook.xlsx.writeFile(path);
 }
 
+async function buildTitleBand(path: string): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+
+  const invoices = workbook.addWorksheet("Faturalar");
+  invoices.getCell("A1").value = "Kapanmamış Faturalar";
+  invoices.mergeCells("A1:G1");
+  invoices.getRow(3).values = [
+    "Fatura Tarihi",
+    "Vade Tarihi",
+    "Fatura No",
+    "Tutar",
+    "Ödenen Tutar",
+    "Kalan Tutar",
+    "Kalan Gün",
+  ];
+  for (let index = 0; index < 6; index += 1) {
+    invoices.getRow(index + 4).values = [
+      "06.04.2026",
+      "05.06.2026",
+      `ORA${index + 1}`,
+      (index + 1) * 1000,
+      0,
+      (index + 1) * 1000 - 0.37,
+      -94 + index,
+    ];
+  }
+
+  const allText = workbook.addWorksheet("AllText");
+  for (let row = 1; row <= 4; row += 1) {
+    allText.getRow(row).values = [`a${row}`, `b${row}`, `c${row}`];
+  }
+
+  const noHeader = workbook.addWorksheet("NoHeader");
+  for (let row = 1; row <= 4; row += 1) {
+    noHeader.getRow(row).values = [row, row * 2, row * 3];
+  }
+
+  const declared = workbook.addWorksheet("Declared");
+  declared.getCell("A1").value = "Başlık Bandı";
+  declared.mergeCells("A1:C1");
+  declared.addTable({
+    name: "Faturalar",
+    ref: "A3",
+    columns: [{ name: "Fatura No" }, { name: "Tutar" }, { name: "Kalan" }],
+    rows: [
+      ["ORA1", 100, 50],
+      ["ORA2", 200, 60],
+    ],
+  });
+
+  const twoRow = workbook.addWorksheet("IkiSatir");
+  twoRow.getCell("A1").value = "Bolge";
+  twoRow.mergeCells("A1:A2");
+  twoRow.getCell("B1").value = "Ceyrek 1";
+  twoRow.mergeCells("B1:C1");
+  twoRow.getCell("B2").value = "Ocak";
+  twoRow.getCell("C2").value = "Subat";
+  twoRow.getCell("D1").value = "Toplam";
+  twoRow.mergeCells("D1:D2");
+  for (let row = 3; row <= 5; row += 1) {
+    twoRow.getRow(row).values = ["EMEA", row, row * 2, row * 3];
+  }
+
+  const mergedHeader = workbook.addWorksheet("MergedHeader");
+  mergedHeader.getCell("A1").value = "Toplam";
+  mergedHeader.mergeCells("A1:B1");
+  mergedHeader.getCell("C1").value = "Ad";
+  for (let row = 2; row <= 4; row += 1) {
+    mergedHeader.getRow(row).values = [row, row * 10, `ad-${row}`];
+  }
+
+  await workbook.xlsx.writeFile(path);
+}
+
+async function buildMalformed(
+  truncated: string,
+  flipped: string,
+): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Data");
+  sheet.addRow(["id", "name"]);
+  for (let row = 2; row <= 40; row += 1) {
+    sheet.addRow([row - 1, `name-${row - 1}`]);
+  }
+  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+
+  await writeFile(truncated, buffer.subarray(0, Math.floor(buffer.length / 2)));
+
+  const bits = Buffer.from(buffer);
+  for (let offset = 400; offset < 440 && offset < bits.length; offset += 1) {
+    bits[offset] = (bits[offset] ?? 0) ^ 0xff;
+  }
+  await writeFile(flipped, bits);
+}
+
+async function buildNotAWorkbook(path: string): Promise<void> {
+  const name = Buffer.from("word/document.xml", "utf8");
+  const body = Buffer.from(
+    "<document><body>not a spreadsheet</body></document>",
+    "utf8",
+  );
+  const sum = crc32(body);
+
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50, 0);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(0, 8);
+  local.writeUInt32LE(sum, 14);
+  local.writeUInt32LE(body.length, 18);
+  local.writeUInt32LE(body.length, 22);
+  local.writeUInt16LE(name.length, 26);
+
+  const central = Buffer.alloc(46);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt16LE(20, 4);
+  central.writeUInt16LE(20, 6);
+  central.writeUInt16LE(0, 10);
+  central.writeUInt32LE(sum, 16);
+  central.writeUInt32LE(body.length, 20);
+  central.writeUInt32LE(body.length, 24);
+  central.writeUInt16LE(name.length, 28);
+
+  const centralSize = central.length + name.length;
+  const offset = local.length + name.length + body.length;
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(1, 8);
+  end.writeUInt16LE(1, 10);
+  end.writeUInt32LE(centralSize, 12);
+  end.writeUInt32LE(offset, 16);
+
+  await writeFile(path, Buffer.concat([local, name, body, central, name, end]));
+}
+
 export async function buildFixtures(): Promise<Fixtures> {
   const root = await mkdtemp(join(tmpdir(), "sk-mcp-excel-"));
   await mkdir(join(root, "q1"));
@@ -305,6 +444,10 @@ export async function buildFixtures(): Promise<Fixtures> {
     analysis: join(root, "analysis.xlsx"),
     corrupt: join(root, "corrupt.xlsx"),
     encrypted: join(root, "encrypted.xlsx"),
+    titleBand: join(root, "title-band.xlsx"),
+    truncated: join(root, "truncated.xlsx"),
+    flipped: join(root, "flipped.xlsx"),
+    notAWorkbook: join(root, "not-a-workbook.xlsx"),
   };
   await buildSample(fixtures.sample);
   await buildValidations(fixtures.validations);
@@ -316,6 +459,9 @@ export async function buildFixtures(): Promise<Fixtures> {
   await buildCsv(fixtures.csvDir);
   await buildParity(fixtures.parity);
   await buildAnalysis(fixtures.analysis);
+  await buildTitleBand(fixtures.titleBand);
+  await buildMalformed(fixtures.truncated, fixtures.flipped);
+  await buildNotAWorkbook(fixtures.notAWorkbook);
   await writeFile(
     fixtures.corrupt,
     Buffer.from("not a spreadsheet at all", "utf8"),
