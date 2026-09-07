@@ -1,6 +1,6 @@
 {
   "name": "@sk-mcp/excel-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Read-only MCP server for Excel workbooks.",
   "license": "MIT",
   "type": "module",
@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@sk-mcp/file-core": "workspace:^",
     "csv-parse": "^7.0.2",
     "exceljs": "^4.4.0",
     "zod": "^4.5.4"

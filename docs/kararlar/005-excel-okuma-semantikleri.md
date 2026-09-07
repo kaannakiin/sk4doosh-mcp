@@ -6,6 +6,12 @@ Tarih: 2026-09-02, 0.2.0 ile genişletildi 2026-09-03, 0.3.0 ile genişletildi 2
 
 `packages/excel-mcp` (`@sk-mcp/excel-mcp`): ajanın yerel `.xlsx`/`.xlsm` dosyalarını okuduğu bağımsız, yayınlanabilir bir MCP sunucusu. Referans [haris-musa/excel-mcp-server](https://github.com/haris-musa/excel-mcp-server) (Python + openpyxl + FastMCP).
 
+> 2026-09-07 ileri atıf: aşağıdaki "`packages/core`'a bağımlı değil" hükmü `@sk-mcp/core` için
+> geçerliliğini korur. Excel'e özgü olmayan makine (sandbox, doküman önbelleği, hata zarfı, cursor
+> codec, tool kayıt katmanı) `@sk-mcp/file-core` paketine çıkarıldı ve `excel-mcp` artık onun
+> tüketicisidir; iki çekirdek birbirine iki yönde de bağlanmaz. Gerekçe, yayın mekaniği ve
+> reddedilen alternatifler [karar 015](015-dosya-kaynagi-cekirdegi.md)'te.
+
 Paket `packages/core`'a **bağımlı değil** ve olamaz: `EndpointDescriptor` zorunlu HTTP `method` + `route` istiyor, parametreler `path`/`query`/`header`, dispatch `{status, body}` dönüyor. Dosya okuyan bir sunucunun replay edeceği bir backend pipeline'ı yok. sk-mcp'nin `search_tools`/`load_tool`/`invoke_tool` kataloğuna bağlanması, spec'te HTTP olmayan bir descriptor türü gerektirir — bu karar kapsamı dışında.
 
 CLAUDE.md yorum yasağı gereği aşağıdaki kararların tamamı yalnız bu belgede açıklanır; kodda tek satır yorum yoktur.
@@ -615,11 +621,11 @@ Sonucu: `header.ts` `declaredHeaderRow`, `!table.headerRow` olan tabloları atl�
 
 Ölçüm, üç durum:
 
-| durum | model `headerRow` | kolon adları | `ref`'in ilk satırı |
-| --- | --- | --- | --- |
-| `headerRowCount="0"` (gerçekten başlıksız) | `false` | `["c1","c2","c3"]` (sentetik) | `[1,2,3]` (veri) |
-| `headerRowCount="1"` | `true` | `["Fatura No",…]` | aynı metinler |
-| attribute yok (**Excel'in yazdığı şekil**) | `false` | `["Fatura No",…]` | aynı metinler |
+| durum                                      | model `headerRow` | kolon adları                  | `ref`'in ilk satırı |
+| ------------------------------------------ | ----------------- | ----------------------------- | ------------------- |
+| `headerRowCount="0"` (gerçekten başlıksız) | `false`           | `["c1","c2","c3"]` (sentetik) | `[1,2,3]` (veri)    |
+| `headerRowCount="1"`                       | `true`            | `["Fatura No",…]`             | aynı metinler       |
+| attribute yok (**Excel'in yazdığı şekil**) | `false`           | `["Fatura No",…]`             | aynı metinler       |
 
 Yani `headerRow: false` dönen iki durumu ayıran şey, tablonun ilan ettiği kolon adlarının `ref`'in ilk satırındaki hücrelerle eşleşip eşleşmediği. `namesTheRowBelow` bunu yapıyor ve karşılaştırma `fold` ile — büyük/küçük harf ve aksan duyarsız, `columns.ts`'in kolon adı eşleştirmesiyle aynı kural.
 

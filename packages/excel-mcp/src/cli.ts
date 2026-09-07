@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { parseServerArgv } from "@sk-mcp/file-core";
 import { createWorkbookRoot } from "./paths.js";
 import { createExcelMcpServer } from "./server.js";
 
@@ -8,18 +9,14 @@ function fail(message: string, code: number): never {
   process.exit(code);
 }
 
-const [, , rootArgument, ...rest] = process.argv;
+const parsed = parseServerArgv(process.argv);
 
-if (
-  rootArgument === undefined ||
-  rootArgument.startsWith("-") ||
-  rest.length > 0
-) {
+if (parsed.kind === "usage") {
   fail("Usage: sk-mcp-excel <workbook-root>", 2);
 }
 
 try {
-  const root = await createWorkbookRoot(rootArgument);
+  const root = await createWorkbookRoot(parsed.path);
   const server = createExcelMcpServer(root);
   await server.connect(new StdioServerTransport());
 } catch (error) {

@@ -1,3 +1,4 @@
+import { fold } from "@sk-mcp/file-core";
 import { normalizeCell, type NormalizeOptions } from "./cell-value.js";
 import type { MergePolicy } from "./cursor.js";
 import { SkMcpExcelError } from "./errors.js";
@@ -9,9 +10,7 @@ import {
   type CellRef,
   type GridBounds,
 } from "./range.js";
-import type { SheetView } from "./sheet.js";
-import type { DeclaredTable } from "./tables.js";
-import { fold } from "./unicode.js";
+import type { DeclaredTable, SheetView } from "./sheet.js";
 
 export type HeaderRowSource =
   "explicit" | "declared" | "scanned" | "default" | "cursor";

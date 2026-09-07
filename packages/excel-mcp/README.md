@@ -2,7 +2,7 @@
 
 Ajanın yerel Excel dosyalarını **okuduğu** bağımsız bir MCP sunucusu. Yazma işlemi yoktur.
 
-Okunan biçimler: `.xlsx`, `.xlsm`, `.csv`. Karar gerekçeleri ve semantik sözleşme: [karar 005](../../docs/kararlar/005-excel-okuma-semantikleri.md).
+Okunan biçimler: `.xlsx`, `.xlsm`, `.csv`. Karar gerekçeleri ve semantik sözleşme: [karar 005](../../docs/kararlar/005-excel-okuma-semantikleri.md). Sandbox, doküman önbelleği, hata zarfı, cursor codec ve tool kayıt katmanı [@sk-mcp/file-core](../file-core)'dan gelir: [karar 015](../../docs/kararlar/015-dosya-kaynagi-cekirdegi.md).
 
 ## Kurulum
 

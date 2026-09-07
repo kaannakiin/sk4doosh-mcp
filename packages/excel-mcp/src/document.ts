@@ -1,5 +1,11 @@
-import { open } from "node:fs/promises";
 import type { Workbook } from "exceljs";
+import {
+  createDocumentStore,
+  type DocumentStore,
+  type OpenedFile,
+  type ParseContext,
+  type SandboxedPath,
+} from "@sk-mcp/file-core";
 import { capabilities } from "./capabilities.js";
 import {
   csvSheetName,
@@ -10,116 +16,100 @@ import {
   type CsvReport,
   type CsvTable,
 } from "./csv.js";
-import { fingerprint } from "./cursor.js";
-import { SkMcpExcelError } from "./errors.js";
+import { SkMcpExcelError, fail } from "./errors.js";
+import { formats, type DocumentFormat } from "./formats.js";
 import { limits } from "./limits.js";
-import {
-  assertReadableFormat,
-  formatFor,
-  type DocumentFormat,
-  type SandboxedPath,
-} from "./paths.js";
-import { xlsxSheetView, type SheetView } from "./sheet.js";
+import { assertReadableFormat } from "./paths.js";
+import type { SheetSource, SheetView } from "./sheet.js";
+import { vocabulary } from "./vocabulary.js";
 import {
   describeWorkbook,
   parseXlsx,
   selectWorksheet,
+  xlsxSheetView,
   type DocumentMeta,
   type WorkbookDescription,
 } from "./workbook.js";
 
-interface LoadedBase {
-  readonly stamp: string;
-  readonly sizeBytes: number;
-  readonly modifiedAt: string;
-}
-
-export interface LoadedWorkbook extends LoadedBase {
+interface XlsxBody {
   readonly format: "xlsx";
   readonly workbook: Workbook;
 }
 
-export interface LoadedCsv extends LoadedBase {
+interface CsvBody {
   readonly format: "csv";
   readonly table: CsvTable;
 }
 
+type DocumentBody = XlsxBody | CsvBody;
+
+export type LoadedWorkbook = XlsxBody & OpenedFile;
+export type LoadedCsv = CsvBody & OpenedFile;
 export type LoadedDocument = LoadedWorkbook | LoadedCsv;
 
-const cache = new Map<string, LoadedDocument>();
+async function parseDocument(
+  context: ParseContext,
+  options: CsvOptions,
+): Promise<DocumentBody> {
+  const format = formats.formatFor(context.path);
+  if (format === "csv") {
+    const table = await parseCsv(
+      context.handle,
+      context.sizeBytes,
+      options,
+      context.path,
+    );
+    return { format, table };
+  }
+  const magic = Buffer.alloc(8);
+  await context.handle.read(magic, 0, 8, 0);
+  assertReadableFormat(magic, context.path);
+  const workbook = await parseXlsx(context.handle, context.path);
+  return { format, workbook };
+}
+
+function variantKey(options: CsvOptions): string {
+  return [options.delimiter ?? "", options.encoding ?? ""].join(":");
+}
+
+export interface DocumentCache {
+  load(path: SandboxedPath, options?: CsvOptions): Promise<LoadedDocument>;
+  clear(): void;
+  readonly size: number;
+}
+
+export function createDocumentCache(root?: string): DocumentCache {
+  const store: DocumentStore<DocumentBody, CsvOptions> = createDocumentStore({
+    maxEntries: limits.documentCacheSize,
+    maxBytes: limits.maxFileBytes,
+    ...(root === undefined ? {} : { root }),
+    vocabulary,
+    fail,
+    variantKey,
+    parse: parseDocument,
+  });
+  return {
+    load: (path, options = {}) => store.load(path, options),
+    clear: () => {
+      store.clear();
+    },
+    get size() {
+      return store.size;
+    },
+  };
+}
+
+const defaultCache = createDocumentCache();
 
 export function clearDocumentCache(): void {
-  cache.clear();
-}
-
-function remember(key: string, document: LoadedDocument): LoadedDocument {
-  cache.delete(key);
-  cache.set(key, document);
-  while (cache.size > limits.documentCacheSize) {
-    const oldest = cache.keys().next();
-    if (oldest.done === true) {
-      break;
-    }
-    cache.delete(oldest.value);
-  }
-  return document;
-}
-
-function cacheKey(
-  path: string,
-  format: DocumentFormat,
-  options: CsvOptions,
-): string {
-  if (format !== "csv") {
-    return path;
-  }
-  return `${path}\u0000${options.delimiter ?? ""}\u0000${options.encoding ?? ""}`;
+  defaultCache.clear();
 }
 
 export async function loadDocument(
   path: SandboxedPath,
   options: CsvOptions = {},
 ): Promise<LoadedDocument> {
-  const format = formatFor(path);
-  const key = cacheKey(path, format, options);
-  const handle = await open(path, "r");
-  try {
-    const info = await handle.stat();
-    if (!info.isFile()) {
-      throw new SkMcpExcelError(
-        "not_a_file",
-        `'${path}' is not a regular file.`,
-      );
-    }
-    if (info.size > limits.maxFileBytes) {
-      throw new SkMcpExcelError(
-        "file_too_large",
-        `The file is ${info.size} bytes; the limit is ${limits.maxFileBytes}.`,
-        "Split the workbook or read a smaller file.",
-      );
-    }
-    const stamp = fingerprint(path, info.mtimeMs, info.size);
-    const cached = cache.get(key);
-    if (cached !== undefined && cached.stamp === stamp) {
-      return remember(key, cached);
-    }
-    const base = {
-      stamp,
-      sizeBytes: info.size,
-      modifiedAt: new Date(info.mtimeMs).toISOString(),
-    };
-    if (format === "csv") {
-      const table = await parseCsv(handle, info.size, options, path);
-      return remember(key, { format, table, ...base });
-    }
-    const magic = Buffer.alloc(8);
-    await handle.read(magic, 0, 8, 0);
-    assertReadableFormat(magic, path);
-    const workbook = await parseXlsx(handle, path);
-    return remember(key, { format, workbook, ...base });
-  } finally {
-    await handle.close();
-  }
+  return defaultCache.load(path, options);
 }
 
 export function documentSheet(
@@ -137,6 +127,13 @@ export function documentSheet(
     return csvSheetView(loaded.table);
   }
   return xlsxSheetView(selectWorksheet(loaded.workbook, sheetName));
+}
+
+export function sheetSource(loaded: LoadedDocument): SheetSource {
+  return {
+    stamp: loaded.stamp,
+    sheetFor: (sheetName) => documentSheet(loaded, sheetName),
+  };
 }
 
 export function csvReportOf(loaded: LoadedDocument): CsvReport | undefined {

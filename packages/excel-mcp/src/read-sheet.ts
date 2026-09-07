@@ -1,3 +1,4 @@
+import { canonical, fold } from "@sk-mcp/file-core";
 import {
   normalizeCell,
   type CellNote,
@@ -11,7 +12,6 @@ import {
   type MergePolicy,
   type ValueMode,
 } from "./cursor.js";
-import { documentSheet, type LoadedDocument } from "./document.js";
 import { SkMcpExcelError } from "./errors.js";
 import {
   headerWarnings,
@@ -27,9 +27,11 @@ import {
   resolveRange,
   type GridBounds,
 } from "./range.js";
-import type { SheetView } from "./sheet.js";
-import { canonical, fold } from "./unicode.js";
-import { requireSheetBounds } from "./workbook.js";
+import {
+  requireSheetBounds,
+  type SheetSource,
+  type SheetView,
+} from "./sheet.js";
 
 export interface ColumnInfo {
   readonly letter: string;
@@ -80,12 +82,9 @@ interface Window {
   readonly headerRowSource: HeaderRowSource;
 }
 
-function resolveWindow(
-  loaded: LoadedDocument,
-  options: ReadSheetOptions,
-): Window {
+function resolveWindow(source: SheetSource, options: ReadSheetOptions): Window {
   if (options.cursor === undefined) {
-    const sheet = documentSheet(loaded, options.sheetName);
+    const sheet = source.sheetFor(options.sheetName);
     const used = requireSheetBounds(sheet);
     const bounds = resolveRange(used, options.range);
     const headerRow = options.headerRow;
@@ -112,8 +111,8 @@ function resolveWindow(
     );
   }
   const cursor = decodeCursor(options.cursor);
-  assertFresh(cursor, loaded.stamp);
-  const sheet = documentSheet(loaded, cursor.s);
+  assertFresh(cursor, source.stamp);
+  const sheet = source.sheetFor(cursor.s);
   const used = requireSheetBounds(sheet);
   const end = parseCellRef(cursor.e);
   const bounds: GridBounds = {
@@ -156,10 +155,10 @@ function overlaps(merge: string, bounds: GridBounds): boolean {
 }
 
 export function readSheet(
-  loaded: LoadedDocument,
+  source: SheetSource,
   options: ReadSheetOptions,
 ): ReadSheetResult {
-  const window = resolveWindow(loaded, options);
+  const window = resolveWindow(source, options);
   const normalizeOptions: NormalizeOptions = {
     valueMode: window.valueMode,
     mergePolicy: window.mergedCells,
@@ -292,7 +291,7 @@ export function readSheet(
       ? {
           nextCursor: encodeCursor({
             v: 1,
-            f: loaded.stamp,
+            f: source.stamp,
             s: window.sheet.name,
             r: nextRow,
             c: window.bounds.left,
@@ -387,10 +386,10 @@ function createMatcher(options: FindOptions): Matcher {
 }
 
 export function findInSheet(
-  loaded: LoadedDocument,
+  source: SheetSource,
   options: FindOptions,
 ): FindResult {
-  const sheet = documentSheet(loaded, options.sheetName);
+  const sheet = source.sheetFor(options.sheetName);
   const used = requireSheetBounds(sheet);
   const bounds = resolveRange(used, options.range);
   const matcher = createMatcher(options);

@@ -428,7 +428,6 @@ async function buildNotAWorkbook(path: string): Promise<void> {
   await writeFile(path, Buffer.concat([local, name, body, central, name, end]));
 }
 
-
 const onePixelPng =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8AAAwAB/wD/2gAAAABJRU5ErkJggg==";
 

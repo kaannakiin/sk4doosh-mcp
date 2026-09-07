@@ -24,9 +24,7 @@ async function loadXlsx(path: SandboxedPath): Promise<LoadedWorkbook> {
 
 async function facets(sheet: string) {
   const loaded = await loadXlsx(await pathTo("facets.xlsx"));
-  return collectConditionalFormats(
-    selectWorksheet(loaded.workbook, sheet),
-  );
+  return collectConditionalFormats(selectWorksheet(loaded.workbook, sheet));
 }
 
 describe("collectConditionalFormats", () => {
@@ -97,9 +95,7 @@ describe("collectConditionalFormats", () => {
 
   it("carries the searched text inside the formula it was compiled into", async () => {
     const report = await facets("Kosullu");
-    const expression = report.rules.find(
-      (rule) => rule.type === "expression",
-    );
+    const expression = report.rules.find((rule) => rule.type === "expression");
     expect(expression?.formulae).toEqual(["$B2>$C2"]);
     expect("text" in (expression ?? {})).toBe(false);
   });

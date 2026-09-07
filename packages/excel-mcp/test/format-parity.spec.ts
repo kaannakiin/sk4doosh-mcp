@@ -1,5 +1,6 @@
 import { describe, expect, inject, it } from "vitest";
-import { loadDocument } from "../src/document.js";
+import { loadDocument, sheetSource } from "../src/document.js";
+import type { SheetSource } from "../src/sheet.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
 import {
   findInSheet,
@@ -19,7 +20,7 @@ const base: ReadSheetOptions = {
 async function open(file: string) {
   const fixtures = inject("fixtures");
   const root = await createWorkbookRoot(fixtures.root);
-  return loadDocument(await resolveWorkbookPath(root, file));
+  return sheetSource(await loadDocument(await resolveWorkbookPath(root, file)));
 }
 
 describe("the grid layer cannot see the format", () => {

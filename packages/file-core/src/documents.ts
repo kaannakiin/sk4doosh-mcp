@@ -1,0 +1,99 @@
+import { open, type FileHandle } from "node:fs/promises";
+import { fingerprint, type Fingerprint } from "./cursor.js";
+import { redactRoot, type CoreErrorCode, type ErrorFactory } from "./errors.js";
+import type { SandboxedPath } from "./paths.js";
+import type { Vocabulary } from "./vocabulary.js";
+
+const variantSeparator = "\u0000";
+
+export interface OpenedFile {
+  readonly stamp: Fingerprint;
+  readonly sizeBytes: number;
+  readonly modifiedAt: string;
+}
+
+export interface ParseContext extends OpenedFile {
+  readonly handle: FileHandle;
+  readonly path: SandboxedPath;
+}
+
+export interface DocumentStoreSpec<Loaded, Options> {
+  readonly maxEntries: number;
+  readonly maxBytes: number;
+  readonly root?: string;
+  readonly vocabulary: Vocabulary<string>;
+  readonly fail: ErrorFactory<CoreErrorCode>;
+  readonly variantKey: (options: Options) => string;
+  readonly parse: (context: ParseContext, options: Options) => Promise<Loaded>;
+}
+
+export interface DocumentStore<Loaded, Options> {
+  load(path: SandboxedPath, options: Options): Promise<Loaded & OpenedFile>;
+  clear(): void;
+  readonly size: number;
+}
+
+export function createDocumentStore<Loaded, Options>(
+  spec: DocumentStoreSpec<Loaded, Options>,
+): DocumentStore<Loaded, Options> {
+  const cache = new Map<string, Loaded & OpenedFile>();
+
+  function remember(
+    key: string,
+    document: Loaded & OpenedFile,
+  ): Loaded & OpenedFile {
+    cache.delete(key);
+    cache.set(key, document);
+    while (cache.size > spec.maxEntries) {
+      const oldest = cache.keys().next();
+      if (oldest.done === true) {
+        break;
+      }
+      cache.delete(oldest.value);
+    }
+    return document;
+  }
+
+  return {
+    get size() {
+      return cache.size;
+    },
+    clear() {
+      cache.clear();
+    },
+    async load(path, options) {
+      const key = [path, spec.variantKey(options)].join(variantSeparator);
+      const handle = await open(path, "r");
+      try {
+        const info = await handle.stat();
+        if (!info.isFile()) {
+          throw spec.fail(
+            "not_a_file",
+            `'${redactRoot(path, spec.root)}' is not a regular file.`,
+          );
+        }
+        if (info.size > spec.maxBytes) {
+          throw spec.fail(
+            "file_too_large",
+            `The file is ${info.size} bytes; the limit is ${spec.maxBytes}.`,
+            spec.vocabulary.tooLargeRecovery,
+          );
+        }
+        const stamp = fingerprint(path, info.mtimeMs, info.size);
+        const cached = cache.get(key);
+        if (cached !== undefined && cached.stamp === stamp) {
+          return remember(key, cached);
+        }
+        const opened: OpenedFile = {
+          stamp,
+          sizeBytes: info.size,
+          modifiedAt: new Date(info.mtimeMs).toISOString(),
+        };
+        const parsed = await spec.parse({ ...opened, handle, path }, options);
+        return remember(key, { ...parsed, ...opened });
+      } finally {
+        await handle.close();
+      }
+    },
+  };
+}

@@ -7,7 +7,8 @@ import {
   readSheet,
   type ReadSheetOptions,
 } from "../src/read-sheet.js";
-import { loadDocument, type LoadedDocument } from "../src/document.js";
+import { loadDocument, sheetSource } from "../src/document.js";
+import type { SheetSource } from "../src/sheet.js";
 import { largeRowCount } from "./fixtures/build.js";
 
 const loneSurrogate =
@@ -26,10 +27,10 @@ const base: ReadSheetOptions = {
   includeHyperlinks: false,
 };
 
-async function open(file: string): Promise<LoadedDocument> {
+async function open(file: string): Promise<SheetSource> {
   const fixtures = inject("fixtures");
   const root = await createWorkbookRoot(fixtures.root);
-  return loadDocument(await resolveWorkbookPath(root, file));
+  return sheetSource(await loadDocument(await resolveWorkbookPath(root, file)));
 }
 
 async function codeOf(

@@ -8,8 +8,9 @@ sk-mcp/
 ├── packages/                 # paylaşılan çekirdek + bağımsız yayınlanabilir ürün paketleri — SDK yok
 │   ├── spec/                 # @sk-mcp/spec — normatif markdown + JSON kural tabloları (kod yok)
 │   ├── conformance/          # @sk-mcp/conformance — saf JSON fixture korpusu (runtime bağımlılığı yok)
-│   ├── core/                 # @sk-mcp/core — TS referans implementasyonu (Faz 3+'ta doldurulur)
-│   ├── excel-mcp/            # @sk-mcp/excel-mcp — bağımsız MCP sunucusu (core'a bağımlı değil)
+│   ├── core/                 # @sk-mcp/core — TS referans implementasyonu (HTTP katalog; Faz 3+)
+│   ├── file-core/            # @sk-mcp/file-core — dosya okuyan sunucuların paylaşılan makinesi (core ile ilgisi yok)
+│   ├── excel-mcp/            # @sk-mcp/excel-mcp — MCP sunucusu (@sk-mcp/core'a bağımlı değil, file-core'a bağımlı)
 │   ├── eslint-config/        # @sk-mcp/eslint-config
 │   └── typescript-config/    # @sk-mcp/typescript-config
 ├── sdks/                     # TÜM SDK'lar burada, dilden bağımsız (rol bazlı ayrım)
@@ -37,6 +38,31 @@ sk-mcp/
 - `private: true` **değildir**; gerçek semver taşır (`0.1.0`), `bin` + `files` + `publishConfig.access: public` beyan eder.
 - `exports.types` `./src/index.ts` yerine `./dist/index.d.ts`'e bakar. İç konvansiyon dış tüketicide çalışmaz: `src` yayınlanmaz ve dış tüketicinin `tsc`'si bizim compiler option'larımıza sahip değildir. Aynı sebeple `declarationMap` kapalıdır — açık olsaydı yayınlanan her `.d.ts.map` kırık referans olurdu.
 - `packages/core`'a bağımlı olmak zorunda değildir. `excel-mcp` değildir: `EndpointDescriptor` HTTP `method` + `route` zorunlu kılar, dosya okuyan bir sunucunun replay edeceği pipeline yoktur.
+
+## `core` ≠ `file-core`
+
+İki farklı çekirdek var ve **birbirlerine iki yönde de bağlanmazlar**. Adların benzerliği bu bölümün var olma sebebidir.
+
+|                   | `@sk-mcp/core`                                                                                             | `@sk-mcp/file-core`                                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Rol               | Spec referans implementasyonu: HTTP katalog, `EndpointDescriptor`, isimlendirme, şema dönüşümü, görünürlük | Dosya okuyan MCP sunucularının makinesi: sandbox, listeleme, doküman önbelleği, hata zarfı, cursor codec, tool kayıt katmanı |
+| Okuyucu           | SDK'lar (`sdks/*`)                                                                                         | Ürün paketleri (`packages/*-mcp`)                                                                                            |
+| MCP protokol kodu | Yok                                                                                                        | Var (`McpServer` kaydı, stdio CLI)                                                                                           |
+| Yayın             | `private: true`                                                                                            | Yayınlanır, gerçek semver                                                                                                    |
+| `exports.types`   | `./src/index.ts`                                                                                           | `./dist/index.d.ts`                                                                                                          |
+
+## Yayınlanan kütüphane: dördüncü paket şekli
+
+`file-core` ne iç paket ne ürün paketidir; **yayınlanan kütüphanedir**. Repo şu dört şekli taşır:
+
+| Şekil                | Örnek                            | `private` | Semver  | `bin` | `exports.types`     |
+| -------------------- | -------------------------------- | --------- | ------- | ----- | ------------------- |
+| Minimal (prose/JSON) | `spec`, `conformance`            | `true`    | `0.0.0` | —     | —                   |
+| İç paket             | `core`, `sdk-nestjs`, config'ler | `true`    | `0.0.0` | —     | `./src/index.ts`    |
+| Yayınlanan kütüphane | `file-core`                      | yok       | gerçek  | —     | `./dist/index.d.ts` |
+| Ürün paketi          | `excel-mcp`                      | yok       | gerçek  | var   | `./dist/index.d.ts` |
+
+Yayınlanan kütüphanede `exports.types → dist` ve `declarationMap: false` **zorunludur**, çünkü onu tüketen yayınlanan paketin `.d.ts`'i bu yolları geçişli olarak çözer. Bir yayınlanan paket `private: true` bir workspace paketine bağımlı olamaz: `pnpm publish` `workspace:^`'ı sessizce `"0.0.0"`'a yazar, publish başarılı olur ve hata tüketicinin `install`'unda çıkar. Detay [karar 015](kararlar/015-dosya-kaynagi-cekirdegi.md)'te; CI'daki kapı [.github/scripts/check-npm-tarballs.py](../.github/scripts/check-npm-tarballs.py).
 
 ## Neden spec / conformance / core üç ayrı paket?
 

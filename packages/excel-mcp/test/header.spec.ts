@@ -13,9 +13,11 @@ import {
   type WorkbookRoot,
 } from "../src/paths.js";
 import { resolveRange, type GridBounds } from "../src/range.js";
-import type { SheetView } from "../src/sheet.js";
-import type { DeclaredTable } from "../src/tables.js";
-import { requireSheetBounds } from "../src/workbook.js";
+import {
+  requireSheetBounds,
+  type DeclaredTable,
+  type SheetView,
+} from "../src/sheet.js";
 
 describe("header row evidence", () => {
   let root: WorkbookRoot;
@@ -127,7 +129,6 @@ describe("header row evidence", () => {
   });
 });
 
-
 describe("a table that omits headerRowCount", () => {
   const bounds: GridBounds = { top: 1, left: 1, bottom: 4, right: 3 };
 
@@ -150,10 +151,7 @@ describe("a table that omits headerRowCount", () => {
           if (value === undefined || value === null) {
             return undefined;
           }
-          return {
-            type: typeof value === "number" ? 2 : 3,
-            value,
-          };
+          return { merged: false, value: { value } };
         },
       };
     },

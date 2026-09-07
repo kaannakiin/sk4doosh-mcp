@@ -63,9 +63,9 @@ describe("collectTables", () => {
   it("drops the writer defaults instead of reporting them", async () => {
     const report = await facets("Tablolar");
     const columns = report.tables.flatMap((table) => table.columns);
-    expect(
-      columns.every((column) => column.totalsRowFunction !== "none"),
-    ).toBe(true);
+    expect(columns.every((column) => column.totalsRowFunction !== "none")).toBe(
+      true,
+    );
     expect(columns.every((column) => column.filterButton !== false)).toBe(true);
     const items = report.tables[1];
     expect(

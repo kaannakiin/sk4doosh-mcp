@@ -1,12 +1,14 @@
-import type { Worksheet } from "exceljs";
+import type { Fingerprint } from "@sk-mcp/file-core";
 import type { CellSnapshot } from "./cell-value.js";
+import { SkMcpExcelError } from "./errors.js";
 import type { GridBounds } from "./range.js";
-import {
-  autoFilterRefOf,
-  declaredTablesOf,
-  type DeclaredTable,
-} from "./tables.js";
-import { usedBounds } from "./workbook.js";
+
+export interface DeclaredTable {
+  readonly name: string;
+  readonly ref: string;
+  readonly headerRow: boolean;
+  readonly columns: readonly string[];
+}
 
 export interface RowView {
   cellAt(column: number): CellSnapshot | undefined;
@@ -21,33 +23,23 @@ export interface SheetView {
   rowAt(row: number): RowView | undefined;
 }
 
-export function xlsxSheetView(worksheet: Worksheet): SheetView {
-  return {
-    name: worksheet.name,
-    bounds: usedBounds(worksheet),
-    merges: worksheet.model.merges,
-    tables: declaredTablesOf(worksheet),
-    autoFilter: autoFilterRefOf(worksheet),
-    rowAt(row) {
-      const found = worksheet.findRow(row);
-      if (found === undefined) {
-        return undefined;
-      }
-      return {
-        cellAt(column) {
-          const cell = found.findCell(column);
-          if (cell === undefined) {
-            return undefined;
-          }
-          return {
-            type: cell.type,
-            value: cell.value,
-            formula: cell.formula,
-            result: cell.result,
-            numberFormat: cell.numFmt,
-          };
-        },
-      };
-    },
-  };
+export interface SheetSource {
+  readonly stamp: Fingerprint;
+  sheetFor(sheetName: string | undefined): SheetView;
+}
+
+export interface BoundedSheet {
+  readonly name: string;
+  readonly bounds: GridBounds | undefined;
+}
+
+export function requireSheetBounds(sheet: BoundedSheet): GridBounds {
+  if (sheet.bounds === undefined) {
+    throw new SkMcpExcelError(
+      "empty_sheet",
+      `Sheet '${sheet.name}' has no cells with values.`,
+      "Call describe_workbook to see which sheets carry data.",
+    );
+  }
+  return sheet.bounds;
 }

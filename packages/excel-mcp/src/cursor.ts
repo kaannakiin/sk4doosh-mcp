@@ -1,12 +1,18 @@
-import { createHash } from "node:crypto";
+import {
+  decodeCursorPayload,
+  isFresh,
+  type Cursor,
+  type Fingerprint,
+} from "@sk-mcp/file-core";
 import { SkMcpExcelError } from "./errors.js";
+
+export { encodeCursor, fingerprint } from "@sk-mcp/file-core";
+export type { Fingerprint } from "@sk-mcp/file-core";
 
 export type ValueMode = "values" | "formulas" | "both";
 export type MergePolicy = "master" | "repeat";
 
-export interface SheetCursor {
-  readonly v: 1;
-  readonly f: string;
+export interface SheetPosition {
   readonly s: string;
   readonly r: number;
   readonly c: number;
@@ -16,20 +22,7 @@ export interface SheetCursor {
   readonly h: number;
 }
 
-export function fingerprint(
-  realPath: string,
-  mtimeMs: number,
-  size: number,
-): string {
-  return createHash("sha256")
-    .update(`${realPath}:${mtimeMs}:${size}`)
-    .digest("hex")
-    .slice(0, 16);
-}
-
-export function encodeCursor(cursor: SheetCursor): string {
-  return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
-}
+export type SheetCursor = Cursor<SheetPosition>;
 
 function isSheetCursor(candidate: unknown): candidate is SheetCursor {
   if (typeof candidate !== "object" || candidate === null) {
@@ -51,28 +44,20 @@ function isSheetCursor(candidate: unknown): candidate is SheetCursor {
   );
 }
 
-const invalidCursor = () =>
-  new SkMcpExcelError(
-    "invalid_cursor",
-    "The cursor is not a token produced by a previous read_sheet response.",
-    "Call read_sheet again without a cursor.",
-  );
-
 export function decodeCursor(raw: string): SheetCursor {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(Buffer.from(raw, "base64url").toString("utf8"));
-  } catch {
-    throw invalidCursor();
-  }
+  const parsed = decodeCursorPayload(raw);
   if (!isSheetCursor(parsed)) {
-    throw invalidCursor();
+    throw new SkMcpExcelError(
+      "invalid_cursor",
+      "The cursor is not a token produced by a previous read_sheet response.",
+      "Call read_sheet again without a cursor.",
+    );
   }
   return parsed;
 }
 
-export function assertFresh(cursor: SheetCursor, current: string): void {
-  if (cursor.f !== current) {
+export function assertFresh(cursor: SheetCursor, current: Fingerprint): void {
+  if (!isFresh(cursor, current)) {
     throw new SkMcpExcelError(
       "stale_cursor",
       "The workbook changed while the previous page was being read.",

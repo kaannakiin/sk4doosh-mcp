@@ -1,3 +1,7 @@
+import { mkdir, mkdtemp } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
@@ -10,6 +14,10 @@ import {
   toolNames,
   type ToolHandlers,
 } from "../src/tools.js";
+
+const manifest = createRequire(import.meta.url)("../package.json") as {
+  version: string;
+};
 
 function payload(result: CallToolResult): Record<string, unknown> {
   const first = result.content[0];
@@ -32,6 +40,11 @@ describe("tool registration", () => {
       client.connect(clientTransport),
       server.connect(serverTransport),
     ]);
+
+    expect(client.getServerVersion()).toEqual({
+      name: "sk-mcp-excel",
+      version: manifest.version,
+    });
 
     const listed = (await client.listTools()).tools;
     expect(listed.map((tool) => tool.name).sort()).toEqual(
@@ -298,5 +311,19 @@ describe("error surfacing", () => {
       range: "A1:B2",
     });
     expect(payload(result)["error"]).toBe("invalid_argument");
+  });
+});
+
+describe("a directory that carries a readable extension", () => {
+  it("is refused without leaking the sandbox root", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "excel-trap-"));
+    await mkdir(join(dir, "trap.xlsx"));
+    const handlers = createHandlers(await createWorkbookRoot(dir));
+    const result = await handlers.describe_workbook({ filePath: "trap.xlsx" });
+    expect(result.isError).toBe(true);
+    const body = payload(result);
+    expect(body["error"]).toBe("not_a_file");
+    expect(body["message"]).toBe("'trap.xlsx' is not a regular file.");
+    expect(JSON.stringify(body)).not.toContain(dir);
   });
 });

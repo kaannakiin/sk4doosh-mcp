@@ -29,7 +29,7 @@ jobs:
             10.0.x
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo run build check-types lint validate format:check
-      - run: pnpm turbo run test --filter=@sk-mcp/core --filter=@sk-mcp/sdk-nestjs --filter=@sk-mcp/excel-mcp
+      - run: pnpm turbo run test --filter='!@sk-mcp/sdk-dotnet'
 
   dotnet:
     name: dotnet test (net8.0 + net10.0)
@@ -78,3 +78,10 @@ jobs:
         with:
           name: SkMcp.AspNetCore-nupkg
           path: sdks/dotnet/local/nupkg-feed/*
+      - run: pnpm turbo run build --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp
+      - run: pnpm pack --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --pack-destination ./local/npm-tarballs
+      - run: python3 .github/scripts/check-npm-tarballs.py local/npm-tarballs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarballs
+          path: local/npm-tarballs/*.tgz

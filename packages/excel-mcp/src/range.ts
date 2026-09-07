@@ -1,5 +1,5 @@
+import { asciiUpper } from "@sk-mcp/file-core";
 import { SkMcpExcelError } from "./errors.js";
-import { asciiUpper } from "./unicode.js";
 
 export interface GridBounds {
   readonly top: number;

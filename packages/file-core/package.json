@@ -1,0 +1,45 @@
+{
+  "name": "@sk-mcp/file-core",
+  "version": "0.1.0",
+  "description": "Shared machinery for read-only, sandboxed, file-backed MCP servers.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "prepack": "tsc"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": ">=1.30.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "10.9.1",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

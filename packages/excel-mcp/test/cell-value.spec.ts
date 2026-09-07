@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeCell, type NormalizeOptions } from "../src/cell-value.js";
+import { xlsxSnapshot, type XlsxCell } from "../src/xlsx-cell.js";
 import { limits } from "../src/limits.js";
 
 const values: NormalizeOptions = {
@@ -9,7 +10,7 @@ const values: NormalizeOptions = {
 };
 
 const snapshot = (value: unknown, extra: Record<string, unknown> = {}) =>
-  ({ type: 3, value, ...extra }) as Parameters<typeof normalizeCell>[0];
+  xlsxSnapshot({ type: 3, value, ...extra } as unknown as XlsxCell);
 
 describe("scalars", () => {
   it("keeps null and empty string apart", () => {

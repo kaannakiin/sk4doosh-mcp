@@ -2,13 +2,12 @@ export { SkMcpExcelError, asExcelError } from "./errors.js";
 export type { SkMcpExcelErrorCode } from "./errors.js";
 export { limits } from "./limits.js";
 export type { Limits } from "./limits.js";
+export { formats } from "./formats.js";
+export type { DocumentFormat } from "./formats.js";
 export {
   createWorkbookRoot,
-  formatFor,
   isContained,
   listWorkbooks,
-  readableExtensions,
-  readableFormats,
   resolveWorkbookPath,
 } from "./paths.js";
 export type {
@@ -39,6 +38,7 @@ export { normalizeCell } from "./cell-value.js";
 export type {
   CellNote,
   CellScalar,
+  CellFacts,
   CellSnapshot,
   NormalizedCell,
 } from "./cell-value.js";
@@ -67,20 +67,18 @@ export {
   tableCountOf,
 } from "./tables.js";
 export type {
-  DeclaredTable,
   DeclaredTableDetail,
   TableColumnDetail,
   TableReport,
 } from "./tables.js";
-export { xlsxSheetView } from "./sheet.js";
-export type { RowView, SheetView } from "./sheet.js";
-export {
-  asciiLower,
-  asciiUpper,
-  canonical,
-  fold,
-  truncateWellFormed,
-} from "./unicode.js";
+export { requireSheetBounds } from "./sheet.js";
+export type {
+  BoundedSheet,
+  DeclaredTable,
+  RowView,
+  SheetSource,
+  SheetView,
+} from "./sheet.js";
 export { aggregateSheet } from "./aggregate.js";
 export type {
   AggregateColumn,
@@ -123,7 +121,6 @@ export {
   describeWorkbook,
   parseXlsx,
   requireBounds,
-  requireSheetBounds,
   selectWorksheet,
   usedBounds,
 } from "./workbook.js";
@@ -152,11 +149,6 @@ export type {
   ReadSheetOptions,
   ReadSheetResult,
 } from "./read-sheet.js";
-export {
-  createHandlers,
-  toolDefinitions,
-  toolNames,
-  toToolError,
-} from "./tools.js";
+export { createHandlers, toolDefinitions, toolNames } from "./tools.js";
 export type { ToolHandlers, ToolName } from "./tools.js";
 export { createExcelMcpServer } from "./server.js";

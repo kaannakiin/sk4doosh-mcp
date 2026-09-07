@@ -1,12 +1,21 @@
-import type {
-  CallToolResult,
-  ToolAnnotations,
-} from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import {
+  guard as coreGuard,
+  json,
+  readOnly,
+  toolNamesOf,
+  type ErrorContext,
+  type GuardedHandler,
+  type HandlersOf,
+  type ToolDefinitions,
+  type ToolInputOf,
+  type ToolNameOf,
+} from "@sk-mcp/file-core";
 import { z } from "zod";
-import { asExcelError, type ErrorContext, SkMcpExcelError } from "./errors.js";
+import { asExcelError, SkMcpExcelError } from "./errors.js";
+import { formats } from "./formats.js";
 import { limits } from "./limits.js";
 import {
-  formatFor,
   listWorkbooks,
   resolveWorkbookPath,
   type WorkbookRoot,
@@ -17,10 +26,11 @@ import { collectImages } from "./images.js";
 import { collectTables } from "./tables.js";
 import { collectValidations } from "./validations.js";
 import {
+  createDocumentCache,
   csvReportOf,
   describeDocument,
   documentSheet,
-  loadDocument,
+  sheetSource,
   type LoadedDocument,
 } from "./document.js";
 import { aggregateSheet } from "./aggregate.js";
@@ -32,13 +42,8 @@ import {
 import { formatRange, resolveRange } from "./range.js";
 
 import type { CsvReport, DelimiterName, EncodingName } from "./csv.js";
-import { requireSheetBounds, selectWorksheet } from "./workbook.js";
-
-const readOnly = {
-  readOnlyHint: true,
-  idempotentHint: true,
-  openWorldHint: false,
-} as const;
+import { requireSheetBounds } from "./sheet.js";
+import { selectWorksheet } from "./workbook.js";
 
 const filePath = z
   .string()
@@ -60,12 +65,6 @@ const drawingKind = z
   .describe(
     "Drawing kind. Only 'picture' can be read; the other kinds are refused rather than reported as absent.",
   );
-
-type ReadOnlyToolDefinition = {
-  readonly description: string;
-  readonly inputSchema: z.ZodObject;
-  readonly annotations: ToolAnnotations & { readonly readOnlyHint: true };
-};
 
 export const toolDefinitions = {
   list_workbooks: {
@@ -324,80 +323,37 @@ export const toolDefinitions = {
     }),
     annotations: readOnly,
   },
-} as const satisfies Record<string, ReadOnlyToolDefinition>;
+} as const satisfies ToolDefinitions;
 
-export type ToolName = keyof typeof toolDefinitions;
+type Definitions = typeof toolDefinitions;
 
-export const toolNames: readonly ToolName[] = Object.keys(
-  toolDefinitions,
-) as ToolName[];
+export type ToolName = ToolNameOf<Definitions>;
 
-export type ToolInputSchema = (typeof toolDefinitions)[ToolName]["inputSchema"];
+export const toolNames: readonly ToolName[] = toolNamesOf(toolDefinitions);
 
-type ToolInput<K extends ToolName> = z.infer<
-  (typeof toolDefinitions)[K]["inputSchema"]
->;
+export type ToolInputSchema = Definitions[ToolName]["inputSchema"];
 
-type ToolHandler<K extends ToolName> = ((
-  args: ToolInput<K>,
-) => Promise<CallToolResult>) & {
-  readonly guardedTool: K;
-};
+type ToolInput<K extends ToolName> = ToolInputOf<Definitions, K>;
 
-export type ToolHandlers = {
-  readonly [K in ToolName]: ToolHandler<K>;
-};
-
-function json(payload: unknown): CallToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(payload) }] };
-}
-
-export function toToolError(error: SkMcpExcelError): CallToolResult {
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          error: error.code,
-          message: error.message,
-          ...(error.recovery === undefined ? {} : { recovery: error.recovery }),
-        }),
-      },
-    ],
-    isError: true,
-  };
-}
+export type ToolHandlers = HandlersOf<Definitions>;
 
 export function guard<K extends ToolName>(
   context: ErrorContext & { readonly tool: K },
   handler: (args: ToolInput<K>, tool: K) => Promise<CallToolResult>,
-): ToolHandler<K> {
-  const guarded = async (args: ToolInput<K>): Promise<CallToolResult> => {
-    try {
-      return await handler(args, context.tool);
-    } catch (error) {
-      if (!(error instanceof SkMcpExcelError)) {
-        const raw =
-          error instanceof Error
-            ? (error.stack ?? error.message)
-            : String(error);
-        process.stderr.write(`${context.tool}: ${raw}\n`);
-      }
-      return toToolError(asExcelError(error, context));
-    }
-  };
-  return Object.assign(guarded, { guardedTool: context.tool });
+): GuardedHandler<Definitions, K> {
+  return coreGuard<Definitions, K>(context, handler, asExcelError);
 }
 
 export function createHandlers(root: WorkbookRoot): ToolHandlers {
+  const cache = createDocumentCache(root.real);
   const openFor = async (
     path: string,
     csv: { delimiter?: DelimiterName; encoding?: EncodingName } = {},
-  ) => loadDocument(await resolveWorkbookPath(root, path), csv);
+  ) => cache.load(await resolveWorkbookPath(root, path), csv);
 
   const openXlsx = async (path: string, tool: ToolName) => {
     const resolved = await resolveWorkbookPath(root, path);
-    const format = formatFor(resolved);
+    const format = formats.formatFor(resolved);
     if (format !== "xlsx") {
       throw new SkMcpExcelError(
         "unsupported_for_format",
@@ -405,7 +361,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         "Call describe_workbook and read the capabilities block.",
       );
     }
-    const loaded = await loadDocument(resolved);
+    const loaded = await cache.load(resolved);
     if (loaded.format !== "xlsx") {
       throw new SkMcpExcelError(
         "unsupported_for_format",
@@ -466,7 +422,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         "The cursor already carries the header row resolved for the first page.",
       );
     }
-    const format = formatFor(path);
+    const format = formats.formatFor(path);
     if (format !== "xlsx") {
       throw new SkMcpExcelError(
         "unsupported_for_format",
@@ -567,7 +523,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       );
       return json(
         withCsv(
-          readSheet(loaded, {
+          readSheet(sheetSource(loaded), {
             ...(args.sheetName === undefined
               ? {}
               : { sheetName: args.sheetName }),
@@ -638,7 +594,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         const loaded = await openFor(args.filePath);
         return json(
           withCsv(
-            aggregateSheet(loaded, {
+            aggregateSheet(sheetSource(loaded), {
               ...(args.sheetName === undefined
                 ? {}
                 : { sheetName: args.sheetName }),
@@ -682,7 +638,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         );
         return json(
           withCsv(
-            findInSheet(loaded, {
+            findInSheet(sheetSource(loaded), {
               query: args.query,
               ...(args.sheetName === undefined
                 ? {}

@@ -1,6 +1,6 @@
+import { asciiUpper, fold } from "@sk-mcp/file-core";
 import { SkMcpExcelError } from "./errors.js";
 import { columnToLetters, type GridBounds } from "./range.js";
-import { asciiUpper, fold } from "./unicode.js";
 
 export type ColumnMode = "auto" | "header" | "letter";
 

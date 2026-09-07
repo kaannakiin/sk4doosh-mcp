@@ -1,6 +1,7 @@
 import { describe, expect, inject, it } from "vitest";
 import { aggregateSheet, type AggregateOptions } from "../src/aggregate.js";
-import { loadDocument, type LoadedDocument } from "../src/document.js";
+import { loadDocument, sheetSource } from "../src/document.js";
+import type { SheetSource } from "../src/sheet.js";
 import { readSheet } from "../src/read-sheet.js";
 import type { SkMcpExcelError } from "../src/errors.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
@@ -20,10 +21,10 @@ const base: AggregateOptions = {
   maxGroups: 50,
 };
 
-async function open(file: string): Promise<LoadedDocument> {
+async function open(file: string): Promise<SheetSource> {
   const fixtures = inject("fixtures");
   const root = await createWorkbookRoot(fixtures.root);
-  return loadDocument(await resolveWorkbookPath(root, file));
+  return sheetSource(await loadDocument(await resolveWorkbookPath(root, file)));
 }
 
 async function codeOf(

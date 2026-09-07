@@ -1,4 +1,5 @@
 import type { FileHandle } from "node:fs/promises";
+import { canonical } from "@sk-mcp/file-core";
 import ExcelJS from "exceljs";
 import type { DataValidation, Workbook, Worksheet } from "exceljs";
 import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
@@ -6,8 +7,9 @@ import { SkMcpExcelError } from "./errors.js";
 import { imageCountOf } from "./images.js";
 import { limits } from "./limits.js";
 import { formatRange, type GridBounds } from "./range.js";
-import { autoFilterRefOf, tableCountOf } from "./tables.js";
-import { canonical } from "./unicode.js";
+import { autoFilterRefOf, declaredTablesOf, tableCountOf } from "./tables.js";
+import { requireSheetBounds, type SheetView } from "./sheet.js";
+import { xlsxSnapshot } from "./xlsx-cell.js";
 
 export interface DocumentMeta {
   readonly filePath: string;
@@ -109,20 +111,35 @@ export function usedBounds(worksheet: Worksheet): GridBounds | undefined {
   };
 }
 
-export interface BoundedSheet {
-  readonly name: string;
-  readonly bounds: GridBounds | undefined;
-}
-
-export function requireSheetBounds(sheet: BoundedSheet): GridBounds {
-  if (sheet.bounds === undefined) {
-    throw new SkMcpExcelError(
-      "empty_sheet",
-      `Sheet '${sheet.name}' has no cells with values.`,
-      "Call describe_workbook to see which sheets carry data.",
-    );
-  }
-  return sheet.bounds;
+export function xlsxSheetView(worksheet: Worksheet): SheetView {
+  return {
+    name: worksheet.name,
+    bounds: usedBounds(worksheet),
+    merges: worksheet.model.merges,
+    tables: declaredTablesOf(worksheet),
+    autoFilter: autoFilterRefOf(worksheet),
+    rowAt(row) {
+      const found = worksheet.findRow(row);
+      if (found === undefined) {
+        return undefined;
+      }
+      return {
+        cellAt(column) {
+          const cell = found.findCell(column);
+          if (cell === undefined) {
+            return undefined;
+          }
+          return xlsxSnapshot({
+            type: cell.type,
+            value: cell.value,
+            formula: cell.formula,
+            result: cell.result,
+            numberFormat: cell.numFmt,
+          });
+        },
+      };
+    },
+  };
 }
 
 export function requireBounds(worksheet: Worksheet): GridBounds {

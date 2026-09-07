@@ -1,3 +1,4 @@
+import { fold } from "@sk-mcp/file-core";
 import type { CellScalar } from "./cell-value.js";
 import {
   buildColumnIndex,
@@ -5,7 +6,6 @@ import {
   type ColumnIndex,
   type ColumnMode,
 } from "./columns.js";
-import { documentSheet, type LoadedDocument } from "./document.js";
 import { SkMcpExcelError } from "./errors.js";
 import {
   headerWarnings,
@@ -32,8 +32,7 @@ import {
 import { columnToLetters, formatRange, resolveRange } from "./range.js";
 import { normalizeCell } from "./cell-value.js";
 import type { SheetView } from "./sheet.js";
-import { fold } from "./unicode.js";
-import { requireSheetBounds } from "./workbook.js";
+import { requireSheetBounds, type SheetSource } from "./sheet.js";
 
 export type MetricFunction =
   | "count"
@@ -234,7 +233,7 @@ function finish(metric: MetricRequest, state: MetricState): CellScalar {
 }
 
 export function aggregateSheet(
-  loaded: LoadedDocument,
+  source: SheetSource,
   options: AggregateOptions,
 ): AggregateResult {
   if (options.metrics.length === 0) {
@@ -244,7 +243,7 @@ export function aggregateSheet(
       'Pass metrics, for example [{"fn":"count"}].',
     );
   }
-  const sheet = documentSheet(loaded, options.sheetName);
+  const sheet = source.sheetFor(options.sheetName);
   const used = requireSheetBounds(sheet);
   const bounds = resolveRange(used, options.range);
 

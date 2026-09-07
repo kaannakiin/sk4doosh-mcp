@@ -1,6 +1,6 @@
+import { truncateWellFormed } from "@sk-mcp/file-core";
 import type { Worksheet } from "exceljs";
 import { limits } from "./limits.js";
-import { truncateWellFormed } from "./unicode.js";
 
 export interface ConditionalFormatThreshold {
   readonly type: string;
@@ -92,8 +92,9 @@ function thresholdsOf(
     return undefined;
   }
   return cfvo
-    .filter((entry): entry is StoredThreshold & { type: string } =>
-      typeof entry.type === "string",
+    .filter(
+      (entry): entry is StoredThreshold & { type: string } =>
+        typeof entry.type === "string",
     )
     .map((entry) => ({
       type: entry.type,
@@ -120,9 +121,7 @@ function project(
   const thresholds = thresholdsOf(rule.cfvo);
   const formulae = formulaeOf(rule.formulae);
   return {
-    ranges: rangesTruncated
-      ? ranges.slice(0, limits.maxRangesPerRule)
-      : ranges,
+    ranges: rangesTruncated ? ranges.slice(0, limits.maxRangesPerRule) : ranges,
     rangesTruncated,
     type: rule.type ?? "unknown",
     ...(rule.priority === undefined ? {} : { priority: rule.priority }),

@@ -1,13 +1,7 @@
 import type { Worksheet } from "exceljs";
 import { limits } from "./limits.js";
 import { columnToLetters, parseCellRef } from "./range.js";
-
-export interface DeclaredTable {
-  readonly name: string;
-  readonly ref: string;
-  readonly headerRow: boolean;
-  readonly columns: readonly string[];
-}
+import type { DeclaredTable } from "./sheet.js";
 
 export interface TableColumnDetail {
   readonly name: string;

@@ -8,9 +8,12 @@ import {
 } from "../src/cursor.js";
 import type { SkMcpExcelError } from "../src/errors.js";
 
+const stamp = fingerprint("/q1.xlsx", 1, 10);
+const otherStamp = fingerprint("/q1.xlsx", 2, 10);
+
 const cursor: SheetCursor = {
   v: 1,
-  f: "abc123",
+  f: stamp,
   s: "Q1",
   r: 41,
   c: 1,
@@ -67,7 +70,7 @@ describe("fingerprint", () => {
   });
 
   it("guards staleness", () => {
-    expect(codeOf(() => assertFresh(cursor, "abc123"))).toBe("no-error");
-    expect(codeOf(() => assertFresh(cursor, "different"))).toBe("stale_cursor");
+    expect(codeOf(() => assertFresh(cursor, stamp))).toBe("no-error");
+    expect(codeOf(() => assertFresh(cursor, otherStamp))).toBe("stale_cursor");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, inject, it } from "vitest";
-import { loadDocument, type LoadedCsv } from "../src/document.js";
+import { loadDocument, sheetSource, type LoadedCsv } from "../src/document.js";
 import type { SkMcpExcelError } from "../src/errors.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
 import { readSheet, type ReadSheetOptions } from "../src/read-sheet.js";
@@ -41,9 +41,17 @@ async function codeOf(
   return "no-error";
 }
 
+async function openSource(
+  name: string,
+  options:
+    { delimiter?: never; encoding?: never } | Record<string, unknown> = {},
+) {
+  return sheetSource(await open(name, options));
+}
+
 describe("no type inference", () => {
   it("keeps every field a string", async () => {
-    const result = readSheet(await open("simple.csv"), base);
+    const result = readSheet(await openSource("simple.csv"), base);
     expect(result.values[0]).toEqual([
       "03-04-2024",
       "01234",
@@ -55,7 +63,7 @@ describe("no type inference", () => {
   });
 
   it("reports no number formats", async () => {
-    const result = readSheet(await open("simple.csv"), base);
+    const result = readSheet(await openSource("simple.csv"), base);
     expect(result.columns.every((column) => column.numberFormat === null)).toBe(
       true,
     );
@@ -69,7 +77,9 @@ describe("delimiter", () => {
     expect(loaded.table.report.delimiter).toBe("semicolon");
     expect(loaded.table.report.delimiterSource).toBe("sniffed");
     expect(
-      readSheet(loaded, base).columns.map((column) => column.header),
+      readSheet(sheetSource(loaded), base).columns.map(
+        (column) => column.header,
+      ),
     ).toEqual(["Şehir", "İlçe", "Posta"]);
   });
 
@@ -136,7 +146,7 @@ describe("record shape", () => {
   it("tolerates ragged records and reports them", async () => {
     const loaded = await open("ragged.csv");
     expect(loaded.table.report.raggedRecordCount).toBe(2);
-    const result = readSheet(loaded, { ...base, headerRow: 0 });
+    const result = readSheet(sheetSource(loaded), { ...base, headerRow: 0 });
     expect(result.values[1]).toEqual(["1", "2", null, null]);
     expect(result.values[2]).toEqual(["3", "4", "5", "6"]);
   });
@@ -150,7 +160,7 @@ describe("record shape", () => {
   it("keeps blank records addressable", async () => {
     const loaded = await open("blank-lines.csv");
     expect(loaded.table.report.blankRecordCount).toBe(1);
-    const result = readSheet(loaded, { ...base, headerRow: 0 });
+    const result = readSheet(sheetSource(loaded), { ...base, headerRow: 0 });
     expect(result.values[2]).toEqual([null, null]);
     expect(result.values[3]).toEqual(["3", "4"]);
   });
@@ -159,14 +169,18 @@ describe("record shape", () => {
     const loaded = await open("dupes.csv");
     expect(loaded.table.report.duplicateHeaders).toEqual(["tutar"]);
     expect(
-      readSheet(loaded, base).columns.map((column) => column.header),
+      readSheet(sheetSource(loaded), base).columns.map(
+        (column) => column.header,
+      ),
     ).toEqual(["tutar", "ad", "tutar"]);
   });
 
   it("counts formula-like cells without changing them", async () => {
     const loaded = await open("formulas.csv");
     expect(loaded.table.report.formulaLikeCellCount).toBe(1);
-    expect(readSheet(loaded, base).values[0]?.[0]).toBe("=SUM(A1:A2)");
+    expect(readSheet(sheetSource(loaded), base).values[0]?.[0]).toBe(
+      "=SUM(A1:A2)",
+    );
   });
 
   it("reports the line break form", async () => {
@@ -175,7 +189,7 @@ describe("record shape", () => {
   });
 
   it("hoists a header-only file into columns and returns no rows", async () => {
-    const result = readSheet(await open("header-only.csv"), base);
+    const result = readSheet(await openSource("header-only.csv"), base);
     expect(result.columns.map((column) => column.header)).toEqual([
       "a",
       "b",
@@ -186,22 +200,27 @@ describe("record shape", () => {
 
   it("treats an empty file as an empty sheet", async () => {
     const loaded = await open("empty.csv");
-    expect(await codeOf(() => readSheet(loaded, base))).toBe("empty_sheet");
+    expect(await codeOf(() => readSheet(sheetSource(loaded), base))).toBe(
+      "empty_sheet",
+    );
   });
 });
 
 describe("sheet identity", () => {
   it("names the single table 'csv'", async () => {
-    expect(readSheet(await open("simple.csv"), base).sheet).toBe("csv");
+    expect(readSheet(await openSource("simple.csv"), base).sheet).toBe("csv");
     expect(
-      readSheet(await open("simple.csv"), { ...base, sheetName: "csv" }).sheet,
+      readSheet(await openSource("simple.csv"), { ...base, sheetName: "csv" })
+        .sheet,
     ).toBe("csv");
   });
 
   it("rejects any other sheet name", async () => {
     const loaded = await open("simple.csv");
     expect(
-      await codeOf(() => readSheet(loaded, { ...base, sheetName: "Sheet1" })),
+      await codeOf(() =>
+        readSheet(sheetSource(loaded), { ...base, sheetName: "Sheet1" }),
+      ),
     ).toBe("unknown_sheet");
   });
 });
@@ -209,7 +228,7 @@ describe("sheet identity", () => {
 describe("pagination parity", () => {
   it("pages a csv the same way it pages a workbook", async () => {
     const loaded = await open("big.csv");
-    let page = readSheet(loaded, { ...base, maxCells: 30 });
+    let page = readSheet(sheetSource(loaded), { ...base, maxCells: 30 });
     expect(page.truncated).toBe(true);
     expect(page.truncationReason).toBe("maxCells");
 
@@ -219,7 +238,7 @@ describe("pagination parity", () => {
       for (const line of page.values) {
         seen.push(Number(line[0]));
       }
-      page = readSheet(loaded, {
+      page = readSheet(sheetSource(loaded), {
         ...base,
         cursor: page.nextCursor,
         maxCells: 30,

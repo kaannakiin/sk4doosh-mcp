@@ -1,4 +1,4 @@
-import type { DocumentFormat } from "./paths.js";
+import type { DocumentFormat } from "./formats.js";
 
 export interface FormatCapabilities {
   readonly merges: boolean;

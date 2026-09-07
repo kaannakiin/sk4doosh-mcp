@@ -1,7 +1,7 @@
 import type { FileHandle } from "node:fs/promises";
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
-import type { CellSnapshot } from "./cell-value.js";
+import { truncate, type CellSnapshot } from "./cell-value.js";
 import { SkMcpExcelError } from "./errors.js";
 import { limits } from "./limits.js";
 import { columnToLetters, type GridBounds } from "./range.js";
@@ -9,8 +9,6 @@ import type { RowView, SheetView } from "./sheet.js";
 import type { DocumentMeta, WorkbookDescription } from "./workbook.js";
 
 export const csvSheetName = "csv";
-
-const stringValueType = 3;
 
 export type DelimiterName = "comma" | "semicolon" | "tab" | "pipe";
 export type EncodingName =
@@ -432,7 +430,7 @@ export function csvSheetView(table: CsvTable): SheetView {
           if (field === undefined) {
             return undefined;
           }
-          return { type: stringValueType, value: field };
+          return { merged: false, value: truncate(field) };
         },
       };
     },

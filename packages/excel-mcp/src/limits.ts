@@ -1,12 +1,9 @@
+import { coreLimits } from "@sk-mcp/file-core";
+
 export const limits = {
-  maxFileBytes: 50 * 1024 * 1024, // 50 MB
+  ...coreLimits,
   maxCellsHard: 10_000,
   maxCellsDefault: 2_000,
-  maxPayloadBytes: 512 * 1024, // 512 KB
-  maxStringChars: 512,
-  maxListResults: 200,
-  defaultListResults: 50,
-  maxListScan: 5_000,
   maxFindResults: 200,
   defaultFindResults: 50,
   maxRegexSource: 256,
@@ -15,11 +12,10 @@ export const limits = {
   maxTableColumns: 256,
   maxConditionalFormatRules: 200,
   maxImagesPerSheet: 200,
-  documentCacheSize: 4,
-  maxCsvBytes: 16 * 1024 * 1024, // 16 MB
+  maxCsvBytes: 16 * 1024 * 1024,
   maxCsvCells: 2_000_000,
-  csvNulScanBytes: 8 * 1024, // 8 KB
-  csvSniffBytes: 64 * 1024, // 64 KB
+  csvNulScanBytes: 8 * 1024,
+  csvSniffBytes: 64 * 1024,
   csvSniffLines: 20,
   headerScanRows: 20,
   maxGroupsDefault: 50,

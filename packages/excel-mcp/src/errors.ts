@@ -1,17 +1,19 @@
-import { sep } from "node:path";
+import {
+  FileSourceError,
+  internalErrorMessage,
+  internalErrorRecovery,
+  type CoreErrorCode,
+  type ErrorContext,
+  type ErrorFactory,
+} from "@sk-mcp/file-core";
+import { vocabulary } from "./vocabulary.js";
 
 export type SkMcpExcelErrorCode =
-  | "invalid_argument"
-  | "path_outside_root"
-  | "unsupported_extension"
-  | "file_not_found"
-  | "not_a_file"
-  | "file_too_large"
+  | CoreErrorCode
   | "encrypted_workbook"
   | "corrupt_workbook"
   | "undecodable_text"
   | "ambiguous_delimiter"
-  | "unsupported_for_format"
   | "unsupported_object_kind"
   | "unknown_column"
   | "ambiguous_column"
@@ -22,33 +24,21 @@ export type SkMcpExcelErrorCode =
   | "ambiguous_header_row"
   | "invalid_range"
   | "invalid_pattern"
-  | "range_outside_used_range"
-  | "invalid_cursor"
-  | "stale_cursor"
-  | "internal_error";
+  | "range_outside_used_range";
 
-export class SkMcpExcelError extends Error {
-  constructor(
-    readonly code: SkMcpExcelErrorCode,
-    message: string,
-    readonly recovery?: string,
-  ) {
-    super(message);
-    this.name = "SkMcpExcelError";
+export class SkMcpExcelError extends FileSourceError {
+  declare readonly code: SkMcpExcelErrorCode;
+
+  constructor(code: SkMcpExcelErrorCode, message: string, recovery?: string) {
+    super(code, message, recovery);
   }
 }
 
-export interface ErrorContext {
-  readonly root?: string;
-  readonly tool?: string;
-}
-
-function withoutRoot(detail: string, root: string | undefined): string {
-  if (root === undefined || root === "") {
-    return detail;
-  }
-  return detail.split(`${root}${sep}`).join("").split(root).join(".");
-}
+export const fail: ErrorFactory<SkMcpExcelErrorCode> = (
+  code,
+  message,
+  recovery,
+) => new SkMcpExcelError(code, message, recovery);
 
 export function asExcelError(
   error: unknown,
@@ -57,11 +47,9 @@ export function asExcelError(
   if (error instanceof SkMcpExcelError) {
     return error;
   }
-  const detail = error instanceof Error ? error.message : String(error);
-  const subject = context.tool ?? "The tool";
   return new SkMcpExcelError(
     "internal_error",
-    `${subject} failed unexpectedly: ${withoutRoot(detail, context.root)}`,
-    "This is a fault in the excel-mcp server, not in the workbook. Retrying the same call will not help.",
+    internalErrorMessage(error, context),
+    internalErrorRecovery(vocabulary),
   );
 }
