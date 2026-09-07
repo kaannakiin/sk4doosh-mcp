@@ -493,7 +493,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
     }
     const sheet = documentSheet(loaded, args.sheetName);
     const bounds = resolveRange(requireSheetBounds(sheet), args.range);
-    const declared = declaredHeaderRow(sheet, bounds);
+    const declared = declaredHeaderRow(sheet, bounds, "master");
     if (declared !== undefined) {
       return { headerRow: declared.row, headerRowSource: "declared" };
     }

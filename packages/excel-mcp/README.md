@@ -62,6 +62,12 @@ ile satırı kimin seçtiğini söyler: `"explicit"` (siz verdiniz), `"declared"
 Table veya autofilter beyan etti), `"scanned"` (`headerScan` ile ispatlandı), `"default"`
 (kimse seçmedi, 1 varsayıldı), `"cursor"` (sayfalama token'ından geldi).
 
+Excel bir tablonun başlık satırını çoğu zaman **örtük** bırakır: `headerRowCount` attribute'unu
+hiç yazmaz ve yokluğu spec'e göre "başlık var" demektir. `"declared"` bu durumu da tanır —
+tablonun ilan ettiği kolon adları tablo aralığının ilk satırındaki hücrelerle eşleşiyorsa başlık
+satırı ispatlanmış sayılır. Adlar kısmen eşleşiyorsa hiçbir şey iddia edilmez ve akış
+`headerScan`'in ispat kurallarına düşer.
+
 Birleşik bir başlık bandı + boş satır + gerçek başlık, Excel çıktılarında yaygındır ve
 varsayılan `headerRow: 1` orada sessizce yanlış sayar. İki savunma var: yanıt böyle bir durumda
 `warnings` ile gerçek başlık satırını adlandırır, ve `headerScan: true` satırı tek çağrıda

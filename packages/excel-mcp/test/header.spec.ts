@@ -14,6 +14,7 @@ import {
 } from "../src/paths.js";
 import { resolveRange, type GridBounds } from "../src/range.js";
 import type { SheetView } from "../src/sheet.js";
+import type { DeclaredTable } from "../src/tables.js";
 import { requireSheetBounds } from "../src/workbook.js";
 
 describe("header row evidence", () => {
@@ -114,7 +115,7 @@ describe("header row evidence", () => {
 
   it("prefers a declared table over the text scan", async () => {
     const { sheet, bounds } = await open("title-band.xlsx", "Declared");
-    const declared = declaredHeaderRow(sheet, bounds);
+    const declared = declaredHeaderRow(sheet, bounds, "master");
     expect(declared?.row).toBe(3);
     expect(declared?.source).toContain("Faturalar");
     expect(scanHeaderRow(sheet, bounds, "master", "Declared")).toBe(3);
@@ -122,6 +123,91 @@ describe("header row evidence", () => {
 
   it("finds no declaration on a sheet that carries none", async () => {
     const { sheet, bounds } = await open("title-band.xlsx", "Faturalar");
-    expect(declaredHeaderRow(sheet, bounds)).toBeUndefined();
+    expect(declaredHeaderRow(sheet, bounds, "master")).toBeUndefined();
+  });
+});
+
+
+describe("a table that omits headerRowCount", () => {
+  const bounds: GridBounds = { top: 1, left: 1, bottom: 4, right: 3 };
+
+  const sheetWith = (
+    table: DeclaredTable,
+    row: readonly (string | number | null)[],
+  ): SheetView => ({
+    name: "S",
+    bounds,
+    merges: [],
+    tables: [table],
+    autoFilter: undefined,
+    rowAt(at) {
+      if (at !== 1) {
+        return undefined;
+      }
+      return {
+        cellAt(column) {
+          const value = row[column - 1];
+          if (value === undefined || value === null) {
+            return undefined;
+          }
+          return {
+            type: typeof value === "number" ? 2 : 3,
+            value,
+          };
+        },
+      };
+    },
+  });
+
+  const named: DeclaredTable = {
+    name: "Faturalar",
+    ref: "A1:C4",
+    headerRow: false,
+    columns: ["Fatura No", "Tutar", "Kalan"],
+  };
+
+  it("reads the header row Excel left implicit", () => {
+    const sheet = sheetWith(named, ["Fatura No", "Tutar", "Kalan"]);
+    const declared = declaredHeaderRow(sheet, bounds, "master");
+    expect(declared?.row).toBe(1);
+    expect(declared?.source).toContain("Faturalar");
+  });
+
+  it("matches the declared names case- and accent-insensitively", () => {
+    const sheet = sheetWith(named, ["FATURA NO", "TUTAR", "KALAN"]);
+    expect(declaredHeaderRow(sheet, bounds, "master")?.row).toBe(1);
+  });
+
+  it("leaves a genuinely header-less table alone", () => {
+    const headerless: DeclaredTable = {
+      name: "Kalemler",
+      ref: "A1:C4",
+      headerRow: false,
+      columns: ["Column1", "Column2", "Column3"],
+    };
+    const sheet = sheetWith(headerless, [1, 2, 3]);
+    expect(declaredHeaderRow(sheet, bounds, "master")).toBeUndefined();
+  });
+
+  it("claims nothing when only some names match", () => {
+    const sheet = sheetWith(named, ["Fatura No", "Tutar", "Bakiye"]);
+    expect(declaredHeaderRow(sheet, bounds, "master")).toBeUndefined();
+  });
+
+  it("claims nothing when the table declares no column name", () => {
+    const unnamed: DeclaredTable = {
+      name: "Bos",
+      ref: "A1:C4",
+      headerRow: false,
+      columns: [],
+    };
+    const sheet = sheetWith(unnamed, ["Fatura No", "Tutar", "Kalan"]);
+    expect(declaredHeaderRow(sheet, bounds, "master")).toBeUndefined();
+  });
+
+  it("trusts an explicit headerRowCount without consulting the grid", () => {
+    const explicit: DeclaredTable = { ...named, headerRow: true };
+    const sheet = sheetWith(explicit, [null, null, null]);
+    expect(declaredHeaderRow(sheet, bounds, "master")?.row).toBe(1);
   });
 });

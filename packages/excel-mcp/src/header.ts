@@ -3,8 +3,15 @@ import type { MergePolicy } from "./cursor.js";
 import { SkMcpExcelError } from "./errors.js";
 import { limits } from "./limits.js";
 import { classify } from "./predicate.js";
-import { columnToLetters, parseCellRef, type GridBounds } from "./range.js";
+import {
+  columnToLetters,
+  parseCellRef,
+  type CellRef,
+  type GridBounds,
+} from "./range.js";
 import type { SheetView } from "./sheet.js";
+import type { DeclaredTable } from "./tables.js";
+import { fold } from "./unicode.js";
 
 export type HeaderRowSource =
   "explicit" | "declared" | "scanned" | "default" | "cursor";
@@ -49,20 +56,63 @@ function mergedSpanAt(
   return widest;
 }
 
+function namesTheRowBelow(
+  sheet: SheetView,
+  table: DeclaredTable,
+  topLeft: CellRef,
+  mergePolicy: MergePolicy,
+): boolean {
+  const view = sheet.rowAt(topLeft.row);
+  let compared = 0;
+  let matched = 0;
+  for (let offset = 0; offset < table.columns.length; offset += 1) {
+    const name = table.columns[offset];
+    if (name === undefined || name === "") {
+      continue;
+    }
+    compared += 1;
+    const snapshot = view?.cellAt(topLeft.column + offset);
+    if (snapshot === undefined) {
+      continue;
+    }
+    const value = normalizeCell(snapshot, {
+      valueMode: "values",
+      mergePolicy,
+      includeHyperlinks: false,
+    }).value;
+    if (typeof value === "string" && fold(value) === fold(name)) {
+      matched += 1;
+    }
+  }
+  return compared > 0 && matched === compared;
+}
+
+export function declaresHeaderRow(
+  sheet: SheetView,
+  table: DeclaredTable,
+  topLeft: CellRef,
+  mergePolicy: MergePolicy,
+): boolean {
+  return (
+    table.headerRow || namesTheRowBelow(sheet, table, topLeft, mergePolicy)
+  );
+}
+
 export function declaredHeaderRow(
   sheet: SheetView,
   bounds: GridBounds,
+  mergePolicy: MergePolicy,
 ): DeclaredHeader | undefined {
   for (const table of sheet.tables) {
-    if (!table.headerRow) {
-      continue;
-    }
     const [start] = table.ref.split(":");
     if (start === undefined) {
       continue;
     }
     const topLeft = parseCellRef(start);
     if (topLeft.row < bounds.top || topLeft.row > bounds.bottom) {
+      continue;
+    }
+    if (!declaresHeaderRow(sheet, table, topLeft, mergePolicy)) {
       continue;
     }
     return { row: topLeft.row, source: `table ${table.name}` };
@@ -171,7 +221,7 @@ export function scanHeaderRow(
   mergePolicy: MergePolicy,
   label: string,
 ): number {
-  const declared = declaredHeaderRow(sheet, bounds);
+  const declared = declaredHeaderRow(sheet, bounds, mergePolicy);
   if (declared !== undefined) {
     return declared.row;
   }
@@ -215,7 +265,7 @@ export function headerWarnings(
   const named = headers.filter(
     (header) => header !== null && header !== "",
   ).length;
-  const declared = declaredHeaderRow(sheet, bounds);
+  const declared = declaredHeaderRow(sheet, bounds, mergePolicy);
   if (declared !== undefined && declared.row !== headerRow) {
     return [
       `headerRow ${headerRow} is not the header row declared by ${declared.source}, which declares row ${declared.row}; pass headerRow ${declared.row}, or headerScan true.`,

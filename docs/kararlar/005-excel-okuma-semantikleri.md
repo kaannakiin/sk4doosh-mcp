@@ -609,7 +609,49 @@ ECMA-376'da `CT_Table/@headerRowCount` **1**'e varsayılıyor ve Excel varsayıl
 
 Sonucu: `header.ts` `declaredHeaderRow`, `!table.headerRow` olan tabloları atlıyor. Yani **Excel'in yazdığı tablolarda declared-header tespiti sessizce hiç çalışmıyor**; `headerRowSource: "declared"` yalnız exceljs'in yazdığı dosyalarda ateşliyor. Bugün görünmemesinin sebebi `buildTitleBand` fixture'ını exceljs ile yazmamız, exceljs'in de kendi attribute'unu round-trip etmesi.
 
-Karar: `headerRow` **sadakatle** yayınlanıyor. Parse sonrası "attribute yok, 1 demek" ile "0 yazılmış, başlık yok demek" ayırt edilemiyor, o yüzden temellendiremediğimiz bir düzeltme uydurulmuyor. `header.ts` düzeltmesi ayrı iş kalemidir ve bu değişikliğe katılmadı.
+### Düzeltme: grid'e sorarak ayırt etmek
+
+`table.headerRow` `get_tables` çıktısında **sadakatle** yayınlanmaya devam ediyor — dosya ne diyorsa o. Ama başlık satırı tespitinde attribute artık tek kanıt değil: iki durum grid'den ayırt edilebiliyor.
+
+Ölçüm, üç durum:
+
+| durum | model `headerRow` | kolon adları | `ref`'in ilk satırı |
+| --- | --- | --- | --- |
+| `headerRowCount="0"` (gerçekten başlıksız) | `false` | `["c1","c2","c3"]` (sentetik) | `[1,2,3]` (veri) |
+| `headerRowCount="1"` | `true` | `["Fatura No",…]` | aynı metinler |
+| attribute yok (**Excel'in yazdığı şekil**) | `false` | `["Fatura No",…]` | aynı metinler |
+
+Yani `headerRow: false` dönen iki durumu ayıran şey, tablonun ilan ettiği kolon adlarının `ref`'in ilk satırındaki hücrelerle eşleşip eşleşmediği. `namesTheRowBelow` bunu yapıyor ve karşılaştırma `fold` ile — büyük/küçük harf ve aksan duyarsız, `columns.ts`'in kolon adı eşleştirmesiyle aynı kural.
+
+Politika üç durumlu ve "sessiz çatışma çözümü yok" kuralına bağlı:
+
+- Adların **tamamı** eşleşiyor → başlık satırı fiziksel olarak var, tablo beyanı kabul edilir.
+- **Hiçbiri** eşleşmiyor → tablo gerçekten başlıksız, beyan yok sayılır.
+- **Kısmen** eşleşiyor → hiçbir şey iddia edilmez, `undefined` dönülür ve akış `scanHeaderRow`'un metin puanlamasına düşer; gerekirse zaten var olan `ambiguous_header_row` ateşler. Yeni bir belirsizlik kategorisi icat edilmedi.
+
+`headerRowCount="1"` açıkça yazılmışsa grid'e hiç bakılmıyor; attribute yeterli kanıt.
+
+`declaredHeaderRow` bunun için bir `mergePolicy` parametresi kazandı — üç çağrı yeri de (`scanHeaderRow`, `headerWarnings`, `tools.ts` `resolveHeader`) politikayı zaten elinde tutuyordu.
+
+### Neden bu bir davranış değişikliği
+
+Düzeltmeden önce `headerRowSource: "declared"` Excel'in yazdığı dosyalarda **hiç** ateşlemiyordu. İki gerçek sonucu vardı.
+
+Birincisi sessiz yanlış cevap. Rapor bandı satır 1'de üç metin hücre taşıyor (merge yok), gerçek tablo satır 3'te. Varsayılan `headerRow: 1` ile `headerWarnings`'in `named > 1` erken çıkışı devreye giriyor, `declared` de `undefined` olduğu için **hiç uyarı üretilmiyordu**: ajan `columns` olarak rapor bandını alıyor, gerçek başlık satırını veri sanıyor, ve sonraki `aggregate_sheet` çağrısı `unknown_column` ile düşüyordu — sebebi görünmeden. Düzeltmeden sonra ilk dal ateşliyor ve gerçek satırı adlandırıyor.
+
+İkincisi hak edilmemiş hata. Aynı dosyada `headerScan: true` çağrısı taramaya düşüyor, satır 1 ve satır 3 ikisi de metin-aday oluyor ve `ambiguous_header_row` atıyordu — oysa dosya cevabı kendi içinde taşıyor. Düzeltmeden sonra tarama hiç başlamıyor.
+
+Üçüncüsü daha sessiz: tarama doğru satırı bulduğu durumlarda bile kaynak `"scanned"` (metin puanlamasıyla tahmin) yerine `"declared"` (dosya ilan etti) olmalıydı; güven derecelendirmesi bir kademe düşük raporlanıyordu.
+
+### Neden test fixture'ları bunu üretemiyor
+
+exceljs'in **yazıcısı** attribute'u her zaman basıyor:
+
+```js
+headerRowCount: model.headerRow ? '1' : '0',
+```
+
+Yani exceljs ile yazılmış hiçbir fixture bu şekli üretemez ve bug testlerde görünemez. Düzeltmenin testleri bu yüzden xlsx fixture'ı kullanmıyor: `declaredHeaderRow` `SheetView` + `DeclaredTable` üzerinde saf bir fonksiyon, ikisi de düz interface, ve `SheetView.rowAt(row).cellAt(column)` zaten var. Sentetik bir `SheetView` ile altı durum doğrudan test ediliyor — zip erişimi, ham XML veya elle kurulmuş bir xlsx gerekmedi. `compressAddresses`'in saf unit testleriyle aynı tarz.
 
 ## exceljs tuzağı: `worksheet.views` `null` olabilir
 
