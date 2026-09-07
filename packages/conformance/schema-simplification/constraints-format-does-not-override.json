@@ -1,0 +1,94 @@
+{
+  "kind": "schema-simplification",
+  "description": "Sema kendi format'ini tasiyorsa kisit format'i onu ezmez; aciklama da yalniz sema tasimiyorsa yazilir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Formats"
+      },
+      "types": {
+        "Formats": {
+          "name": "Formats",
+          "members": [
+            {
+              "name": "stamp",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string",
+                "format": "date-time"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "format": "email"
+              }
+            },
+            {
+              "name": "mail",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "format": "email"
+              }
+            },
+            {
+              "name": "described",
+              "type": {
+                "kind": "verbatim",
+                "schema": {
+                  "type": "string",
+                  "description": "sema aciklamasi"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "description": "uye aciklamasi"
+            },
+            {
+              "name": "undescribed",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "description": "uye aciklamasi"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "stamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "mail": {
+          "type": "string",
+          "format": "email"
+        },
+        "described": {
+          "type": "string",
+          "description": "sema aciklamasi"
+        },
+        "undescribed": {
+          "type": "string",
+          "description": "uye aciklamasi"
+        }
+      }
+    }
+  }
+}

@@ -19,6 +19,7 @@ export interface RequestTemplate {
   readonly hasBody: boolean;
   readonly bodyProperties: ReadonlySet<string>;
   readonly bodyAllowsAdditionalProperties: boolean;
+  readonly bodyRoot?: string;
 }
 
 export interface RequestTemplateInput {
@@ -27,6 +28,7 @@ export interface RequestTemplateInput {
   readonly parameters?: readonly ParameterBinding[];
   readonly bodyProperties?: readonly string[];
   readonly bodyAllowsAdditionalProperties?: boolean;
+  readonly bodyRoot?: string;
 }
 
 const reservedHeaderNames = new Set(["authorization", "cookie"]);
@@ -46,7 +48,19 @@ export function createRequestTemplate(
   const bodyAllowsAdditionalProperties =
     input.bodyAllowsAdditionalProperties ?? false;
   const hasBody =
-    input.bodyProperties !== undefined || bodyAllowsAdditionalProperties;
+    input.bodyProperties !== undefined ||
+    bodyAllowsAdditionalProperties ||
+    input.bodyRoot !== undefined;
+
+  if (
+    input.bodyRoot !== undefined &&
+    (input.bodyProperties !== undefined || bodyAllowsAdditionalProperties)
+  ) {
+    throw new SkMcpTemplateError(
+      "conflicting_body_modes",
+      "A template cannot declare both a body root argument and body properties.",
+    );
+  }
 
   if (hasBody && (method === "GET" || method === "HEAD")) {
     throw new SkMcpTemplateError(
@@ -57,7 +71,9 @@ export function createRequestTemplate(
 
   const bodyProperties = assertUniqueArgumentNames(
     parameters.map((parameter) => parameter.name),
-    input.bodyProperties ?? [],
+    input.bodyRoot === undefined
+      ? (input.bodyProperties ?? [])
+      : [input.bodyRoot],
   );
 
   for (const parameter of parameters) {
@@ -110,7 +126,8 @@ export function createRequestTemplate(
     routeTemplate: normalizedRoute,
     parameters: [...parameters],
     hasBody,
-    bodyProperties,
+    bodyProperties: input.bodyRoot === undefined ? bodyProperties : new Set(),
     bodyAllowsAdditionalProperties,
+    ...(input.bodyRoot === undefined ? {} : { bodyRoot: input.bodyRoot }),
   };
 }

@@ -1,6 +1,8 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
-import type { Recognizer } from "@sk-mcp/core";
+import type { Recognizer, SelectionDefault } from "@sk-mcp/core";
+import type { CatalogSeverity } from "./discovery/diagnostics.js";
+import type { TypeShapeBinderOptions } from "./discovery/type-shape.js";
 import type { SkMcpTransportOptions } from "./transport/session-store.js";
 
 export interface OuterRequest {
@@ -74,12 +76,52 @@ export interface SkMcpResourceServerOptions {
   mcpPath?: string;
 }
 
+export interface SkMcpSelectionOptions {
+  default: SelectionDefault;
+}
+
+export interface SkMcpNamingOptions {
+  prefixMode: "always" | "onCollision";
+  prefix?: (container: string) => string | undefined;
+}
+
+export interface SkMcpDiagnosticsOptions {
+  failOn?: CatalogSeverity;
+  readonly escalate: Set<string>;
+  readonly downgrade: Set<string>;
+}
+
+export type SkMcpVisibilityTier = "declarative" | "probe";
+
+export interface SkMcpVisibilityOptions {
+  tier: SkMcpVisibilityTier;
+  onUnknown: "show" | "hide";
+  probeTopK: number;
+  probeConcurrency: number;
+  readonly probeValues: Map<string, string>;
+}
+
 export class SkMcpOptions {
   readonly identity = new IdentityForwardingOptions();
   readonly synthetic: SyntheticRequestOptions = { accept: "application/json" };
   readonly cache: SkMcpCacheOptions = { lifetimeMs: 30_000, maxCallers: 128 };
   readonly errors = new ErrorMappingOptions();
   readonly transport: SkMcpTransportOptions = { sessionMode: "stateless" };
+  readonly selection: SkMcpSelectionOptions = { default: "exclude" };
+  readonly naming: SkMcpNamingOptions = { prefixMode: "always" };
+  readonly diagnostics: SkMcpDiagnosticsOptions = {
+    failOn: "fatal",
+    escalate: new Set<string>(),
+    downgrade: new Set<string>(),
+  };
+  readonly visibility: SkMcpVisibilityOptions = {
+    tier: "declarative",
+    onUnknown: "show",
+    probeTopK: 25,
+    probeConcurrency: 4,
+    probeValues: new Map<string, string>(),
+  };
+  schema?: TypeShapeBinderOptions;
   resourceServer?: SkMcpResourceServerOptions;
 }
 

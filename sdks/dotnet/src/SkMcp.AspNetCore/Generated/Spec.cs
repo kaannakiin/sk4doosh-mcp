@@ -4,7 +4,7 @@ namespace SkMcp.AspNetCore.Spec;
 
 public static class SkMcpSpec
 {
-    public const string Version = "0.1.0";
+    public const string Version = "1.0.0";
 }
 
 public sealed record EndpointDescriptor
@@ -94,4 +94,74 @@ public sealed record InvokeSuccess
     public JsonNode? Body { get; init; }
     public string? ContentType { get; init; }
     public string? Location { get; init; }
+}
+
+public sealed record TypeShape
+{
+    public required TypeNode Root { get; init; }
+    public required IReadOnlyDictionary<string, ObjectType> Types { get; init; }
+}
+
+public sealed record TypeNode
+{
+    public required TypeKind Kind { get; init; }
+    public ScalarKind? Scalar { get; init; }
+    public string? Format { get; init; }
+    public TypeNode? Items { get; init; }
+    public TypeNode? Values { get; init; }
+    public MapKey? Keys { get; init; }
+    public EnumFacts? EnumFacts { get; init; }
+    public string? Ref { get; init; }
+    public JsonObject? Schema { get; init; }
+    public string? Reason { get; init; }
+}
+
+public enum TypeKind { Scalar, Binary, Enum, Map, Array, Ref, Verbatim, Unknown }
+
+public enum ScalarKind { String, Boolean, Integer, Number }
+
+public sealed record MapKey
+{
+    public required bool Writable { get; init; }
+    public ScalarKind? Scalar { get; init; }
+    public string? Format { get; init; }
+}
+
+public sealed record EnumFacts
+{
+    public required EnumWireForm WireForm { get; init; }
+    public bool? Combinable { get; init; }
+    public required IReadOnlyList<string> Names { get; init; }
+    public required IReadOnlyList<int> Numbers { get; init; }
+}
+
+public enum EnumWireForm { String, Integer, Unresolved }
+
+public sealed record ObjectType
+{
+    public required string Name { get; init; }
+    public string? Description { get; init; }
+    public bool? Wrapper { get; init; }
+    public required IReadOnlyList<Member> Members { get; init; }
+}
+
+public sealed record Member
+{
+    public required string Name { get; init; }
+    public required TypeNode Type { get; init; }
+    public required bool Required { get; init; }
+    public required bool ReadOnly { get; init; }
+    public required bool ConstructorBound { get; init; }
+    public string? Description { get; init; }
+    public Constraints? Constraints { get; init; }
+}
+
+public sealed record Constraints
+{
+    public int? MinSize { get; init; }
+    public int? MaxSize { get; init; }
+    public double? Minimum { get; init; }
+    public double? Maximum { get; init; }
+    public string? Pattern { get; init; }
+    public string? Format { get; init; }
 }

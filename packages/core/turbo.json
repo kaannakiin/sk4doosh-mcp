@@ -1,6 +1,8 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "extends": ["//"],
+  "extends": [
+    "//"
+  ],
   "tasks": {
     "gen": {
       "inputs": [
@@ -8,19 +10,44 @@
         "!src/generated/**",
         "$TURBO_ROOT$/packages/spec/schemas/**"
       ],
-      "outputs": ["src/generated/**"]
+      "outputs": [
+        "src/generated/**"
+      ]
     },
     "build": {
-      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "gen"
+      ]
     },
     "check-types": {
-      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "gen"
+      ]
     },
     "lint": {
-      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "gen"
+      ]
     },
     "dev": {
-      "dependsOn": ["$TURBO_EXTENDS$", "gen"]
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "gen"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "gen"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/conformance/**"
+      ],
+      "outputs": []
     }
   }
 }

@@ -15,6 +15,7 @@ ajv.addSchema(
 );
 ajv.addSchema(readJson(path.join(schemasDir, "tool-definition.schema.json")));
 ajv.addSchema(readJson(path.join(schemasDir, "invoke-result.schema.json")));
+ajv.addSchema(readJson(path.join(schemasDir, "type-shape.schema.json")));
 const validate = ajv.compile(
   readJson(path.join(schemasDir, "fixture.schema.json")),
 );
@@ -30,6 +31,8 @@ for (const dir of [
   "visibility",
   "search",
   "error-mapping",
+  "schema-simplification",
+  "card",
 ]) {
   let files = [];
   try {

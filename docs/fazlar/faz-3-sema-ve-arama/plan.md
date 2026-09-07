@@ -1,6 +1,6 @@
 # Faz 3 — Şema Sadeleştirme + Search-First Keşif
 
-Durum: **kısmen tamamlandı** — keşif, isimlendirme, görünürlük ve arama bitti ([notlar.md](notlar.md)). Şema sadeleştirmesinin üç alanı bilinçli olarak pinlenmedi: [sema-donusum-kurallari.md](../../../packages/spec/sema-donusum-kurallari.md) "Pinlenmemiş alanlar". `schema-simplification/` fixture dizini bu yüzden yok.
+Durum: **tamamlandı** — keşif, isimlendirme, görünürlük ve arama bu fazda bitti ([notlar.md](notlar.md)); şema sadeleştirmesinin pinlenmemiş alanları ve vaat edilen `schema-simplification/` fixture dizini Faz 6'da kapandı ([faz-6 notları](../faz-6-nestjs-sdk/notlar.md), [karar 012](../../kararlar/012-tip-sekli-ve-sema-kural-katmani.md)).
 
 ## Hedef
 

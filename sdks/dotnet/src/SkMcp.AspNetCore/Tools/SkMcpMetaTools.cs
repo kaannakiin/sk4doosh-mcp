@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -194,11 +195,14 @@ internal sealed class SkMcpMetaTools(
     private static bool? Uncertain(VisibilityDecision decision) =>
         decision == VisibilityDecision.Unknown ? true : null;
 
-    private static object Card(CatalogEntry entry, VisibilityDecision decision) => new
+    private static object Card(CatalogEntry entry, VisibilityDecision decision) =>
+        CardFor(entry.Tool, decision);
+
+    internal static object CardFor(Spec.ToolDefinition tool, VisibilityDecision decision) => new
     {
-        entry.Tool.Name,
-        Description = Truncate(entry.Tool.Description),
-        Parameters = Summarize(entry.Tool.InputSchema),
+        tool.Name,
+        Description = Truncate(tool.Description),
+        Parameters = Summarize(tool.InputSchema),
         AuthUncertain = Uncertain(decision),
     };
 
@@ -229,13 +233,15 @@ internal sealed class SkMcpMetaTools(
         StringBuilder summary = new();
         if (inputSchema["properties"] is JsonObject properties)
         {
-            foreach ((string name, JsonNode? schema) in properties)
+            foreach ((string name, JsonNode? schema) in Ordered(properties))
             {
                 if (summary.Length > 0)
                 {
                     summary.Append(", ");
                 }
-                string type = schema?["type"]?.GetValue<string>() ?? "any";
+                string type = schema is JsonObject member
+                    ? RequestBodyShape.TypeOf(member["type"]) ?? "any"
+                    : "any";
                 summary.Append(name).Append(": ").Append(type);
                 if (required.Contains(name))
                 {
@@ -245,6 +251,36 @@ internal sealed class SkMcpMetaTools(
         }
         return summary.ToString();
     }
+
+    private static IEnumerable<KeyValuePair<string, JsonNode?>> Ordered(JsonObject properties)
+    {
+        List<KeyValuePair<string, JsonNode?>> numeric = [];
+        List<KeyValuePair<string, JsonNode?>> rest = [];
+        foreach (KeyValuePair<string, JsonNode?> property in properties)
+        {
+            if (IntegerLike(property.Key))
+            {
+                numeric.Add(property);
+            }
+            else
+            {
+                rest.Add(property);
+            }
+        }
+        if (numeric.Count == 0)
+        {
+            return rest;
+        }
+        return numeric
+            .OrderBy(p => uint.Parse(p.Key, CultureInfo.InvariantCulture))
+            .Concat(rest);
+    }
+
+    private static bool IntegerLike(string key) =>
+        key.Length > 0
+        && (key.Length == 1 || key[0] != '0')
+        && key.All(char.IsAsciiDigit)
+        && uint.TryParse(key, CultureInfo.InvariantCulture, out _);
 
     private static IReadOnlySet<string> KnownFields(CatalogEntry entry)
     {

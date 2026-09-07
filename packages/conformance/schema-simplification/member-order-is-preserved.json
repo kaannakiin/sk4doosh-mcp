@@ -1,0 +1,79 @@
+{
+  "kind": "schema-simplification",
+  "description": "Uye sirasi normatiftir: properties ve required bildirim sirasini korur",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Ordered"
+      },
+      "types": {
+        "Ordered": {
+          "name": "Ordered",
+          "members": [
+            {
+              "name": "baseOne",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "baseTwo",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "derivedOne",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "derivedTwo",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "baseOne": {
+          "type": "string"
+        },
+        "baseTwo": {
+          "type": "string"
+        },
+        "derivedOne": {
+          "type": "string"
+        },
+        "derivedTwo": {
+          "type": "string"
+        }
+      },
+      "required": ["baseOne", "derivedOne", "derivedTwo"]
+    }
+  }
+}

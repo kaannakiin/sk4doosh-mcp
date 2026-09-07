@@ -1,0 +1,102 @@
+{
+  "kind": "schema-simplification",
+  "description": "Karsilikli dongude iki tip de $defs'e cikar; sinirsiz derinlik guvenlidir cunku sonlanmayi $defs tablosu garanti eder",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Left"
+      },
+      "types": {
+        "Left": {
+          "name": "Left",
+          "members": [
+            {
+              "name": "name",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "right",
+              "type": {
+                "kind": "ref",
+                "ref": "Right"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "Right": {
+          "name": "Right",
+          "members": [
+            {
+              "name": "count",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "left",
+              "type": {
+                "kind": "ref",
+                "ref": "Left"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "right": {
+          "$ref": "#/$defs/Right"
+        }
+      },
+      "$defs": {
+        "Left": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "right": {
+              "$ref": "#/$defs/Right"
+            }
+          }
+        },
+        "Right": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "left": {
+              "$ref": "#/$defs/Left"
+            }
+          }
+        }
+      }
+    },
+    "defsOrder": ["Left", "Right"]
+  }
+}

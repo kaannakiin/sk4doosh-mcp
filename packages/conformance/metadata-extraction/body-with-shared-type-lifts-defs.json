@@ -1,0 +1,90 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Parametre ve govde ayni tipi referans veriyorsa $defs torbalari inputSchema kokunde birlestirilir ve anahtarlar ordinal siralanir",
+  "input": {
+    "operationId": "MoveAddress",
+    "method": "POST",
+    "route": "/addresses/move",
+    "parameters": [
+      {
+        "name": "from",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "#/$defs/Address",
+          "$defs": {
+            "Address": {
+              "type": "object",
+              "properties": {
+                "street": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "$ref": "#/$defs/Address"
+          }
+        },
+        "required": ["to"],
+        "$defs": {
+          "Address": {
+            "type": "object",
+            "properties": {
+              "street": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "move_address",
+    "description": "POST /addresses/move",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/Address"
+        },
+        "to": {
+          "$ref": "#/$defs/Address"
+        }
+      },
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "$defs": {
+        "Address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "kind": "schema-simplification",
+  "description": "Serilestirilemeyen sozluk anahtari: deger sekli duser, sinir nesnesi yazilir ve tani uretilir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Keyed"
+      },
+      "types": {
+        "Keyed": {
+          "name": "Keyed",
+          "members": [
+            {
+              "name": "byPoco",
+              "type": {
+                "kind": "map",
+                "keys": {
+                  "writable": false
+                },
+                "values": {
+                  "kind": "scalar",
+                  "scalar": "string"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "byPoco": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "diagnostics": ["unsupported_dictionary_key"]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "kind": "card",
+  "description": "type tasimayan property ozette any olur; tip birlesiminde null olmayan ilk uye kullanilir",
+  "input": {
+    "tool": {
+      "name": "post_payload",
+      "description": "Serbest govde gonderir.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "additionalProperties": true
+          },
+          "nullable": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["body"],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "post_payload",
+    "description": "Serbest govde gonderir.",
+    "parameters": "body: any (required), nullable: string"
+  }
+}

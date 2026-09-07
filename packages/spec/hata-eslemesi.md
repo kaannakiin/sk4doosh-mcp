@@ -1,6 +1,6 @@
 # Hata Eşlemesi
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET `InvokeResultMapper` + TS `mapInvokeResult` aynı `error-mapping/` korpusunu geçiyor).
 
 Backend'in HTTP hatalarını, agent'ın **yalnızca `invoke_tool` sonucunu okuyarak** argümanını düzeltip yeniden deneyebileceği bir MCP sonucuna çevirir; iç detay (stack, bağlantı dizesi, iç yol, kimlik doğrulama gövdesi) hiçbir koşulda sızmaz. Makine-okur karşılığı: [schemas/invoke-result.schema.json](schemas/invoke-result.schema.json); korpus [conformance/error-mapping/](../conformance/error-mapping/).
 
@@ -69,7 +69,11 @@ Sıra, **ilk null olmayan sonuç kazanır**:
 
 `fields[].name`, backend'in verdiği alan adını `inputSchema.properties` adlarıyla **case-insensitive** eşleştirir (`knownFields` = o tool'un input şemasının property adları); eşleşme yoksa ad backend'in verdiği haliyle korunur. ASP.NET `ValidationProblemDetails`'in JSON-path öneki (`$.quantity`) atılır, kalan `quantity` adla eşleştirilir.
 
-Nest'in `class-validator` çıktısı düz mesaj dizisi olduğunda (alan adı mesajın metnine gömülü, yapılandırılmış değil) alan **adsız** kalır: `fields[].name` yok, yalnız `message` var. Mesaj metninden alan adı tahmini bilinçli olarak yapılmaz — bu dokümante bir sınırdır, Faz 6'da NestJS SDK'sının kendi metadata katmanı geldiğinde yeniden değerlendirilir.
+Nest'in `class-validator` çıktısı düz mesaj dizisi olduğunda alan adı mesajın metnine gömülüdür, yapılandırılmış değildir. **`knownFields` verildiğinde ad çözümlenir**: mesajın baş token'ı (ilk alfanümerik olmayan karakterde kesilir) `knownFields`'e karşı case-insensitive eşlenir; eşleşirse `fields[].name` yazılır, eşleşmezse alan adsız kalır.
+
+Bu bir tahmin değildir: `knownFields` o tool'un `inputSchema.properties` adlarından oluşan **kapalı** bir kümedir, dolayısıyla eşleme bir aramadır. `knownFields` verilmediğinde (ham mapper kullanımı) eski davranış korunur — alan adsız kalır. Kural her iki SDK'da da geçerlidir; ASP.NET'in düz mesaj dizisi döndürdüğü kurulumlarda da aynı yolu izler. Fixture: `nest-message-array-resolves-known-field`.
+
+Faz 6'da kapandı: kural, NestJS SDK'sının katalog katmanı `knownFields`'i sağlayabilir hale gelince yazılabilir oldu.
 
 ## Sızıntı önleme
 

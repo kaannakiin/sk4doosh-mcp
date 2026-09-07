@@ -36,10 +36,16 @@ Tool çağrısı, backend'in gerçek middleware pipeline'ından geçirilir. C#'t
 Swagger şeması makine içindir, LLM için değil. Dönüşüm kuralları (spec'te veri olarak tanımlanır):
 
 - Generic wrapper'ları soy (`ApiResponse<T>` → `T`).
-- Derinlik sınırı: ~3 seviyeye kadar inline, altı kesilir.
-- Recursion `$ref` + tek satır notla kırılır.
+- Derinlik sınırı **yok**: iç içe geçme tamamen açılır. Sonlanmayı `$defs` tablosu garanti eder.
+- Recursion `$defs` + `$ref` ile ifade edilir; paylaşılan tip de aynı yolla bir kez yazılır.
 - Input şemasından server-computed/readonly alanlar düşülür.
+- Nesne olmayan gövde kökü (`List<int>`, `string`) sentetik tek `body` argümanına sarılır.
 - Kompakt görünüm: önce required alanlar; tamı `load_tool`'da.
+
+Kurallar iki katmandır: **bağlama** (dile özgü reflection → `TypeShape`) ve **kural**
+(`TypeShape` → JSON Schema, fixture'lı ve dil bağımsız). Ayrıntı:
+[sema-donusum-kurallari.md](../packages/spec/sema-donusum-kurallari.md),
+[karar 012](kararlar/012-tip-sekli-ve-sema-kural-katmani.md).
 
 ### 4. Spec + dil başına SDK
 
@@ -74,7 +80,11 @@ Spec yazımı boyunca eldeki gerçek C# server, repo içi DemoApi'ye ek ikinci g
 | 3   | [Şema Sadeleştirme + Search-First](fazlar/faz-3-sema-ve-arama/plan.md)     | Ürünün kendisi: dönüşüm pipeline'ı + auth-filtreli arama üçlüsü                  |
 | 4   | [Hata Eşleme, Cache, Transport](fazlar/faz-4-hata-cache-transport/plan.md) | Gerçek backend'e gömülebilirlik: actionable hatalar, per-caller cache, OAuth 2.1 |
 | 5   | [C# SDK Sertleştirme + Alpha](fazlar/faz-5-csharp-alpha/plan.md)           | NuGet paketi, quickstart, CI'da conformance gate, spec v1.0                      |
-| 6   | [NestJS SDK](fazlar/faz-6-nestjs-sdk/plan.md)                              | Spec'in drift kanıtı: ikinci SDK aynı fixture'ları geçer                         |
+| 6   | [NestJS SDK](fazlar/faz-6-nestjs-sdk/plan.md) ✅                            | Spec'in drift kanıtı: ikinci SDK aynı fixture'ları geçer — [notlar](fazlar/faz-6-nestjs-sdk/notlar.md) |
 | 7   | [Web UI](fazlar/faz-7-web-ui/plan.md)                                      | Placeholder                                                                      |
+
+Faz 6 sonunda spec `1.0.0`'a çıktı ve "hipotez v0" damgası iki implementasyonla doğrulanan
+dokümanlardan kalktı; kalanların neden kaldığı
+[karar 014](kararlar/014-spec-v1-0-ve-amendment-listesi.md)'te.
 
 Paket yerleşimi: [paket-yerlesimi.md](paket-yerlesimi.md)

@@ -150,8 +150,24 @@ options.Diagnostics.Escalate.Add("unsupported_binding");
 
 Beklenen ve zararsız iki kod: form gövdeli endpoint'ler için `unsupported_binding` (katalogdan düşer), Newtonsoft kullanan host'ta `naming_policy_unresolved`.
 
-## 11. Bilinen sınır: şema hattı
+## 11. Şema hattı: neyi beklemelisiniz
 
-Şema sadeleştirmesinin üç alanı henüz spec'te pinlenmemiştir ([sema-donusum-kurallari.md](../packages/spec/sema-donusum-kurallari.md), "Pinlenmemiş alanlar"): generic wrapper soyma (`ApiResponse<T>` → `T`), derinlik sınırında inline'lama, `$ref` ile recursion kırma.
+Faz 6'da kapandı. Derinlik sınırı **kaldırıldı**: iç içe DTO ağaçları tamamen açılır ve sonlanmayı
+`$defs` tablosu garanti eder. Döngüler ve birden fazla kullanılan tipler `$defs` + `$ref` ile ifade
+edilir; aynı tipi iki üyede kullanan bir DTO artık şemayı iki kez yazmaz. Nesne olmayan gövde
+kökleri (`[FromBody] List<int>`, `[FromBody] string`) artık düşürülmez, sentetik tek bir `body`
+argümanına sarılır.
 
-Pratik sonucu: derin DTO ağaçları derinlik sınırında `additionalProperties: true`'ya düşer. Ajan için şekli belirsiz ama çalışan bir gövdedir — çökme değil, kayıp bilgi.
+Pratikte iki şeye dikkat edin:
+
+- **Genişlik.** Hoisting recursion'ı sınırlar, genişliği sınırlamaz: onlarca farklı
+  tek-kullanımlık DTO tek bir büyük `inputSchema`'ya açılabilir. Bağlam bütçeniz sıkışırsa
+  `options.Schema.MaxDepth` ile bir tavan koyabilirsiniz — default kapalıdır ve bir kural değil,
+  host politikasıdır.
+- **`$defs` anahtarları tip adlarınızın basit hâlidir.** Ada karışmak isterseniz
+  `options.Schema.TypeName` ile yeniden adlandırın.
+
+Okunamayan bir şekil (`object` tipli üye, decorator taşımayan DTO alanı) endpoint'i **düşürmez**:
+sınır nesnesi (`additionalProperties: true`) yazılır, `unreadable_shape` uyarısı üretilir ve tool
+zayıf sözleşmeyle çağrılabilir kalır. "Prod'da opak gövde olmasın" diyorsanız kodu
+`options.Diagnostics.Escalate`'e ekleyin.

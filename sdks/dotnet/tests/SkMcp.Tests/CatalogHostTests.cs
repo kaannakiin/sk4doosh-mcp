@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SkMcp.AspNetCore;
 using SkMcp.AspNetCore.Discovery;
+using SkMcp.AspNetCore.Naming;
 
 namespace SkMcp.Tests;
 
@@ -44,6 +45,15 @@ public sealed class BetaController : ControllerBase
     [McpTool]
     [EndpointName("BetaCustom")]
     public IActionResult BetaTwo() => Ok();
+}
+
+[ApiController]
+[Route("/host/gamma")]
+[McpTool]
+public sealed class GammaController : ControllerBase
+{
+    [HttpGet("list")]
+    public IActionResult List() => Ok();
 }
 
 public sealed class CatalogHostTests : IAsyncLifetime
@@ -84,7 +94,7 @@ public sealed class CatalogHostTests : IAsyncLifetime
             .Select(e => e.Tool.Name)
             .Order(StringComparer.Ordinal)
             .ToArray();
-        Assert.Equal(["alpha_one", "alpha_three", "beta_custom", "get_probe"], names);
+        Assert.Equal(["alpha_one", "alpha_three", "beta_custom", "gamma_list", "get_probe"], names);
         Assert.Empty(_catalog.Result.Diagnostics);
     }
 
@@ -122,5 +132,30 @@ public sealed class CatalogHostTests : IAsyncLifetime
     {
         Assert.Null(_catalog.Find("get_mcp_inside"));
         Assert.DoesNotContain(_catalog.Result.Entries, e => e.Descriptor.Route.StartsWith("/mcp", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task C14_OnCollisionMode_EmitsTheClaimedName()
+    {
+        WebApplicationBuilder builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Logging.ClearProviders();
+        builder.Services.AddControllers().AddApplicationPart(typeof(CatalogHostTests).Assembly);
+        builder.Services.AddSkMcp(options => options.Naming.PrefixMode = PrefixMode.OnCollision);
+
+        await using WebApplication app = builder.Build();
+        app.UseSkMcpCapture();
+        app.UseRouting();
+        app.MapControllers();
+        app.MapSkMcp("/mcp");
+        await app.StartAsync();
+
+        SkMcpCatalogProvider catalog = app.Services.GetRequiredService<SkMcpCatalogProvider>();
+        CatalogEntry entry = Assert.Single(
+            catalog.Result.Entries,
+            candidate => candidate.Descriptor.Route.Contains("/host/gamma", StringComparison.Ordinal));
+
+        Assert.Equal("list", entry.Tool.Name);
+        Assert.NotNull(catalog.Find("list"));
     }
 }

@@ -1,0 +1,18 @@
+{
+  "kind": "argument-mapping",
+  "description": "Dizi govde koku: sentetik 'body' argumaninin degeri govdenin tamami olarak gonderilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/import",
+      "bodyRoot": "body"
+    },
+    "arguments": {
+      "body": [1, 2, 3]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/import",
+    "bodyJson": [1, 2, 3]
+  }
+}

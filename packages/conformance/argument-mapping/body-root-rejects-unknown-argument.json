@@ -1,0 +1,25 @@
+{
+  "kind": "argument-mapping",
+  "description": "Govde kokunde izin listesi yalniz parametreler ve kok argumanidir; digeri unknown_argument",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/import/{id}",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "integer"
+        }
+      ],
+      "bodyRoot": "body"
+    },
+    "arguments": {
+      "id": 5,
+      "other": 1
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

@@ -10,8 +10,20 @@ import {
   type Provider,
   type Type,
 } from "@nestjs/common";
+import { APP_INTERCEPTOR, DiscoveryModule } from "@nestjs/core";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
-import { MemorySkMcpCache } from "@sk-mcp/core";
+import { MemorySkMcpCache, type SkMcpCache } from "@sk-mcp/core";
+import { SkMcpCatalog } from "./catalog.js";
+
+const SK_MCP_PROBE_RESET = Symbol("SK_MCP_PROBE_RESET");
+import { DeclarativeVisibilityEvaluator } from "./visibility/evaluator.js";
+import {
+  SkMcpProbeEvaluator,
+  SkMcpProbeInterceptor,
+  type ProbeEvaluator,
+} from "./visibility/probe.js";
+import { CallerVisibilityProvider } from "./visibility/provider.js";
+import type { VisibilityEvaluator } from "./visibility/evaluator.js";
 import {
   CarrierHashCallerScopeResolver,
   SK_MCP_CACHE_INVALIDATOR,
@@ -61,6 +73,43 @@ function defaultProviders(): Provider[] {
       useClass: DefaultInvokeResultMapper,
     },
     { provide: extensionTokens.sessionStore, useClass: InMemorySessionStore },
+    {
+      provide: extensionTokens.visibilityEvaluator,
+      useClass: DeclarativeVisibilityEvaluator,
+    },
+    {
+      provide: extensionTokens.probeEvaluator,
+      useFactory: (dispatcher: SkMcpDispatcher, options: SkMcpOptions) =>
+        new SkMcpProbeEvaluator(dispatcher, options),
+      inject: [SkMcpDispatcher, SK_MCP_OPTIONS],
+    },
+    {
+      provide: SK_MCP_PROBE_RESET,
+      useFactory: (catalog: SkMcpCatalog, prober: ProbeEvaluator) =>
+        catalog.onChange(() => {
+          if (prober instanceof SkMcpProbeEvaluator) {
+            prober.clearDisabled();
+          }
+        }),
+      inject: [SkMcpCatalog, extensionTokens.probeEvaluator],
+    },
+    {
+      provide: CallerVisibilityProvider,
+      useFactory: (
+        evaluator: VisibilityEvaluator,
+        prober: ProbeEvaluator,
+        cache: SkMcpCache,
+        options: SkMcpOptions,
+      ) => new CallerVisibilityProvider(evaluator, prober, cache, options),
+      inject: [
+        extensionTokens.visibilityEvaluator,
+        extensionTokens.probeEvaluator,
+        extensionTokens.cache,
+        SK_MCP_OPTIONS,
+      ],
+    },
+    { provide: APP_INTERCEPTOR, useClass: SkMcpProbeInterceptor },
+    SkMcpCatalog,
     SkMcpDispatcher,
     SkMcpStreamableHttp,
     SkMcpCacheInvalidator,
@@ -71,6 +120,8 @@ function defaultProviders(): Provider[] {
 function moduleExports(): Array<Type<unknown> | InjectionToken> {
   return [
     ...Object.values(extensionTokens),
+    CallerVisibilityProvider,
+    SkMcpCatalog,
     SkMcpDispatcher,
     SkMcpStreamableHttp,
     SkMcpCacheInvalidator,
@@ -92,6 +143,7 @@ export class SkMcpModule implements NestModule {
     configure?.(options);
     return {
       module: SkMcpModule,
+      imports: [DiscoveryModule],
       providers: [
         { provide: SK_MCP_OPTIONS, useValue: options },
         ...defaultProviders(),
@@ -104,7 +156,7 @@ export class SkMcpModule implements NestModule {
   static forRootAsync(asyncOptions: SkMcpModuleAsyncOptions): DynamicModule {
     return {
       module: SkMcpModule,
-      imports: asyncOptions.imports ?? [],
+      imports: [DiscoveryModule, ...(asyncOptions.imports ?? [])],
       providers: [
         {
           provide: SK_MCP_OPTIONS,

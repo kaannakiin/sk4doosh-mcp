@@ -25,8 +25,24 @@ export interface Parameter {
 }
 export interface JsonSchemaObject {
   type?:
-    | ("object" | "array" | "string" | "integer" | "number" | "boolean" | "null")
-    | ("object" | "array" | "string" | "integer" | "number" | "boolean" | "null")[];
+    | (
+        | "object"
+        | "array"
+        | "string"
+        | "integer"
+        | "number"
+        | "boolean"
+        | "null"
+      )
+    | (
+        | "object"
+        | "array"
+        | "string"
+        | "integer"
+        | "number"
+        | "boolean"
+        | "null"
+      )[];
   description?: string;
   format?: string;
   properties?: {
@@ -36,6 +52,20 @@ export interface JsonSchemaObject {
   items?: JsonSchemaObject;
   enum?: unknown[];
   additionalProperties?: boolean | JsonSchemaObject;
+  contentEncoding?: string;
+  propertyNames?: JsonSchemaObject;
+  minLength?: number;
+  maxLength?: number;
+  minItems?: number;
+  maxItems?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  anyOf?: JsonSchemaObject[];
+  $ref?: string;
+  $defs?: {
+    [k: string]: JsonSchemaObject;
+  };
   [k: string]: unknown;
 }
 export interface RequestBody {

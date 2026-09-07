@@ -1,0 +1,44 @@
+{
+  "kind": "schema-simplification",
+  "description": "Host sayilari wire'a yaziyorsa sema integer ve enum listesi sayisal degerlerdir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Holder"
+      },
+      "types": {
+        "Holder": {
+          "name": "Holder",
+          "members": [
+            {
+              "name": "value",
+              "type": {
+                "kind": "enum",
+                "enumFacts": {
+                  "wireForm": "integer",
+                  "names": ["Tr", "De"],
+                  "numbers": [0, 1]
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "enum": [0, 1]
+        }
+      }
+    }
+  }
+}

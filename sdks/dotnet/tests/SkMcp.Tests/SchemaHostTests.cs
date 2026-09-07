@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Nodes;
@@ -101,14 +102,28 @@ public sealed class SchemaHostTests : IAsyncLifetime
     }
 
     [Fact]
-    public void J17_NonObjectBody_DropsEndpoint()
+    public void J17_NonObjectBody_BecomesSyntheticBodyArgument()
     {
-        Assert.DoesNotContain(
+        CatalogEntry entry = Assert.Single(
             _host.Catalog.Result.Entries,
-            entry => entry.Descriptor.Route.Contains("/schema/numbers", StringComparison.Ordinal));
+            candidate => candidate.Descriptor.Route.Contains("/schema/numbers", StringComparison.Ordinal));
+
+        JsonObject properties = (JsonObject)entry.Tool.InputSchema["properties"]!;
+        JsonObject body = (JsonObject)properties["body"]!;
+        Assert.Equal("array", body["type"]!.GetValue<string>());
+        Assert.Equal("integer", ((JsonObject)body["items"]!)["type"]!.GetValue<string>());
+        Assert.Contains("body", entry.Tool.InputSchema["required"]!.AsArray()
+            .Select(node => node!.GetValue<string>()));
+        Assert.False(entry.Tool.InputSchema["additionalProperties"]!.GetValue<bool>());
+
         Assert.Contains(
             _host.Catalog.Result.Diagnostics,
-            d => d.Code == "non_object_body");
+            d => d.Code == "synthetic_body_argument");
+
+        ComposedRequest composed = RequestComposer.Compose(
+            entry.Template!,
+            JsonDocument.Parse("""{"body":[1,2,3]}""").RootElement);
+        Assert.Equal("[1,2,3]", Encoding.UTF8.GetString(composed.Body!));
     }
 
     [Fact]

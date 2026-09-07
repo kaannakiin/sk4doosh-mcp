@@ -1,0 +1,31 @@
+{
+  "kind": "card",
+  "description": "160 karakteri asmayan aciklama oldugu gibi tasinir, ellipsis eklenmez",
+  "input": {
+    "tool": {
+      "name": "get_order",
+      "description": "Bir siparisi id ile getirir.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "get_order",
+    "description": "Bir siparisi id ile getirir.",
+    "parameters": "id: integer (required)"
+  }
+}

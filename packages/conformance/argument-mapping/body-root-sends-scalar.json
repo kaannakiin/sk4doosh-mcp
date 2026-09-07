@@ -1,0 +1,18 @@
+{
+  "kind": "argument-mapping",
+  "description": "Skaler govde koku: string deger govdenin tamamidir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/import",
+      "bodyRoot": "body"
+    },
+    "arguments": {
+      "body": "metin"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/import",
+    "bodyJson": "metin"
+  }
+}

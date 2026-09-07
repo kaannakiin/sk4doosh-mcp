@@ -1,6 +1,12 @@
 import { Module } from "@nestjs/common";
 import { SkMcpModule } from "@sk-mcp/sdk-nestjs";
 import { AuthController } from "./auth.controller.js";
+import {
+  AdminRoleGuard,
+  BusinessHoursGuard,
+  JwtGuard,
+  OrdersReadGuard,
+} from "./auth.js";
 import { McpController } from "./mcp.controller.js";
 import {
   demoIssuerUrl,
@@ -19,9 +25,16 @@ import { OrdersController } from "./orders.controller.js";
         resourceName: "demo-api",
         verifier: demoVerifier,
       };
+      options.visibility.tier = "probe";
     }),
   ],
   controllers: [AuthController, OrdersController, McpController],
-  providers: [DemoOAuthProvider],
+  providers: [
+    DemoOAuthProvider,
+    AdminRoleGuard,
+    BusinessHoursGuard,
+    JwtGuard,
+    OrdersReadGuard,
+  ],
 })
 export class AppModule {}

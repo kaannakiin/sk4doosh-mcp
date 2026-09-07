@@ -162,9 +162,37 @@ internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvo
     private static FieldError NormalizeField(FieldError field, IReadOnlySet<string> knownFields)
     {
         string message = LeakFilter.Forwardable(field.Message) ?? FieldLeakMessage;
-        return field.Name is null
-            ? new FieldError { Message = message }
-            : new FieldError { Name = NormalizeFieldName(field.Name, knownFields), Message = message };
+        if (field.Name is null)
+        {
+            string? resolved = FieldNameFromMessage(field.Message, knownFields);
+            return resolved is null
+                ? new FieldError { Message = message }
+                : new FieldError { Name = resolved, Message = message };
+        }
+        return new FieldError { Name = NormalizeFieldName(field.Name, knownFields), Message = message };
+    }
+
+    private static string? FieldNameFromMessage(string message, IReadOnlySet<string> knownFields)
+    {
+        if (knownFields.Count == 0)
+        {
+            return null;
+        }
+        ReadOnlySpan<char> trimmed = message.AsSpan().TrimStart();
+        int length = 0;
+        while (length < trimmed.Length
+            && (char.IsAsciiLetterOrDigit(trimmed[length])
+                || trimmed[length] is '_' or '$'))
+        {
+            length += 1;
+        }
+        if (length == 0 || !(char.IsAsciiLetter(trimmed[0]) || trimmed[0] is '_' or '$'))
+        {
+            return null;
+        }
+        string token = trimmed[..length].ToString();
+        return knownFields.FirstOrDefault(
+            candidate => string.Equals(candidate, token, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string NormalizeFieldName(string name, IReadOnlySet<string> knownFields)

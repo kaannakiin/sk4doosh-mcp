@@ -1,0 +1,15 @@
+{
+  "kind": "argument-mapping",
+  "description": "Govde koku argumani gelmezse govde hic gonderilmez; karari backend'in model binder'i verir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/import",
+      "bodyRoot": "body"
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/import"
+  }
+}

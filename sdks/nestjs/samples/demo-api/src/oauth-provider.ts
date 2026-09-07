@@ -25,6 +25,13 @@ export const demoResourceUrl = new URL("http://127.0.0.1:3000/mcp");
 const demoUsers: Readonly<Record<string, readonly string[]>> = {
   alice: ["orders.read"],
   bob: [],
+  carol: [],
+};
+
+const demoRoles: Readonly<Record<string, readonly string[]>> = {
+  alice: [],
+  bob: [],
+  carol: ["admin"],
 };
 
 interface StoredCode {
@@ -50,7 +57,12 @@ function signAccessToken(
   resource: URL,
 ): string {
   return jwt.sign(
-    { sub: user, client_id: clientId, scope: scope.join(" ") },
+    {
+      sub: user,
+      client_id: clientId,
+      scope: scope.join(" "),
+      roles: (demoRoles[user] ?? []).join(","),
+    },
     demoOAuthSecret,
     {
       expiresIn: 3600,

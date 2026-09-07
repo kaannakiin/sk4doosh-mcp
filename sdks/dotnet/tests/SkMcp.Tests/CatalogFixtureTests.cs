@@ -210,6 +210,73 @@ public sealed class CatalogFixtureTests
         }
     }
 
+    [Fact]
+    public void C12_SchemaSimplificationFixtures_AllPass()
+    {
+        foreach (JsonElement root in Fixtures("schema-simplification"))
+        {
+            Assert.Equal("schema-simplification", root.GetProperty("kind").GetString());
+            JsonElement input = root.GetProperty("input");
+            TypeShape shape = input.GetProperty("shape").Deserialize<TypeShape>(Neutral)!;
+
+            List<CatalogDiagnostic> diagnostics = [];
+            SchemaWriterOptions options = new() { Report = diagnostics.Add };
+            if (input.TryGetProperty("options", out JsonElement declared))
+            {
+                options = options with
+                {
+                    DropReadOnlyProperties =
+                        !declared.TryGetProperty("dropReadOnlyProperties", out JsonElement drop)
+                        || drop.GetBoolean(),
+                    MaxDepth = declared.TryGetProperty("maxDepth", out JsonElement depth)
+                        ? depth.GetInt32()
+                        : null,
+                };
+            }
+
+            JsonObject produced = new SchemaWriter(options).Write(shape);
+            JsonElement expected = root.GetProperty("expected");
+            JsonNode? want = JsonNode.Parse(expected.GetProperty("schema").GetRawText());
+            Assert.True(
+                JsonNode.DeepEquals(want, produced),
+                $"expected {want?.ToJsonString()} but produced {produced.ToJsonString()}");
+
+            string[] wantCodes = expected.TryGetProperty("diagnostics", out JsonElement codes)
+                ? [.. codes.EnumerateArray().Select(c => c.GetString()!)]
+                : [];
+            Assert.Equal(wantCodes, diagnostics.Select(d => d.Code).ToArray());
+
+            if (expected.TryGetProperty("defsOrder", out JsonElement order))
+            {
+                string[] wantOrder = [.. order.EnumerateArray().Select(c => c.GetString()!)];
+                JsonObject defs = (JsonObject)produced["$defs"]!;
+                Assert.Equal(wantOrder, defs.Select(p => p.Key).ToArray());
+            }
+        }
+    }
+
+    [Fact]
+    public void C13_CardFixtures_AllPass()
+    {
+        foreach (JsonElement root in Fixtures("card"))
+        {
+            Assert.Equal("card", root.GetProperty("kind").GetString());
+            JsonElement input = root.GetProperty("input");
+            ToolDefinition tool = input.GetProperty("tool").Deserialize<ToolDefinition>(Neutral)!;
+            VisibilityDecision decision =
+                input.TryGetProperty("decision", out JsonElement declared)
+                    ? Enum.Parse<VisibilityDecision>(declared.GetString()!, ignoreCase: true)
+                    : VisibilityDecision.Allow;
+
+            JsonNode produced = JsonSerializer.SerializeToNode(
+                SkMcpMetaTools.CardFor(tool, decision), SkMcpJson.Wire)!;
+            JsonNode? want = JsonNode.Parse(root.GetProperty("expected").GetRawText());
+            Assert.True(
+                JsonNode.DeepEquals(want, produced),
+                $"expected {want?.ToJsonString()} but produced {produced.ToJsonString()}");
+        }
+    }
+
     private static string[] Select(SelectionDefault defaultDecision, JsonElement operations)
     {
         List<string> selected = [];

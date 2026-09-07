@@ -199,7 +199,8 @@ internal static partial class EndpointCatalog
                 Tool = Apply(
                     ToolDefinitionFactory.Create(
                         descriptor,
-                        severityOf(DiagnosticCodes.ArgumentCollision) >= CatalogSeverity.EndpointDropped),
+                        severityOf(DiagnosticCodes.ArgumentCollision) >= CatalogSeverity.EndpointDropped,
+                        name),
                     overrides),
                 Descriptor = descriptor,
                 Endpoint = endpoint,
@@ -278,12 +279,11 @@ internal static partial class EndpointCatalog
             });
         }
 
-        if (body is not null && !RequestBodyShape.IsObject(body.Schema))
+        if (body is not null && RequestBodyShape.BodyRootOf(body.Schema) is { } rootArgument)
         {
             diagnostics.Add(new CatalogDiagnostic(
-                DiagnosticCodes.NonObjectBody,
-                $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it could never be invoked, endpoint skipped."));
-            return null;
+                DiagnosticCodes.SyntheticBodyArgument,
+                $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it is exposed as a single '{rootArgument}' argument whose value becomes the whole body."));
         }
 
         Dictionary<string, ResponseBody> responses = new(StringComparer.Ordinal);
@@ -567,18 +567,23 @@ internal static partial class EndpointCatalog
 
             List<string>? bodyProperties = null;
             bool allowsAdditional = false;
+            string? bodyRoot = null;
             if (descriptor.RequestBody?.Schema is { } bodySchema)
             {
-                if (bodySchema["properties"] is JsonObject properties)
+                bodyRoot = RequestBodyShape.BodyRootOf(bodySchema);
+                if (bodyRoot is null)
                 {
-                    bodyProperties = [.. properties.Select(p => p.Key)];
+                    if (bodySchema["properties"] is JsonObject properties)
+                    {
+                        bodyProperties = [.. properties.Select(p => p.Key)];
+                    }
+                    allowsAdditional = RequestBodyShape.AllowsAdditional(bodySchema);
                 }
-                allowsAdditional = RequestBodyShape.AllowsAdditional(bodySchema);
             }
 
             return (RequestTemplate.Create(
                 new HttpMethod(descriptor.Method), descriptor.Route, bindings, bodyProperties,
-                allowsAdditional), null);
+                allowsAdditional, bodyRoot), null);
         }
         catch (Exception ex) when (ex is SkMcpTemplateException or ArgumentException or FormatException)
         {

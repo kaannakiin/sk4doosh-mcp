@@ -1,0 +1,37 @@
+{
+  "kind": "card",
+  "description": "Parametre ozeti properties sirasini korur ve required listesindekilere (required) ekler",
+  "input": {
+    "tool": {
+      "name": "add_order_note",
+      "description": "Bir siparise not ekler.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "notify": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "text"],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "add_order_note",
+    "description": "Bir siparise not ekler.",
+    "parameters": "id: integer (required), notify: boolean, text: string (required)"
+  }
+}

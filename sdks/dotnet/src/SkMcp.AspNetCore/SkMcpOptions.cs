@@ -6,6 +6,8 @@ using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Naming;
 
+using SkMcp.AspNetCore.Spec;
+
 namespace SkMcp.AspNetCore;
 
 public sealed class SkMcpOptions
@@ -80,7 +82,13 @@ public sealed class NamingOptions
 public sealed class SchemaOptions
 {
     public Func<PropertyInfo, string>? PropertyName { get; set; }
-    public Func<Type, JsonObject>? EnumSchema { get; set; }
+    public Func<Type, EnumFacts>? EnumShape { get; set; }
+
+    public Func<Type, string>? TypeName { get; set; }
+
+    public Func<Type, JsonObject?>? TypeSchema { get; set; }
+
+    public int? MaxDepth { get; set; }
     public bool DropReadOnlyProperties { get; set; } = true;
 }
 

@@ -1,0 +1,37 @@
+{
+  "kind": "error-mapping",
+  "description": "Nest'in duz mesaj dizisinde alan adi mesajin bas token'i knownFields'e karsi eslesirse cozulur; kapali kume araması tahmin degildir",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "statusCode": 400,
+      "message": [
+        "item should not be empty",
+        "quantity must not be less than 1",
+        "gizli alan reddedildi"
+      ],
+      "error": "Bad Request"
+    },
+    "knownFields": ["item", "quantity"]
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      {
+        "name": "item",
+        "message": "item should not be empty"
+      },
+      {
+        "name": "quantity",
+        "message": "quantity must not be less than 1"
+      },
+      {
+        "message": "gizli alan reddedildi"
+      }
+    ]
+  }
+}

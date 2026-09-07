@@ -1,0 +1,66 @@
+{
+  "kind": "schema-simplification",
+  "description": "Dongu opak nesneye indirgenmez: kok tip satir ici kalir, dongusel basvuru $defs uzerinden $ref olur; derinlik siniri yoktur",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Node"
+      },
+      "types": {
+        "Node": {
+          "name": "Node",
+          "members": [
+            {
+              "name": "name",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "child",
+              "type": {
+                "kind": "ref",
+                "ref": "Node"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "child": {
+          "$ref": "#/$defs/Node"
+        }
+      },
+      "$defs": {
+        "Node": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "child": {
+              "$ref": "#/$defs/Node"
+            }
+          }
+        }
+      }
+    },
+    "defsOrder": ["Node"]
+  }
+}

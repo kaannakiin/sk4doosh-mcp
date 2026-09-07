@@ -23,6 +23,12 @@
     },
     {
       "$ref": "#/$defs/ErrorMappingFixture"
+    },
+    {
+      "$ref": "#/$defs/SchemaSimplificationFixture"
+    },
+    {
+      "$ref": "#/$defs/CardFixture"
     }
   ],
   "$defs": {
@@ -30,12 +36,7 @@
       "title": "ErrorMappingFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "error-mapping"
@@ -56,9 +57,7 @@
       "title": "BackendResponseSpec",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "status"
-      ],
+      "required": ["status"],
       "properties": {
         "status": {
           "type": "integer",
@@ -101,12 +100,7 @@
       "title": "NamingFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "naming"
@@ -118,9 +112,7 @@
         "input": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "endpoints"
-          ],
+          "required": ["endpoints"],
           "properties": {
             "endpoints": {
               "type": "array",
@@ -147,9 +139,7 @@
               "title": "NamingExpectedNames",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "names"
-              ],
+              "required": ["names"],
               "properties": {
                 "names": {
                   "type": "array",
@@ -164,16 +154,11 @@
               "title": "NamingExpectedError",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "error"
-              ],
+              "required": ["error"],
               "properties": {
                 "error": {
                   "type": "string",
-                  "enum": [
-                    "name_collision",
-                    "invalid_name"
-                  ]
+                  "enum": ["name_collision", "invalid_name"]
                 }
               }
             }
@@ -185,10 +170,7 @@
       "title": "NamingEndpoint",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "method",
-        "route"
-      ],
+      "required": ["method", "route"],
       "properties": {
         "operationId": {
           "type": "string",
@@ -200,14 +182,7 @@
         },
         "method": {
           "type": "string",
-          "enum": [
-            "GET",
-            "HEAD",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE"
-          ]
+          "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
         },
         "route": {
           "type": "string",
@@ -226,21 +201,13 @@
     "PrefixMode": {
       "title": "PrefixMode",
       "type": "string",
-      "enum": [
-        "always",
-        "onCollision"
-      ]
+      "enum": ["always", "onCollision"]
     },
     "MetadataExtractionFixture": {
       "title": "MetadataExtractionFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "metadata-extraction"
@@ -261,15 +228,11 @@
               "title": "MetadataExtractionExpectedError",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "error"
-              ],
+              "required": ["error"],
               "properties": {
                 "error": {
                   "type": "string",
-                  "enum": [
-                    "argument_collision"
-                  ]
+                  "enum": ["argument_collision"]
                 }
               }
             }
@@ -281,12 +244,7 @@
       "title": "ArgumentMappingFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "argument-mapping"
@@ -298,10 +256,7 @@
         "input": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "template",
-            "arguments"
-          ],
+          "required": ["template", "arguments"],
           "properties": {
             "template": {
               "$ref": "#/$defs/RequestTemplateSpec"
@@ -317,9 +272,7 @@
               "title": "ComposedRequestExpectation",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "pathAndQuery"
-              ],
+              "required": ["pathAndQuery"],
               "properties": {
                 "pathAndQuery": {
                   "type": "string"
@@ -331,7 +284,23 @@
                   }
                 },
                 "bodyJson": {
-                  "type": "object"
+                  "oneOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "array"
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
                 }
               }
             },
@@ -339,9 +308,7 @@
               "title": "ArgumentMappingError",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "error"
-              ],
+              "required": ["error"],
               "properties": {
                 "error": {
                   "type": "string",
@@ -364,21 +331,11 @@
       "title": "RequestTemplateSpec",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "method",
-        "route"
-      ],
+      "required": ["method", "route"],
       "properties": {
         "method": {
           "type": "string",
-          "enum": [
-            "GET",
-            "HEAD",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE"
-          ]
+          "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
         },
         "route": {
           "type": "string",
@@ -393,9 +350,7 @@
         "body": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "properties"
-          ],
+          "required": ["properties"],
           "properties": {
             "properties": {
               "type": "array",
@@ -407,6 +362,10 @@
               "type": "boolean"
             }
           }
+        },
+        "bodyRoot": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
@@ -414,11 +373,7 @@
       "title": "TemplateParameter",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "in",
-        "type"
-      ],
+      "required": ["name", "in", "type"],
       "properties": {
         "name": {
           "type": "string",
@@ -426,20 +381,11 @@
         },
         "in": {
           "type": "string",
-          "enum": [
-            "path",
-            "query",
-            "header"
-          ]
+          "enum": ["path", "query", "header"]
         },
         "type": {
           "type": "string",
-          "enum": [
-            "string",
-            "integer",
-            "number",
-            "boolean"
-          ]
+          "enum": ["string", "integer", "number", "boolean"]
         },
         "array": {
           "type": "boolean"
@@ -450,12 +396,7 @@
       "title": "SelectionFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "selection"
@@ -467,10 +408,7 @@
         "input": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "default",
-            "operations"
-          ],
+          "required": ["default", "operations"],
           "properties": {
             "default": {
               "$ref": "#/$defs/SelectionDefault"
@@ -490,9 +428,7 @@
               "title": "SelectionExpectedIds",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "selected"
-              ],
+              "required": ["selected"],
               "properties": {
                 "selected": {
                   "type": "array",
@@ -506,15 +442,11 @@
               "title": "SelectionExpectedError",
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "error"
-              ],
+              "required": ["error"],
               "properties": {
                 "error": {
                   "type": "string",
-                  "enum": [
-                    "ambiguous_selection"
-                  ]
+                  "enum": ["ambiguous_selection"]
                 }
               }
             }
@@ -526,9 +458,7 @@
       "title": "SelectionOperation",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "properties": {
         "id": {
           "type": "string",
@@ -544,29 +474,17 @@
     },
     "SelectionDefault": {
       "type": "string",
-      "enum": [
-        "include",
-        "exclude"
-      ]
+      "enum": ["include", "exclude"]
     },
     "SelectionMarker": {
       "type": "string",
-      "enum": [
-        "include",
-        "exclude",
-        "both"
-      ]
+      "enum": ["include", "exclude", "both"]
     },
     "VisibilityFixture": {
       "title": "VisibilityFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "visibility"
@@ -578,10 +496,7 @@
         "input": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "auth",
-            "caller"
-          ],
+          "required": ["auth", "caller"],
           "properties": {
             "auth": {
               "$ref": "endpoint-descriptor.schema.json#/$defs/Auth"
@@ -595,9 +510,7 @@
           "title": "VisibilityExpectation",
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "decision"
-          ],
+          "required": ["decision"],
           "properties": {
             "decision": {
               "$ref": "#/$defs/VisibilityDecision"
@@ -610,9 +523,7 @@
       "title": "CallerFacts",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "identity"
-      ],
+      "required": ["identity"],
       "properties": {
         "identity": {
           "$ref": "#/$defs/CallerIdentity"
@@ -627,30 +538,17 @@
     },
     "CallerIdentity": {
       "type": "string",
-      "enum": [
-        "present",
-        "absent",
-        "unknown"
-      ]
+      "enum": ["present", "absent", "unknown"]
     },
     "VisibilityDecision": {
       "type": "string",
-      "enum": [
-        "allow",
-        "deny",
-        "unknown"
-      ]
+      "enum": ["allow", "deny", "unknown"]
     },
     "SearchFixture": {
       "title": "SearchFixture",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "description",
-        "input",
-        "expected"
-      ],
+      "required": ["kind", "description", "input", "expected"],
       "properties": {
         "kind": {
           "const": "search"
@@ -662,10 +560,7 @@
         "input": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "tools",
-            "query"
-          ],
+          "required": ["tools", "query"],
           "properties": {
             "tools": {
               "type": "array",
@@ -688,9 +583,7 @@
           "title": "SearchExpectation",
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "names"
-          ],
+          "required": ["names"],
           "properties": {
             "names": {
               "type": "array",
@@ -706,10 +599,7 @@
       "title": "SearchTool",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "route"
-      ],
+      "required": ["name", "route"],
       "properties": {
         "name": {
           "type": "string",
@@ -727,6 +617,130 @@
         "route": {
           "type": "string",
           "pattern": "^/"
+        }
+      }
+    },
+    "SchemaSimplificationFixture": {
+      "title": "SchemaSimplificationFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": {
+          "const": "schema-simplification"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["shape"],
+          "properties": {
+            "shape": {
+              "$ref": "type-shape.schema.json"
+            },
+            "options": {
+              "$ref": "#/$defs/SchemaSimplificationOptions"
+            }
+          }
+        },
+        "expected": {
+          "title": "SchemaSimplificationExpectation",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schema"],
+          "properties": {
+            "schema": {
+              "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+            },
+            "diagnostics": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SchemaDiagnosticCode"
+              }
+            },
+            "defsOrder": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "SchemaSimplificationOptions": {
+      "title": "SchemaSimplificationOptions",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dropReadOnlyProperties": {
+          "type": "boolean"
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "SchemaDiagnosticCode": {
+      "title": "SchemaDiagnosticCode",
+      "type": "string",
+      "enum": [
+        "unsupported_dictionary_key",
+        "schema_def_name_disambiguated",
+        "schema_depth_truncated",
+        "unreadable_shape"
+      ]
+    },
+    "CardFixture": {
+      "title": "CardFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": {
+          "const": "card"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool"],
+          "properties": {
+            "tool": {
+              "$ref": "tool-definition.schema.json"
+            },
+            "decision": {
+              "$ref": "#/$defs/VisibilityDecision"
+            }
+          }
+        },
+        "expected": {
+          "title": "CardExpectation",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "description", "parameters"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "parameters": {
+              "type": "string"
+            },
+            "authUncertain": {
+              "type": "boolean"
+            }
+          }
         }
       }
     }

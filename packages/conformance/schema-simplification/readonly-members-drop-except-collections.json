@@ -1,0 +1,114 @@
+{
+  "kind": "schema-simplification",
+  "description": "Salt-okunur uye duser; koleksiyon, map ve constructor'a bagli olanlar kalir; bos required yazilmaz",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Audit"
+      },
+      "types": {
+        "Audit": {
+          "name": "Audit",
+          "members": [
+            {
+              "name": "name",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "creationDate",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string",
+                "format": "date-time"
+              },
+              "required": false,
+              "readOnly": true,
+              "constructorBound": false
+            },
+            {
+              "name": "modifiedByUserId",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "readOnly": true,
+              "constructorBound": false
+            },
+            {
+              "name": "tags",
+              "type": {
+                "kind": "array",
+                "items": {
+                  "kind": "scalar",
+                  "scalar": "string"
+                }
+              },
+              "required": false,
+              "readOnly": true,
+              "constructorBound": false
+            },
+            {
+              "name": "extras",
+              "type": {
+                "kind": "map",
+                "keys": {
+                  "writable": true
+                },
+                "values": {
+                  "kind": "scalar",
+                  "scalar": "string"
+                }
+              },
+              "required": false,
+              "readOnly": true,
+              "constructorBound": false
+            },
+            {
+              "name": "code",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": true,
+              "constructorBound": true
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extras": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "code": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

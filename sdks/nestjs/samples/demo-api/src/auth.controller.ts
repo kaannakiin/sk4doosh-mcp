@@ -8,8 +8,8 @@ export class AuthController {
   @Post("token")
   async token(@Body() body: { user?: string }) {
     const user = body?.user;
-    if (user !== "alice" && user !== "bob") {
-      throw new BadRequestException("user must be 'alice' or 'bob'");
+    if (user !== "alice" && user !== "bob" && user !== "carol") {
+      throw new BadRequestException("user must be 'alice', 'bob' or 'carol'");
     }
     return { access_token: await this.provider.mintDemoToken(user) };
   }

@@ -48,3 +48,29 @@ export class OrdersReadGuard implements CanActivate {
     return true;
   }
 }
+
+@Injectable()
+export class AdminRoleGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<AuthedRequest>();
+    const roles =
+      typeof request.user?.roles === "string"
+        ? request.user.roles.split(",")
+        : [];
+    if (!roles.includes("admin")) {
+      throw new ForbiddenException();
+    }
+    return true;
+  }
+}
+
+@Injectable()
+export class BusinessHoursGuard implements CanActivate {
+  canActivate(): boolean {
+    const hour = new Date().getUTCHours();
+    if (hour < 6 || hour >= 22) {
+      throw new ForbiddenException();
+    }
+    return true;
+  }
+}

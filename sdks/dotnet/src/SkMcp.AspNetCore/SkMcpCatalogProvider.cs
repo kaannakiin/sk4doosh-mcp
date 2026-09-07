@@ -12,6 +12,7 @@ using Microsoft.Extensions.Primitives;
 using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Search;
+using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore;
 
@@ -65,12 +66,12 @@ internal sealed class SkMcpCatalogProvider(
             _snapshot = Build();
             Interlocked.Increment(ref _generation);
         }
-        await cache.ClearAsync(cancellationToken);
-
         CancellationTokenSource next = new();
         CancellationTokenSource previous = Interlocked.Exchange(ref _changeSource, next);
         previous.Cancel();
         previous.Dispose();
+
+        await cache.ClearAsync(cancellationToken);
     }
 
     public CatalogBuildResult Result => Current.Result;
@@ -204,31 +205,34 @@ internal sealed class SkMcpCatalogProvider(
                 ?? property.Name;
         }
 
-        Func<Type, JsonObject> enumSchema;
-        Func<PropertyInfo, JsonObject?>? enumOverride = null;
-        if (options.Value.Schema.EnumSchema is { } declaredEnum)
+        Func<Type, EnumFacts> enumShape;
+        Func<PropertyInfo, JsonObject?>? propertySchema = null;
+        if (options.Value.Schema.EnumShape is { } declaredEnum)
         {
-            enumSchema = declaredEnum;
+            enumShape = declaredEnum;
         }
         else if (newtonsoft)
         {
-            enumSchema = EnumWireFormat.Unresolved;
+            enumShape = EnumWireFormat.Unresolved;
             notes.Add(new CatalogDiagnostic(
                 "enum_format_unresolved",
-                "Newtonsoft.Json input formatter detected; enum wire format cannot be read, so enums accept both the name and the number. Set options.Schema.EnumSchema to pin one form."));
+                "Newtonsoft.Json input formatter detected; enum wire format cannot be read, so enums accept both the name and the number. Set options.Schema.EnumShape to pin one form."));
         }
         else
         {
-            enumSchema = enumType => EnumWireFormat.Describe(enumType, serializer);
-            enumOverride = property => PropertyEnumSchema(property, serializer);
+            enumShape = enumType => EnumWireFormat.Describe(enumType, serializer);
+            propertySchema = property => PropertyEnumSchema(property, serializer);
         }
 
         SchemaMapperOptions mapper = new()
         {
             PropertyName = propertyName,
-            EnumSchema = EnumWireFormat.Cached(enumSchema),
-            PropertyEnumOverride = enumOverride,
+            TypeName = options.Value.Schema.TypeName,
+            TypeSchema = options.Value.Schema.TypeSchema,
+            EnumShape = EnumWireFormat.Cached(enumShape),
+            PropertySchema = propertySchema,
             DropReadOnlyProperties = options.Value.Schema.DropReadOnlyProperties,
+            MaxDepth = options.Value.Schema.MaxDepth,
         };
         return (mapper, notes);
     }
@@ -261,6 +265,6 @@ internal sealed class SkMcpCatalogProvider(
 
         JsonSerializerOptions scoped = new(serializer);
         scoped.Converters.Insert(0, converter);
-        return EnumWireFormat.Describe(resolved, scoped);
+        return SchemaWriter.EnumSchemaFor(EnumWireFormat.Describe(resolved, scoped));
     }
 }

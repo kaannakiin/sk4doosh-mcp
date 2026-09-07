@@ -8,7 +8,7 @@ import type {
   ParameterKind,
   RequestTemplate,
 } from "./request-template.js";
-import { createToolDefinition } from "./tool-definition.js";
+import { bodyRootOf, createToolDefinition } from "./tool-definition.js";
 
 export interface Tool {
   readonly definition: ToolDefinition;
@@ -40,6 +40,15 @@ export function createRequestTemplateFromEndpoint(
   );
 
   const body = endpoint.requestBody?.schema;
+  const root = bodyRootOf(body);
+  if (root !== undefined) {
+    return createRequestTemplate({
+      method: endpoint.method,
+      route: endpoint.route,
+      parameters,
+      bodyRoot: root,
+    });
+  }
   const flattened = flattenableBody(body);
   return createRequestTemplate({
     method: endpoint.method,
@@ -52,9 +61,9 @@ export function createRequestTemplateFromEndpoint(
   });
 }
 
-export function createTool(endpoint: EndpointDescriptor): Tool {
+export function createTool(endpoint: EndpointDescriptor, name?: string): Tool {
   return {
-    definition: createToolDefinition(endpoint),
+    definition: createToolDefinition(endpoint, name),
     template: createRequestTemplateFromEndpoint(endpoint),
   };
 }

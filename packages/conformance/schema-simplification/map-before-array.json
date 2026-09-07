@@ -1,0 +1,155 @@
+{
+  "kind": "schema-simplification",
+  "description": "Map dizi'den once gelir; anahtar skaleri propertyNames uretir, gercek anahtar/deger dizisi dizi kalir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Catalog"
+      },
+      "types": {
+        "Catalog": {
+          "name": "Catalog",
+          "members": [
+            {
+              "name": "bySku",
+              "type": {
+                "kind": "map",
+                "keys": {
+                  "writable": true,
+                  "scalar": "integer"
+                },
+                "values": {
+                  "kind": "scalar",
+                  "scalar": "string"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "byId",
+              "type": {
+                "kind": "map",
+                "keys": {
+                  "writable": true,
+                  "scalar": "string",
+                  "format": "uuid"
+                },
+                "values": {
+                  "kind": "scalar",
+                  "scalar": "string"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "byName",
+              "type": {
+                "kind": "map",
+                "keys": {
+                  "writable": true
+                },
+                "values": {
+                  "kind": "scalar",
+                  "scalar": "integer"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "pairs",
+              "type": {
+                "kind": "array",
+                "items": {
+                  "kind": "ref",
+                  "ref": "Pair"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "Pair": {
+          "name": "Pair",
+          "members": [
+            {
+              "name": "key",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "value",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "bySku": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^-?[0-9]+$"
+          }
+        },
+        "byId": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "byName": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "value": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

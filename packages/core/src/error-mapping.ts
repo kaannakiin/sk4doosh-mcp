@@ -309,9 +309,28 @@ function normalizeField(
 ): FieldError {
   const message = forwardable(field.message) ?? fieldLeakMessage;
   if (field.name === undefined) {
-    return { message };
+    const resolved = fieldNameFromMessage(field.message, knownFields);
+    return resolved === undefined ? { message } : { name: resolved, message };
   }
   return { name: normalizeFieldName(field.name, knownFields), message };
+}
+
+function fieldNameFromMessage(
+  message: string,
+  knownFields: readonly string[] | undefined,
+): string | undefined {
+  if (knownFields === undefined || knownFields.length === 0) {
+    return undefined;
+  }
+  const leading = /^[A-Za-z_$][A-Za-z0-9_$.[\]]*/.exec(message.trimStart());
+  if (leading === null) {
+    return undefined;
+  }
+  const token = (leading[0].split(/[.[]/)[0] ?? "").toLowerCase();
+  if (token.length === 0) {
+    return undefined;
+  }
+  return knownFields.find((candidate) => candidate.toLowerCase() === token);
 }
 
 function finalizeError(

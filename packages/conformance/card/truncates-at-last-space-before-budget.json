@@ -1,0 +1,31 @@
+{
+  "kind": "card",
+  "description": "160'i asan aciklama butceden onceki son bosluktan kesilir ve ellipsis eklenir",
+  "input": {
+    "tool": {
+      "name": "list_items",
+      "description": "kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "list_items",
+    "description": "kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime…",
+    "parameters": "page: integer"
+  }
+}

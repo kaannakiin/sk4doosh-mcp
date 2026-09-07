@@ -1,0 +1,76 @@
+{
+  "kind": "schema-simplification",
+  "description": "Sarmalayici isaretli ve tek uyeli nesne o uyenin semasiyla degisir; neyin sarmalayici oldugu host politikasi, ne oldugu kuraldir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Root2"
+      },
+      "types": {
+        "Root2": {
+          "name": "Root2",
+          "members": [
+            {
+              "name": "data",
+              "type": {
+                "kind": "ref",
+                "ref": "ApiResponse"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "ApiResponse": {
+          "name": "ApiResponse",
+          "wrapper": true,
+          "members": [
+            {
+              "name": "value",
+              "type": {
+                "kind": "ref",
+                "ref": "Payload"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "Payload": {
+          "name": "Payload",
+          "members": [
+            {
+              "name": "item",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object",
+          "properties": {
+            "item": {
+              "type": "string"
+            }
+          },
+          "required": ["item"]
+        }
+      }
+    }
+  }
+}

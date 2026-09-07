@@ -161,7 +161,7 @@ describe("Nest error mapping", () => {
     expect(outcome.retryAfterSeconds).toBe(30);
   });
 
-  it("E2: Nest's default ValidationPipe array becomes unnamed field errors", async () => {
+  it("E2: Nest's ValidationPipe array resolves field names against knownFields", async () => {
     current = await createApp();
     const result = await current.dispatcher.dispatch(validateTemplate, {
       name: "",
@@ -171,6 +171,20 @@ describe("Nest error mapping", () => {
     const outcome = current.mapper.map(result, ["name"]);
     assertMappedError(outcome);
     expect(outcome.error).toBe("validation_failed");
+    expect(outcome.fields?.length).toBeGreaterThan(0);
+    for (const field of outcome.fields ?? []) {
+      expect(field.name).toBe("name");
+    }
+  });
+
+  it("E2b: without knownFields the same array stays unnamed", async () => {
+    current = await createApp();
+    const result = await current.dispatcher.dispatch(validateTemplate, {
+      name: "",
+    });
+
+    const outcome = current.mapper.map(result, []);
+    assertMappedError(outcome);
     expect(outcome.fields?.length).toBeGreaterThan(0);
     for (const field of outcome.fields ?? []) {
       expect(field.name).toBeUndefined();

@@ -1,6 +1,6 @@
 # Conformance Fixture Formatı
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (korpusu üç koşucu okuyor: `packages/core`, `sdks/nestjs`, `sdks/dotnet`).
 
 Fixture'lar [packages/conformance](../conformance) altında yaşar; her SDK'nın test paketi aynı JSON dosyalarını doğrudan okur ve geçmek zorundadır. Makine-okur şema: [schemas/fixture.schema.json](schemas/fixture.schema.json).
 
@@ -8,7 +8,7 @@ Fixture'lar [packages/conformance](../conformance) altında yaşar; her SDK'nın
 
 ```json
 {
-  "kind": "naming | metadata-extraction | argument-mapping | selection | visibility | search | error-mapping",
+  "kind": "naming | metadata-extraction | argument-mapping | selection | visibility | search | error-mapping | schema-simplification | card",
   "description": "fixture'ın neyi sınadığı",
   "input": {},
   "expected": {}
@@ -23,6 +23,8 @@ Fixture'lar [packages/conformance](../conformance) altında yaşar; her SDK'nın
 - `kind: "selection"` — `input`: `{default, operations[]}` (her operation `id` + `container?` / `operation?` işaretleri); `expected`: `{"selected": [...]}` ya da `{"error": "ambiguous_selection"}`. Kurallar: [secim-hiyerarsisi.md](secim-hiyerarsisi.md).
 - `kind: "visibility"` — `input`: `{auth, caller}` (`auth`: `anonymous` üç değerli, `policies`, `imperative`; `caller`: `identity` üç değerli, `policyResults`); `expected`: `{"decision": "allow" | "deny" | "unknown"}`. Kurallar: [gorunurluk.md](gorunurluk.md).
 - `kind: "search"` — `input`: `{tools[], query}` (her tool `name` + `route`, opsiyonel açıklama alanları); `expected`: `{"names": [...]}`, beklenen sırada. Kurallar: [arama-semantigi.md](arama-semantigi.md).
+- `kind: "schema-simplification"` — `input`: `{shape, options?}` (`shape` bir [TypeShape](schemas/type-shape.schema.json); `options` host politikası: `dropReadOnlyProperties`, `maxDepth`); `expected`: `{schema, diagnostics?, defsOrder?}`. `diagnostics` üretim sırasındaki tanı kodlarıdır; verilmezse hiç tanı üretilmemesi beklenir. `defsOrder` `$defs` anahtarlarının tam sırasıdır ve yalnız hoisting fixture'larında bulunur — iki koşucunun da derin eşitliği nesne anahtar sırasını görmediği için sıra ayrıca sınanır. Kurallar: [sema-donusum-kurallari.md](sema-donusum-kurallari.md).
+- `kind: "card"` — `input`: `{tool, decision?}` (`tool` tam bir `ToolDefinition`; `decision` üç değerli görünürlük kararı, verilmezse `allow`); `expected`: `{name, description, parameters, authUncertain?}`. Kurallar: [arama-semantigi.md](arama-semantigi.md) "Kompakt kart".
 - `kind: "error-mapping"` — `input`: bir `BackendResponseSpec` (`status`, `contentType?`, `headers?`, `body?`, `knownFields?`); `expected`: [invoke-result.schema.json](schemas/invoke-result.schema.json)'a uyan `InvokeSuccess` ya da `MappedError`. Kurallar: [hata-eslemesi.md](hata-eslemesi.md).
 
 ## Kurallar

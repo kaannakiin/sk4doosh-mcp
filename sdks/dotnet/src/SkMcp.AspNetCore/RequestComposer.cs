@@ -97,7 +97,14 @@ internal static class RequestComposer
         }
 
         byte[]? body = null;
-        if (template.HasBody)
+        if (template.BodyRoot is { } root)
+        {
+            if (args.TryGetValue(root, out JsonElement rootValue))
+            {
+                body = Encoding.UTF8.GetBytes(rootValue.GetRawText());
+            }
+        }
+        else if (template.HasBody)
         {
             JsonObject bodyObject = [];
             foreach ((string name, JsonElement element) in args)
@@ -122,6 +129,7 @@ internal static class RequestComposer
         {
             bool known = template.Parameters.Any(p => p.Name == name)
                 || template.BodyProperties.Contains(name)
+                || string.Equals(name, template.BodyRoot, StringComparison.Ordinal)
                 || (template.HasBody && template.BodyAllowsAdditionalProperties);
             if (!known)
             {
@@ -132,6 +140,7 @@ internal static class RequestComposer
         {
             IEnumerable<string> allowed = template.Parameters.Select(p => p.Name)
                 .Concat(template.BodyProperties)
+                .Concat(template.BodyRoot is null ? [] : new[] { template.BodyRoot })
                 .Order(StringComparer.Ordinal);
             throw new SkMcpArgumentException(
                 SkMcpArgumentException.UnknownArgument,

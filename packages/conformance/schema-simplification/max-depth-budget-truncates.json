@@ -1,0 +1,79 @@
+{
+  "kind": "schema-simplification",
+  "description": "maxDepth host butcesidir, kural degil: ayarlandiginda sinir nesnesi ve tani uretir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "L0"
+      },
+      "types": {
+        "L0": {
+          "name": "L0",
+          "members": [
+            {
+              "name": "a",
+              "type": {
+                "kind": "ref",
+                "ref": "L1"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "L1": {
+          "name": "L1",
+          "members": [
+            {
+              "name": "b",
+              "type": {
+                "kind": "ref",
+                "ref": "L2"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "L2": {
+          "name": "L2",
+          "members": [
+            {
+              "name": "leaf",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    },
+    "options": {
+      "maxDepth": 2
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    },
+    "diagnostics": ["schema_depth_truncated"]
+  }
+}

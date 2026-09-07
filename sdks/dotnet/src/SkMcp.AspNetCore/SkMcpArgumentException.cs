@@ -8,6 +8,7 @@ public sealed class SkMcpTemplateException(string code, string message) : Except
     public const string DuplicateArgument = "duplicate_argument";
     public const string IdentityCarrierArgument = "identity_carrier_argument";
     public const string BodyNotAllowed = "body_not_allowed";
+    public const string ConflictingBodyModes = "conflicting_body_modes";
     public const string PathParameterArray = "path_parameter_array";
     public const string RoutePlaceholderMismatch = "route_placeholder_mismatch";
 }

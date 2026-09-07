@@ -1,0 +1,136 @@
+{
+  "kind": "schema-simplification",
+  "description": "Skaler sozlugu ve ikili yigin: format tasiyan skalerler korunur, ikili base64 string olur",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Scalars"
+      },
+      "types": {
+        "Scalars": {
+          "name": "Scalars",
+          "members": [
+            {
+              "name": "text",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "flag",
+              "type": {
+                "kind": "scalar",
+                "scalar": "boolean"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "count",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "ratio",
+              "type": {
+                "kind": "scalar",
+                "scalar": "number"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "id",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string",
+                "format": "uuid"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "createdAt",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string",
+                "format": "date-time"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "day",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string",
+                "format": "date"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "blob",
+              "type": {
+                "kind": "binary"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "ratio": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "day": {
+          "type": "string",
+          "format": "date"
+        },
+        "blob": {
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      }
+    }
+  }
+}

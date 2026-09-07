@@ -1,12 +1,44 @@
 export { SkMcpModule } from "./sk-mcp.module.js";
 export type { SkMcpModuleAsyncOptions } from "./sk-mcp.module.js";
 export { SkMcpDispatcher } from "./dispatcher.js";
-export type { DispatchResult } from "./dispatcher.js";
+export { SkMcpCatalog } from "./catalog.js";
+export type { CatalogEntry, CatalogSnapshot } from "./catalog.js";
+export { McpIgnore, McpTool } from "./decorators.js";
+export type { McpToolOptions } from "./decorators.js";
+export { isSkMcpProbe, isSkMcpRequest } from "./markers.js";
+export { registerSkMcpTools } from "./meta-tools.js";
+export type { MetaToolDependencies } from "./meta-tools.js";
+export { discoverEndpoints } from "./discovery/endpoint-discovery.js";
+export type {
+  DiscoveredEndpoint,
+  DiscoveryOptions,
+  VisibilityDeclaration,
+} from "./discovery/endpoint-discovery.js";
+export { NestTypeShapeBinder } from "./discovery/type-shape.js";
+export type { TypeShapeBinderOptions } from "./discovery/type-shape.js";
+export { severityOf } from "./discovery/diagnostics.js";
+export type {
+  CatalogDiagnostic,
+  CatalogSeverity,
+} from "./discovery/diagnostics.js";
+export { DeclarativeVisibilityEvaluator } from "./visibility/evaluator.js";
+export type { VisibilityEvaluator } from "./visibility/evaluator.js";
+export { SkMcpProbeEvaluator, SkMcpProbeInterceptor } from "./visibility/probe.js";
+export type { ProbeEvaluator } from "./visibility/probe.js";
+export { CallerVisibilityProvider } from "./visibility/provider.js";
+export type { DispatchResult, ProbeResult } from "./dispatcher.js";
 export {
   ErrorMappingOptions,
   IdentityForwardingOptions,
   SkMcpOptions,
   SK_MCP_OPTIONS,
+} from "./options.js";
+export type {
+  SkMcpDiagnosticsOptions,
+  SkMcpNamingOptions,
+  SkMcpSelectionOptions,
+  SkMcpVisibilityOptions,
+  SkMcpVisibilityTier,
 } from "./options.js";
 export type {
   OuterRequest,

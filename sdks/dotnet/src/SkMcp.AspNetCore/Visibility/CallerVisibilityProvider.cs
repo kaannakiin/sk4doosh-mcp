@@ -1,22 +1,39 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Visibility.Probe;
 
 namespace SkMcp.AspNetCore.Visibility;
 
-internal sealed class CallerVisibilityProvider(
-    IVisibilityEvaluator evaluator,
-    IProbeEvaluator probe,
-    ISkMcpCache cache,
-    IOptions<SkMcpOptions> options,
-    ILogger<CallerVisibilityProvider> logger)
+internal sealed class CallerVisibilityProvider
 {
+    private readonly IVisibilityEvaluator evaluator;
+    private readonly IProbeEvaluator probe;
+    private readonly ISkMcpCache cache;
+    private readonly IOptions<SkMcpOptions> options;
+    private readonly ILogger<CallerVisibilityProvider> logger;
     private readonly SingleFlight<CallerFacts> _factsFlight = new();
     private readonly SingleFlight<VisibilityDecision> _probeFlight = new();
     private long _epoch;
+
+    public CallerVisibilityProvider(
+        IVisibilityEvaluator evaluator,
+        IProbeEvaluator probe,
+        ISkMcpCache cache,
+        IOptions<SkMcpOptions> options,
+        ILogger<CallerVisibilityProvider> logger,
+        ISkMcpCatalogChangeSource changeSource)
+    {
+        this.evaluator = evaluator;
+        this.probe = probe;
+        this.cache = cache;
+        this.options = options;
+        this.logger = logger;
+        ChangeToken.OnChange(changeSource.GetChangeToken, Bump);
+    }
 
     internal void Bump() => Interlocked.Increment(ref _epoch);
 

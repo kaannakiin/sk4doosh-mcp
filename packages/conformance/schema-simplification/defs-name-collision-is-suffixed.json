@@ -1,0 +1,128 @@
+{
+  "kind": "schema-simplification",
+  "description": "Ayni basit ada sahip iki hoist edilmis tip: ordinal sirada ilki cıplak adi korur, ikincisi _2 sonekini alir ve tani uretilir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Root"
+      },
+      "types": {
+        "Root": {
+          "name": "Root",
+          "members": [
+            {
+              "name": "a1",
+              "type": {
+                "kind": "ref",
+                "ref": "A.Address"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "a2",
+              "type": {
+                "kind": "ref",
+                "ref": "A.Address"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "b1",
+              "type": {
+                "kind": "ref",
+                "ref": "B.Address"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "b2",
+              "type": {
+                "kind": "ref",
+                "ref": "B.Address"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "A.Address": {
+          "name": "Address",
+          "members": [
+            {
+              "name": "street",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "B.Address": {
+          "name": "Address",
+          "members": [
+            {
+              "name": "line",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "a1": {
+          "$ref": "#/$defs/Address"
+        },
+        "a2": {
+          "$ref": "#/$defs/Address"
+        },
+        "b1": {
+          "$ref": "#/$defs/Address_2"
+        },
+        "b2": {
+          "$ref": "#/$defs/Address_2"
+        }
+      },
+      "$defs": {
+        "Address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            }
+          }
+        },
+        "Address_2": {
+          "type": "object",
+          "properties": {
+            "line": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "diagnostics": ["schema_def_name_disambiguated"],
+    "defsOrder": ["Address", "Address_2"]
+  }
+}

@@ -5,7 +5,9 @@ export type Fixture =
   | SelectionFixture
   | VisibilityFixture
   | SearchFixture
-  | ErrorMappingFixture;
+  | ErrorMappingFixture
+  | SchemaSimplificationFixture
+  | CardFixture;
 export type PrefixMode = "always" | "onCollision";
 export type Anonymity = "yes" | "no" | "unknown";
 export type InvokeResult = InvokeSuccess | MappedError;
@@ -19,6 +21,22 @@ export type BackendErrorCode =
   | "rate_limited"
   | "backend_error"
   | "backend_unavailable";
+export type TypeKind =
+  | "scalar"
+  | "binary"
+  | "enum"
+  | "map"
+  | "array"
+  | "ref"
+  | "verbatim"
+  | "unknown";
+export type ScalarKind = "string" | "boolean" | "integer" | "number";
+export type EnumWireForm = "string" | "integer" | "unresolved";
+export type SchemaDiagnosticCode =
+  | "unsupported_dictionary_key"
+  | "schema_def_name_disambiguated"
+  | "schema_depth_truncated"
+  | "unreadable_shape";
 
 export interface NamingFixture {
   kind: "naming";
@@ -77,8 +95,24 @@ export interface Parameter {
 }
 export interface JsonSchemaObject {
   type?:
-    | ("object" | "array" | "string" | "integer" | "number" | "boolean" | "null")
-    | ("object" | "array" | "string" | "integer" | "number" | "boolean" | "null")[];
+    | (
+        | "object"
+        | "array"
+        | "string"
+        | "integer"
+        | "number"
+        | "boolean"
+        | "null"
+      )
+    | (
+        | "object"
+        | "array"
+        | "string"
+        | "integer"
+        | "number"
+        | "boolean"
+        | "null"
+      )[];
   description?: string;
   format?: string;
   properties?: {
@@ -88,6 +122,20 @@ export interface JsonSchemaObject {
   items?: JsonSchemaObject;
   enum?: unknown[];
   additionalProperties?: boolean | JsonSchemaObject;
+  contentEncoding?: string;
+  propertyNames?: JsonSchemaObject;
+  minLength?: number;
+  maxLength?: number;
+  minItems?: number;
+  maxItems?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  anyOf?: JsonSchemaObject[];
+  $ref?: string;
+  $defs?: {
+    [k: string]: JsonSchemaObject;
+  };
   [k: string]: unknown;
 }
 export interface RequestBody {
@@ -135,6 +183,7 @@ export interface RequestTemplateSpec {
     properties: string[];
     additionalProperties?: boolean;
   };
+  bodyRoot?: string;
 }
 export interface TemplateParameter {
   name: string;
@@ -147,7 +196,7 @@ export interface ComposedRequestExpectation {
   headers?: {
     [k: string]: string;
   };
-  bodyJson?: {};
+  bodyJson?: {} | unknown[] | string | number | boolean;
 }
 export interface ArgumentMappingError {
   error:
@@ -248,4 +297,89 @@ export interface MappedError {
 export interface FieldError {
   name?: string;
   message: string;
+}
+export interface SchemaSimplificationFixture {
+  kind: "schema-simplification";
+  description: string;
+  input: {
+    shape: TypeShape;
+    options?: SchemaSimplificationOptions;
+  };
+  expected: SchemaSimplificationExpectation;
+}
+export interface TypeShape {
+  root: TypeNode;
+  types: {
+    [k: string]: ObjectType;
+  };
+}
+export interface TypeNode {
+  kind: TypeKind;
+  scalar?: ScalarKind;
+  format?: string;
+  items?: TypeNode;
+  values?: TypeNode;
+  keys?: MapKey;
+  enumFacts?: EnumFacts;
+  ref?: string;
+  schema?: JsonSchemaObject;
+  reason?: string;
+}
+export interface MapKey {
+  writable: boolean;
+  scalar?: ScalarKind;
+  format?: string;
+}
+export interface EnumFacts {
+  wireForm: EnumWireForm;
+  combinable?: boolean;
+  names: string[];
+  numbers: number[];
+}
+export interface ObjectType {
+  name: string;
+  description?: string;
+  wrapper?: boolean;
+  members: Member[];
+}
+export interface Member {
+  name: string;
+  type: TypeNode;
+  required: boolean;
+  readOnly: boolean;
+  constructorBound: boolean;
+  description?: string;
+  constraints?: Constraints;
+}
+export interface Constraints {
+  minSize?: number;
+  maxSize?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  format?: string;
+}
+export interface SchemaSimplificationOptions {
+  dropReadOnlyProperties?: boolean;
+  maxDepth?: number;
+}
+export interface SchemaSimplificationExpectation {
+  schema: JsonSchemaObject;
+  diagnostics?: SchemaDiagnosticCode[];
+  defsOrder?: string[];
+}
+export interface CardFixture {
+  kind: "card";
+  description: string;
+  input: {
+    tool: ToolDefinition;
+    decision?: "allow" | "deny" | "unknown";
+  };
+  expected: CardExpectation;
+}
+export interface CardExpectation {
+  name: string;
+  description: string;
+  parameters: string;
+  authUncertain?: boolean;
 }

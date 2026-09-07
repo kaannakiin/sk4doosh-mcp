@@ -1,0 +1,40 @@
+{
+  "kind": "card",
+  "description": "Tamsayi-benzeri property adi ozette basa gelir ve sayisal artan siralanir: siralama kuralinin kendisi normatiftir",
+  "input": {
+    "tool": {
+      "name": "legacy_form",
+      "description": "Eski form gonderir.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "alpha": {
+            "type": "string"
+          },
+          "2": {
+            "type": "integer"
+          },
+          "10": {
+            "type": "integer"
+          },
+          "beta": {
+            "type": "boolean"
+          }
+        },
+        "required": ["2"],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "legacy_form",
+    "description": "Eski form gonderir.",
+    "parameters": "2: integer (required), 10: integer, alpha: string, beta: boolean"
+  }
+}

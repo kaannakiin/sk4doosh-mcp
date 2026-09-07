@@ -298,9 +298,12 @@ public class ArgumentMappingTests
             }
         }
 
+        string? bodyRoot = spec.TryGetProperty("bodyRoot", out JsonElement root)
+            ? root.GetString()
+            : null;
         string[]? bodyProperties = null;
         bool additional = false;
-        if (spec.TryGetProperty("body", out JsonElement body))
+        if (bodyRoot is null && spec.TryGetProperty("body", out JsonElement body))
         {
             bodyProperties = body.GetProperty("properties").EnumerateArray()
                 .Select(x => x.GetString()!).ToArray();
@@ -312,6 +315,7 @@ public class ArgumentMappingTests
             spec.GetProperty("route").GetString()!,
             parameters,
             bodyProperties,
-            additional);
+            additional,
+            bodyRoot);
     }
 }

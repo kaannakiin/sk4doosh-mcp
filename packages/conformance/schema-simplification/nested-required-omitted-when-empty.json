@@ -1,0 +1,60 @@
+{
+  "kind": "schema-simplification",
+  "description": "Ic ice semada required yalniz bos degilken yazilir; kok inputSchema kurali metadata-sozlesmesi.md'de",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Outer"
+      },
+      "types": {
+        "Outer": {
+          "name": "Outer",
+          "members": [
+            {
+              "name": "inner",
+              "type": {
+                "kind": "ref",
+                "ref": "Inner"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "Inner": {
+          "name": "Inner",
+          "members": [
+            {
+              "name": "optional",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "inner": {
+          "type": "object",
+          "properties": {
+            "optional": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["inner"]
+    }
+  }
+}

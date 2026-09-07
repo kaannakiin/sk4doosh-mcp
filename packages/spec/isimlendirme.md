@@ -1,6 +1,6 @@
 # Tool İsimlendirme
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET Core `ToolNameFactory` + TS `createToolNames`, iki çerçevenin keşif katmanı da aynı `naming/` korpusunu besliyor).
 
 Her SDK aynı endpoint kümesinden aynı isimleri üretmek zorundadır; [conformance](../conformance) `naming/` fixture'ları bu dökümanı sınar.
 

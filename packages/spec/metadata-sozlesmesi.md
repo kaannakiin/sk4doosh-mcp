@@ -1,6 +1,6 @@
 # Metadata Sözleşmesi
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET `ToolDefinitionFactory` + TS `createToolDefinition` aynı `metadata-extraction/` korpusunu geçiyor; `EndpointDescriptor` iki çerçevenin keşif katmanı tarafından üretiliyor).
 
 İki modeli tanımlar: SDK'nın framework'ünden çıkarmak zorunda olduğu **nötr endpoint modeli** (`EndpointDescriptor`) ve ondan üretilen **tool tanımı** (`ToolDefinition`). Makine-okur şemalar: [schemas/endpoint-descriptor.schema.json](schemas/endpoint-descriptor.schema.json), [schemas/tool-definition.schema.json](schemas/tool-definition.schema.json) — tek kaynak onlardır, bu döküman anlatır.
 
@@ -43,9 +43,18 @@ Dil kuralı: alan adları ve tool adları İngilizce; `description` içerikleri 
 
 `anonymous` framework'ün **gerçek** kuralıyla belirlenir: açık anonim işareti varsa, **veya** hiç deklaratif yetki verisi yok ve fallback policy tanımlı değilse endpoint anonimdir. Anonim endpoint'te `policies` boştur — anonim işareti deklaratif yetkiyi framework'te de kısa devre eder.
 
-Rol gereksinimleri `policies`'e `roles:<ad>[,<ad>]` biçiminde girer (C#: `[Authorize(Roles = "a, b")]` → `roles:a,b`; Nest: roles decorator'ı). Bunlar deklaratif ve değerlendirilebilirdir; görünürlük tarafı öneki tanır ([gorunurluk.md](gorunurluk.md)).
+Rol gereksinimleri `policies`'e `roles:<ad>[,<ad>]` biçiminde girer (C#: `[Authorize(Roles = "a, b")]` → `roles:a,b`). Bunlar deklaratif ve değerlendirilebilirdir; görünürlük tarafı öneki tanır ([gorunurluk.md](gorunurluk.md)). Bu biçimi doldurmak **çerçevenin deklaratif bir rol sözleşmesi taşımasını gerektirir**; taşımayan çerçevede `policies` boş kalır (aşağıya bkz).
 
-Kaynak eşlemesi: C#'ta `policies` framework'ün deklaratif yetki verisinden, `imperative` deklaratif olmayan yetki filtrelerinin/requirement'larının varlığından gelir; Nest'te guard'lar tanım gereği imperatiftir, deklaratif metadata (roles decorator'ları vb.) varsa `policies`'e düşer.
+Kaynak eşlemesi: C#'ta `policies` framework'ün deklaratif yetki verisinden, `imperative` deklaratif olmayan yetki filtrelerinin/requirement'larının varlığından gelir.
+
+NestJS'te durum asimetriktir ve bu asimetri normatiftir: `@nestjs/common` **hiçbir authorization
+sözleşmesi tanımlamaz**. Bağlı bir guard ne "kimlik gerekli" ne de "bu authorization"dır — bir
+throttler ya da tenant çözücü de olabilir. Dolayısıyla Nest'te guard varlığı yalnız
+`imperative: true` üretir, `policies` boş kalır ve `anonymous` `unknown` olur. Nest'te
+"roles decorator'ı" diye bir çerçeve sözleşmesi yoktur; Nest'in kendi dokümanındaki örnek
+`SetMetadata('roles', …)` bir **host konvansiyonudur** ve SDK host tipini adıyla okumaz. Deklaratif
+yetki beyan etmek isteyen Nest host'u bunu guard'ının üzerinde yapısal bir yolla bildirir
+([docs/kararlar/011-nestjs-gorunurluk-ve-probe.md](../../docs/kararlar/011-nestjs-gorunurluk-ve-probe.md)).
 
 İki alanın da boş kaldığı durum meşrudur ve tanımlıdır: auth'u tamamen custom middleware'de yaşayan backend'lerde statik olarak okunacak bir şey yoktur. Böyle bir endpoint görünürlük tarafında `unknown` olur — kayıp veri sessizce `allow`'a çevrilmez ([gorunurluk.md](gorunurluk.md) kural 4).
 

@@ -90,6 +90,7 @@ packages/conformance/
 ├── naming/*.json
 ├── metadata-extraction/*.json
 ├── schema-simplification/*.json
+├── card/*.json
 ├── search/*.json
 └── error-mapping/*.json
 ```

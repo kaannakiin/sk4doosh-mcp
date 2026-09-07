@@ -1,0 +1,41 @@
+{
+  "kind": "schema-simplification",
+  "description": "Baglama katmani sekli okuyamadiginda sinir nesnesi yazilir: endpoint cagrilabilir kalir, bilinmeyen anahtar iletilir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Unreadable"
+      },
+      "types": {
+        "Unreadable": {
+          "name": "Unreadable",
+          "members": [
+            {
+              "name": "payload",
+              "type": {
+                "kind": "unknown",
+                "reason": "no decorator metadata on this member"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "payload": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "diagnostics": ["unreadable_shape"]
+  }
+}

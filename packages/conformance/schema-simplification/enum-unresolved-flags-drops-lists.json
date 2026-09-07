@@ -1,0 +1,51 @@
+{
+  "kind": "schema-simplification",
+  "description": "Okunamayan ve birlestirilebilir enum: anyOf iki bicimi tasir ama iki enum listesi de dusuer",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Holder"
+      },
+      "types": {
+        "Holder": {
+          "name": "Holder",
+          "members": [
+            {
+              "name": "value",
+              "type": {
+                "kind": "enum",
+                "enumFacts": {
+                  "wireForm": "unresolved",
+                  "combinable": true,
+                  "names": ["None", "Web"],
+                  "numbers": [0, 1]
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

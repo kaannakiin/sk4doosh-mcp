@@ -11,6 +11,7 @@ import {
   type OuterRequest,
   type SyntheticHeaders,
 } from "./options.js";
+import { markSyntheticRequest, wasShortCircuited } from "./markers.js";
 import { createSyntheticContext } from "./synthetic-context.js";
 
 export interface DispatchResult {
@@ -18,6 +19,10 @@ export interface DispatchResult {
   readonly body: string;
   readonly contentType?: string;
   readonly headers: Readonly<Record<string, string>>;
+}
+
+export interface ProbeResult extends DispatchResult {
+  readonly shortCircuited: boolean;
 }
 
 type PipelineFunction = (req: unknown, res: unknown) => void;
@@ -56,6 +61,24 @@ export class SkMcpDispatcher {
       composed = compose(target, second);
     }
 
+    return this.run(method, composed, outer, false);
+  }
+
+  async probe(
+    method: string,
+    path: string,
+    outer?: OuterRequest,
+  ): Promise<ProbeResult> {
+    const result = await this.run(method.toUpperCase(), { pathAndQuery: path, headers: {} }, outer, true);
+    return result;
+  }
+
+  private async run(
+    method: string,
+    composed: ComposedRequest,
+    outer: OuterRequest | undefined,
+    probe: boolean,
+  ): Promise<ProbeResult> {
     const pipeline =
       this.adapterHost.httpAdapter?.getInstance<PipelineFunction>();
     if (!pipeline) {
@@ -109,7 +132,9 @@ export class SkMcpDispatcher {
       scheme,
       body,
     );
+    markSyntheticRequest(req, probe);
     pipeline(req, res);
-    return result;
+    const dispatched = await result;
+    return { ...dispatched, shortCircuited: wasShortCircuited(req) };
   }
 }

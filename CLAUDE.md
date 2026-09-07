@@ -45,3 +45,5 @@
 - example-agent-client: `node apps/example-agent-client/dist/main.js --scenario smoke|validation-retry|error-envelope`; `SKMCP_AUTH=oauth|token|bearer` (`bearer` reads `SKMCP_TOKEN`, for a real backend), `SKMCP_USER`, `SKMCP_BASE_URL`
 
 - Nest demo: located in `sdks/nestjs/samples/demo-api`; run with `node dist/main.js` (first run `pnpm turbo run build --filter=@sk-mcp/demo-nestjs`); same `/mcp` + `/auth/token` contract
+
+- Docs site: located in `apps/docs` (TanStack Start + Mantine + Tailwind); run with `pnpm --filter @sk-mcp/docs dev`, listens on `http://localhost:5180`; pages are markdown under `src/content/*.md`. This site is sk-mcp's public face, so its content and UI strings are written in **English** — the Turkish-prose rule applies to `docs/` and `packages/spec/`, not here. There is no i18n layer by design.

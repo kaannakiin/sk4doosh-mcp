@@ -1,0 +1,52 @@
+{
+  "kind": "schema-simplification",
+  "description": "Tel bicimi okunamayan host icin anyOf dogru ifadedir, kacamak degil",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Holder"
+      },
+      "types": {
+        "Holder": {
+          "name": "Holder",
+          "members": [
+            {
+              "name": "value",
+              "type": {
+                "kind": "enum",
+                "enumFacts": {
+                  "wireForm": "unresolved",
+                  "names": ["Tr", "De"],
+                  "numbers": [0, 1]
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["Tr", "De"]
+            },
+            {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

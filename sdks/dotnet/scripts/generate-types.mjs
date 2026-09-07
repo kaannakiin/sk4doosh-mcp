@@ -7,13 +7,17 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const schemasDir = path.resolve(here, "../../../packages/spec/schemas");
 const outDir = path.resolve(here, "../src/SkMcp.AspNetCore/Generated");
 const specVersion = JSON.parse(
-  readFileSync(path.resolve(here, "../../../packages/spec/package.json"), "utf8"),
+  readFileSync(
+    path.resolve(here, "../../../packages/spec/package.json"),
+    "utf8",
+  ),
 ).version;
 
 const sources = [
   "endpoint-descriptor.schema.json",
   "tool-definition.schema.json",
   "invoke-result.schema.json",
+  "type-shape.schema.json",
 ];
 
 const inlineTypes = { JsonSchemaObject: "JsonObject" };
@@ -93,6 +97,7 @@ function emitRecord(name, schema, currentFile) {
 }
 
 const emitted = new Map();
+const shapes = new Map();
 
 for (const [file, schema] of schemas) {
   const candidates = [
@@ -103,7 +108,21 @@ for (const [file, schema] of schemas) {
     ]),
   ];
   for (const [name, node] of candidates) {
-    if (inlineTypes[name] || emitted.has(name)) {
+    if (inlineTypes[name]) {
+      continue;
+    }
+    const shape = JSON.stringify(node);
+    if (shapes.has(name)) {
+      if (shapes.get(name) !== shape) {
+        throw new Error(
+          `Duplicate type name '${name}' with a different shape (second occurrence in ${file}). ` +
+            `The emitter would silently keep the first one. Rename one of them.`,
+        );
+      }
+      continue;
+    }
+    shapes.set(name, shape);
+    if (emitted.has(name)) {
       continue;
     }
     if (node.type === "string" && Array.isArray(node.enum)) {

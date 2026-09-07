@@ -1,6 +1,6 @@
 # Görünürlük
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET `VisibilityCombiner` + TS `evaluateVisibility` aynı `visibility/` korpusunu geçiyor; T0/T1/T2 iki çerçevede de uygulandı (platform farkları metinde adıyla yazılı)).
 
 `search_tools` sonuçlarının çağıranın yetkisine göre nasıl filtrelendiğini tanımlar. Makine-okur karşılığı: [schemas/fixture.schema.json](schemas/fixture.schema.json) `visibility` fixture türü; korpus [conformance/visibility/](../conformance/visibility/).
 
@@ -89,9 +89,9 @@ Koruma pekâlâ framework'ün dışında olabilir. Middleware endpoint metadata'
 
 `unknown` bu bilgisizliği dürüstçe temsil eder ve kararı probe'a devreder: sentetik istek gerçek pipeline'a girer, custom middleware'in 401'i **bayrak işaretlenmeden** görülür ve `deny` olarak okunur. Yani okunamayan koruma koşturularak ölçülür. Deklaratif yazan backend hiçbir maliyet ödemez; `[Authorize]` ve `[AllowAnonymous]` yazıldığı sürece cevap statiktir.
 
-Bilinçli sınır: probe'un kesme noktası olmayan endpoint'ler (yetki beyanı taşımayan minimal API / route handler) `unknown` kalır ve `authUncertain` ile gösterilir. Orada tek satırlık `[AllowAnonymous]` cevabı kesinleştirir — SDK'ya değil, framework'e yazılan bir satır.
+Bilinçli sınır, **platforma göre değişir**: probe'un kesme noktası olmayan endpoint'ler `unknown` kalır ve `authUncertain` ile gösterilir. ASP.NET Core'da bu, yetki beyanı taşımayan minimal API / route handler'lardır; orada tek satırlık `[AllowAnonymous]` cevabı kesinleştirir — SDK'ya değil, framework'e yazılan bir satır. NestJS'te böyle bir endpoint sınıfı **yoktur**: keşfedilen her endpoint bir controller route'udur ve SDK'nın kesme katmanı onların hepsi için kuruludur, dolayısıyla her endpoint probe edilebilir.
 
-Roller deklaratiftir ve değerlendirilebilir: framework'ün rol gereksinimi `auth.policies`'e `roles:<ad>[,<ad>]` biçiminde ad olarak yazılır; T1 bu öneki tanıyıp rol policy'si kurar. Nest'in roles decorator'ları aynı biçime düşer.
+Roller deklaratiftir ve değerlendirilebilir: framework'ün rol gereksinimi `auth.policies`'e `roles:<ad>[,<ad>]` biçiminde ad olarak yazılır; T1 bu öneki tanıyıp rol policy'si kurar. Bu yalnız **çerçevenin deklaratif bir rol sözleşmesi taşıdığı** platformlarda işler; taşımayan platformda (NestJS) `policies` boş kalır ve karar T2'ye devredilir ([metadata-sozlesmesi.md](metadata-sozlesmesi.md)).
 
 T1'de körlemesine değerlendirme yasaktır: kaynak gerektiren bir requirement'ı kaynaksız koşmak yanlış `deny` üretebilir. Yalnız framework'ün kendi tanıdığı, kaynaktan-bağımsız requirement türleri değerlendirilir; kalanı `unknown`'dır.
 
@@ -104,7 +104,15 @@ Probe, deklaratif katmanın `unknown` bıraktığı endpoint için framework'ün
 - **Maliyet politikası host'undur.** Probe'un ne kadar agresif koşacağı backend'e göre değişir: veritabanı yükü, rate limiter, kabul edilebilir arama gecikmesi her kurulumda farklıdır ([karar 003](../../docs/kararlar/003-istek-ustverisi.md) cetveli). SDK iki ayar sunar ve makul default'lar seçer: aday sayısı (`ProbeTopK`, sıralama sonrası ilk K) ve eşzamanlılık (`ProbeConcurrency`, 1 = sıralı). T2 verdict'i ayrıca çağıran başına önbelleklenir; anahtar türetimi, ad alanı, ömür/jitter ve geçersiz kılma artık ayrı bir belgede normatiftir: [onbellek.md](onbellek.md). `Identity.Project` dış istek dışında bir kaynaktan (saat, sayaç, veritabanı) değer türetiyorsa doğru kapı [onbellek.md](onbellek.md)'nin de işaret ettiği gibi `ICallerScopeResolver`'ı ezmektir, önbelleği kapatmak değil.
 - **Bayrak istek bağlamındadır, header değil** (C#: `HttpContext.Items`). Dış istek probe modunu açamaz. Host, audit/rate-limit/log middleware'ini bu bayrakla atlayabilir (C#: `IsSkMcpProbe()`). Probe'a özgü olmayan atlamalar için sentetik istek işareti kullanılır (C#: `IsSkMcpRequest()`, [karar 003](../../docs/kararlar/003-istek-ustverisi.md) M9) — o işaret invoke'da da taşınır.
 - **İki kesme noktası:** framework'ün authz middleware sonuç işleyicisi ve MVC resource filter'ı (tüm authorization filter'larından sonra, model binding'den önce). Sonuç işleyici **reddi** her endpoint için kaydeder; **başarıda** yalnız MVC action'ı olmayan endpoint'i (minimal API) keser — MVC action'ında `next`'e geçer ki imperatif authorization filter'ları koşsun ve verdict'i resource filter okusun. Aksi halde `[Authorize]` + imperatif filter taşıyan endpoint, filter hiç koşmadan `allow` sayılırdı. Kesilen probe başarı status'u + kesme işareti döner. Host'un kendi sonuç işleyicisi varsa değiştirilmez, sarılır.
-- **Uygunluk:** endpoint routing'de bilinmeli ve (MVC action olmalı) **veya** (deklaratif yetki verisi taşımalı **ve** metodu güvenli olmalı — GET/HEAD). Güvenli olmayan metot yalnız MVC backstop'u garanti iken probe edilir; başka hiçbir koşulda handler'ın koşma riski alınmaz.
+- **Uygunluk (çerçeve-nötr):** endpoint routing'de bilinmeli **ve** SDK'nın kesme katmanının o endpoint için kurulu olduğu **kanıtlanmış** olmalı — yani endpoint'in yürütmesi, SDK'nın kesme noktası kaydettiği, tüm yetkilendirmeden sonra ve handler'dan önce koşan bir aşamadan geçmeli. Kanıt yoksa probe yalnız endpoint deklaratif yetki verisi taşıyorsa **ve** metodu güvenliyse (GET/HEAD) yapılır.
+
+  **Garanti:** güvenli olmayan metodun handler'ı **hiçbir koşulda koşmaz**. Kanıtsız daldaki güvenli metodun handler'ı endpoint başına **en fazla bir kez** koşabilir: işaretsiz yanıt görüldüğü an probe o endpoint için kalıcı olarak kapanır (aşağıdaki "Karar"). Bu ikinci cümle bir gevşetme değil, iki implementasyonun da fiilen verdiği garantinin dürüst ifadesidir — endpoint'in yetki _beyan etmesi_ kesme katmanının pipeline'a _kurulduğunu_ kanıtlamaz.
+
+  | Platform     | Kesme katmanı kanıtlı                              | Yedek dal kullanılır mı                             |
+  | ------------ | -------------------------------------------------- | --------------------------------------------------- |
+  | ASP.NET Core | MVC action'lar (global resource filter)            | Evet — `[Authorize]` + GET/HEAD taşıyan minimal API |
+  | NestJS       | **her katalog girdisi** (hepsi controller route'u) | Hayır                                               |
+
 - **Karar:** `401`/`403` → `deny` — kesme işareti olsun olmasın: bir middleware yetki katmanından önce reddettiyse handler koşmamıştır (auth'u custom middleware'de yaşayan backend'lerin yolu). Kesme işareti + başarı → `allow`. Bunların dışında kalan her yanıt (özellikle işaretsiz 2xx) → `unknown`; o endpoint için probe kalıcı olarak kapanır ve uyarı loglanır — handler koşmuş olabilir, ikinci kez denenmez. İşaretsiz `404` route eşleşmedi demektir: yer tutucu değeri host beyan eder.
 - **Bütçe:** yalnız sıralama sonrası ve yalnız `unknown` kalanlara, ilk K adaya (default 25). Bütçe dışında kalanlar `unknown` politikasına göre işlenir. `total` deklaratif sayıdır; probe onu değiştirmez.
 - **İstek şekli:** path parametreleri route kısıtına göre yer tutucuyla doldurulur (sayısal → `1`, guid → boş guid, bool → `true`, tarih → `2000-01-01`, diğer → `probe`); host parametre adına göre değer beyan edebilir. Query ve body gönderilmez — kesme model binding'den öncedir, hiçbir formatter koşmaz.

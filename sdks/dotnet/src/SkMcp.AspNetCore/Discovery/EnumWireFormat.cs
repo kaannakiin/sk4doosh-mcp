@@ -1,70 +1,79 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Discovery;
 
 internal static class EnumWireFormat
 {
-    public static JsonObject Describe(Type enumType, JsonSerializerOptions serializer)
+    public static EnumFacts Describe(Type enumType, JsonSerializerOptions serializer)
     {
-        List<JsonNode?> tokens = [];
+        List<string> names = [];
+        List<int> numbers = [];
         bool strings = true;
+
         foreach (object value in Enum.GetValues(enumType))
         {
-            JsonNode? token = JsonSerializer.SerializeToNode(value, enumType, serializer);
-            if (token is not JsonValue candidate || !candidate.TryGetValue(out string? _))
+            JsonNodeToken token = Serialize(value, enumType, serializer);
+            if (token.Text is null)
             {
                 strings = false;
             }
-            tokens.Add(token);
+            names.Add(token.Text ?? value.ToString() ?? string.Empty);
+            numbers.Add(token.Number ?? Numeric(value));
         }
 
-        JsonObject schema = new() { ["type"] = strings ? "string" : "integer" };
-        if (enumType.GetCustomAttribute<FlagsAttribute>() is not null)
+        return new EnumFacts
         {
-            return schema;
-        }
-
-        JsonArray values = [];
-        foreach (JsonNode? token in tokens)
-        {
-            values.Add(token);
-        }
-        schema["enum"] = values;
-        return schema;
-    }
-
-    public static JsonObject Unresolved(Type enumType)
-    {
-        JsonArray names = [];
-        JsonArray numbers = [];
-        foreach (object value in Enum.GetValues(enumType))
-        {
-            names.Add(value.ToString());
-            numbers.Add(Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture));
-        }
-        if (enumType.GetCustomAttribute<FlagsAttribute>() is not null)
-        {
-            return new JsonObject
-            {
-                ["anyOf"] = new JsonArray(
-                    new JsonObject { ["type"] = "string" },
-                    new JsonObject { ["type"] = "integer" }),
-            };
-        }
-        return new JsonObject
-        {
-            ["anyOf"] = new JsonArray(
-                new JsonObject { ["type"] = "string", ["enum"] = names },
-                new JsonObject { ["type"] = "integer", ["enum"] = numbers }),
+            WireForm = strings ? EnumWireForm.String : EnumWireForm.Integer,
+            Combinable = enumType.GetCustomAttribute<FlagsAttribute>() is not null,
+            Names = names,
+            Numbers = numbers,
         };
     }
 
-    public static Func<Type, JsonObject> Cached(Func<Type, JsonObject> resolve)
+    public static EnumFacts Unresolved(Type enumType)
     {
-        ConcurrentDictionary<Type, JsonObject> cache = new();
-        return enumType => (JsonObject)cache.GetOrAdd(enumType, resolve).DeepClone();
+        List<string> names = [];
+        List<int> numbers = [];
+        foreach (object value in Enum.GetValues(enumType))
+        {
+            names.Add(value.ToString() ?? string.Empty);
+            numbers.Add(Numeric(value));
+        }
+        return new EnumFacts
+        {
+            WireForm = EnumWireForm.Unresolved,
+            Combinable = enumType.GetCustomAttribute<FlagsAttribute>() is not null,
+            Names = names,
+            Numbers = numbers,
+        };
     }
+
+    public static Func<Type, EnumFacts> Cached(Func<Type, EnumFacts> resolve)
+    {
+        ConcurrentDictionary<Type, EnumFacts> cache = new();
+        return enumType => cache.GetOrAdd(enumType, resolve);
+    }
+
+    private readonly record struct JsonNodeToken(string? Text, int? Number);
+
+    private static JsonNodeToken Serialize(
+        object value, Type enumType, JsonSerializerOptions serializer)
+    {
+        using JsonDocument document = JsonSerializer.SerializeToDocument(value, enumType, serializer);
+        JsonElement element = document.RootElement;
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => new JsonNodeToken(element.GetString(), null),
+            JsonValueKind.Number when element.TryGetInt32(out int number) =>
+                new JsonNodeToken(null, number),
+            _ => new JsonNodeToken(null, null),
+        };
+    }
+
+    private static int Numeric(object value) =>
+        Convert.ToInt32(value, CultureInfo.InvariantCulture);
 }

@@ -1,0 +1,139 @@
+{
+  "kind": "schema-simplification",
+  "description": "minSize/maxSize uretilen tipe gore catallanir: dizide minItems/maxItems, string'de minLength/maxLength; aralik yalniz sayisalda, desen yalniz string'de",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Bounded"
+      },
+      "types": {
+        "Bounded": {
+          "name": "Bounded",
+          "members": [
+            {
+              "name": "name",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "minSize": 2,
+                "maxSize": 8
+              }
+            },
+            {
+              "name": "tags",
+              "type": {
+                "kind": "array",
+                "items": {
+                  "kind": "scalar",
+                  "scalar": "string"
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "minSize": 1,
+                "maxSize": 5
+              }
+            },
+            {
+              "name": "quantity",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "minimum": 1,
+                "maximum": 100
+              }
+            },
+            {
+              "name": "code",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "pattern": "^[a-z]+$"
+              }
+            },
+            {
+              "name": "ignoredRange",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "minimum": 1,
+                "maximum": 9
+              }
+            },
+            {
+              "name": "ignoredPattern",
+              "type": {
+                "kind": "scalar",
+                "scalar": "integer"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "pattern": "^[0-9]+$"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 8
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z]+$"
+        },
+        "ignoredRange": {
+          "type": "string"
+        },
+        "ignoredPattern": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

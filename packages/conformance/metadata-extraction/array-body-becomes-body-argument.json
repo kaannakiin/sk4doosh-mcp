@@ -1,0 +1,48 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Nesne olmayan govde kokü endpointi dusurmez: sentetik 'body' argumani uretilir, required olur ve additionalProperties false kalir",
+  "input": {
+    "operationId": "ImportIds",
+    "method": "POST",
+    "route": "/import",
+    "description": "Kimlik listesini ice aktarir.",
+    "requestBody": {
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "import_ids",
+    "description": "Kimlik listesini ice aktarir.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": ["body"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

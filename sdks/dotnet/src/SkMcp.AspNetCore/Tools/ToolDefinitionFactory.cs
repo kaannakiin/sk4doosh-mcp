@@ -7,13 +7,14 @@ namespace SkMcp.AspNetCore.Tools;
 
 internal static class ToolDefinitionFactory
 {
-    public static ToolDefinition Create(EndpointDescriptor endpoint, bool strictArguments = true)
+    public static ToolDefinition Create(
+        EndpointDescriptor endpoint, bool strictArguments = true, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
         return new ToolDefinition
         {
-            Name = ToolNameFactory.Create(endpoint),
+            Name = name ?? ToolNameFactory.Create(endpoint),
             Description = string.IsNullOrWhiteSpace(endpoint.Description)
                 ? $"{endpoint.Method} {endpoint.Route}"
                 : endpoint.Description,
@@ -47,7 +48,19 @@ internal static class ToolDefinitionFactory
         }
 
         bool allowsAdditional = false;
-        if (endpoint.RequestBody is not null)
+        if (endpoint.RequestBody is not null
+            && RequestBodyShape.BodyRootOf(endpoint.RequestBody.Schema) is { } bodyRoot)
+        {
+            if (strictArguments && properties.ContainsKey(bodyRoot))
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.ArgumentCollision,
+                    $"Body root argument '{bodyRoot}' collides with a parameter name on {endpoint.Method} {endpoint.Route}; rename the parameter.");
+            }
+            properties[bodyRoot] = endpoint.RequestBody.Schema.DeepClone();
+            Require(bodyRoot);
+        }
+        else if (endpoint.RequestBody is not null)
         {
             JsonObject body = endpoint.RequestBody.Schema;
             allowsAdditional = RequestBodyShape.AllowsAdditional(body);
@@ -77,13 +90,59 @@ internal static class ToolDefinitionFactory
             }
         }
 
-        return new JsonObject
+        JsonObject result = new()
         {
             ["type"] = "object",
             ["properties"] = properties,
             ["required"] = required,
             ["additionalProperties"] = allowsAdditional,
         };
+        if (LiftDefs(properties, endpoint) is { } defs)
+        {
+            result["$defs"] = defs;
+        }
+        return result;
+    }
+
+    private static JsonObject? LiftDefs(JsonObject properties, EndpointDescriptor endpoint)
+    {
+        SortedDictionary<string, JsonNode> merged = new(StringComparer.Ordinal);
+        foreach ((string _, JsonNode? node) in properties)
+        {
+            if (node is not JsonObject owner || owner["$defs"] is not JsonObject own)
+            {
+                continue;
+            }
+            owner.Remove("$defs");
+            foreach ((string name, JsonNode? body) in own)
+            {
+                if (body is null)
+                {
+                    continue;
+                }
+                if (merged.TryGetValue(name, out JsonNode? existing))
+                {
+                    if (!JsonNode.DeepEquals(existing, body))
+                    {
+                        throw new SkMcpTemplateException(
+                            DiagnosticCodes.SchemaDefConflict,
+                            $"Two schemas on {endpoint.Method} {endpoint.Route} define '{name}' differently; the tool cannot be built.");
+                    }
+                    continue;
+                }
+                merged[name] = body.DeepClone();
+            }
+        }
+        if (merged.Count == 0)
+        {
+            return null;
+        }
+        JsonObject bag = [];
+        foreach ((string name, JsonNode body) in merged)
+        {
+            bag[name] = body;
+        }
+        return bag;
     }
 
     private static JsonNode Describe(JsonObject schema, string? description)

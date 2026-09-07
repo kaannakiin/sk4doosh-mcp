@@ -4,11 +4,7 @@
   "title": "EndpointDescriptor",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "method",
-    "route",
-    "auth"
-  ],
+  "required": ["method", "route", "auth"],
   "properties": {
     "operationId": {
       "type": "string",
@@ -30,14 +26,7 @@
     },
     "method": {
       "type": "string",
-      "enum": [
-        "GET",
-        "HEAD",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE"
-      ]
+      "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]
     },
     "route": {
       "type": "string",
@@ -79,12 +68,7 @@
       "title": "Parameter",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "in",
-        "required",
-        "schema"
-      ],
+      "required": ["name", "in", "required", "schema"],
       "properties": {
         "name": {
           "type": "string",
@@ -92,11 +76,7 @@
         },
         "in": {
           "type": "string",
-          "enum": [
-            "path",
-            "query",
-            "header"
-          ]
+          "enum": ["path", "query", "header"]
         },
         "required": {
           "type": "boolean"
@@ -113,9 +93,7 @@
       "title": "RequestBody",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "schema"
-      ],
+      "required": ["schema"],
       "properties": {
         "schema": {
           "$ref": "#/$defs/JsonSchemaObject"
@@ -142,11 +120,7 @@
       "title": "Auth",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "anonymous",
-        "policies",
-        "imperative"
-      ],
+      "required": ["anonymous", "policies", "imperative"],
       "properties": {
         "anonymous": {
           "$ref": "#/$defs/Anonymity"
@@ -165,11 +139,7 @@
     "Anonymity": {
       "title": "Anonymity",
       "type": "string",
-      "enum": [
-        "yes",
-        "no",
-        "unknown"
-      ],
+      "enum": ["yes", "no", "unknown"],
       "description": "yes: cerceve anonim isareti tasiyor. no: cerceve yetki beyani var. unknown: hicbir beyan yok, koruma cerceve disinda olabilir."
     },
     "JsonSchemaObject": {
@@ -241,6 +211,53 @@
               "$ref": "#/$defs/JsonSchemaObject"
             }
           ]
+        },
+        "contentEncoding": {
+          "type": "string"
+        },
+        "propertyNames": {
+          "$ref": "#/$defs/JsonSchemaObject"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "anyOf": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonSchemaObject"
+          }
+        },
+        "$ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "$defs": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonSchemaObject"
+          }
         }
       }
     }

@@ -14,8 +14,13 @@ public static class DiagnosticCodes
     public const string NameCollision = "name_collision";
     public const string NameDisambiguated = "name_disambiguated";
     public const string NamingPolicyUnresolved = "naming_policy_unresolved";
-    public const string NonObjectBody = "non_object_body";
+    public const string SchemaDefConflict = "schema_def_conflict";
+    public const string SchemaDefNameDisambiguated = "schema_def_name_disambiguated";
+    public const string SchemaDepthTruncated = "schema_depth_truncated";
+    public const string SyntheticBodyArgument = "synthetic_body_argument";
     public const string TemplateRejected = "template_rejected";
+    public const string UnreadableShape = "unreadable_shape";
+    public const string UnsupportedMethod = "unsupported_method";
     public const string UnsupportedBinding = "unsupported_binding";
     public const string UnsupportedDictionaryKey = "unsupported_dictionary_key";
 
@@ -26,7 +31,8 @@ public static class DiagnosticCodes
             [AmbiguousSelection] = CatalogSeverity.Fatal,
             [InvalidName] = CatalogSeverity.Fatal,
             [ArgumentCollision] = CatalogSeverity.EndpointDropped,
-            [NonObjectBody] = CatalogSeverity.EndpointDropped,
+            [SchemaDefConflict] = CatalogSeverity.EndpointDropped,
+            [UnsupportedMethod] = CatalogSeverity.EndpointDropped,
             [MultipleBodyBindings] = CatalogSeverity.EndpointDropped,
             [UnsupportedBinding] = CatalogSeverity.EndpointDropped,
             [MissingHttpMethod] = CatalogSeverity.EndpointDropped,

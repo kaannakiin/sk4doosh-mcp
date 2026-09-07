@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "Govde koku path parametresiyle birlikte calisir: parametre yol'a, kok argumani govdeye gider",
+  "input": {
+    "template": {
+      "method": "PUT",
+      "route": "/orders/{id}/tags",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "integer"
+        }
+      ],
+      "bodyRoot": "body"
+    },
+    "arguments": {
+      "id": 7,
+      "body": ["acil", "kirilgan"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders/7/tags",
+    "bodyJson": ["acil", "kirilgan"]
+  }
+}

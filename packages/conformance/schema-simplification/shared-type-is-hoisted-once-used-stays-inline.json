@@ -1,0 +1,134 @@
+{
+  "kind": "schema-simplification",
+  "description": "Birden fazla kullanilan tip $defs'e cikarilir ve $ref ile gosterilir; tek kez kullanilan tip satir ici kalir; uye aciklamasi $ref kardesi olarak yazilir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Customer"
+      },
+      "types": {
+        "Customer": {
+          "name": "Customer",
+          "members": [
+            {
+              "name": "billing",
+              "type": {
+                "kind": "ref",
+                "ref": "Address"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false,
+              "description": "Fatura adresi"
+            },
+            {
+              "name": "shipping",
+              "type": {
+                "kind": "ref",
+                "ref": "Address"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "preferences",
+              "type": {
+                "kind": "ref",
+                "ref": "Preferences"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "Address": {
+          "name": "Address",
+          "members": [
+            {
+              "name": "street",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": true,
+              "readOnly": false,
+              "constructorBound": false,
+              "constraints": {
+                "minSize": 3,
+                "maxSize": 80
+              }
+            },
+            {
+              "name": "city",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        },
+        "Preferences": {
+          "name": "Preferences",
+          "members": [
+            {
+              "name": "newsletter",
+              "type": {
+                "kind": "scalar",
+                "scalar": "boolean"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "billing": {
+          "$ref": "#/$defs/Address",
+          "description": "Fatura adresi"
+        },
+        "shipping": {
+          "$ref": "#/$defs/Address"
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "newsletter": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "required": ["billing"],
+      "$defs": {
+        "Address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 80
+            },
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": ["street"]
+        }
+      }
+    },
+    "defsOrder": ["Address"]
+  }
+}

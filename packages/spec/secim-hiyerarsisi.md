@@ -1,6 +1,6 @@
 # Seçim Hiyerarşisi
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET `SelectionResolver` + TS `isSelected`; `[McpTool]`/`[McpIgnore]` ve `@McpTool()`/`@McpIgnore()` aynı `selection/` korpusunu geçiyor).
 
 Hangi endpoint'lerin MCP yüzeyine açıldığını tanımlar. Makine-okur karşılığı: [schemas/fixture.schema.json](schemas/fixture.schema.json) `selection` fixture türü; korpus [conformance/selection/](../conformance/selection/).
 

@@ -3,7 +3,11 @@
   "extends": ["//"],
   "tasks": {
     "gen": {
-      "inputs": ["scripts/**", "$TURBO_ROOT$/packages/spec/schemas/**"],
+      "inputs": [
+        "scripts/**",
+        "$TURBO_ROOT$/packages/spec/schemas/**",
+        "$TURBO_ROOT$/packages/spec/package.json"
+      ],
       "outputs": ["src/SkMcp.AspNetCore/Generated/**"]
     },
     "build": {

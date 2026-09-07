@@ -4,12 +4,14 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   compose,
+  createCard,
   createRequestTemplate,
   createToolDefinition,
   createToolNames,
   evaluateVisibility,
   isSelected,
   mapInvokeResult,
+  simplifySchema,
   SkMcpArgumentError,
   SkMcpCatalogError,
   SkMcpTemplateError,
@@ -19,6 +21,7 @@ import {
   type Fixture,
   type ParameterBinding,
   type RequestTemplate,
+  type ToolDefinition,
 } from "../src/index.js";
 
 type FixtureOf<K extends Fixture["kind"]> = Extract<Fixture, { kind: K }>;
@@ -70,8 +73,12 @@ function templateFrom(
       kind: p.type,
       isArray: p.array === true,
     })),
-    bodyProperties: spec.body?.properties,
-    bodyAllowsAdditionalProperties: spec.body?.additionalProperties === true,
+    ...(spec.bodyRoot === undefined
+      ? {
+          bodyProperties: spec.body?.properties,
+          bodyAllowsAdditionalProperties: spec.body?.additionalProperties === true,
+        }
+      : { bodyRoot: spec.bodyRoot }),
   });
 }
 
@@ -237,6 +244,38 @@ describe("conformance: search", () => {
       expect(
         index.search(fixture.input.query, fixture.input.limit ?? 20),
       ).toEqual(fixture.expected.names);
+    });
+  }
+});
+
+describe("conformance: schema-simplification", () => {
+  for (const [file, fixture] of fixturesOf("schema-simplification")) {
+    it(file, () => {
+      const { schema, diagnostics } = simplifySchema(
+        fixture.input.shape,
+        fixture.input.options,
+      );
+      expect(schema).toEqual(fixture.expected.schema);
+      expect(diagnostics.map((entry) => entry.code)).toEqual(
+        fixture.expected.diagnostics ?? [],
+      );
+      if (fixture.expected.defsOrder !== undefined) {
+        expect(Object.keys(schema["$defs"] as object)).toEqual(
+          fixture.expected.defsOrder,
+        );
+      }
+    });
+  }
+});
+
+describe("conformance: card", () => {
+  for (const [file, fixture] of fixturesOf("card")) {
+    it(file, () => {
+      const card = createCard(
+        fixture.input.tool as ToolDefinition,
+        fixture.input.decision ?? "allow",
+      );
+      expect(card).toEqual(fixture.expected);
     });
   }
 });

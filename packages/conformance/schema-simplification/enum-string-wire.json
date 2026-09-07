@@ -1,0 +1,44 @@
+{
+  "kind": "schema-simplification",
+  "description": "Host adlari wire'a yaziyorsa sema string ve enum listesi wire adlaridir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Holder"
+      },
+      "types": {
+        "Holder": {
+          "name": "Holder",
+          "members": [
+            {
+              "name": "value",
+              "type": {
+                "kind": "enum",
+                "enumFacts": {
+                  "wireForm": "string",
+                  "names": ["tr", "de"],
+                  "numbers": [0, 1]
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "enum": ["tr", "de"]
+        }
+      }
+    }
+  }
+}

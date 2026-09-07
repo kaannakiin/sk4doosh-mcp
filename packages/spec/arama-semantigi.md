@@ -1,6 +1,6 @@
 # Arama Semantiği
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET `ToolIndex` + TS `search.ts`; kompakt kart `card/` korpusuyla, üç meta-tool iki çerçevede de tel biçimi aynı).
 
 Search-first keşfin üç meta-tool'unu ve `search_tools`'un sıralama kurallarını tanımlar. Makine-okur karşılığı: [schemas/fixture.schema.json](schemas/fixture.schema.json) `search` fixture türü; korpus [conformance/search/](../conformance/search/).
 
@@ -18,7 +18,7 @@ Search-first keşfin üç meta-tool'unu ve `search_tools`'un sıralama kurallar�
 
 - `search_tools`'ta boş sorgu **liste** demektir: tüm tool'lar ada göre ordinal sıralı, `limit`'e kadar. Ayrı bir `list` tool'u yoktur.
 - `load_tool` çıktısında `auth` **yoktur** — [gorunurluk.md](gorunurluk.md) değişmez 3: policy adları agent'a sızmaz. `load_tool` görünürlük filtresine tabidir: gizli tool için cevap var olmayan tool'un cevabıyla aynıdır.
-- `search_tools` ve `load_tool` çıktılarında `authUncertain: true`, kararın `unknown` olduğunu söyler; `total` çağıranın görebildiği tool sayısıdır.
+- `search_tools` ve `load_tool` çıktılarında `authUncertain: true`, kararın `unknown` olduğunu söyler; `total` deklaratif katmanın görünür saydığı tool sayısıdır (aşağıya bkz).
 - `invoke_tool` görünürlük filtresine bakmaz ([gorunurluk.md](gorunurluk.md) değişmez 1); yaptırım gerçek pipeline'dadır. Sonuç zarfı ve hata kodları (backend'in HTTP hataları, SDK-taraflı `unknown_tool`/`not_invocable` ve [arguman-eslemesi.md](arguman-eslemesi.md)'nin argüman kodları) [hata-eslemesi.md](hata-eslemesi.md)'de normatiftir.
 - Meta-tool'ların kendi açıklamaları İngilizcedir; SDK'nın dilidir, backend'in değil.
 
@@ -33,7 +33,12 @@ Search-first keşfin üç meta-tool'unu ve `search_tools`'un sıralama kurallar�
 ```
 
 - `description`: tool açıklaması; 160 karakteri aşıyorsa son boşlukta kesilir ve `…` eklenir. Kesme noktası bütçenin yarısından öndeyse kelime sınırı beklenmez.
-- `parameters`: `inputSchema.properties` bildirim sırasıyla, `ad: tip` biçiminde, `required` listesindekilere ` (required)` eklenir; `type` yoksa `any`. Virgül + boşlukla birleşir. Tam şema `load_tool`'dadır.
+- `parameters`: `inputSchema.properties`'ten `ad: tip` biçiminde, `required` listesindekilere ` (required)` eklenir; `type` yoksa (ya da tip birleşiminin null olmayan üyesi yoksa) `any`. Virgül + boşlukla birleşir. Tam şema `load_tool`'dadır.
+- Özet sırası: **tamsayı-benzeri property adları önce, sayısal artan; sonra kalanlar bildirim
+  sırasıyla.** Sıra kuralı normatiftir ve ECMAScript'in nesne anahtar sıralamasıyla aynıdır — JS'te
+  bir nesne kurulduğunda tamsayı-benzeri anahtarlar zaten başa alınır ve bildirim sırası geri
+  getirilemez, dolayısıyla kuralın kendisi bu sıra olmak zorundadır. Makine-okur karşılığı:
+  [schemas/fixture.schema.json](schemas/fixture.schema.json) `card` fixture türü.
 
 ## Tokenizasyon
 
@@ -87,4 +92,4 @@ Ağır bağımlılık yoktur; formül her dilde on satırdır ve fixture'larla b
 ## Bilinen sınırlar
 
 - Gövdeleme yalnız İngilizce çoğul `s`'dir; ekler önek eşleşmesiyle karşılanır, sözlük veya dil modeli yoktur. Açıklama dili backend'in dilidir; ağır gövdeleme SDK'ya dil bağımlılığı sokar.
-- `total` seçilmiş tool sayısıdır; görünürlük filtresi (adım 4) geldiğinde çağıranın görebildiği sayı olur.
+- `total` **deklaratif katmanın** görünür saydığı tool sayısıdır; T2 probe onu değiştirmez ([gorunurluk.md](gorunurluk.md) T2 "Bütçe"). Probe yalnız sıralama sonrası ilk K adaya koştuğu için probe-duyarlı bir `total` `limit`'e bağımlı ve yanıltıcı olurdu.

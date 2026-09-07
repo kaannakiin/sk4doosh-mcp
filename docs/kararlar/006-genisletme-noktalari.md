@@ -34,6 +34,13 @@ Delegate biçimli küçük hook'lar (mevcut stille aynı): `options.Errors.Recog
 
 ## Nest `ExtensionPoints`
 
+> 2026-09-07 ileri atıf: bu bölümün öngördüğü ekleme yapıldı. `visibilityEvaluator` ve
+> `probeEvaluator` Faz 6'da eklendi, liste altıya çıktı ve dotnet tablosuyla eşitlendi; gerekçe,
+> default'lar ve reddedilen alternatifler [karar 011](011-nestjs-gorunurluk-ve-probe.md)'de.
+> Aşağıdaki dört noktalı tablo Faz 4 sonundaki durumu kaydeder ve tarihsel olarak olduğu gibi
+> bırakılmıştır ([apps/docs/dokuman-kurallari.md](../../apps/docs/dokuman-kurallari.md) kural 7:
+> kabul edilmiş bir karar düzenlenmez).
+
 Faz 4 sonu itibarıyla dört nokta: `cache: SkMcpCache`, `callerScopeResolver: CallerScopeResolver`, `invokeResultMapper: InvokeResultMapper`, `sessionStore: SkMcpSessionStore`. Faz 6'da meta-tool'lar Nest'e geldiğinde `visibilityEvaluator`/`probeEvaluator` eklenir — dotnet tablosuyla eşitlenir.
 
 ```ts

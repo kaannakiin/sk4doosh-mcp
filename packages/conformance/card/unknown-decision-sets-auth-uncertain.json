@@ -1,0 +1,33 @@
+{
+  "kind": "card",
+  "description": "Karar unknown ise kart authUncertain tasir; allow ve deny'de alan hic yazilmaz",
+  "input": {
+    "tool": {
+      "name": "get_receipt",
+      "description": "Fisi dondurur.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    },
+    "decision": "unknown"
+  },
+  "expected": {
+    "name": "get_receipt",
+    "description": "Fisi dondurur.",
+    "parameters": "id: integer (required)",
+    "authUncertain": true
+  }
+}

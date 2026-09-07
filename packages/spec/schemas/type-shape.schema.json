@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "type-shape.schema.json",
+  "title": "TypeShape",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["root", "types"],
+  "properties": {
+    "root": {
+      "$ref": "#/$defs/TypeNode"
+    },
+    "types": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_.+`\\[\\],-]*$": {
+          "$ref": "#/$defs/ObjectType"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "TypeNode": {
+      "title": "TypeNode",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/TypeKind"
+        },
+        "scalar": {
+          "$ref": "#/$defs/ScalarKind"
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "items": {
+          "$ref": "#/$defs/TypeNode"
+        },
+        "values": {
+          "$ref": "#/$defs/TypeNode"
+        },
+        "keys": {
+          "$ref": "#/$defs/MapKey"
+        },
+        "enumFacts": {
+          "$ref": "#/$defs/EnumFacts"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema": {
+          "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "TypeKind": {
+      "title": "TypeKind",
+      "type": "string",
+      "enum": [
+        "scalar",
+        "binary",
+        "enum",
+        "map",
+        "array",
+        "ref",
+        "verbatim",
+        "unknown"
+      ]
+    },
+    "ScalarKind": {
+      "title": "ScalarKind",
+      "type": "string",
+      "enum": ["string", "boolean", "integer", "number"]
+    },
+    "MapKey": {
+      "title": "MapKey",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["writable"],
+      "properties": {
+        "writable": {
+          "type": "boolean"
+        },
+        "scalar": {
+          "$ref": "#/$defs/ScalarKind"
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "EnumFacts": {
+      "title": "EnumFacts",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wireForm", "names", "numbers"],
+      "properties": {
+        "wireForm": {
+          "$ref": "#/$defs/EnumWireForm"
+        },
+        "combinable": {
+          "type": "boolean"
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "numbers": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "EnumWireForm": {
+      "title": "EnumWireForm",
+      "type": "string",
+      "enum": ["string", "integer", "unresolved"]
+    },
+    "ObjectType": {
+      "title": "ObjectType",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "members"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "wrapper": {
+          "type": "boolean"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Member"
+          }
+        }
+      }
+    },
+    "Member": {
+      "title": "Member",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required", "readOnly", "constructorBound"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/TypeNode"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "constructorBound": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "constraints": {
+          "$ref": "#/$defs/Constraints"
+        }
+      }
+    },
+    "Constraints": {
+      "title": "Constraints",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minSize": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxSize": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

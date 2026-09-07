@@ -1,0 +1,44 @@
+{
+  "kind": "schema-simplification",
+  "description": "Birlestirilebilir enum'da enum listesi yazilmaz: yasal her bit kombinasyonu reddedilirdi",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Holder"
+      },
+      "types": {
+        "Holder": {
+          "name": "Holder",
+          "members": [
+            {
+              "name": "value",
+              "type": {
+                "kind": "enum",
+                "enumFacts": {
+                  "wireForm": "integer",
+                  "combinable": true,
+                  "names": ["None", "Web", "Mobile"],
+                  "numbers": [0, 1, 2]
+                }
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

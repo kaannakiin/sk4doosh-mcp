@@ -1,11 +1,13 @@
 export type SkMcpTemplateErrorCode =
   | "empty_route"
   | "body_not_allowed"
+  | "conflicting_body_modes"
   | "duplicate_argument"
   | "identity_carrier_argument"
   | "path_parameter_array"
   | "argument_collision"
-  | "route_placeholder_mismatch";
+  | "route_placeholder_mismatch"
+  | "schema_def_conflict";
 
 export class SkMcpTemplateError extends Error {
   constructor(

@@ -1,6 +1,10 @@
 # Faz 6 — NestJS SDK (Drift Kanıtı)
 
-> Durum 2026-08-28: request katmanı çekirdeği (dispatch, kimlik taşıyıcıları, argüman eşlemesi, üstveri, demo + MCP uçtan uca) öne çekilip yazıldı — [karar 004](../../kararlar/004-nestjs-dogrulamasi.md). Bu fazın kalanı: endpoint keşfi/metadata hasadı, `@McpTool()` decorator'ı, arama.
+> Durum 2026-09-07: **tamamlandı** — [notlar.md](notlar.md). Request katmanı çekirdeği 2026-08-28'de
+> öne çekilmişti ([karar 004](../../kararlar/004-nestjs-dogrulamasi.md)); bu fazda keşif, seçim,
+> isimlendirme, katalog, şema bağlaması, arama, görünürlük (T0/T1/T2) ve üç meta-tool eklendi.
+> Korpus 103 → 140 fixture, 7 → 9 tür; spec `1.0.0`
+> ([karar 014](../../kararlar/014-spec-v1-0-ve-amendment-listesi.md)).
 
 ## Hedef
 

@@ -1,0 +1,28 @@
+{
+  "kind": "card",
+  "description": "Karar allow ise authUncertain alani hic yazilmaz",
+  "input": {
+    "tool": {
+      "name": "ping",
+      "description": "Saglik kontrolu.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    },
+    "decision": "allow"
+  },
+  "expected": {
+    "name": "ping",
+    "description": "Saglik kontrolu.",
+    "parameters": ""
+  }
+}

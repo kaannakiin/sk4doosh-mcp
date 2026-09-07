@@ -1,10 +1,13 @@
 import { SkMcpArgumentError } from "./errors.js";
 import type { ParameterBinding, RequestTemplate } from "./request-template.js";
 
+export type BodyValue =
+  Record<string, unknown> | readonly unknown[] | string | number | boolean;
+
 export interface ComposedRequest {
   readonly pathAndQuery: string;
   readonly headers: Readonly<Record<string, string>>;
-  readonly bodyJson?: Record<string, unknown>;
+  readonly bodyJson?: BodyValue;
 }
 
 export function compose(
@@ -82,9 +85,13 @@ export function compose(
     headers[p.name] = formatted;
   }
 
-  let bodyJson: Record<string, unknown> | undefined;
-  if (template.hasBody) {
-    bodyJson = {};
+  let bodyJson: BodyValue | undefined;
+  if (template.bodyRoot !== undefined) {
+    if (entries.has(template.bodyRoot)) {
+      bodyJson = entries.get(template.bodyRoot) as BodyValue;
+    }
+  } else if (template.hasBody) {
+    const fields: Record<string, unknown> = {};
     for (const [name, value] of entries) {
       const isParameter = template.parameters.some((x) => x.name === name);
       if (
@@ -92,9 +99,10 @@ export function compose(
         (template.bodyProperties.has(name) ||
           template.bodyAllowsAdditionalProperties)
       ) {
-        bodyJson[name] = value;
+        fields[name] = value;
       }
     }
+    bodyJson = fields;
   }
 
   const pathAndQuery = query.length > 0 ? `${path}?${query.join("&")}` : path;
@@ -131,6 +139,7 @@ function rejectUnknown(
     const known =
       template.parameters.some((p) => p.name === name) ||
       template.bodyProperties.has(name) ||
+      name === template.bodyRoot ||
       (template.hasBody && template.bodyAllowsAdditionalProperties);
     if (!known) {
       unknown.push(name);
@@ -140,6 +149,7 @@ function rejectUnknown(
     const allowed = [
       ...template.parameters.map((p) => p.name),
       ...template.bodyProperties,
+      ...(template.bodyRoot === undefined ? [] : [template.bodyRoot]),
     ].sort();
     throw new SkMcpArgumentError(
       "unknown_argument",

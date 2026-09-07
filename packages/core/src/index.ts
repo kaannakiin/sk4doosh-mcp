@@ -20,7 +20,7 @@ export type {
   RequestTemplateInput,
 } from "./request-template.js";
 export { compose } from "./request-composer.js";
-export type { ComposedRequest } from "./request-composer.js";
+export type { BodyValue, ComposedRequest } from "./request-composer.js";
 export {
   createToolName,
   createToolNames,
@@ -30,7 +30,11 @@ export {
 } from "./naming.js";
 export { combineMarkers, isSelected } from "./selection.js";
 export type { SelectionDefault, SelectionMarker } from "./selection.js";
-export { createToolDefinition } from "./tool-definition.js";
+export {
+  bodyRootArgument,
+  bodyRootOf,
+  createToolDefinition,
+} from "./tool-definition.js";
 export { assertUniqueArgumentNames } from "./argument-names.js";
 export {
   allowsAdditional,
@@ -44,6 +48,34 @@ export type {
   ObjectSchema,
 } from "./json-schema.js";
 export type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
+export { simplifySchema } from "./schema-simplification.js";
+export type {
+  SchemaDiagnostic,
+  SchemaDiagnosticCode,
+  SchemaSimplificationOptions,
+  SimplifiedSchema,
+} from "./schema-simplification.js";
+export type {
+  Constraints,
+  EnumFacts,
+  EnumWireForm,
+  MapKey,
+  Member,
+  ObjectType,
+  ScalarKind,
+  TypeKind,
+  TypeNode,
+  TypeShape,
+} from "./generated/type-shape.js";
+export {
+  cardDescriptionBudget,
+  createCard,
+  defaultSearchLimit,
+  maxSearchLimit,
+  summarizeParameters,
+  truncateDescription,
+} from "./card.js";
+export type { Card } from "./card.js";
 export { createRequestTemplateFromEndpoint, createTool } from "./tool.js";
 export type { Tool } from "./tool.js";
 export { ToolIndex, tokenize } from "./search.js";

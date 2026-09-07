@@ -200,7 +200,7 @@ public sealed class SchemaMapperTests
     }
 
     [Fact]
-    public void J8_DepthLimit_And_Cycle_ProduceOpaque()
+    public void J8a_DeepNesting_ExpandsFully()
     {
         JsonObject level = JsonSchemaMapper.Map(typeof(DeepFour));
         for (int step = 0; step < 3; step++)
@@ -208,13 +208,58 @@ public sealed class SchemaMapperTests
             Assert.NotNull(level["properties"]);
             level = (JsonObject)((JsonObject)level["properties"]!)["Level"]!;
         }
-        Assert.Equal("object", level["type"]!.GetValue<string>());
-        Assert.Null(level["properties"]);
+        JsonObject leaf = (JsonObject)((JsonObject)level["properties"]!)["Leaf"]!;
+        Assert.Equal("string", leaf["type"]!.GetValue<string>());
+    }
 
+    [Fact]
+    public void J8b_DepthBudget_TruncatesWhenDeclared()
+    {
+        List<CatalogDiagnostic> diagnostics = [];
+        JsonObject root = JsonSchemaMapper.Map(typeof(DeepFour), new SchemaMapperOptions
+        {
+            PropertyName = property => property.Name,
+            MaxDepth = 2,
+            Report = diagnostics.Add,
+        });
+        JsonObject first = (JsonObject)((JsonObject)root["properties"]!)["Level"]!;
+        JsonObject second = (JsonObject)((JsonObject)first["properties"]!)["Level"]!;
+        Assert.Equal("object", second["type"]!.GetValue<string>());
+        Assert.True(second["additionalProperties"]!.GetValue<bool>());
+        Assert.Contains(diagnostics, d => d.Code == "schema_depth_truncated");
+    }
+
+    [Fact]
+    public void J8c_Cycle_UsesDefsRef()
+    {
         JsonObject node = JsonSchemaMapper.Map(typeof(Node));
         JsonObject child = (JsonObject)((JsonObject)node["properties"]!)["Child"]!;
-        Assert.Equal("object", child["type"]!.GetValue<string>());
-        Assert.Null(child["properties"]);
+        Assert.Equal("#/$defs/Node", child["$ref"]!.GetValue<string>());
+
+        JsonObject defs = (JsonObject)node["$defs"]!;
+        JsonObject declared = (JsonObject)defs["Node"]!;
+        Assert.Equal("string", ((JsonObject)((JsonObject)declared["properties"]!)["Name"]!)["type"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void J8d_SharedType_IsHoistedOnce()
+    {
+        JsonObject holder = JsonSchemaMapper.Map(typeof(SharedTypeDto));
+        JsonObject properties = (JsonObject)holder["properties"]!;
+        Assert.Equal("#/$defs/Address", ((JsonObject)properties["Billing"]!)["$ref"]!.GetValue<string>());
+        Assert.Equal("#/$defs/Address", ((JsonObject)properties["Shipping"]!)["$ref"]!.GetValue<string>());
+        Assert.NotNull(((JsonObject)properties["Preferences"]!)["properties"]);
+        Assert.Single((JsonObject)holder["$defs"]!);
+    }
+
+    [Fact]
+    public void J8e_ObjectTypedMember_IsOpaqueNotEmpty()
+    {
+        JsonObject holder = JsonSchemaMapper.Map(typeof(OpaqueValueDto));
+        JsonObject anything = (JsonObject)((JsonObject)holder["properties"]!)["Anything"]!;
+        Assert.Equal("object", anything["type"]!.GetValue<string>());
+        Assert.True(anything["additionalProperties"]!.GetValue<bool>());
+        Assert.Null(anything["properties"]);
     }
 
     [Fact]

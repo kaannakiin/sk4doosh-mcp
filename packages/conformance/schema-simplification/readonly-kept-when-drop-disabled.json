@@ -1,0 +1,57 @@
+{
+  "kind": "schema-simplification",
+  "description": "dropReadOnlyProperties kapaliysa denetim alanlari semada kalir",
+  "input": {
+    "shape": {
+      "root": {
+        "kind": "ref",
+        "ref": "Audit2"
+      },
+      "types": {
+        "Audit2": {
+          "name": "Audit2",
+          "members": [
+            {
+              "name": "name",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string"
+              },
+              "required": false,
+              "readOnly": false,
+              "constructorBound": false
+            },
+            {
+              "name": "creationDate",
+              "type": {
+                "kind": "scalar",
+                "scalar": "string",
+                "format": "date-time"
+              },
+              "required": false,
+              "readOnly": true,
+              "constructorBound": false
+            }
+          ]
+        }
+      }
+    },
+    "options": {
+      "dropReadOnlyProperties": false
+    }
+  },
+  "expected": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "creationDate": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

@@ -20,11 +20,14 @@ public sealed partial class RequestTemplate
     public bool HasBody { get; }
     public IReadOnlySet<string> BodyProperties { get; }
     public bool BodyAllowsAdditionalProperties { get; }
+    public string? BodyRoot { get; }
 
     private RequestTemplate(
         HttpMethod method, string routeTemplate, IReadOnlyList<ParameterBinding> parameters,
-        bool hasBody, IReadOnlySet<string> bodyProperties, bool bodyAllowsAdditionalProperties)
+        bool hasBody, IReadOnlySet<string> bodyProperties, bool bodyAllowsAdditionalProperties,
+        string? bodyRoot)
     {
+        BodyRoot = bodyRoot;
         Method = method;
         RouteTemplate = routeTemplate;
         Parameters = parameters;
@@ -38,11 +41,19 @@ public sealed partial class RequestTemplate
         string routeTemplate,
         IReadOnlyList<ParameterBinding>? parameters = null,
         IReadOnlyCollection<string>? bodyProperties = null,
-        bool bodyAllowsAdditionalProperties = false)
+        bool bodyAllowsAdditionalProperties = false,
+        string? bodyRoot = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(routeTemplate);
         parameters ??= [];
-        bool hasBody = bodyProperties is not null || bodyAllowsAdditionalProperties;
+        bool hasBody = bodyProperties is not null || bodyAllowsAdditionalProperties || bodyRoot is not null;
+
+        if (bodyRoot is not null && (bodyProperties is not null || bodyAllowsAdditionalProperties))
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.ConflictingBodyModes,
+                "A template cannot declare both a body root argument and body properties.");
+        }
 
         if (hasBody && (method == HttpMethod.Get || method == HttpMethod.Head))
         {
@@ -73,6 +84,13 @@ public sealed partial class RequestTemplate
                     SkMcpTemplateException.PathParameterArray,
                     $"Path parameter '{parameter.Name}' cannot be an array.");
             }
+        }
+
+        if (bodyRoot is not null && !names.Add(bodyRoot))
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.ArgumentCollision,
+                $"Body root argument '{bodyRoot}' collides with a parameter name; rename the parameter.");
         }
 
         HashSet<string> body = new(StringComparer.Ordinal);
@@ -114,7 +132,8 @@ public sealed partial class RequestTemplate
         }
 
         return new RequestTemplate(
-            method, normalizedRoute, parameters.ToArray(), hasBody, body, bodyAllowsAdditionalProperties);
+            method, normalizedRoute, parameters.ToArray(), hasBody, body,
+            bodyAllowsAdditionalProperties, bodyRoot);
     }
 
     [GeneratedRegex(@"\{([^}:?*]+)[^}]*\}")]

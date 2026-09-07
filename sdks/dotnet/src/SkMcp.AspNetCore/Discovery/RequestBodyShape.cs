@@ -13,7 +13,17 @@ internal static class RequestBodyShape
         _ => null,
     };
 
+    public const string BodyRootArgument = "body";
+
     public static bool IsObject(JsonObject schema) => TypeOf(schema["type"]) == "object";
+
+    public static string? BodyRootOf(JsonObject schema) =>
+        TypeOf(schema["type"]) switch
+        {
+            null => null,
+            "object" => null,
+            _ => BodyRootArgument,
+        };
 
     public static bool AllowsAdditional(JsonObject schema) => schema["additionalProperties"] switch
     {

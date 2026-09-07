@@ -1,6 +1,6 @@
 # Taşıma ve OAuth 2.1
 
-> Statü: **hipotez v0** — iki bağımsız doğrulaması (iki backend / iki framework) olmayan kural normatif değildir.
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET T1-T15 + Nest N1-N6 matrisleri, ve `apps/example-agent-client` her iki demoya karşı).
 
 Streamable HTTP taşımasının sk-mcp'ye özgü eklediklerini tanımlar: katalog değiştiğinde `tools/list_changed` bildirimi ve RFC 9728 Protected Resource Metadata (PRM) ile 401 dekorasyonu. Oturum yönetiminin, Origin/CORS/TLS'in ve yetkilendirmenin kendisinin (auth zorunlu mu) tasarımı **host'a** aittir — ASP.NET ve Express zaten birinci sınıf idiom sunar; sk-mcp bunları sarmaz, yalnız idiomu olmayan iki şeyi ekler. Gerekçe ve reddedilen alternatifler: [karar 008](../../docs/kararlar/008-tasima-ve-oauth.md).
 
