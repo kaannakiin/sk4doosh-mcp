@@ -31,7 +31,11 @@ describe("identity carriers", () => {
     for (const [headers, expected] of cases) {
       const http = await fetch(`${baseUrl}/orders/7`, { headers });
       expect(http.status).toBe(expected);
-      const dispatched = await dispatcher.dispatch("GET", "/orders/7", outer(headers));
+      const dispatched = await dispatcher.dispatch(
+        "GET",
+        "/orders/7",
+        outer(headers),
+      );
       expect(dispatched.status).toBe(expected);
     }
   });
@@ -49,14 +53,26 @@ describe("identity carriers", () => {
   });
 
   it("S3: a declared carrier is forwarded, name case-insensitive", async () => {
-    const { dispatcher } = await start((options) => options.identity.forward("X-CSRF-Token"));
-    const result = await dispatcher.dispatch("GET", "/echo-headers", outer({ "x-csrf-token": "csrf-1" }));
+    const { dispatcher } = await start((options) =>
+      options.identity.forward("X-CSRF-Token"),
+    );
+    const result = await dispatcher.dispatch(
+      "GET",
+      "/echo-headers",
+      outer({ "x-csrf-token": "csrf-1" }),
+    );
     expect(JSON.parse(result.body).csrf).toBe("csrf-1");
   });
 
   it("S4: cookies are headers and forwardable by declaration", async () => {
-    const { dispatcher } = await start((options) => options.identity.forward("Cookie"));
-    const result = await dispatcher.dispatch("GET", "/echo-headers", outer({ cookie: "session=abc" }));
+    const { dispatcher } = await start((options) =>
+      options.identity.forward("Cookie"),
+    );
+    const result = await dispatcher.dispatch(
+      "GET",
+      "/echo-headers",
+      outer({ cookie: "session=abc" }),
+    );
     expect(JSON.parse(result.body).cookie).toBe("session=abc");
   });
 
@@ -69,7 +85,11 @@ describe("identity carriers", () => {
         }
       }),
     );
-    const result = await dispatcher.dispatch("GET", "/me", outer({ "x-api-key": "trusted" }));
+    const result = await dispatcher.dispatch(
+      "GET",
+      "/me",
+      outer({ "x-api-key": "trusted" }),
+    );
     expect(result.status).toBe(200);
     expect(JSON.parse(result.body).sub).toBe("projected");
   });
@@ -99,7 +119,11 @@ describe("identity carriers", () => {
   it("S8: an expired token is rejected on every dispatch", async () => {
     const { dispatcher } = await start();
     const expired = mintToken("alice", ["orders.read"], -60);
-    const result = await dispatcher.dispatch("GET", "/me", outer(bearer(expired)));
+    const result = await dispatcher.dispatch(
+      "GET",
+      "/me",
+      outer(bearer(expired)),
+    );
     expect(result.status).toBe(401);
   });
 
@@ -109,7 +133,11 @@ describe("identity carriers", () => {
     const bob = bearer(mintToken("bob", []));
     const results = await Promise.all(
       Array.from({ length: 50 }, (_, i) =>
-        dispatcher.dispatch("GET", "/orders/7", outer(i % 2 === 0 ? alice : bob)),
+        dispatcher.dispatch(
+          "GET",
+          "/orders/7",
+          outer(i % 2 === 0 ? alice : bob),
+        ),
       ),
     );
     results.forEach((result, i) => {

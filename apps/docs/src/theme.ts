@@ -1,9 +1,9 @@
-import { createTheme } from '@mantine/core'
+import { createTheme } from "@mantine/core";
 
 export const theme = createTheme({
-  primaryColor: 'indigo',
-  defaultRadius: 'md',
+  primaryColor: "indigo",
+  defaultRadius: "md",
   headings: {
-    fontWeight: '650',
+    fontWeight: "650",
   },
-})
+});

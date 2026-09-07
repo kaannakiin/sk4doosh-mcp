@@ -16,10 +16,12 @@ zamanda doğru uzun vadeli çözümü de adlandırmıştı: sentetik tek argüma
 Nesne olmayan bir gövde kökü artık endpoint'i düşürmez:
 
 ```json
-{ "type": "object",
+{
+  "type": "object",
   "properties": { "body": { "type": "array", "items": { "type": "integer" } } },
   "required": ["body"],
-  "additionalProperties": false }
+  "additionalProperties": false
+}
 ```
 
 Çağrı anında `body` argümanının değeri **gövdenin tamamı** olarak gönderilir. Argüman gelmezse
@@ -50,7 +52,7 @@ hatası değil **yalan** olurdu. Bilinçli olarak `BodyValue` union'ına genişl
 ## Reddedilen alternatifler
 
 - **Düşürmeyi normatif pinlemek.** Alanı "tanımsız"dan çıkarırdı ama yeteneği geri getirmezdi.
-  Karar 009 düşürmeyi açıkça *ara* çözüm olarak adlandırmıştı; kalıcılaştırmak o cümleyi
+  Karar 009 düşürmeyi açıkça _ara_ çözüm olarak adlandırmıştı; kalıcılaştırmak o cümleyi
   yalanlardı.
 - **Argüman adını host'a beyan ettirmek** (`[McpTool(BodyArgument = "payload")]`). Bir düğme daha,
   test çarpanı daha, ve iki SDK'nın ayrışabileceği bir yer daha — karar 003 cetveline göre tek

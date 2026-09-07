@@ -7,7 +7,10 @@ import {
   type SkMcpArgumentErrorCode,
 } from "../src/index.js";
 
-function expectError(fn: () => unknown, code: SkMcpArgumentErrorCode): SkMcpArgumentError {
+function expectError(
+  fn: () => unknown,
+  code: SkMcpArgumentErrorCode,
+): SkMcpArgumentError {
   try {
     fn();
   } catch (error) {
@@ -36,11 +39,17 @@ describe("compose", () => {
 
   it("requires every path parameter", () => {
     expectError(() => compose(orderRoute, {}), "missing_path_parameter");
-    expectError(() => compose(orderRoute, { id: null }), "missing_path_parameter");
+    expectError(
+      () => compose(orderRoute, { id: null }),
+      "missing_path_parameter",
+    );
   });
 
   it("lists allowed names on unknown arguments", () => {
-    const error = expectError(() => compose(orderRoute, { id: 5, idd: 6 }), "unknown_argument");
+    const error = expectError(
+      () => compose(orderRoute, { id: 5, idd: 6 }),
+      "unknown_argument",
+    );
     expect(error.message).toContain("idd");
     expect(error.message).toContain("Allowed: id");
   });
@@ -51,7 +60,9 @@ describe("compose", () => {
       route: "/items",
       parameters: [{ name: "q", location: "query", kind: "string" }],
     });
-    expect(compose(template, { q: "a&admin=true" }).pathAndQuery).toBe("/items?q=a%26admin%3Dtrue");
+    expect(compose(template, { q: "a&admin=true" }).pathAndQuery).toBe(
+      "/items?q=a%26admin%3Dtrue",
+    );
   });
 
   it("rejects header values with control characters", () => {
@@ -60,23 +71,37 @@ describe("compose", () => {
       route: "/items",
       parameters: [{ name: "X-Data", location: "header", kind: "string" }],
     });
-    expectError(() => compose(template, { "X-Data": "a\r\nInjected: x" }), "header_injection");
-    expect(compose(template, { "X-Data": "clean" }).headers).toEqual({ "X-Data": "clean" });
+    expectError(
+      () => compose(template, { "X-Data": "a\r\nInjected: x" }),
+      "header_injection",
+    );
+    expect(compose(template, { "X-Data": "clean" }).headers).toEqual({
+      "X-Data": "clean",
+    });
   });
 
   it("rejects a scalar for an array parameter", () => {
     const template = createRequestTemplate({
       method: "GET",
       route: "/items",
-      parameters: [{ name: "tag", location: "query", kind: "string", isArray: true }],
+      parameters: [
+        { name: "tag", location: "query", kind: "string", isArray: true },
+      ],
     });
     expectError(() => compose(template, { tag: "a" }), "invalid_type");
   });
 
   it("gates integers to the safe range and accepts whole doubles", () => {
-    expect(compose(orderRoute, { id: 9007199254740991 }).pathAndQuery).toBe("/orders/9007199254740991");
-    expect(compose(orderRoute, { id: JSON.parse("1.0") }).pathAndQuery).toBe("/orders/1");
-    expectError(() => compose(orderRoute, { id: 9007199254740992 }), "invalid_path_type");
+    expect(compose(orderRoute, { id: 9007199254740991 }).pathAndQuery).toBe(
+      "/orders/9007199254740991",
+    );
+    expect(compose(orderRoute, { id: JSON.parse("1.0") }).pathAndQuery).toBe(
+      "/orders/1",
+    );
+    expectError(
+      () => compose(orderRoute, { id: 9007199254740992 }),
+      "invalid_path_type",
+    );
     expectError(() => compose(orderRoute, { id: 1.5 }), "invalid_path_type");
   });
 
@@ -86,7 +111,9 @@ describe("compose", () => {
       route: "/products",
       parameters: [{ name: "price", location: "query", kind: "number" }],
     });
-    expect(compose(template, { price: JSON.parse("1.50") }).pathAndQuery).toBe("/products?price=1.5");
+    expect(compose(template, { price: JSON.parse("1.50") }).pathAndQuery).toBe(
+      "/products?price=1.5",
+    );
   });
 
   it("flattens only unbound declared fields into the body", () => {
@@ -110,7 +137,9 @@ describe("compose", () => {
       route: "/orders",
       bodyAllowsAdditionalProperties: true,
     });
-    expect(compose(template, { anything: 1 }).bodyJson).toEqual({ anything: 1 });
+    expect(compose(template, { anything: 1 }).bodyJson).toEqual({
+      anything: 1,
+    });
   });
 
   it("treats undefined values as absent", () => {

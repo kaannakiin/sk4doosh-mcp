@@ -6,7 +6,11 @@ export type { CatalogEntry, CatalogSnapshot } from "./catalog.js";
 export { McpIgnore, McpTool } from "./decorators.js";
 export type { McpToolOptions } from "./decorators.js";
 export { isSkMcpProbe, isSkMcpRequest } from "./markers.js";
-export { registerSkMcpTools } from "./meta-tools.js";
+export {
+  currentOuterConnection,
+  type OuterConnection,
+} from "./outer-connection.js";
+export { catalogGenerationMetaKey, registerSkMcpTools } from "./meta-tools.js";
 export type { MetaToolDependencies } from "./meta-tools.js";
 export { discoverEndpoints } from "./discovery/endpoint-discovery.js";
 export type {
@@ -23,7 +27,10 @@ export type {
 } from "./discovery/diagnostics.js";
 export { DeclarativeVisibilityEvaluator } from "./visibility/evaluator.js";
 export type { VisibilityEvaluator } from "./visibility/evaluator.js";
-export { SkMcpProbeEvaluator, SkMcpProbeInterceptor } from "./visibility/probe.js";
+export {
+  SkMcpProbeEvaluator,
+  SkMcpProbeInterceptor,
+} from "./visibility/probe.js";
 export type { ProbeEvaluator } from "./visibility/probe.js";
 export { CallerVisibilityProvider } from "./visibility/provider.js";
 export type { DispatchResult, ProbeResult } from "./dispatcher.js";

@@ -1,11 +1,19 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { Badge, Button, Container, Group, Stack, Text, Title } from '@mantine/core'
-import { IconArrowRight } from '@tabler/icons-react'
-import { ColorSchemeToggle } from '../components/ColorSchemeToggle'
+import { Link, createFileRoute } from "@tanstack/react-router";
+import {
+  Badge,
+  Button,
+  Container,
+  Group,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import { IconArrowRight } from "@tabler/icons-react";
+import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: Landing,
-})
+});
 
 function Landing() {
   return (
@@ -24,8 +32,9 @@ function Landing() {
         </Title>
 
         <Text size="xl" c="dimmed" className="max-w-2xl">
-          An MCP layer that embeds into your existing backend. One normative spec, one SDK per
-          language. Exposing an endpoint to an agent no longer means writing another service.
+          An MCP layer that embeds into your existing backend. One normative
+          spec, one SDK per language. Exposing an endpoint to an agent no longer
+          means writing another service.
         </Text>
 
         <Group>
@@ -40,5 +49,5 @@ function Landing() {
         </Group>
       </Stack>
     </Container>
-  )
+  );
 }

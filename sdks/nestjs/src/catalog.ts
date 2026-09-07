@@ -148,9 +148,8 @@ export class SkMcpCatalog {
       }
     }
 
-    const operations = deduplicateOperations(
-      chosen,
-      (endpoint) => this.declared(endpoint),
+    const operations = deduplicateOperations(chosen, (endpoint) =>
+      this.declared(endpoint),
     );
 
     let names: string[];
@@ -191,7 +190,9 @@ export class SkMcpCatalog {
         template = createRequestTemplateFromEndpoint(descriptor);
       } catch (error) {
         const code =
-          error instanceof SkMcpTemplateError ? error.code : "template_rejected";
+          error instanceof SkMcpTemplateError
+            ? error.code
+            : "template_rejected";
         report({ code, message: (error as Error).message });
         if (
           atLeast(severityOf(code, this.options.diagnostics), "endpointDropped")

@@ -101,17 +101,17 @@ ayrıca DemoApi'ye karşı canlı MCP oturumunda `load_tool` çıktısı okundu.
 
 ### Kapanan bulgular
 
-| Bulgu | Ölçüm |
-| ----- | ----- |
-| 1. Sözlükler dizi olarak tarif ediliyor | Kapandı. `Dictionary<string,string>` → `{"type":"object","additionalProperties":{"type":"string"}}`. `List<KeyValuePair<string,int>>` doğru şekilde **dizi** kalıyor (map ayrımı arayüz tabanlı). |
-| 4. Enum tel biçimi yanlış olabiliyor | Kapandı; Tablo 3'ün dört satırı da ölçüldü. Host `JsonSerializerOptions` default → `{"type":"integer","enum":[0,1]}`; `JsonStringEnumConverter(camelCase)` → `{"type":"string","enum":["tr","de"]}`; converter'sız string → `["Tr","De"]`; `[Flags]` → yalnız `type`, `enum` **yazılmıyor**; okunamayan host → `anyOf[string, integer]`. |
-| 5. Gövde alanları için `required` üretilmiyor | Kapandı. Canlı `load_tool add_order_note` → `"required":["id","text"]`; `text` gövde alanı ve `[Required]` taşıyor. Faz 4 notlarının ertelenenler listesindeki madde de böylece kapandı. |
-| Gövde alanı açıklamaları şemaya taşınmıyor | Kapandı. Canlı çıktıda `text` → `"description":"Not metni"`, `item` → `"Ürün adı"`, `quantity` → `"Adet"`. |
-| `additionalProperties: false` yazılmıyor | Kapandı ve **türetiliyor**. Canlı `create_order`/`add_order_note` köklerinde `"additionalProperties":false`; sözlük gövdede `true`. |
-| DataAnnotations kısıtları şemaya geçmiyor | Kapandı. Canlı `create_order` → `item` `minLength:1`, `quantity` `minimum:1,maximum:100`. Harness'ta ayrıca `maxLength`, `pattern`, `format:"email"`, ve dizide `minItems` (`minLength` **değil**) doğrulandı. |
-| 3. Gövde alanı / parametre çakışması | Karar 009 uyarınca `argument_collision` + endpoint düşürme olarak ele alındı. |
-| Üye sırası | Ölçüldü: taban tipin üyeleri önce, sonra türetilmişin; her tip içinde bildirim sırası. |
-| Salt-okunur üye düşmesi | Ölçüldü: get-only `DateTime`/`int` düşüyor; get-only koleksiyon ve sözlük kalıyor; constructor'a bağlı get-only üye kalıyor. `00-genel-bakis.md`'nin "server-computed/readonly alanlar düşürülür" vaadi **karşılanmış durumda**. |
+| Bulgu                                         | Ölçüm                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Sözlükler dizi olarak tarif ediliyor       | Kapandı. `Dictionary<string,string>` → `{"type":"object","additionalProperties":{"type":"string"}}`. `List<KeyValuePair<string,int>>` doğru şekilde **dizi** kalıyor (map ayrımı arayüz tabanlı).                                                                                                                                        |
+| 4. Enum tel biçimi yanlış olabiliyor          | Kapandı; Tablo 3'ün dört satırı da ölçüldü. Host `JsonSerializerOptions` default → `{"type":"integer","enum":[0,1]}`; `JsonStringEnumConverter(camelCase)` → `{"type":"string","enum":["tr","de"]}`; converter'sız string → `["Tr","De"]`; `[Flags]` → yalnız `type`, `enum` **yazılmıyor**; okunamayan host → `anyOf[string, integer]`. |
+| 5. Gövde alanları için `required` üretilmiyor | Kapandı. Canlı `load_tool add_order_note` → `"required":["id","text"]`; `text` gövde alanı ve `[Required]` taşıyor. Faz 4 notlarının ertelenenler listesindeki madde de böylece kapandı.                                                                                                                                                 |
+| Gövde alanı açıklamaları şemaya taşınmıyor    | Kapandı. Canlı çıktıda `text` → `"description":"Not metni"`, `item` → `"Ürün adı"`, `quantity` → `"Adet"`.                                                                                                                                                                                                                               |
+| `additionalProperties: false` yazılmıyor      | Kapandı ve **türetiliyor**. Canlı `create_order`/`add_order_note` köklerinde `"additionalProperties":false`; sözlük gövdede `true`.                                                                                                                                                                                                      |
+| DataAnnotations kısıtları şemaya geçmiyor     | Kapandı. Canlı `create_order` → `item` `minLength:1`, `quantity` `minimum:1,maximum:100`. Harness'ta ayrıca `maxLength`, `pattern`, `format:"email"`, ve dizide `minItems` (`minLength` **değil**) doğrulandı.                                                                                                                           |
+| 3. Gövde alanı / parametre çakışması          | Karar 009 uyarınca `argument_collision` + endpoint düşürme olarak ele alındı.                                                                                                                                                                                                                                                            |
+| Üye sırası                                    | Ölçüldü: taban tipin üyeleri önce, sonra türetilmişin; her tip içinde bildirim sırası.                                                                                                                                                                                                                                                   |
+| Salt-okunur üye düşmesi                       | Ölçüldü: get-only `DateTime`/`int` düşüyor; get-only koleksiyon ve sözlük kalıyor; constructor'a bağlı get-only üye kalıyor. `00-genel-bakis.md`'nin "server-computed/readonly alanlar düşürülür" vaadi **karşılanmış durumda**.                                                                                                         |
 
 ### Açık kalan, ölçülmüş kayıplar
 
@@ -127,7 +127,13 @@ inişten sonra:
 **Döngü aynı opak nesneye çöküyor.** `Node { Name, Node? Child }`:
 
 ```json
-{"type":"object","properties":{"Name":{"type":"string"},"Child":{"type":"object","additionalProperties":true}}}
+{
+  "type": "object",
+  "properties": {
+    "Name": { "type": "string" },
+    "Child": { "type": "object", "additionalProperties": true }
+  }
+}
 ```
 
 Karşılıklı döngüde (`MutualLeft` ↔ `MutualRight`) kesme noktasını **derinlik sınırı** belirliyor,
@@ -150,11 +156,16 @@ Bu ölçümde çıktı ve daha önce kayda geçmemişti. `object` tipli bir üye
 bulunmadığı için nesne dalına düşüyor ve **üyesi olmayan bir nesne** üretiyor:
 
 ```json
-{ "Anything": { "type": "object", "properties": {} },
-  "Bag":      { "type": "object", "additionalProperties": { "type": "object", "properties": {} } } }
+{
+  "Anything": { "type": "object", "properties": {} },
+  "Bag": {
+    "type": "object",
+    "additionalProperties": { "type": "object", "properties": {} }
+  }
+}
 ```
 
-`sema-donusum-kurallari.md:31`'e göre `properties: {}` *bildirilmiş boş nesne* demektir ve sınır
+`sema-donusum-kurallari.md:31`'e göre `properties: {}` _bildirilmiş boş nesne_ demektir ve sınır
 çıktısından (`additionalProperties: true`) ayırt edilebilir olması bilinçlidir. Sonucu:
 `allowsAdditional` `false` döner, `RequestComposer`'ın izin listesi kapanır ve o alana gönderilen
 her anahtar `unknown_argument` ile reddedilir. Yani `Dictionary<string, object>` ve `Hashtable`

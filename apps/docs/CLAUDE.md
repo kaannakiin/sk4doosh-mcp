@@ -44,8 +44,8 @@ is internal and stays Turkish. There is no i18n layer, by design.
 
 ```css
 @layer theme, base, components, mantine, utilities;
-@import 'tailwindcss' source('../');
-@import '@mantine/core/styles.layer.css';
+@import "tailwindcss" source("../");
+@import "@mantine/core/styles.layer.css";
 ```
 
 Tailwind preflight lives in `base`, ahead of `mantine`, so it cannot flatten Mantine component

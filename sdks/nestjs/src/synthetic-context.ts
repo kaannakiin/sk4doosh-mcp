@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
 import type { DispatchResult } from "./dispatcher.js";
+import type { OuterConnection } from "./outer-connection.js";
 
 export interface SyntheticContext {
   req: IncomingMessage;
@@ -21,17 +22,33 @@ function captureHeaders(res: ServerResponse): Record<string, string> {
   return headers;
 }
 
+function reflectConnection(
+  socket: Socket,
+  connection: OuterConnection | undefined,
+): void {
+  if (connection === undefined) {
+    return;
+  }
+  for (const [name, value] of Object.entries(connection)) {
+    if (value !== undefined) {
+      Object.defineProperty(socket, name, { value, configurable: true });
+    }
+  }
+}
+
 export function createSyntheticContext(
   method: string,
   url: string,
   headers: Record<string, string>,
   scheme: string,
   body?: Buffer,
+  connection?: OuterConnection,
 ): SyntheticContext {
   const socket = new Socket();
   if (scheme === "https") {
     Object.defineProperty(socket, "encrypted", { value: true });
   }
+  reflectConnection(socket, connection);
 
   const req = new IncomingMessage(socket);
   req.method = method;

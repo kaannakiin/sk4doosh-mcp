@@ -69,7 +69,7 @@ ederdi.
 
 İki tasarım turu bu noktada ayrıştı; şema tarafı doğru çıktı.
 
-Yönlendirici kısıt (faz-3 notları) *host'un kendi tipini adıyla okumayı* yasaklıyor — reddedilen
+Yönlendirici kısıt (faz-3 notları) _host'un kendi tipini adıyla okumayı_ yasaklıyor — reddedilen
 vaka bir host'un `RequirePermissionAttribute`'uydu. `class-validator` host'un tipi değildir: Nest'in
 kendi `ValidationPipe`'ının tükettiği ekosistem standardıdır ve
 `System.ComponentModel.DataAnnotations`'ın birebir yapısal karşılığıdır — ki `JsonSchemaMapper` onu
@@ -104,11 +104,11 @@ ekler.
 ## Yan bulgu: `object` tipli üye "hiçbir şey kabul etmiyor" diyordu
 
 Ölçümde çıktı. `object` tipli bir üye nesne dalına düşüp `{"type":"object","properties":{}}`
-üretiyordu — `sema-donusum-kurallari.md`'ye göre bu *bildirilmiş boş nesne* demektir ve
+üretiyordu — `sema-donusum-kurallari.md`'ye göre bu _bildirilmiş boş nesne_ demektir ve
 `allowsAdditional` `false` döner, yani `RequestComposer`'ın izin listesi kapanır. Sonuç:
 `Dictionary<string, object>` ve `Hashtable` değerleri "hiçbir şey kabul etmiyor" olarak tarif
 ediliyordu, oysa her şeyi kabul ediyorlar. Bağlama artık `object` için `unknown` düğümü üretiyor,
-yazıcı sınır nesnesi yazıyor. Değişiklik izin listesini *hiçbir şeyden* *her şeye* genişlettiği için
+yazıcı sınır nesnesi yazıyor. Değişiklik izin listesini _hiçbir şeyden_ _her şeye_ genişlettiği için
 kendi testiyle sabitlendi (`J8e`).
 
 ## Reddedilen alternatifler

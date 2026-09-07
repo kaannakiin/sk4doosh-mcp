@@ -13,7 +13,10 @@ afterEach(async () => {
   current = undefined;
 });
 
-async function meta(app: TestApp, outerRequest?: Parameters<TestApp["dispatcher"]["dispatch"]>[2]) {
+async function meta(
+  app: TestApp,
+  outerRequest?: Parameters<TestApp["dispatcher"]["dispatch"]>[2],
+) {
   const result = await app.dispatcher.dispatch("GET", "/meta", outerRequest);
   expect(result.status).toBe(200);
   return JSON.parse(result.body);
@@ -28,7 +31,11 @@ describe("synthetic metadata", () => {
     expect(parts.protocol).toBe("https");
     expect(parts.host).toBe("tenant-a.example.com");
 
-    const tenant = await app.dispatcher.dispatch("GET", "/tenant", outerRequest);
+    const tenant = await app.dispatcher.dispatch(
+      "GET",
+      "/tenant",
+      outerRequest,
+    );
     expect(JSON.parse(tenant.body).tenant).toBe("A");
   });
 
@@ -71,7 +78,8 @@ describe("synthetic metadata", () => {
 
   it("M6: trace correlation headers always travel", async () => {
     const app = await start();
-    const traceparent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+    const traceparent =
+      "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
     const parts = await meta(app, outer({ traceparent }));
     expect(parts.traceparent).toBe(traceparent);
   });

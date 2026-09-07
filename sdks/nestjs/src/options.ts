@@ -3,11 +3,13 @@ import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/p
 import type { Recognizer, SelectionDefault } from "@sk-mcp/core";
 import type { CatalogSeverity } from "./discovery/diagnostics.js";
 import type { TypeShapeBinderOptions } from "./discovery/type-shape.js";
+import type { OuterConnection } from "./outer-connection.js";
 import type { SkMcpTransportOptions } from "./transport/session-store.js";
 
 export interface OuterRequest {
   readonly headers: IncomingHttpHeaders;
   readonly protocol?: string;
+  readonly connection?: OuterConnection;
 }
 
 export type SyntheticHeaders = Record<string, string>;

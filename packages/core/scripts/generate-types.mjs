@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import $RefParser from "@apidevtools/json-schema-ref-parser";
 import { compile } from "json-schema-to-typescript";
+import { format, resolveConfig } from "prettier";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const schemasDir = path.resolve(here, "../../spec/schemas");
@@ -27,5 +28,9 @@ for (const file of schemas) {
   });
   const stripped = ts.replace(/^\s*\/\*\*[\s\S]*?\*\/\n/gm, "");
   const outFile = path.join(outDir, file.replace(".schema.json", ".ts"));
-  await writeFile(outFile, stripped);
+  const options = await resolveConfig(outFile);
+  await writeFile(
+    outFile,
+    await format(stripped, { ...options, filepath: outFile }),
+  );
 }

@@ -50,10 +50,9 @@ class OrdersProbeController {
 
 describe("nest endpoint discovery", () => {
   const diagnostics: string[] = [];
-  const found = discoverEndpoints(
-    [{ metatype: OrdersProbeController }],
-    { report: (d) => diagnostics.push(d.code) },
-  );
+  const found = discoverEndpoints([{ metatype: OrdersProbeController }], {
+    report: (d) => diagnostics.push(d.code),
+  });
   const byName = new Map(found.map((e) => [e.handlerName, e.descriptor]));
 
   it("reads routes, containers and operation ids", () => {
@@ -65,9 +64,7 @@ describe("nest endpoint discovery", () => {
   });
 
   it("derives path parameter types from pipes", () => {
-    const id = byName
-      .get("getOrder")
-      ?.parameters?.find((p) => p.name === "id");
+    const id = byName.get("getOrder")?.parameters?.find((p) => p.name === "id");
     expect(id).toEqual({
       name: "id",
       in: "path",

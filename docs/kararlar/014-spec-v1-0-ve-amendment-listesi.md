@@ -42,21 +42,34 @@ Faz 6'nın kuralı: Nest bir fixture'ı geçemiyorsa bu spec bug'ıdır; spec d�
 geriye uygulanır. Sekiz sapma işlendi. Üçü Nest'in ortaya çıkardığı **gerçek spec hatası**, ikisi
 implementasyon defekti, biri iki spec dokümanı arasındaki çelişki, ikisi kapsam genişletmesi.
 
-| # | Sapma | Sınıf | Sonuç |
-| - | ----- | ----- | ----- |
-| 1 | `PrefixMode.OnCollision` fiilen ölüydü | implementasyon defekti (iki dilde) | Çözülmüş ad artık **girdi**: `createToolDefinition(endpoint, name?)` / `ToolDefinitionFactory.Create(…, name)`. Katalog iddia ettiği adı geçirir. Host testi `C14`. |
-| 2 | İki spec dokümanı `total` hakkında çelişiyordu | spec çelişkisi | `gorunurluk.md` doğruydu (`total` deklaratiftir, probe onu değiştirmez); `arama-semantigi.md`'nin iki cümlesi düzeltildi. Kod değişmedi. |
-| 3 | Probe uygunluk kuralı ASP.NET aromalıydı | **spec hatası** | Çerçeve-nötr yeniden yazıldı: "kesme katmanının o endpoint için kurulu olduğu kanıtlanmış olmalı", artı platform başına tablo ve garantinin dürüst ifadesi. |
-| 4 | Katalog reload'u görünürlük epoch'unu artırmıyordu | implementasyon defekti | `ReloadAsync` artık değişiklik token'ını **temizlemeden önce** sinyalliyor; `CallerVisibilityProvider` token'a abone olup epoch'u artırıyor. `onbellek.md` sırayı normatif yazdı. |
-| 5 | Spec var olmayan bir Nest roles decorator'ı varsayıyordu | **spec hatası** | `metadata-sozlesmesi.md` ve `gorunurluk.md`'deki üç cümle düzeltildi; Nest'in auth asimetrisi normatif olarak yazıldı. Faz 6 planının "hangi kurallar farkında olmadan ASP.NET aromalı kalmış" sorusunun ilk cevabı. |
-| 6 | "Kesme noktası olmayan endpoint" sınırı ASP.NET'e özgüydü | **spec hatası** | Cümle çerçeveye göre kapsamlandı: Nest'te keşfedilen her endpoint bir controller route'u olduğu için kesme katmanı her zaman kurulu, yedek dal hiç kullanılmaz. |
-| 7 | Kart parametre sırası JS'te güvenli değildi | kapsam genişletmesi | Sıra kuralı normatif yazıldı (tamsayı-benzeri anahtarlar önce, sayısal artan; sonra bildirim sırası) ve 9. fixture türü `card` ile pinlendi. |
-| 8 | `validation-retry` senaryosu Nest'e karşı geçemiyordu | kapsam genişletmesi | `knownFields` verildiğinde mesajın baş token'ı kapalı kümeye karşı eşlenip `fields[].name` yazılıyor. C#'a geriye uygulandı. `hata-eslemesi.md` "Faz 6'da yeniden değerlendirilir" dediği yerde kapandı. |
+| #   | Sapma                                                     | Sınıf                              | Sonuç                                                                                                                                                                                                                |
+| --- | --------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `PrefixMode.OnCollision` fiilen ölüydü                    | implementasyon defekti (iki dilde) | Çözülmüş ad artık **girdi**: `createToolDefinition(endpoint, name?)` / `ToolDefinitionFactory.Create(…, name)`. Katalog iddia ettiği adı geçirir. Host testi `C14`.                                                  |
+| 2   | İki spec dokümanı `total` hakkında çelişiyordu            | spec çelişkisi                     | `gorunurluk.md` doğruydu (`total` deklaratiftir, probe onu değiştirmez); `arama-semantigi.md`'nin iki cümlesi düzeltildi. Kod değişmedi.                                                                             |
+| 3   | Probe uygunluk kuralı ASP.NET aromalıydı                  | **spec hatası**                    | Çerçeve-nötr yeniden yazıldı: "kesme katmanının o endpoint için kurulu olduğu kanıtlanmış olmalı", artı platform başına tablo ve garantinin dürüst ifadesi.                                                          |
+| 4   | Katalog reload'u görünürlük epoch'unu artırmıyordu        | implementasyon defekti             | `ReloadAsync` artık değişiklik token'ını **temizlemeden önce** sinyalliyor; `CallerVisibilityProvider` token'a abone olup epoch'u artırıyor. `onbellek.md` sırayı normatif yazdı.                                    |
+| 5   | Spec var olmayan bir Nest roles decorator'ı varsayıyordu  | **spec hatası**                    | `metadata-sozlesmesi.md` ve `gorunurluk.md`'deki üç cümle düzeltildi; Nest'in auth asimetrisi normatif olarak yazıldı. Faz 6 planının "hangi kurallar farkında olmadan ASP.NET aromalı kalmış" sorusunun ilk cevabı. |
+| 6   | "Kesme noktası olmayan endpoint" sınırı ASP.NET'e özgüydü | **spec hatası**                    | Cümle çerçeveye göre kapsamlandı: Nest'te keşfedilen her endpoint bir controller route'u olduğu için kesme katmanı her zaman kurulu, yedek dal hiç kullanılmaz.                                                      |
+| 7   | Kart parametre sırası JS'te güvenli değildi               | kapsam genişletmesi                | Sıra kuralı normatif yazıldı (tamsayı-benzeri anahtarlar önce, sayısal artan; sonra bildirim sırası) ve 9. fixture türü `card` ile pinlendi.                                                                         |
+| 8   | `validation-retry` senaryosu Nest'e karşı geçemiyordu     | kapsam genişletmesi                | `knownFields` verildiğinde mesajın baş token'ı kapalı kümeye karşı eşlenip `fields[].name` yazılıyor. C#'a geriye uygulandı. `hata-eslemesi.md` "Faz 6'da yeniden değerlendirilir" dediği yerde kapandı.             |
 
 Sessiz Nest istisnası yok: her sapma spec metnine ve — implementasyon defektlerinde — C# koduna
-işlendi. Nest'in **üretemediği** fixture'lar (`get-order-policy`, `ping-anonymous`,
-`me-authenticated`) sessizce atlanmadı; üretilemezliklerinin sebebi amendment 5'in kendisidir ve
-metinde yazılıdır.
+işlendi.
+
+`metadata-extraction` korpusunun 11 fixture'ının 7'si Nest'te bir host kurulup keşiften
+geçirilebiliyor ve ürettiği descriptor `createToolDefinition`'dan geçince fixture'ın beklediği
+tool'a eşitleniyor ([descriptor-round-trip.spec.ts](../../sdks/nestjs/test/descriptor-round-trip.spec.ts)).
+Kalan 4'ü **üretilemez** ve sebepleri ölçüldü — ikisi tek bir gerçeğe iniyor:
+
+- `get-order-policy`, `post-order-note-with-body`, `put-replace-order`: parametre ve gövde-üyesi
+  açıklamaları. Nest'te parametre açıklaması için metadata kaynağı yok; `@McpTool({description})`
+  yalnız operasyon açıklamasını verir.
+- `body-with-shared-type-lifts-defs`: şeması `$defs` taşıyan nesne tipli bir query parametresi.
+  Nest'te adlı `@Query('x')` skaler bağlar, tam `@Query()` nesnesi ise `unbound_query_object`
+  üretir — bu şekil bağlanamaz.
+
+Skip listesi testin içinde gerekçeleriyle yazılı ve test her fixture'ın ya üretildiğini ya listede
+olduğunu ayrıca doğruluyor, böylece yeni bir fixture sessizce atlanamıyor.
 
 ## Tag
 

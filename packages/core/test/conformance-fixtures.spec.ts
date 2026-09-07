@@ -76,7 +76,8 @@ function templateFrom(
     ...(spec.bodyRoot === undefined
       ? {
           bodyProperties: spec.body?.properties,
-          bodyAllowsAdditionalProperties: spec.body?.additionalProperties === true,
+          bodyAllowsAdditionalProperties:
+            spec.body?.additionalProperties === true,
         }
       : { bodyRoot: spec.bodyRoot }),
   });
@@ -174,9 +175,9 @@ describe("conformance: metadata-extraction", () => {
     it(file, () => {
       const expected = fixture.expected;
       if ("error" in expected) {
-        expect(templateErrorCode(() => createToolDefinition(fixture.input))).toBe(
-          expected.error,
-        );
+        expect(
+          templateErrorCode(() => createToolDefinition(fixture.input)),
+        ).toBe(expected.error);
         return;
       }
       expect(createToolDefinition(fixture.input)).toEqual(expected);

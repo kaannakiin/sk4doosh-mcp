@@ -115,7 +115,9 @@ describe("nest catalog", () => {
   });
 
   it("reads an undeclared guard as imperative with unknown anonymity", () => {
-    expect(catalog.find("catalog_orders_add_order_note")?.descriptor.auth).toEqual({
+    expect(
+      catalog.find("catalog_orders_add_order_note")?.descriptor.auth,
+    ).toEqual({
       anonymous: "unknown",
       policies: [],
       imperative: true,
@@ -132,7 +134,9 @@ describe("nest catalog", () => {
   });
 
   it("treats a guardless endpoint as unknown, not anonymous", () => {
-    expect(catalog.find("catalog_orders_ping")?.descriptor.auth.anonymous).toBe("unknown");
+    expect(catalog.find("catalog_orders_ping")?.descriptor.auth.anonymous).toBe(
+      "unknown",
+    );
   });
 
   it("builds an input schema and a request template", () => {

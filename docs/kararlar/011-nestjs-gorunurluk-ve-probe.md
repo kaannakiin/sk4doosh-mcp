@@ -24,7 +24,7 @@ Bu yüzden Nest'te:
 - Sonuç: beyan yoksa her Nest endpoint'i deklaratif katmanda `unknown` kalır ve **görünürlüğü T2
   probe taşır**.
 
-Bir throttler guard'ı bu kuralla *yanlış* `imperative: true` üretir. Bedeli bir probe, doğruluk
+Bir throttler guard'ı bu kuralla _yanlış_ `imperative: true` üretir. Bedeli bir probe, doğruluk
 değil: `unknown` dürüst değerdir ve probe doğru cevaplar. Belgelendi, düzeltilmedi.
 
 ## T2 probe: global interceptor kısa devresi
@@ -105,10 +105,10 @@ kendi tipine koyduğu opsiyonel bir metottur.
 
 Karar 006:37 ve :74 bu fazı önceden yetkilendirmişti. İki nokta eklendi:
 
-| Nokta | Default | Sorumluluk |
-| ----- | ------- | ---------- |
-| `visibilityEvaluator` | `DeclarativeVisibilityEvaluator` | T1: bir çağıran için `CallerFacts` |
-| `probeEvaluator` | `SkMcpProbeEvaluator` | T2: bir giriş için önbelleksiz verdict |
+| Nokta                 | Default                          | Sorumluluk                             |
+| --------------------- | -------------------------------- | -------------------------------------- |
+| `visibilityEvaluator` | `DeclarativeVisibilityEvaluator` | T1: bir çağıran için `CallerFacts`     |
+| `probeEvaluator`      | `SkMcpProbeEvaluator`            | T2: bir giriş için önbelleksiz verdict |
 
 Default `visibilityEvaluator` dürüsttür: `{ identity: "unknown" }` döner, çünkü Nest'te
 sorulabilecek bir framework authentication'ı yoktur. Kimliği ve policy sonuçlarını bilen host bu

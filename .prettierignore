@@ -1,0 +1,6 @@
+node_modules
+dist
+.turbo
+.agents
+apps/docs/src/routeTree.gen.ts
+sdks/dotnet

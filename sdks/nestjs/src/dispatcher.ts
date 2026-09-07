@@ -69,7 +69,12 @@ export class SkMcpDispatcher {
     path: string,
     outer?: OuterRequest,
   ): Promise<ProbeResult> {
-    const result = await this.run(method.toUpperCase(), { pathAndQuery: path, headers: {} }, outer, true);
+    const result = await this.run(
+      method.toUpperCase(),
+      { pathAndQuery: path, headers: {} },
+      outer,
+      true,
+    );
     return result;
   }
 
@@ -131,6 +136,7 @@ export class SkMcpDispatcher {
       headers,
       scheme,
       body,
+      outer?.connection,
     );
     markSyntheticRequest(req, probe);
     pipeline(req, res);

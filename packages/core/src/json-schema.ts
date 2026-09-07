@@ -29,7 +29,9 @@ export function isObjectSchema(schema: JsonSchemaObject): boolean {
   return typeOf(schema) === "object";
 }
 
-export function allowsAdditional(schema: JsonSchemaObject | undefined): boolean {
+export function allowsAdditional(
+  schema: JsonSchemaObject | undefined,
+): boolean {
   const additional = schema?.additionalProperties;
   if (typeof additional === "boolean") {
     return additional;

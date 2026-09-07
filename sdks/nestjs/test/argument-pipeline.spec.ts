@@ -20,7 +20,9 @@ describe("argument mapping through the pipeline", () => {
       route: "/files/{name}",
       parameters: [{ name: "name", location: "path", kind: "string" }],
     });
-    const result = await app.dispatcher.dispatch(template, { name: "5/../admin" });
+    const result = await app.dispatcher.dispatch(template, {
+      name: "5/../admin",
+    });
     expect(result.status).toBe(200);
     expect(JSON.parse(result.body).name).toBe("5/../admin");
     expect(hits.admin).toBe(0);
@@ -32,7 +34,9 @@ describe("argument mapping through the pipeline", () => {
       route: "/items",
       parameters: [{ name: "q", location: "query", kind: "string" }],
     });
-    const result = await app.dispatcher.dispatch(template, { q: "a&admin=true" });
+    const result = await app.dispatcher.dispatch(template, {
+      q: "a&admin=true",
+    });
     expect(JSON.parse(result.body)).toEqual({ q: "a&admin=true" });
   });
 
@@ -45,7 +49,9 @@ describe("argument mapping through the pipeline", () => {
     await expect(
       app.dispatcher.dispatch(template, { "X-Data": "x\r\nInjected: 1" }),
     ).rejects.toSatisfy(
-      (error) => error instanceof SkMcpArgumentError && error.code === "header_injection",
+      (error) =>
+        error instanceof SkMcpArgumentError &&
+        error.code === "header_injection",
     );
   });
 
@@ -53,7 +59,9 @@ describe("argument mapping through the pipeline", () => {
     const template = createRequestTemplate({
       method: "GET",
       route: "/items",
-      parameters: [{ name: "tag", location: "query", kind: "string", isArray: true }],
+      parameters: [
+        { name: "tag", location: "query", kind: "string", isArray: true },
+      ],
     });
     const result = await app.dispatcher.dispatch(template, { tag: ["a", "b"] });
     expect(JSON.parse(result.body)).toEqual({ tag: ["a", "b"] });
@@ -69,7 +77,11 @@ describe("argument mapping through the pipeline", () => {
       ],
       bodyProperties: ["text"],
     });
-    const result = await app.dispatcher.dispatch(template, { id: 5, notify: true, text: "geç kaldı" });
+    const result = await app.dispatcher.dispatch(template, {
+      id: 5,
+      notify: true,
+      text: "geç kaldı",
+    });
     expect(result.status).toBe(201);
     const echo = JSON.parse(result.body);
     expect(echo.id).toBe("5");

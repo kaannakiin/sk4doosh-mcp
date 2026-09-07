@@ -39,18 +39,18 @@ görünmüyordu); döngü opak nesneye çöküyordu; aynı tipi iki üyede kulla
 kez** yazıyordu; `ApiResponse<T>` soyulmuyordu.
 
 **Yeni bulgu (kayda geçmemişti):** `object` tipli üye `{"type":"object","properties":{}}` üretiyordu
-— yani *bildirilmiş boş nesne*. `allowsAdditional` `false` döndüğü için `RequestComposer`'ın izin
+— yani _bildirilmiş boş nesne_. `allowsAdditional` `false` döndüğü için `RequestComposer`'ın izin
 listesi kapanıyordu: `Dictionary<string, object>` ve `Hashtable` değerleri "hiçbir şey kabul
-etmiyor" olarak tarif ediliyordu, oysa her şeyi kabul ediyorlar. Düzeltme izin listesini *hiçbir
-şeyden* *her şeye* genişlettiği için kendi testiyle sabitlendi (`J8e`).
+etmiyor" olarak tarif ediliyordu, oysa her şeyi kabul ediyorlar. Düzeltme izin listesini _hiçbir
+şeyden_ _her şeye_ genişlettiği için kendi testiyle sabitlendi (`J8e`).
 
 **İki demo paritesi, dört kimlikle ölçüldü.** Aynı boş sorgu, aynı kullanıcılar:
 
-| Kimlik | dotnet | Nest |
-| ------ | ------ | ---- |
-| alice | add_order_note, create_order, **get_health**, get_order, orders_get_receipt, orders_me, orders_ping, orders_summary | aynı, `get_health` hariç |
-| bob | **get_health**, orders_get_receipt, orders_me, orders_ping, orders_summary | aynı, `get_health` hariç |
-| carol | **get_health**, orders_audit, orders_get_receipt, orders_me, orders_ping, orders_summary | aynı, `get_health` hariç |
+| Kimlik | dotnet                                                                                                              | Nest                     |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| alice  | add_order_note, create_order, **get_health**, get_order, orders_get_receipt, orders_me, orders_ping, orders_summary | aynı, `get_health` hariç |
+| bob    | **get_health**, orders_get_receipt, orders_me, orders_ping, orders_summary                                          | aynı, `get_health` hariç |
+| carol  | **get_health**, orders_audit, orders_get_receipt, orders_me, orders_ping, orders_summary                            | aynı, `get_health` hariç |
 
 Tek fark `get_health`: dotnet demo'sundaki minimal API endpoint'inin Nest karşılığı yok (amendment
 6). Rol filtresi iki tarafta da aynı çalışıyor — `orders_audit` yalnız carol'a görünüyor.
@@ -108,6 +108,84 @@ kümeye karşı eşlemek tahmin değil arama haline geldi.
 koşusunda bir kez düştü, yalıtımda 3/3 geçti. Benim değişikliklerimle ilgisi yok (cache ve
 single-flight'a dokunulmadı); kayda geçsin diye yazıldı, düzeltilmedi.
 
+## Kapanış turu (ilk raporda ertelenmiş olarak yazılan dört madde)
+
+**`listChanged` + jenerasyon damgası — birlikte kapandı.** `tasima.md` bildirimin dürüst olmasını
+`_meta["sk-mcp/catalogGeneration"]` damgasına dayandırıyor: üç meta-tool'un listesi hiç değişmediği
+için damga olmadan `tools/list` payload'u bayt-aynı kalır ve bildirim boş bir sinyale döner.
+`registerSkMcpTools` artık kayıtta damgalıyor, katalog değişikliğine abone oluyor, değişimde üç
+tool'u yeniden damgalayıp o oturuma **tek** bildirim atıyor. `RegisteredTool.update()` kullanılmadı:
+kendi bildirimini attığı için üç tool üç bildirim üretirdi. Abonelik sunucu kapanınca bırakılıyor.
+
+Bu maddenin ilk gerekçesi **yanlış ölçümdü** — "MCP TS SDK'sı `_meta` yüzeyi vermiyor" yazmıştım.
+`@modelcontextprotocol/sdk@1.30.0`'da `registerTool` config'i `_meta` alıyor
+(`mcp.d.ts:150-157`) ve `RegisteredTool.update({_meta})` var (`:311-320`). Çerçeve sınırı yoktu.
+Sonucu ciddiydi: `tasima.md`'nin damgası "iki implementasyonla doğrulandı" diye kaldırılmıştı, oysa
+dokümanın kendi normatif iki maddesi Nest'te karşılanmıyordu. Şimdi karşılanıyor; matris N1-N6'ya
+G1-G2 eklendi.
+
+**M8 aynası kapandı.** dotnet dış isteğin `RemoteIpAddress`/`RemotePort`/`Local*`'unu sentetik
+`HttpContext`'e kopyalıyor; Nest'te sentetik istek çıplak bir `Socket` üzerine kuruluyordu, yani
+`req.ip` boştu. Somut etki faz-3'te motokurye'de ölçülenin aynısı: IP'ye göre partition eden bir
+rate limiter tüm agent trafiğini tek kovaya atar.
+
+Mekanizma arayışı bir çerçeve sınırı buldu: MCP TS SDK'sının `RequestInfo`'su `{headers, url?}`
+(`types.d.ts:7953`), soket taşımıyor — yani tool handler'ından dış isteğe ulaşılamıyor. Çözüm
+`AsyncLocalStorage`: `SkMcpStreamableHttp.handle()` her MCP isteğini dış bağlantı bilgisiyle bir
+scope'a sarıyor, `outerFrom(extra)` onu `OuterRequest.connection`'a koyuyor, dispatcher sentetik
+sokete yansıtıyor. Bu, dotnet'in `IHttpContextAccessor`'ının yapısal ikizi — o da altında
+`AsyncLocalStorage`'ın .NET karşılığını kullanıyor, dolayısıyla simetri kurulmuş oldu, yeni bir
+kavram icat edilmedi. Karar 003'ün "uydurma yok" kuralı korundu: dış bağlantı yoksa alan boş kalır,
+loopback asla yazılmaz. Kanıt `G3`: `invoke_tool` ile çağrılan bir endpoint `req.ip`'i ve
+`req.socket.remoteAddress`'i geri yansıtıyor, ikisi de dış istemcinin loopback adresine eşit. Reddedilen alternatif: sunucu kurulurken `@Req()`'i yakalamak — stateful
+oturumda sunucu ilk istekte kurulup tekrar kullanıldığı için sonraki çağrılarda `initialize`
+isteğinin soketini gösterirdi.
+
+**Yarım B kuruldu, ve plandaki tasarımı yanlış çıktı.** Plan "her `metadata-extraction`
+fixture'ının `input`'unu üreten bir host kur, üretilen descriptor'ı `input`'a deep-equal karşılaştır"
+diyordu. Ölçüm bunun **hiçbir** fixture için mümkün olmadığını gösterdi: fixture'lar ASP.NET
+çıktısı olarak yazılmış — `operationId`'ler PascalCase, `container` alanı hiç yok, `tags` küçük
+harf, ve `responses` dolu; Nest keşfi ise `operationId` olarak handler adını, `container` olarak
+sınıf adını, `tags` olarak sınıf adının gövdesini yazıyor ve `responses` hiç üretmiyor.
+
+Bu alanların hiçbiri `createToolDefinition`'ın girdisi değil (o yalnız `parameters`,
+`requestBody.schema`, `description`, `method`, `route`, `auth` okuyor); tool **adını** etkiliyorlar,
+ve ad zaten `naming` korpusuyla ayrıca pinli. Bu yüzden test daha güçlü olan yönde kuruldu:
+Nest keşfi → descriptor → `createToolDefinition` → **fixture'ın beklediği tool'a eşit**, artı
+descriptor'ın `method`/`route`/`auth`/`parameters`/`requestBody` alanlarının fixture'ın `input`'una
+eşitliği. 11 fixture'ın 7'si geçiyor; kalan 4'ün üretilemezlik gerekçeleri
+[karar 014](../../kararlar/014-spec-v1-0-ve-amendment-listesi.md)'te ve testin skip listesinde
+yazılı. Test ayrıca her fixture'ın ya üretildiğini ya skip listesinde olduğunu doğruluyor — yeni bir
+fixture sessizce atlanamıyor.
+
+Nest'in üç auth şeklinin tamamına (`anonymous: yes|no`, dolu `policies`, `imperative: true`)
+`describeVisibility()` ile ulaşılabildiği bu turda ölçüldü; ilk raporda `get-order-policy`,
+`ping-anonymous` ve `me-authenticated` "üretilemez" diye yazılmıştı, yanlıştı — ikisi üretiliyor,
+`get-order-policy` ise auth yüzünden değil parametre açıklaması yüzünden üretilemiyor.
+
+## Biçimlendirme kapısı (kapanış turunda bulunan repo tuzağı)
+
+`pnpm turbo run gen` sonrası `packages/core/src/generated/*.ts` sürekli "değişmiş" görünüyordu.
+Sebep semantik değildi: generator çıktısını Prettier'dan geçirmiyordu, `pnpm format` ise geçiriyordu
+— yani `gen` ile `format` birbirinin çıktısını bozuyordu ve ne `lint` ne `validate` bunu yakalıyordu.
+Ölçüm daha büyük bir boşluk gösterdi: repo genelinde **43 dosya** Prettier'dan geçmemişti, çünkü
+`format` yalnız elle koşulan bir script'ti.
+
+Üç adımda kapatıldı:
+
+- `packages/core/scripts/generate-types.mjs` çıktısını `prettier.format` ile yazıyor
+  (`resolveConfig` üzerinden, ileride bir `.prettierrc` eklenirse onurlansın diye). `gen` artık
+  idempotent: iki kez koşup `--check`'ten geçiyor. C# tarafında karşılığı zaten vardı —
+  `dotnet format --verify-no-changes` `gen`'e bağlı ve `Generated/Spec.cs`'i kapsıyor.
+- `format:check` kapısı: root `turbo.json`'a `//#format:check` (cache'siz — biçim kapısının bayat
+  cache'ten yeşil dönmesi kabul edilemez), `pnpm lint` artık `turbo run lint validate format:check`,
+  ve CI'ın node job'ı aynı listeyi koşuyor. Kapsam `ts,tsx,md,mjs`; `.prettierignore` üçüncü parti
+  skill içeriğini, `dist`'i, `sdks/dotnet`'i ve TanStack'in ürettiği `routeTree.gen.ts`'i dışlıyor.
+- `pnpm format` bir kez koşuldu: 37 dosya biçimlendi (çoğu markdown tablo hizası ve test dosyası
+  satır sarma; semantik değişiklik yok, `check-types` ve `lint` yeşil).
+
+Kapı sayısı 23 → 24.
+
 ## Ertelenenler
 
 - **Fastify adapter.** Dispatcher `httpAdapter.getInstance()`'ın çağrılabilir olduğunu varsayıyor;
@@ -116,15 +194,5 @@ single-flight'a dokunulmadı); kayda geçsin diye yazıldı, düzeltilmedi.
   karşılıkları karar 012'de yazılı, ama tablolara taşınmadı. Doküman işi.
 - **`onbellek.md`'nin dağıtık depo garantileri** — hiçbir SDK'da uygulanmadı; damga bu yüzden
   kapsamlandı.
-- **Nest'te `listChanged` fan-out'unun katalog reload'una bağlanması.** `SkMcpCatalog.reload()`
-  dinleyicileri tetikliyor ve probe-disabled kümesini temizliyor, ama
-  `SkMcpStreamableHttp.notifyToolListChanged()` çağrısı demo/host tarafında bağlanmadı.
-- **Nest'te `_meta["sk-mcp/catalogGeneration"]` damgası** — MCP TS SDK'sının `registerTool`'u
-  `_meta` yüzeyi vermiyor; asimetri kayda geçti.
-- **`M8 aynası`** (dış soket bilgisinin sentetik isteğe yansıtılması). M9 kapandı, M8 kapanmadı.
-- **`metadata-extraction` descriptor round-trip testi** (yarım B). Nest keşfi
-  [discovery.spec.ts](../../../sdks/nestjs/test/discovery.spec.ts) ve
-  [catalog.spec.ts](../../../sdks/nestjs/test/catalog.spec.ts) ile doğrulandı, ama her fixture'ın
-  `input`'unu üreten bir host kurup deep-equal karşılaştırma yapılmadı.
 - **CI'da net8.0 ayağı ve TS test job'ı** — TS testleri CI'a eklendi, net8.0 tam suite koşusu
   yerelde yapıldı.

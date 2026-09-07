@@ -14,7 +14,11 @@ describe("createRequestTemplate", () => {
   it("rejects a body on GET and HEAD", () => {
     for (const method of ["GET", "HEAD"]) {
       expect(() =>
-        createRequestTemplate({ method, route: "/items", bodyProperties: ["text"] }),
+        createRequestTemplate({
+          method,
+          route: "/items",
+          bodyProperties: ["text"],
+        }),
       ).toThrow(SkMcpTemplateError);
     }
   });
@@ -49,7 +53,9 @@ describe("createRequestTemplate", () => {
       createRequestTemplate({
         method: "GET",
         route: "/items/{id}",
-        parameters: [{ name: "id", location: "path", kind: "string", isArray: true }],
+        parameters: [
+          { name: "id", location: "path", kind: "string", isArray: true },
+        ],
       }),
     ).toThrow("cannot be an array");
   });
@@ -76,8 +82,8 @@ describe("createRequestTemplate", () => {
   });
 
   it("rejects route placeholders without a declared path parameter", () => {
-    expect(() => createRequestTemplate({ method: "GET", route: "/items/{id}" })).toThrow(
-      "has no declared path parameter",
-    );
+    expect(() =>
+      createRequestTemplate({ method: "GET", route: "/items/{id}" }),
+    ).toThrow("has no declared path parameter");
   });
 });

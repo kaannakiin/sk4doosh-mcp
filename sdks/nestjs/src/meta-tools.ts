@@ -1,4 +1,7 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type {
+  McpServer,
+  RegisteredTool,
+} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   compose,
   createCard,
@@ -15,6 +18,7 @@ import type { CallerScopeResolver } from "./cache.js";
 import type { SkMcpDispatcher } from "./dispatcher.js";
 import type { InvokeResultMapper } from "./invoke-result-mapper.js";
 import type { OuterRequest, SkMcpOptions } from "./options.js";
+import { currentOuterConnection } from "./outer-connection.js";
 import type { CallerVisibilityProvider } from "./visibility/provider.js";
 
 export interface MetaToolDependencies {
@@ -29,6 +33,8 @@ export interface MetaToolDependencies {
 interface ToolExtra {
   readonly requestInfo?: { readonly headers?: Record<string, unknown> };
 }
+
+export const catalogGenerationMetaKey = "sk-mcp/catalogGeneration";
 
 const searchDescription =
   "Search the backend's API operations by keyword. Returns compact cards: name, short description and a parameter summary. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Call load_tool for the full input schema before invoke_tool.";
@@ -76,19 +82,29 @@ function textResult(
 
 function outerFrom(extra: unknown): OuterRequest | undefined {
   const headers = (extra as ToolExtra | undefined)?.requestInfo?.headers;
-  return headers === undefined
-    ? undefined
-    : { headers: headers as OuterRequest["headers"] };
+  if (headers === undefined) {
+    return undefined;
+  }
+  const connection = currentOuterConnection();
+  return {
+    headers: headers as OuterRequest["headers"],
+    ...(connection === undefined ? {} : { connection }),
+  };
 }
 
 export function registerSkMcpTools(
   server: McpServer,
   deps: MetaToolDependencies,
-): void {
-  server.registerTool(
+): () => void {
+  const generationMeta = (): Record<string, unknown> => ({
+    [catalogGenerationMetaKey]: deps.catalog.generation,
+  });
+
+  const search = server.registerTool(
     "search_tools",
     {
       description: searchDescription,
+      _meta: generationMeta(),
       inputSchema: {
         query: z
           .string()
@@ -170,10 +186,11 @@ export function registerSkMcpTools(
     },
   );
 
-  server.registerTool(
+  const load = server.registerTool(
     "load_tool",
     {
       description: loadDescription,
+      _meta: generationMeta(),
       inputSchema: {
         name: z
           .string()
@@ -217,10 +234,11 @@ export function registerSkMcpTools(
     },
   );
 
-  server.registerTool(
+  const invoke = server.registerTool(
     "invoke_tool",
     {
       description: invokeDescription,
+      _meta: generationMeta(),
       inputSchema: {
         name: z.string().describe("Operation name."),
         arguments: z
@@ -260,6 +278,22 @@ export function registerSkMcpTools(
       return textResult(outcome, isMappedError(outcome));
     },
   );
+
+  const stamped: readonly RegisteredTool[] = [search, load, invoke];
+  const release = deps.catalog.onChange(() => {
+    const meta = generationMeta();
+    for (const tool of stamped) {
+      tool._meta = meta;
+    }
+    server.sendToolListChanged();
+  });
+  const inner = server.server;
+  const previous = inner.onclose;
+  inner.onclose = () => {
+    release();
+    previous?.();
+  };
+  return release;
 }
 
 function knownFields(entry: CatalogEntry): string[] {

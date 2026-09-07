@@ -73,15 +73,15 @@ Spec yazımı boyunca eldeki gerçek C# server, repo içi DemoApi'ye ek ikinci g
 
 ## Fazlar
 
-| #   | Faz                                                                        | Tek cümle                                                                        |
-| --- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 1   | [Walking Skeleton](fazlar/faz-1-walking-skeleton/plan.md)                  | En riskli bahsi kanıtla: embedded dispatch auth'u korur                          |
-| 2   | [Spec Çıkarma v0](fazlar/faz-2-spec-cikarma/plan.md)                       | Slice'tan öğrenileni dil bağımsız spec + ilk fixture'lara genelle                |
-| 3   | [Şema Sadeleştirme + Search-First](fazlar/faz-3-sema-ve-arama/plan.md)     | Ürünün kendisi: dönüşüm pipeline'ı + auth-filtreli arama üçlüsü                  |
-| 4   | [Hata Eşleme, Cache, Transport](fazlar/faz-4-hata-cache-transport/plan.md) | Gerçek backend'e gömülebilirlik: actionable hatalar, per-caller cache, OAuth 2.1 |
-| 5   | [C# SDK Sertleştirme + Alpha](fazlar/faz-5-csharp-alpha/plan.md)           | NuGet paketi, quickstart, CI'da conformance gate, spec v1.0                      |
-| 6   | [NestJS SDK](fazlar/faz-6-nestjs-sdk/plan.md) ✅                            | Spec'in drift kanıtı: ikinci SDK aynı fixture'ları geçer — [notlar](fazlar/faz-6-nestjs-sdk/notlar.md) |
-| 7   | [Web UI](fazlar/faz-7-web-ui/plan.md)                                      | Placeholder                                                                      |
+| #   | Faz                                                                        | Tek cümle                                                                                              |
+| --- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1   | [Walking Skeleton](fazlar/faz-1-walking-skeleton/plan.md)                  | En riskli bahsi kanıtla: embedded dispatch auth'u korur                                                |
+| 2   | [Spec Çıkarma v0](fazlar/faz-2-spec-cikarma/plan.md)                       | Slice'tan öğrenileni dil bağımsız spec + ilk fixture'lara genelle                                      |
+| 3   | [Şema Sadeleştirme + Search-First](fazlar/faz-3-sema-ve-arama/plan.md)     | Ürünün kendisi: dönüşüm pipeline'ı + auth-filtreli arama üçlüsü                                        |
+| 4   | [Hata Eşleme, Cache, Transport](fazlar/faz-4-hata-cache-transport/plan.md) | Gerçek backend'e gömülebilirlik: actionable hatalar, per-caller cache, OAuth 2.1                       |
+| 5   | [C# SDK Sertleştirme + Alpha](fazlar/faz-5-csharp-alpha/plan.md)           | NuGet paketi, quickstart, CI'da conformance gate, spec v1.0                                            |
+| 6   | [NestJS SDK](fazlar/faz-6-nestjs-sdk/plan.md) ✅                           | Spec'in drift kanıtı: ikinci SDK aynı fixture'ları geçer — [notlar](fazlar/faz-6-nestjs-sdk/notlar.md) |
+| 7   | [Web UI](fazlar/faz-7-web-ui/plan.md)                                      | Placeholder                                                                                            |
 
 Faz 6 sonunda spec `1.0.0`'a çıktı ve "hipotez v0" damgası iki implementasyonla doğrulanan
 dokümanlardan kalktı; kalanların neden kaldığı

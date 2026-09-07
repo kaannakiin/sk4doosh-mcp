@@ -4,6 +4,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Request, Response } from "express";
 import { extensionTokens } from "../extension-points.js";
+import { connectionOf, runWithOuterConnection } from "../outer-connection.js";
 import { SK_MCP_OPTIONS, SkMcpOptions } from "../options.js";
 import type { SkMcpSessionStore } from "./session-store.js";
 
@@ -29,11 +30,13 @@ export class SkMcpStreamableHttp {
     res: Response,
     createServer: SkMcpServerFactory,
   ): Promise<void> {
-    if (this.options.transport.sessionMode === "stateless") {
-      await this.handleStateless(req, res, createServer);
-      return;
-    }
-    await this.handleStateful(req, res, createServer);
+    await runWithOuterConnection(connectionOf(req), async () => {
+      if (this.options.transport.sessionMode === "stateless") {
+        await this.handleStateless(req, res, createServer);
+        return;
+      }
+      await this.handleStateful(req, res, createServer);
+    });
   }
 
   notifyToolListChanged(): void {

@@ -1,6 +1,6 @@
 # Taşıma ve OAuth 2.1
 
-> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET T1-T15 + Nest N1-N6 matrisleri, ve `apps/example-agent-client` her iki demoya karşı).
+> Statü: **normatif** — iki bağımsız implementasyonla doğrulandı (ASP.NET T1-T15 + Nest N1-N6 ve G1-G2 matrisleri, ve `apps/example-agent-client` her iki demoya karşı).
 
 Streamable HTTP taşımasının sk-mcp'ye özgü eklediklerini tanımlar: katalog değiştiğinde `tools/list_changed` bildirimi ve RFC 9728 Protected Resource Metadata (PRM) ile 401 dekorasyonu. Oturum yönetiminin, Origin/CORS/TLS'in ve yetkilendirmenin kendisinin (auth zorunlu mu) tasarımı **host'a** aittir — ASP.NET ve Express zaten birinci sınıf idiom sunar; sk-mcp bunları sarmaz, yalnız idiomu olmayan iki şeyi ekler. Gerekçe ve reddedilen alternatifler: [karar 008](../../docs/kararlar/008-tasima-ve-oauth.md).
 
@@ -34,7 +34,7 @@ sk-mcp'nin üç meta-tool'u (`search_tools`, `load_tool`, `invoke_tool`) katalog
 
 **.NET mekanizması:** `McpServerOptions.ToolCollection.Changed` olayı SDK'nın kendi `SendListChangedNotificationAsync`'ini tetikler (pre-SEP-2575 broadcast + 2026-07-28 `subscriptions/listen` yönlendirmesi ikisini de kapsar). sk-mcp kendi oturum kayıt defterini kurmaz — SDK'nın tek slotlu `RunSessionHandler`/`ConfigureSessionOptions`'ını gasp etmek, SDK'nın zaten yaptığı fan-out'u yeniden yazmak olurdu. Tek `NotifyChanged()` çağrısı her modda her canlı oturuma ulaşır; stateless'ta dinleyen yoksa sessizce hiçbir şey olmaz.
 
-**Nest mekanizması:** `SkMcpStreamableHttp.notifyToolListChanged()`, `SkMcpSessionStore`'daki her oturumun `server.sendToolListChanged()`'ini çağırır (stateful modda anlamlıdır; stateless modda oturum yaşamadığı için etkisi yoktur).
+**Nest mekanizması:** `registerSkMcpTools` üç meta-tool'u kaydederken jenerasyonu `_meta`'ya damgalar ve katalog değişikliğine abone olur; değişiklikte üç tool'un `_meta`'sı yeniden damgalanıp **o oturuma tek** `listChanged` gönderilir. Damgalama `RegisteredTool.update()` ile değil doğrudan `_meta` ataması ile yapılır: `update()` her çağrıda kendi bildirimini attığı için üç tool üç bildirim üretirdi; kural oturum başına tek bildirimdir. Abonelik oturumun sunucusu kapanınca bırakılır. Host'un elle tetikleyebileceği yol ayrıca durur: `SkMcpStreamableHttp.notifyToolListChanged()` oturum defterindeki her oturumun `server.sendToolListChanged()`'ini çağırır (stateful modda anlamlıdır; stateless modda oturum yaşamadığı için etkisi yoktur).
 
 **Bilinen sınır (dokümante):** .NET tarafında host kendi `ConfigureSessionOptions`'ını kullanıp per-session bir tool koleksiyon klonu oluşturuyor ve bu klon sk-mcp'nin koleksiyon referansını paylaşmıyorsa fan-out o oturuma ulaşmaz. Çok instance'lı bir dağıtımda bildirim yalnız yerel process'teki oturumlara ulaşır — instance'lar arası fan-out sk-mcp'nin kapsamı dışıdır.
 

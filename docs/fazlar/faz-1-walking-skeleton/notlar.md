@@ -67,11 +67,11 @@ Branch: motokurye repo'sunda `sk-mcp/faz-1-dogrulama` (commit `84715c15`). Wirin
 
 Sonuçlar (token'sız ayaklar):
 
-| Senaryo | HTTP `GET /Rest/Presence/GetPortalPresence` | MCP |
-| --- | --- | --- |
-| token yok | 401 "Missing or invalid Authorization header" | `initialize` transport'ta aynı 401 |
-| bozuk token | 401 (IDX12723 decode hatası) | — |
-| geçerli token | bekliyor (gerçek kimlik gerekli) | bekliyor |
+| Senaryo       | HTTP `GET /Rest/Presence/GetPortalPresence`   | MCP                                |
+| ------------- | --------------------------------------------- | ---------------------------------- |
+| token yok     | 401 "Missing or invalid Authorization header" | `initialize` transport'ta aynı 401 |
+| bozuk token   | 401 (IDX12723 decode hatası)                  | —                                  |
+| geçerli token | bekliyor (gerçek kimlik gerekli)              | bekliyor                           |
 
 DemoApi'den farklı çıkan gerçek-dünya bulguları:
 

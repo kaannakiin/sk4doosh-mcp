@@ -9,7 +9,10 @@ export interface CallerFacts {
   readonly policyResults?: Readonly<Record<string, VisibilityDecision>>;
 }
 
-export function evaluateVisibility(auth: Auth, caller: CallerFacts): VisibilityDecision {
+export function evaluateVisibility(
+  auth: Auth,
+  caller: CallerFacts,
+): VisibilityDecision {
   if (auth.anonymous === "no" && caller.identity === "absent") {
     return "deny";
   }

@@ -54,7 +54,12 @@ describe("createToolDefinition", () => {
         createToolDefinition(
           endpoint({
             parameters: [
-              { name: "id", in: "path", required: true, schema: { type: "integer" } },
+              {
+                name: "id",
+                in: "path",
+                required: true,
+                schema: { type: "integer" },
+              },
             ],
             requestBody: {
               schema: {
@@ -85,7 +90,9 @@ describe("createToolDefinition", () => {
   });
 
   it("D5: the root writes type, properties, required and additionalProperties even when empty", () => {
-    const tool = createToolDefinition(endpoint({ method: "GET", route: "/ping" }));
+    const tool = createToolDefinition(
+      endpoint({ method: "GET", route: "/ping" }),
+    );
     expect(tool.inputSchema).toEqual({
       type: "object",
       properties: {},
@@ -131,7 +138,12 @@ describe("createTool", () => {
     const tool = createTool(
       endpoint({
         parameters: [
-          { name: "id", in: "path", required: true, schema: { type: "integer" } },
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+          },
         ],
         requestBody: {
           schema: {
@@ -157,7 +169,9 @@ describe("createTool", () => {
         schema: { type: "object", properties: { id: { type: "integer" } } },
       },
     });
-    expect(codeOf(() => createToolDefinition(colliding))).toBe("argument_collision");
+    expect(codeOf(() => createToolDefinition(colliding))).toBe(
+      "argument_collision",
+    );
     expect(codeOf(() => createTool(colliding))).toBe("argument_collision");
   });
 });
