@@ -22,6 +22,7 @@ export {
   columnToLetters,
   formatCellRef,
   formatRange,
+  formatRectangle,
   lettersToColumn,
   parseCellRef,
   resolveRange,
@@ -59,6 +60,18 @@ export type {
   Operator,
   PredicateOptions,
 } from "./predicate.js";
+export {
+  autoFilterRefOf,
+  collectTables,
+  declaredTablesOf,
+  tableCountOf,
+} from "./tables.js";
+export type {
+  DeclaredTable,
+  DeclaredTableDetail,
+  TableColumnDetail,
+  TableReport,
+} from "./tables.js";
 export { xlsxSheetView } from "./sheet.js";
 export type { RowView, SheetView } from "./sheet.js";
 export {
@@ -119,6 +132,18 @@ export type {
   SheetSummary,
   WorkbookDescription,
 } from "./workbook.js";
+export {
+  collectConditionalFormats,
+  conditionalFormatRuleCountOf,
+  conditionalFormatsOf,
+} from "./conditional-formats.js";
+export type {
+  ConditionalFormatReport,
+  ConditionalFormatRule,
+  ConditionalFormatThreshold,
+} from "./conditional-formats.js";
+export { collectImages, imageCountOf } from "./images.js";
+export type { ImageReport, SheetImage } from "./images.js";
 export { collectValidations, compressAddresses } from "./validations.js";
 export type { ValidationReport, ValidationRule } from "./validations.js";
 export { findInSheet, readSheet } from "./read-sheet.js";
@@ -127,6 +152,11 @@ export type {
   ReadSheetOptions,
   ReadSheetResult,
 } from "./read-sheet.js";
-export { createHandlers, toolDefinitions, toToolError } from "./tools.js";
+export {
+  createHandlers,
+  toolDefinitions,
+  toolNames,
+  toToolError,
+} from "./tools.js";
 export type { ToolHandlers, ToolName } from "./tools.js";
 export { createExcelMcpServer } from "./server.js";

@@ -10,6 +10,12 @@ export interface FormatCapabilities {
   readonly definedNames: boolean;
   readonly typedValues: boolean;
   readonly headerScan: boolean;
+  readonly tables: boolean;
+  readonly conditionalFormats: boolean;
+  readonly images: boolean;
+  readonly charts: boolean;
+  readonly pivotTables: boolean;
+  readonly sparklines: boolean;
 }
 
 export const capabilities: Readonly<
@@ -25,6 +31,12 @@ export const capabilities: Readonly<
     definedNames: true,
     typedValues: true,
     headerScan: true,
+    tables: true,
+    conditionalFormats: true,
+    images: true,
+    charts: false,
+    pivotTables: false,
+    sparklines: false,
   },
   csv: {
     merges: false,
@@ -36,5 +48,11 @@ export const capabilities: Readonly<
     definedNames: false,
     typedValues: false,
     headerScan: false,
+    tables: false,
+    conditionalFormats: false,
+    images: false,
+    charts: false,
+    pivotTables: false,
+    sparklines: false,
   },
 };

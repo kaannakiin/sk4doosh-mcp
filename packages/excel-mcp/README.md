@@ -34,15 +34,18 @@ npx @modelcontextprotocol/inspector node packages/excel-mcp/dist/cli.js /Users/m
 
 ## Tool'lar
 
-| Tool                   | İş                                                                                                        |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| `list_workbooks`       | Kök altındaki okunabilir dosyaları listeler. Döndürdüğü `filePath` diğer tool'lara aynen verilir          |
-| `describe_workbook`    | Sheet'ler, used range, merge/validation sayıları, formül önbellek kapsamı, tanımlı adlar                  |
-| `read_sheet`           | Hücre aralığını kompakt grid olarak okur: hoist edilmiş kolon başlıkları + satır dizileri                 |
-| `get_merged_ranges`    | Birleştirilmiş hücre aralıkları                                                                           |
-| `get_data_validations` | Doğrulama kuralları, dikdörtgen aralıklara geri gruplanmış                                                |
-| `aggregate_sheet`      | Sunucu tarafında sayım/toplam/ortalama ve gruplama; büyük sheet'te `read_sheet` sayfalamanın yerine geçer |
-| `find_in_sheet`        | Değere veya formüle göre hücre arar                                                                       |
+| Tool                      | İş                                                                                                        |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `list_workbooks`          | Kök altındaki okunabilir dosyaları listeler. Döndürdüğü `filePath` diğer tool'lara aynen verilir          |
+| `describe_workbook`       | Sheet'ler, used range, merge/validation sayıları, formül önbellek kapsamı, tanımlı adlar                  |
+| `read_sheet`              | Hücre aralığını kompakt grid olarak okur: hoist edilmiş kolon başlıkları + satır dizileri                 |
+| `get_merged_ranges`       | Birleştirilmiş hücre aralıkları                                                                           |
+| `get_data_validations`    | Doğrulama kuralları, dikdörtgen aralıklara geri gruplanmış                                                |
+| `get_tables`              | Sheet'in tanımladığı Excel Table'ları: aralık, başlık/toplam satırı, kolon adları ve A1 harfleri          |
+| `get_conditional_formats` | Koşullu biçimlendirme kuralları yüklem olarak: hedef aralıklar, kural türü, operatör, formüller, eşikler  |
+| `get_images`              | Sheet'e gömülü resimler: çapa aralığı, bayt boyutu, uzantı. Chart/pivot/sparkline reddedilir              |
+| `aggregate_sheet`         | Sunucu tarafında sayım/toplam/ortalama ve gruplama; büyük sheet'te `read_sheet` sayfalamanın yerine geçer |
+| `find_in_sheet`           | Değere veya formüle göre hücre arar                                                                       |
 
 Büyük bir sheet'i `read_sheet` ile sayfalamak yerine `aggregate_sheet`, `find_in_sheet` veya dar bir `range` tercih edin; `describe_workbook` ve `read_sheet` bunu `guidance`/`hint` alanlarıyla söyler.
 
@@ -71,7 +74,9 @@ döner.
 
 Değerler **hiç yorumlanmaz**: `01234` string kalır, `03-04-2024` tarihe çevrilmez, `true` boolean olmaz. Ayraç sniff edilir ve her yanıtta `csv.delimiter` + `csv.delimiterSource` ile echo'lanır; iki aday eşitse `ambiguous_delimiter` döner ve `delimiter` parametresini istersiniz. Encoding BOM'dan çözülür, yoksa utf-8 denenir; Türkçe Excel çıktısı için `encoding: "windows-1254"` verin.
 
-CSV'nin taşıyamadığı bir şey açıkça istenirse (`valueMode`, `mergedCells: "repeat"`, `includeHyperlinks`, `get_merged_ranges`, `get_data_validations`) `unsupported_for_format` döner — boş sonuç değil. `describe_workbook` hangi yeteneklerin mevcut olduğunu `capabilities` bloğunda önceden bildirir.
+CSV'nin taşıyamadığı bir şey açıkça istenirse (`valueMode`, `mergedCells: "repeat"`, `includeHyperlinks`, `get_merged_ranges`, `get_data_validations`, `get_tables`, `get_conditional_formats`, `get_images`) `unsupported_for_format` döner — boş sonuç değil. `describe_workbook` hangi yeteneklerin mevcut olduğunu `capabilities` bloğunda önceden bildirir.
+
+Chart, pivot table ve sparkline **hiçbir formatta** okunamaz — bu bir CSV kısıtı değil, okuyucunun tavanı: exceljs `xl/charts/*.xml`'i hiç açmıyor, pivot için object model'i yok, sparkline'lar worksheet `extLst`'inde tanınmıyor. `get_images` bu türler açıkça istendiğinde `unsupported_object_kind` döner ve `capabilities` bloğu üçünü de her iki formatta `false` bildirir.
 
 ## Arama ve eşleştirme
 

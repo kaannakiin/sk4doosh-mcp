@@ -523,3 +523,162 @@ bağlamını korur, paylaşılan olan yalnız döngüdür.
 recovery'siyle kurtarılabilir, karşılığında düzelen iki satırlı başlık şekli yaygın ve şu an
 sessizce yanlış. Varsayılan `master` hiç değişmedi, dolayısıyla değişiklik yalnız `repeat`'i
 **açıkça isteyen** çağıranı etkiler.
+
+# 0.4.0 eklemeleri
+
+## Grid dışı nesneler: hangi üçü okunabilir, hangi üçü okunamaz
+
+exceljs okuma yolunda tablo, koşullu biçimlendirme, resim, sheet autofilter ve dondurulmuş bölmeleri **zaten parse ediyordu**; hiçbiri ajana ulaşmıyordu. `DeclaredTable` `SheetView.tables`'da duruyor ve tek tüketicisi başlık satırı tespitiydi, `index.ts` export'unda bile değildi. 0.4.0 bu veriyi yayınlıyor: `get_tables`, `get_conditional_formats`, `get_images` ve `SheetSummary`'de altı yeni sayaç. Yeni parse kodu yazılmadı.
+
+Chart, pivot table ve sparkline **okunamıyor** ve bu bir eksiklik değil, tavan:
+
+- Chart: `xlsx.js` `load()` içindeki zip-girdisi dağıtımında `xl/charts/*` ile eşleşen hiçbir dal yok; parça hiç unzip edilmiyor. `xdr:graphicFrame` de çapa xform map'lerinde yok, yani chart'ı barındıran drawing alt-ağacı da sessizce düşüyor. Chartsheet'ler `workbook-xform.js`'te açıkça atlanıyor ("As we don't have the infrastructure to support chartsheets").
+- Pivot table: tüm `lib/` ağacında pivot object model'i yok. Geçen iki "pivot" kelimesi alakasız (bir `sheetProtection` boolean'ı ve `styles.xml`'e yazılan kozmetik `defaultPivotStyle` dizesi).
+- Sparkline: worksheet `extLst`'inde `x14:sparklineGroups` olarak yaşıyor, ama `ext-lst-xform.js` yalnız `x14:conditionalFormattings`'i map'liyor; diğer her uzantı düşüyor.
+
+Bunlar istendiğinde dönen kod `unsupported_for_format` **değil**, yeni `unsupported_object_kind`. Ayrım kasıtlı: format sorunlu değil — `.xlsx` chart'ı gerçekten taşıyor, okuyucu açamıyor. İkisini birleştirmek ajanı var olmayan bir format farkını aramaya yollar ve `openXlsx`'in "capabilities bloğuna bak, format taşıyamıyor" tavsiyesini yanlış bilgiye çevirir.
+
+## Neden ayrı tool değil, tek enum
+
+Reddetme `get_images`'in `kind` enum'una bağlandı (`picture` | `chart` | `pivotTable` | `sparkline`), `picture` dışındaki her değer `assertPictureKind` ile ve `openXlsx`'ten **önce** reddediliyor — reddetme formdan bağımsız olsun diye.
+
+Böylece boşluk yalnız `listTools()`'tan keşfedilebilir hale geliyor: ajan dört türün varlığını ve üçünün reddedildiğini sıfır round trip'le öğreniyor. Ve `{images: [], count: 0}` — "ölçtüm, yok" diye okunacak sessiz yanıt — o türler için ulaşılamaz.
+
+Reddedilen alternatifler:
+
+- **Daima patlayan ayrı `get_charts` tool'u.** Her ajanın context bütçesinde kalıcı bir slot artı bir tam round trip, tek satır `describe` metni + `capabilities: false` bayrağının bedavaya verdiği bilgi için. Ayrıca register edilmiş tool bir vaattir; yalnız hata verebilen birini register etmek bozulmak üzere verilmiş vaattir.
+- **Çalışan `get_images`'i `get_drawings`'e yeniden adlandırmak.** Yapamadığı üç şey için maliyeti çalışan yola yıkıyor.
+- **`z.string()` açık parametre.** Keşfedilebilirliği kaybediyor; ajan okunabilir türü şemadan öğrenemiyor.
+
+## Koşullu biçimlendirme: yüklem projeksiyonu
+
+Ajanın koşullu biçimlendirmeye dair sorusu "hangi hücreler işaretli, hangi testle" — asla "dolgunun ARGB'si ne". `ranges + type + operator + formulae + thresholds` birinciyi tam cevaplıyor.
+
+Ölçüm: yalnız düz dolgulu önemsiz bir `cellIs` kuralının `style` nesnesi ~150 karakter; gerçek dashboard kuralları font + dolgu + kenar + numFmt + hizalama ile 400-900 karakter. Yüklem yükünün 10-30 katı, ve bu sunucudaki hiçbir tool renkle iş yapamıyor — `aggregate_sheet`, `find_in_sheet`, `read_sheet` hiçbiri rengi tüketmiyor.
+
+Düşen alanlar ve sebepleri:
+
+- `style` — efekt, yüklem değil. Baskın bayt maliyeti.
+- `color` / `color[]` — colorScale gradyan durakları ve dataBar rengi. Sunum.
+- `x14Id` — legacy `conditionalFormatting` bloğunu x14 uzantısına dikmek için `mergeConditionalFormattings`'in kullandığı GUID. İç tesisat.
+- `dxfId` — styled kurallarda exceljs kendi `reconcile`'ında siliyor; colorScale/dataBar/iconSet'te `undefined` değerli own key olarak kalıyor. Kimse geri eklemesin.
+- dataBar'ın dokuz render düğmesi: `minLength`, `maxLength`, `gradient`, `border`, `axisPosition`, `direction`, `negativeBarColorSameAsPositive`, `negativeBarBorderColorSameAsPositive`, `showValue`. dataBar'ın tüm yüklem içeriği cfvo çiftidir, o da `thresholds` olarak korunuyor.
+- iconSet `reverse` / `showValue` — sunum. `iconSet` aile adının kendisi **kalıyor**: `3TrafficLights1` ile `5Rating` kova sayısını kodluyor, bu yapısal.
+
+`cfvo` eşikleri **korunuyor** çünkü yapısal içerik onlar: `min` / `max` / `percentile 90` ajana ölçeğin nasıl bölündüğünü söylüyor.
+
+`text` alanı yayınlanmıyor, çünkü **okunabilir değil**. `CfRuleXform.createNewModel` `text` attribute'unu hiç okumuyor; `containsText` kuralında aranan dize yalnız sentezlenmiş `formulae[0]` içinde yaşıyor (`NOT(ISERROR(SEARCH("ACIK",B2)))`). Alanı yayınlamak, okuyucuda olmayan bir yeteneğin reklamı olurdu — formül yükü zaten taşıyor.
+
+**Projeksiyon allow-list olmak zorunda, asla spread.** `cf-rule-xform.js` `createNewModel` her kurala `type, operator, dxfId, priority, timePeriod, percent, bottom, rank, aboveAverage` anahtarlarını **koşulsuz** atıyor; çoğu `undefined` değerli own key olarak duruyor. Ampirik olarak doğrulandı: bir `cellIs` kuralının `Object.keys()`'i dokuz anahtar veriyor, ikisi dolu. `{...rule}` bu yüzden nesneyi tarif etmeyen bir TS tipi üretir ve anahtar temelli her sayımı bozar.
+
+## sqref: tek dize, birden çok aralık
+
+`compressAddresses` burada **kullanılmıyor** ve kimse port etmesin. Yapısal fark: exceljs data validation'ları **hücre başına** saklıyor (`dataValidations.model` adres anahtarlı bir record; `A2:A5000` 4999 girdi), `validations.ts` bu yüzden `stableKey` ile gruplayıp dikdörtgene geri sıkıştırmak zorunda. Koşullu biçimlendirme zaten **aralık başına** saklanıyor: `ref` alanı ham `sqref`, boşlukla ayrılmış çok aralıklı olabilir ve okuma/yazma boyunca aynen korunuyor. Ampirik: `"B2:B20 D2:D20"` tek dize olarak round-trip ediyor. Boşluğa göre split işin tamamı.
+
+Aralık kapağı için yeni sınır uydurulmadı: `maxRangesPerRule` (64) split'ten **sonra**, `validations.ts`'in kullandığı katı `>` karşılaştırmasıyla uygulanıyor. Formül dizeleri de mevcut `maxStringChars` (512) ile `truncateWellFormed` üzerinden kırpılıyor.
+
+## Kural sırası: priority
+
+Düzleştirilmiş kurallar artan `priority` ile sıralanıyor. Excel en küçük numarayı ilk değerlendiriyor, yani priority sırası kuralların **kazanma** sırası — ajan için doğrudan aksiyona dönük bilgi. Yan fayda: `mergeConditionalFormattings` x14-only kuralları listenin sonuna eklediği için blok sırası okuma yoluna bağımlı; priority sıralaması bunu nötrleştiriyor. `priority` taşımayan kural sona gider ve alanı yayılmaz.
+
+## Tablolar: yayınlanan, türetilen ve düşen
+
+`letter` en yüksek değerli türetilmiş alan: ajan başlık metninden tahmin etmek yerine doğrudan `aggregate_sheet`'e A1 harfi verebiliyor. `ref`'in sol-üst kolonundan sayılıyor ve **yalnız parse edilmiş `ref` genişliğine düşerse** yayılıyor — bozuk bir dosyada `tableColumn` sayısı `ref` genişliğini aşarsa, hiçbir yeri adreslemeyen bir harf üretilmemeli.
+
+`autoFilterRef` ile `ref` ayrı ayrı yayınlanıyor çünkü toplam satırı varken farklılaşıyorlar: ampirik olarak `ref: "A1:C4"` iken `autoFilterRef: "A1:C3"`. Bu delta ajana verinin nerede bittiğini söylüyor.
+
+Çıktı sol-üst satır sonra kolona göre sıralanıyor. `Object.entries(worksheet.tables)` insertion order veriyor — pratikte XML `tableParts` sırası, ama sözleşme değil. Sıralama çıktıyı exceljs sürümleri arası deterministik yapıyor ve sheet'i yukarıdan aşağı okur.
+
+Düşen alanlar: `style` (tema dizesi + dört şerit boolean'ı, saf kozmetik), `columns[].dxfId` ve `reconcile`'ın grafladığı `columns[].style`, `rows` (okuma model'inde **hiç yok**), `id`, `target`, ve `totalsRowFormula` / `calculatedColumnFormula` — `TableColumnXform.parseOpen` yalnız `tableColumn`'un kendi attribute'larını okuyor, bu child element'ler sessizce düşüyor. Doc-model'de `totalsRowFormula` getter/setter'ı var ama yalnız yazma içindir.
+
+Üç **yazıcı varsayılanı** değer olarak yayınlanmıyor, çünkü yazarın niyeti değiller:
+
+- `totalsRowFunction: "none"` — exceljs yapılandırılmamış her kolona enjekte ediyor.
+- `filterButton: false` — exceljs her kolona yazıyor. Yalnız `true` yayılıyor. Gerçek Excel dosyalarında bu attribute'un **yokluğu** "buton var" demek, yani `false` yayınlamak aşağıdaki `headerRowCount` tuzağıyla aynı sınıfta yanlış bilgi olurdu.
+- `totalsRowLabel` — exceljs ilk kolona `"Total"` yazıyor, **toplam satırı olmayan tabloda bile** (ampirik: `totalsRow: false` olan bir tabloda göründü). OOXML'de bu alan yalnız `totalsRowCount=1` iken anlamlı, o yüzden `totalsRow` false ise yayılmıyor.
+
+## exceljs tuzağı: `headerRowCount` eksikse başlık yok sayılıyor
+
+`table-xform.js` `parseOpen` şunu yazıyor:
+
+```js
+headerRow: attributes.headerRowCount === '1',
+```
+
+ECMA-376'da `CT_Table/@headerRowCount` **1**'e varsayılıyor ve Excel varsayılan durumda attribute'u hiç yazmıyor. JSZip ile `xl/tables/table1.xml`'den `headerRowCount="1"` düşürüldüğünde `table.headerRow === false` geliyor — ölçüldü.
+
+Sonucu: `header.ts` `declaredHeaderRow`, `!table.headerRow` olan tabloları atlıyor. Yani **Excel'in yazdığı tablolarda declared-header tespiti sessizce hiç çalışmıyor**; `headerRowSource: "declared"` yalnız exceljs'in yazdığı dosyalarda ateşliyor. Bugün görünmemesinin sebebi `buildTitleBand` fixture'ını exceljs ile yazmamız, exceljs'in de kendi attribute'unu round-trip etmesi.
+
+Karar: `headerRow` **sadakatle** yayınlanıyor. Parse sonrası "attribute yok, 1 demek" ile "0 yazılmış, başlık yok demek" ayırt edilemiyor, o yüzden temellendiremediğimiz bir düzeltme uydurulmuyor. `header.ts` düzeltmesi ayrı iş kalemidir ve bu değişikliğe katılmadı.
+
+## exceljs tuzağı: `worksheet.views` `null` olabilir
+
+`index.d.ts` `views`'ı `Array<Partial<WorksheetView>>` beyan ediyor. Runtime `null` veriyor — `<sheetViews>` elementi olmayan her sheet'te, ki bu exceljs'in kendi varsayılan çıktısı (ölçüldü). Guard olmadan `describe_workbook` sıradan bir workbook'ta patlıyordu.
+
+İkinci tuzak: `xSplit` / `ySplit` yalnız `state === "frozen"` altında **sayı**; `state: "split"` altında **nokta** (ölçüldü: `{state:'split', xSplit:2000}` geri okunduğunda `xSplit: 2000`). 2000 dondurulmuş kolon raporlamak saçmalık olurdu, o yüzden bölmeler yalnız frozen view'dan okunuyor.
+
+Ayrıca `Partial<WorksheetView>` bir union olduğu için `xSplit`/`ySplit` her üyede yok; `frozenPanesOf` bu yüzden tek yerelleşmiş cast taşıyor.
+
+## Sayfa sayaçları: neden hücre gezinmesi yok
+
+`SheetSummary` altı alan kazandı: `tableCount`, `conditionalFormatRuleCount`, `imageCount`, `autoFilterRef`, `frozenRowCount`, `frozenColumnCount`. Sözleşme değişmedi: `null` = **format bunu taşıyamaz** (CSV), `0` = xlsx taşıyabiliyor ama yok.
+
+Altısı da sheet seviyeli okuma; hiçbiri `formulaStats`'ın `eachRow` pass'ine katılmıyor. İkisi o pass'e katılsa **aktif olarak yanlış** olurdu:
+
+- `conditionalFormatRuleCount` — bir CF `sqref`'i rutin olarak hiç hücre kaydı olmayan satırları kapsıyor (`buildValidations` tam bu şekli yazıyor: tek dolu hücreli sheet üzerinde `A2:A5000`). `eachRow({includeEmpty: false})` o satırları atlıyor, yani hücre-sayma temelli bir türetme eksik sayar ve aralığı tamamen boş olan bir kural kaybolur.
+- `imageCount` — son dolu satırdan sonraya çapalanmış bir resim hem satır gezinmesine hem `usedBounds`'a görünmez. Resimler used range'in parçası değil; çapalar drawing part'ında, sheet verisinde değil.
+
+Bunun görünür sonucu: tek içeriği bir resim olan sheet `usedRange: null, rowCount: 0` ile birlikte sıfır olmayan `imageCount` raporlar. Doğru ve istenen — ama `requireSheetBounds` böyle bir sheet için hâlâ `empty_sheet` atıyor, o yüzden üç yeni handler onu **çağırmıyor**. `get_merged_ranges` ve `get_data_validations` da çağırmıyor.
+
+`describeWorkbook` sheet başına zaten `worksheet.model.merges` ödüyor, bu da tam `Worksheet.model` getter'ını çalıştırıyor. Yeni sayaçlar ikinci bir `.model` erişimi eklemiyor; `worksheet.tables` / `.conditionalFormattings` / `.getImages()` / `.autoFilter` / `.views` doğrudan okunuyor.
+
+## Resimler: çapa, kapsanan aralık ve okunamayanlar
+
+`xdr:to` **dışlayıcı** bir sınır. Ölçüm: `addImage(id, "C3:F8")` geri okunduğunda `br` 0-tabanlı `(col 6, row 8, colOff 0, rowOff 0)` veriyor, yani 1-tabanlı G9. Ham yayınlamak ajana resmin G9'da olduğunu söylerdi.
+
+`nativeColOff` / `nativeRowOff` model'de ve belirsiz değil, o yüzden kapsanan hücre **tam veriden türetme, tahmin değil**: offset 0 ise kenar tam sınıra oturuyor ve o kolon/satır kapsanmıyor, pozitifse resim gerçekten taşıyor ve kapsanıyor. Sol-üstü geçmemesi için clamp ediliyor. Türetme `"C3:F8"` girdisini `"C3:F8"` olarak geri veriyor — doğrulandı. oneCellAnchor'da `range` tek `tl` adresine çöküyor; bunun için `formatRectangle` `validations.ts`'ten `range.ts`'e terfi etti (`formatRange` daima `A1:A1` üretiyor, tek hücreye çökmüyor).
+
+`range` tek A1 dizesi, `from`/`to` çifti değil — bu kod tabanındaki her "sheet üzerinde dikdörtgen" tek A1 dizesi (`merges`, `ValidationRule.ranges`, `usedRange`, tablo `ref`).
+
+`widthPx` / `heightPx` yalnız **oneCellAnchor**'da var olur. `xdr:twoCellAnchor` — Excel'in varsayılan yerleştirmesi, "hücrelerle taşı ve boyutlandır" — XML'de `xdr:ext` child'ı hiç taşımıyor ve `TwoCellAnchorXform`'un map'inde de yok. Yani boyut okunmamış değil, **bilinemez**; genel kullanılabilir bir alan gibi sunmak yanıltıcı olurdu.
+
+`anchor` (`oneCell` | `twoCell`) `br`'nin varlığından türetiliyor ve `editAs` ile **değiştirilemez**: `BaseCellAnchorXform.parseOpen` `editAs`'i twoCellAnchor'lar dahil her çapada `'oneCell'`'e varsayıyor (ölçüldü: iki farklı çapa türü de `editAs: "oneCell"` döndü). `editAs` çapa türü hakkında hiçbir kanıt taşımıyor; ikisi de gerekli ve `editAs` yeniden adlandırılmamalı.
+
+Düşenler: `name` ve `descr` — **parse edilmiyor.** `CNvPrXform.parseClose` `this.model = this.map['a:hlinkClick'].model` yapıyor, `xdr:cNvPr`'nin `id`, `name`, `descr` dahil her attribute'unu atıyor. Daima `undefined` bir `name` yayınlamak, okuyucuda olmayan alt-text desteğinin reklamı olurdu. Ayrıca `nativeColOff` / `nativeRowOff` (hücre-altı EMU; ajanın alacağı karar yok, değerleri `range`'i doğru hesaplamakta), `buffer` (bytes tele çıkmaz; `sizeBytes` dürüst özet) ve `type` (daima `"image"`, `getImages()` zaten filtreliyor — arka plan resimleri bu filtreyle doğru şekilde dışarıda kalıyor).
+
+Bytes `workbook.media`'dan okunuyor, `workbook.model.media`'dan **değil**: `workbook.model` her worksheet'in model'ini kuran pahalı bir getter. `media[i].index` okuma anında atanıyor, yani `image.imageId` `media` dizisine geçerli 0-tabanlı bir index.
+
+## Kesme: iki lehçe neden bir arada
+
+CF **aralıkları** `validations.ts`'in iki seviyeli `rangesTruncated`'ını koruyor (kural başına, artı rapor seviyesinde toplanmış), çünkü aynı ekseni aynı sebeple kesiyorlar.
+
+Kural / tablo / resim **sayıları** standart `truncated` + `truncationReason` + `hint` üçlüsünü kullanıyor, çünkü farklı bir ekseni kesiyorlar. Yeni sınırlar: `maxTablesPerSheet` (64), `maxTableColumns` (256, tablo başına `columnsTruncated` ile), `maxConditionalFormatRules` (200), `maxImagesPerSheet` (200).
+
+Reddedilen alternatif: validations gibi yalnız aralıkları kapmak. Biçimlendirilmiş bir dashboard sheet'i rutin olarak 300+ CF kuralı taşıyor ve yanıtta hiçbir sinyal olmadan `maxPayloadBytes`'ı aşardı. `get_data_validations`'ın bundan kurtulmasının sebebi, hücre başına gruplamanın kural sayısını bir elin parmaklarına indirmesi.
+
+## capabilities: kalıcı olarak false olan üç anahtar
+
+`FormatCapabilities` dokuzdan on beşe çıktı: `tables`, `conditionalFormats`, `images` (xlsx `true`, csv `false`) ve `charts`, `pivotTables`, `sparklines` (**her iki formatta `false`**).
+
+Kalıcı false üç anahtar `describe_workbook` başına ~150 bayta değiyor: **false bayrak, ajanın bir boşluğu başarısız çağrı olmadan öğrendiği tek mekanizma** — bloğun varlığı için zaten yapılan argümanın aynısı.
+
+`capabilities.ts` saf betimleyici kalıyor; `tools.ts` onu runtime'da hâlâ okumuyor, gating elle `loaded.format` üzerinden sürüyor. İkisini birbirine bağlayan şey tip: `capabilities.spec.ts`'in `probes` kaydı `Record<keyof FormatCapabilities, …>` yani **exhaustive** — yeni bir yetenek anahtarı eklenince o kayıt derlenmiyor. Altı anahtar eklendiğinde `check-types` tam bunu yaptı. Blok davranıştan sapamaz.
+
+## Tool register: ad iki yerde, ikincisi derleyiciyle doğrulanıyor
+
+Bu değişiklikten önce bir tool adı **dört** yerde yazılıyordu: `toolDefinitions` anahtarı, `guard` context'inin `tool` alanı, `openXlsx` label argümanı, ve `server.ts`'de elle yazılmış `registerTool` çağrısındaki dize. Tip sistemi yalnız birinciyle handler'lar arasını garanti ediyordu; register bütünlüğünü tek bir runtime testi tutuyordu, `guard` context'indeki bir typo ise hiçbir kontrole yakalanmıyordu.
+
+`server.ts` artık `toolNames` üzerinde tek bir döngü. Kritik nokta ölçülerek bulundu: naif union döngüsü `TS2345` veriyor (`InputArgs` union'ın yalnız ilk üyesinden çıkarsanıyor), ve `registerOne<K extends ToolName>` biçimindeki generic helper de çalışmıyor — generic gövde içinde `K` soyut kalıyor, `ToolCallback<…>` deferred conditional type olarak duruyor ve concrete bir fonksiyon ona atanamıyor; kurtarmak `as unknown as` istiyor, yani helper korelasyonu vaat edip cast'le siliyor. Çalışan biçim tip argümanlarını açıkça vermek: `registerTool<never, ToolInputSchema>`. `Args` naked type parameter olduğu için union **dağılıyor**, yedi concrete callback'e açılıyor, her handler kendi üyesine oturuyor — sıfır assertion.
+
+`guard` `K extends ToolName` ile generic hale geldi ve döndürdüğü fonksiyona `guardedTool: K` brand'i takılıyor (`Object.assign` ile, yani `.d.ts` dürüst ve değer runtime'da denetlenebilir). `K`, `context.tool`'daki düz literal'den ilk çıkarsama turunda sabitleniyor, bu yüzden `args` narrowing'i eskisinden daha sağlam — `read_sheet` handler'ı tek karakter değişmedi. `ToolHandler<K>` isimli alias olmak zorunda: `guard(...): ToolHandlers[K]` biçimi `TS2322` veriyor, çünkü `Object.assign`'ın intersection'ı `K` soyutken mapped type'ın indexed access'ine atanamıyor.
+
+`toolDefinitions` `as const satisfies Record<string, ReadOnlyToolDefinition>` ile kapanıyor. Bundan sonra compile hatası olanlar — hepsi hata enjeksiyonuyla doğrulandı:
+
+- `guard` context'inde yanlış tool adı → `TS2322`, `guardedTool` uyumsuzluğunu ve iki `ToolHandler<…>` instantiation'ını adlandırıyor.
+- Bir handler'ı `guard`'sız yazmak → `TS2322`. Yani her tool'un hata sarmalandığı artık tiple garanti.
+- `openXlsx` label typo'su → `TS2345`.
+- `annotations` eksikliği → `TS2741`; `readOnlyHint: false` → `TS2322`. Paketin read-only vaadi artık bir tip.
+
+Compile-time olmayan iki nokta dürüstçe kayda geçiyor: `toolNames` içindeki `Object.keys(...) as ToolName[]` bir runtime totolojisi ama TypeScript'te ifade edilemiyor, ve döngü içinde `toolDefinitions.read_sheet` + `handlers.find_in_sheet` gibi bir yanlış eşleştirme derleniyor. İkincisi regresyon değil: doğruluk tek `name` ifadesinin tek statement içinde üç kez kullanılmasından geliyor. Register testi bu yüzden **kaldı** ve tel seviyesinde bir `callTool` ile güçlendirildi — refactor sonrası callback SDK'ya tip seviyesi bir union dansıyla ulaştığı için bir uçtan uca çağrı tesisatın gerçek olduğunun en ucuz kanıtı.
+
+Somut kazanç: `get_tables`, `get_conditional_formats` ve `get_images` eklenirken `server.ts` **hiç değişmedi**; dosya artık tek bir tool adı içermiyor.

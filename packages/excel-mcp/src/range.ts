@@ -83,6 +83,19 @@ export function formatRange(bounds: GridBounds): string {
   return `${formatCellRef(bounds.top, bounds.left)}:${formatCellRef(bounds.bottom, bounds.right)}`;
 }
 
+export function formatRectangle(
+  top: number,
+  left: number,
+  bottom: number,
+  right: number,
+): string {
+  const start = formatCellRef(top, left);
+  if (top === bottom && left === right) {
+    return start;
+  }
+  return `${start}:${formatCellRef(bottom, right)}`;
+}
+
 interface RangePart {
   readonly row?: number;
   readonly column?: number;

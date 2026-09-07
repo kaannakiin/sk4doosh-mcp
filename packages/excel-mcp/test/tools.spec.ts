@@ -7,6 +7,7 @@ import { createExcelMcpServer } from "../src/server.js";
 import {
   createHandlers,
   toolDefinitions,
+  toolNames,
   type ToolHandlers,
 } from "../src/tools.js";
 
@@ -34,11 +35,20 @@ describe("tool registration", () => {
 
     const listed = (await client.listTools()).tools;
     expect(listed.map((tool) => tool.name).sort()).toEqual(
+      [...toolNames].sort(),
+    );
+    expect(toolNames.slice().sort()).toEqual(
       Object.keys(toolDefinitions).sort(),
     );
     expect(
       listed.every((tool) => tool.annotations?.readOnlyHint === true),
     ).toBe(true);
+
+    const called = await client.callTool({
+      name: "list_workbooks",
+      arguments: {},
+    });
+    expect(called.isError).toBeUndefined();
 
     await client.close();
     await server.close();
@@ -89,6 +99,30 @@ describe("handlers", () => {
   it("returns data validations", async () => {
     const result = await handlers.get_data_validations({
       filePath: "validations.xlsx",
+    });
+    expect(payload(result)["count"]).toBe(2);
+  });
+
+  it("returns declared tables", async () => {
+    const result = await handlers.get_tables({
+      filePath: "facets.xlsx",
+      sheetName: "Tablolar",
+    });
+    expect(payload(result)["count"]).toBe(2);
+  });
+
+  it("returns conditional format rules", async () => {
+    const result = await handlers.get_conditional_formats({
+      filePath: "facets.xlsx",
+      sheetName: "Kosullu",
+    });
+    expect(payload(result)["count"]).toBe(5);
+  });
+
+  it("returns embedded images", async () => {
+    const result = await handlers.get_images({
+      filePath: "facets.xlsx",
+      sheetName: "Resimler",
     });
     expect(payload(result)["count"]).toBe(2);
   });
@@ -161,6 +195,21 @@ describe("error surfacing", () => {
     expect(result.isError).toBe(true);
     expect(payload(result)["error"]).toBe(code);
   });
+
+  it.each([["chart"], ["pivotTable"], ["sparkline"]] as const)(
+    "refuses a %s request instead of returning an empty list",
+    async (kind) => {
+      const result = await handlers.get_images({
+        filePath: "facets.xlsx",
+        sheetName: "Resimler",
+        kind,
+      });
+      expect(result.isError).toBe(true);
+      const body = payload(result);
+      expect(body["error"]).toBe("unsupported_object_kind");
+      expect(String(body["recovery"])).toContain("capabilities");
+    },
+  );
 
   it("refuses headerScan combined with headerRow", async () => {
     const result = await handlers.read_sheet({

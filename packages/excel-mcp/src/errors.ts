@@ -12,6 +12,7 @@ export type SkMcpExcelErrorCode =
   | "undecodable_text"
   | "ambiguous_delimiter"
   | "unsupported_for_format"
+  | "unsupported_object_kind"
   | "unknown_column"
   | "ambiguous_column"
   | "unknown_sheet"

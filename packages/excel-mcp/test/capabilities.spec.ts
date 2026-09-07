@@ -19,6 +19,13 @@ function unsupported(result: CallToolResult): boolean {
   );
 }
 
+function unreadableKind(result: CallToolResult): boolean {
+  return (
+    result.isError === true &&
+    payload(result)["error"] === "unsupported_object_kind"
+  );
+}
+
 const files: Readonly<Record<"xlsx" | "csv", string>> = {
   xlsx: "q1/sample.xlsx",
   csv: "csv/simple.csv",
@@ -52,6 +59,15 @@ describe("declared capabilities match observed behaviour", () => {
     typedValues: (filePath) => handlers.read_sheet({ filePath }),
     headerScan: (filePath) =>
       handlers.read_sheet({ filePath, headerScan: true }),
+    tables: (filePath) => handlers.get_tables({ filePath }),
+    conditionalFormats: (filePath) =>
+      handlers.get_conditional_formats({ filePath }),
+    images: (filePath) => handlers.get_images({ filePath }),
+    charts: (filePath) => handlers.get_images({ filePath, kind: "chart" }),
+    pivotTables: (filePath) =>
+      handlers.get_images({ filePath, kind: "pivotTable" }),
+    sparklines: (filePath) =>
+      handlers.get_images({ filePath, kind: "sparkline" }),
   };
 
   const gated: readonly (keyof FormatCapabilities)[] = [
@@ -60,6 +76,15 @@ describe("declared capabilities match observed behaviour", () => {
     "formulas",
     "hyperlinks",
     "headerScan",
+    "tables",
+    "conditionalFormats",
+    "images",
+  ];
+
+  const unreadable: readonly (keyof FormatCapabilities)[] = [
+    "charts",
+    "pivotTables",
+    "sparklines",
   ];
 
   for (const format of ["xlsx", "csv"] as const) {
@@ -67,6 +92,16 @@ describe("declared capabilities match observed behaviour", () => {
       it(`${format}: ${flag} is ${capabilities[format][flag] ? "usable" : "refused"}`, async () => {
         const result = await probes[flag](files[format]);
         expect(unsupported(result)).toBe(!capabilities[format][flag]);
+      });
+    }
+  }
+
+  for (const format of ["xlsx", "csv"] as const) {
+    for (const flag of unreadable) {
+      it(`${format}: ${flag} is refused as an unreadable kind`, async () => {
+        expect(capabilities[format][flag]).toBe(false);
+        const result = await probes[flag](files[format]);
+        expect(unreadableKind(result)).toBe(true);
       });
     }
   }
@@ -134,6 +169,12 @@ describe("declared capabilities match observed behaviour", () => {
       dataValidationRuleCount: null,
       formulaCellCount: null,
       cachedFormulaValueCount: null,
+      tableCount: null,
+      conditionalFormatRuleCount: null,
+      imageCount: null,
+      autoFilterRef: null,
+      frozenRowCount: null,
+      frozenColumnCount: null,
     });
     expect(body["dateSystem"]).toBeNull();
   });

@@ -33,6 +33,7 @@ export interface Fixtures {
   readonly truncated: string;
   readonly flipped: string;
   readonly notAWorkbook: string;
+  readonly facets: string;
 }
 
 export const largeRowCount = 20_000;
@@ -427,6 +428,111 @@ async function buildNotAWorkbook(path: string): Promise<void> {
   await writeFile(path, Buffer.concat([local, name, body, central, name, end]));
 }
 
+
+const onePixelPng =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8AAAwAB/wD/2gAAAABJRU5ErkJggg==";
+
+async function buildFacets(path: string): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+
+  const tables = workbook.addWorksheet("Tablolar");
+  tables.addTable({
+    name: "Faturalar",
+    displayName: "Faturalar",
+    ref: "A1",
+    totalsRow: true,
+    columns: [
+      { name: "Fatura No", filterButton: true },
+      { name: "Tutar", totalsRowFunction: "sum" },
+      { name: "Kalan" },
+    ],
+    rows: [
+      ["ORA1", 100, 50],
+      ["ORA2", 200, 60],
+    ],
+  });
+  tables.addTable({
+    name: "Kalemler",
+    displayName: "Kalemler",
+    ref: "E1",
+    columns: [{ name: "Kalem" }, { name: "Adet" }],
+    rows: [["Kalem A", 3]],
+  });
+  tables.autoFilter = "A1:C4";
+  tables.views = [{ state: "frozen", xSplit: 1, ySplit: 1 }];
+
+  const conditional = workbook.addWorksheet("Kosullu");
+  conditional.getCell("B2").value = 1500;
+  conditional.getCell("C2").value = 40;
+  conditional.addConditionalFormatting({
+    ref: "B2:B20 D2:D20",
+    rules: [
+      {
+        type: "cellIs",
+        operator: "greaterThan",
+        priority: 1,
+        formulae: [1000],
+        style: {
+          fill: {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFF0000" },
+          },
+        },
+      },
+      {
+        type: "expression",
+        priority: 2,
+        formulae: ["$B2>$C2"],
+        style: { font: { bold: true } },
+      },
+    ],
+  });
+  conditional.addConditionalFormatting({
+    ref: "C2:C20",
+    rules: [
+      {
+        type: "colorScale",
+        priority: 3,
+        cfvo: [{ type: "min" }, { type: "percentile", value: 90 }],
+        color: [{ argb: "FFFFFFFF" }, { argb: "FF00FF00" }],
+      },
+      {
+        type: "dataBar",
+        priority: 4,
+        cfvo: [{ type: "min" }, { type: "max" }],
+      },
+      {
+        type: "iconSet",
+        priority: 5,
+        iconSet: "3TrafficLights1",
+        cfvo: [
+          { type: "percent", value: 0 },
+          { type: "percent", value: 33 },
+          { type: "percent", value: 67 },
+        ],
+      },
+    ],
+  });
+
+  const pictures = workbook.addWorksheet("Resimler");
+  pictures.getCell("A1").value = "kapak";
+  const imageId = workbook.addImage({
+    base64: onePixelPng,
+    extension: "png",
+  });
+  pictures.addImage(imageId, "C3:F8");
+  pictures.addImage(imageId, {
+    tl: { col: 8, row: 2 },
+    ext: { width: 64, height: 48 },
+  });
+
+  const bare = workbook.addWorksheet("Bos");
+  bare.getCell("A1").value = "tek";
+
+  await workbook.xlsx.writeFile(path);
+}
+
 export async function buildFixtures(): Promise<Fixtures> {
   const root = await mkdtemp(join(tmpdir(), "sk-mcp-excel-"));
   await mkdir(join(root, "q1"));
@@ -448,6 +554,7 @@ export async function buildFixtures(): Promise<Fixtures> {
     truncated: join(root, "truncated.xlsx"),
     flipped: join(root, "flipped.xlsx"),
     notAWorkbook: join(root, "not-a-workbook.xlsx"),
+    facets: join(root, "facets.xlsx"),
   };
   await buildSample(fixtures.sample);
   await buildValidations(fixtures.validations);
@@ -462,6 +569,7 @@ export async function buildFixtures(): Promise<Fixtures> {
   await buildTitleBand(fixtures.titleBand);
   await buildMalformed(fixtures.truncated, fixtures.flipped);
   await buildNotAWorkbook(fixtures.notAWorkbook);
+  await buildFacets(fixtures.facets);
   await writeFile(
     fixtures.corrupt,
     Buffer.from("not a spreadsheet at all", "utf8"),

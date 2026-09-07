@@ -1,6 +1,6 @@
 import type { DataValidation, Worksheet } from "exceljs";
 import { limits } from "./limits.js";
-import { columnToLetters, parseCellRef } from "./range.js";
+import { formatRectangle, parseCellRef } from "./range.js";
 import { validationsOf } from "./workbook.js";
 
 interface RowRun {
@@ -29,19 +29,6 @@ function toRuns(rows: number[]): RowRun[] {
     }
   }
   return runs;
-}
-
-function formatRectangle(
-  top: number,
-  left: number,
-  bottom: number,
-  right: number,
-): string {
-  const start = `${columnToLetters(left)}${top}`;
-  if (top === bottom && left === right) {
-    return start;
-  }
-  return `${start}:${columnToLetters(right)}${bottom}`;
 }
 
 export function compressAddresses(addresses: readonly string[]): string[] {

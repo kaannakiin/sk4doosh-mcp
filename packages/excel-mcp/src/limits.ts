@@ -11,6 +11,10 @@ export const limits = {
   defaultFindResults: 50,
   maxRegexSource: 256,
   maxRangesPerRule: 64,
+  maxTablesPerSheet: 64,
+  maxTableColumns: 256,
+  maxConditionalFormatRules: 200,
+  maxImagesPerSheet: 200,
   documentCacheSize: 4,
   maxCsvBytes: 16 * 1024 * 1024, // 16 MB
   maxCsvCells: 2_000_000,

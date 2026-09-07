@@ -1,9 +1,12 @@
 import type { FileHandle } from "node:fs/promises";
 import ExcelJS from "exceljs";
 import type { DataValidation, Workbook, Worksheet } from "exceljs";
+import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
 import { SkMcpExcelError } from "./errors.js";
+import { imageCountOf } from "./images.js";
 import { limits } from "./limits.js";
 import { formatRange, type GridBounds } from "./range.js";
+import { autoFilterRefOf, tableCountOf } from "./tables.js";
 import { canonical } from "./unicode.js";
 
 export interface DocumentMeta {
@@ -143,6 +146,26 @@ export function validationsOf(
   );
 }
 
+export interface FrozenPanes {
+  readonly rows: number;
+  readonly columns: number;
+}
+
+interface StoredView {
+  readonly state?: string;
+  readonly xSplit?: number;
+  readonly ySplit?: number;
+}
+
+export function frozenPanesOf(worksheet: Worksheet): FrozenPanes {
+  const views = (worksheet.views ?? []) as unknown as readonly StoredView[];
+  const frozen = views.find((view) => view.state === "frozen");
+  return {
+    rows: frozen?.ySplit ?? 0,
+    columns: frozen?.xSplit ?? 0,
+  };
+}
+
 export interface FormulaStats {
   readonly formulaCellCount: number;
   readonly cachedFormulaValueCount: number;
@@ -178,6 +201,12 @@ export interface SheetSummary {
   readonly dataValidationRuleCount: number | null;
   readonly formulaCellCount: number | null;
   readonly cachedFormulaValueCount: number | null;
+  readonly tableCount: number | null;
+  readonly conditionalFormatRuleCount: number | null;
+  readonly imageCount: number | null;
+  readonly autoFilterRef: string | null;
+  readonly frozenRowCount: number | null;
+  readonly frozenColumnCount: number | null;
 }
 
 export interface WorkbookDescription {
@@ -201,6 +230,7 @@ export function describeWorkbook(
   const sheets = workbook.worksheets.map((worksheet, ordinal): SheetSummary => {
     const bounds = usedBounds(worksheet);
     const stats = formulaStats(worksheet);
+    const panes = frozenPanesOf(worksheet);
     const validations = new Set(
       Object.values(validationsOf(worksheet))
         .filter((rule): rule is DataValidation => rule !== undefined)
@@ -219,6 +249,12 @@ export function describeWorkbook(
       dataValidationRuleCount: validations.size,
       formulaCellCount: stats.formulaCellCount,
       cachedFormulaValueCount: stats.cachedFormulaValueCount,
+      tableCount: tableCountOf(worksheet),
+      conditionalFormatRuleCount: conditionalFormatRuleCountOf(worksheet),
+      imageCount: imageCountOf(worksheet),
+      autoFilterRef: autoFilterRefOf(worksheet) ?? null,
+      frozenRowCount: panes.rows,
+      frozenColumnCount: panes.columns,
     };
   });
   const tallest = sheets.reduce(

@@ -466,6 +466,12 @@ export function describeCsv(
         dataValidationRuleCount: null,
         formulaCellCount: null,
         cachedFormulaValueCount: null,
+        tableCount: null,
+        conditionalFormatRuleCount: null,
+        imageCount: null,
+        autoFilterRef: null,
+        frozenRowCount: null,
+        frozenColumnCount: null,
       },
     ],
     ...(bounds !== undefined && bounds.bottom > limits.guidanceRowThreshold

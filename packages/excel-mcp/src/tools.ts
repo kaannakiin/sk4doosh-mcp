@@ -1,4 +1,7 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type {
+  CallToolResult,
+  ToolAnnotations,
+} from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { asExcelError, type ErrorContext, SkMcpExcelError } from "./errors.js";
 import { limits } from "./limits.js";
@@ -9,6 +12,9 @@ import {
   type WorkbookRoot,
 } from "./paths.js";
 import { findInSheet, readSheet } from "./read-sheet.js";
+import { collectConditionalFormats } from "./conditional-formats.js";
+import { collectImages } from "./images.js";
+import { collectTables } from "./tables.js";
 import { collectValidations } from "./validations.js";
 import {
   csvReportOf,
@@ -48,6 +54,18 @@ const columnRef = z
   .describe(
     "Header text of the column, or its A1 letter such as C. Header text is matched case- and accent-insensitively.",
   );
+const drawingKind = z
+  .enum(["picture", "chart", "pivotTable", "sparkline"])
+  .optional()
+  .describe(
+    "Drawing kind. Only 'picture' can be read; the other kinds are refused rather than reported as absent.",
+  );
+
+type ReadOnlyToolDefinition = {
+  readonly description: string;
+  readonly inputSchema: z.ZodObject;
+  readonly annotations: ToolAnnotations & { readonly readOnlyHint: true };
+};
 
 export const toolDefinitions = {
   list_workbooks: {
@@ -156,6 +174,27 @@ export const toolDefinitions = {
     description:
       "List the data validation rules of a worksheet, grouped back into rectangular ranges.",
     inputSchema: z.object({ filePath, sheetName }),
+    annotations: readOnly,
+  },
+
+  get_tables: {
+    description:
+      "List the Excel Tables (ListObjects) a worksheet declares: range, header and totals rows, and column names with their A1 letters.",
+    inputSchema: z.object({ filePath, sheetName }),
+    annotations: readOnly,
+  },
+
+  get_conditional_formats: {
+    description:
+      "List the conditional formatting rules of a worksheet as predicates: target ranges, rule kind, operator, formulae and thresholds. Fill colours, icons and bar geometry are not reported.",
+    inputSchema: z.object({ filePath, sheetName }),
+    annotations: readOnly,
+  },
+
+  get_images: {
+    description:
+      "List the pictures embedded in a worksheet: anchor range, byte size and file extension. Charts, pivot tables and sparklines cannot be read and are refused rather than reported as absent.",
+    inputSchema: z.object({ filePath, sheetName, kind: drawingKind }),
     annotations: readOnly,
   },
   aggregate_sheet: {
@@ -285,16 +324,28 @@ export const toolDefinitions = {
     }),
     annotations: readOnly,
   },
-} as const;
+} as const satisfies Record<string, ReadOnlyToolDefinition>;
 
 export type ToolName = keyof typeof toolDefinitions;
+
+export const toolNames: readonly ToolName[] = Object.keys(
+  toolDefinitions,
+) as ToolName[];
+
+export type ToolInputSchema = (typeof toolDefinitions)[ToolName]["inputSchema"];
 
 type ToolInput<K extends ToolName> = z.infer<
   (typeof toolDefinitions)[K]["inputSchema"]
 >;
 
+type ToolHandler<K extends ToolName> = ((
+  args: ToolInput<K>,
+) => Promise<CallToolResult>) & {
+  readonly guardedTool: K;
+};
+
 export type ToolHandlers = {
-  readonly [K in ToolName]: (args: ToolInput<K>) => Promise<CallToolResult>;
+  readonly [K in ToolName]: ToolHandler<K>;
 };
 
 function json(payload: unknown): CallToolResult {
@@ -317,24 +368,25 @@ export function toToolError(error: SkMcpExcelError): CallToolResult {
   };
 }
 
-export function guard<A>(
-  context: ErrorContext,
-  handler: (args: A) => Promise<CallToolResult>,
-): (args: A) => Promise<CallToolResult> {
-  return async (args) => {
+export function guard<K extends ToolName>(
+  context: ErrorContext & { readonly tool: K },
+  handler: (args: ToolInput<K>, tool: K) => Promise<CallToolResult>,
+): ToolHandler<K> {
+  const guarded = async (args: ToolInput<K>): Promise<CallToolResult> => {
     try {
-      return await handler(args);
+      return await handler(args, context.tool);
     } catch (error) {
       if (!(error instanceof SkMcpExcelError)) {
         const raw =
           error instanceof Error
             ? (error.stack ?? error.message)
             : String(error);
-        process.stderr.write(`${context.tool ?? "excel-mcp"}: ${raw}\n`);
+        process.stderr.write(`${context.tool}: ${raw}\n`);
       }
       return toToolError(asExcelError(error, context));
     }
   };
+  return Object.assign(guarded, { guardedTool: context.tool });
 }
 
 export function createHandlers(root: WorkbookRoot): ToolHandlers {
@@ -343,7 +395,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
     csv: { delimiter?: DelimiterName; encoding?: EncodingName } = {},
   ) => loadDocument(await resolveWorkbookPath(root, path), csv);
 
-  const openXlsx = async (path: string, tool: string) => {
+  const openXlsx = async (path: string, tool: ToolName) => {
     const resolved = await resolveWorkbookPath(root, path);
     const format = formatFor(resolved);
     if (format !== "xlsx") {
@@ -361,6 +413,17 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       );
     }
     return loaded;
+  };
+
+  const assertPictureKind = (kind: string | undefined) => {
+    if (kind === undefined || kind === "picture") {
+      return;
+    }
+    throw new SkMcpExcelError(
+      "unsupported_object_kind",
+      `get_images cannot read ${kind} objects; the reader never unzips xl/charts or xl/pivotCache, so an empty list would be a lie rather than an answer.`,
+      "Call describe_workbook and read the capabilities block; charts, pivotTables and sparklines are false for every format.",
+    );
   };
 
   const rejectForCsv = (
@@ -523,8 +586,8 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
 
     get_merged_ranges: guard(
       { root: root.real, tool: "get_merged_ranges" },
-      async (args) => {
-        const loaded = await openXlsx(args.filePath, "get_merged_ranges");
+      async (args, tool) => {
+        const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
         const merges = worksheet.model.merges;
         return json({ sheet: worksheet.name, merges, count: merges.length });
@@ -533,10 +596,38 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
 
     get_data_validations: guard(
       { root: root.real, tool: "get_data_validations" },
-      async (args) => {
-        const loaded = await openXlsx(args.filePath, "get_data_validations");
+      async (args, tool) => {
+        const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
         return json(collectValidations(worksheet));
+      },
+    ),
+
+    get_tables: guard(
+      { root: root.real, tool: "get_tables" },
+      async (args, tool) => {
+        const loaded = await openXlsx(args.filePath, tool);
+        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        return json(collectTables(worksheet));
+      },
+    ),
+
+    get_conditional_formats: guard(
+      { root: root.real, tool: "get_conditional_formats" },
+      async (args, tool) => {
+        const loaded = await openXlsx(args.filePath, tool);
+        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        return json(collectConditionalFormats(worksheet));
+      },
+    ),
+
+    get_images: guard(
+      { root: root.real, tool: "get_images" },
+      async (args, tool) => {
+        assertPictureKind(args.kind);
+        const loaded = await openXlsx(args.filePath, tool);
+        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        return json(collectImages(loaded.workbook, worksheet));
       },
     ),
 

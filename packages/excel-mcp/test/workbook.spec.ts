@@ -100,6 +100,53 @@ describe("describeWorkbook", () => {
     });
   });
 
+  it("counts the grid-external facets without walking cells", async () => {
+    const loaded = await loadXlsx(await pathTo("facets.xlsx"));
+    const described = describeWorkbook(
+      loaded.workbook,
+      {
+        filePath: "facets.xlsx",
+        sizeBytes: loaded.sizeBytes,
+        modifiedAt: loaded.modifiedAt,
+      },
+      false,
+    );
+    const byName = new Map(
+      described.sheets.map((sheet) => [sheet.name, sheet]),
+    );
+    expect(byName.get("Tablolar")).toMatchObject({
+      tableCount: 2,
+      conditionalFormatRuleCount: 0,
+      autoFilterRef: "A1:C4",
+      frozenRowCount: 1,
+      frozenColumnCount: 1,
+    });
+    expect(byName.get("Kosullu")?.conditionalFormatRuleCount).toBe(5);
+    expect(byName.get("Resimler")?.imageCount).toBe(2);
+  });
+
+  it("zeroes the facet counts for an xlsx sheet that carries none", async () => {
+    const loaded = await loadXlsx(await pathTo("facets.xlsx"));
+    const described = describeWorkbook(
+      loaded.workbook,
+      {
+        filePath: "facets.xlsx",
+        sizeBytes: loaded.sizeBytes,
+        modifiedAt: loaded.modifiedAt,
+      },
+      false,
+    );
+    const bare = described.sheets.find((sheet) => sheet.name === "Bos");
+    expect(bare).toMatchObject({
+      tableCount: 0,
+      conditionalFormatRuleCount: 0,
+      imageCount: 0,
+      autoFilterRef: null,
+      frozenRowCount: 0,
+      frozenColumnCount: 0,
+    });
+  });
+
   it("emits guidance for a tall sheet", async () => {
     const loaded = await loadXlsx(await pathTo("large.xlsx"));
     const description = describeWorkbook(
