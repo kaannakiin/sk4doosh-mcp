@@ -49,6 +49,17 @@ try {
     code: "path_outside_root",
   });
 
+  if (process.platform === "win32") {
+    await symlink(
+      String.raw`\\unreachable.invalid\share\secret.txt`,
+      join(inside, "unc.txt"),
+      "file",
+    );
+    await assert.rejects(root.read("unc.txt", 100), {
+      code: "path_outside_root",
+    });
+  }
+
   if (process.platform !== "win32") {
     assert.equal(spawnSync("mkfifo", [join(inside, "pipe.txt")]).status, 0);
     await assert.rejects(root.read("pipe.txt", 100), { code: "not_a_file" });

@@ -58,3 +58,5 @@ Yukarıdaki sonuç ilk merge çalışmasının tarihsel kaydıdır. Kullanıcın
 `7e9645c` turunda macOS x64 / Node 24 tek bir birleşik CSV testinde 30 saniyeyi aştı. `a033103`, tam 16 MiB parser ve handler kontrollerini ayrı testlere böldü ve test worker sayısını ikiyle sınırladı; byte/hücre/regex/watchdog limitleri değiştirilmedi. Güncel native/file-core/Excel toplamı 450 test. Bu commit'in CI'ı tamamen geçti.
 
 Paket job'ı `SKMCP_REQUIRE_ALL_PREBUILDS=1` ile beş binary'yi doğruladı; üç npm tarball'ının denetimi ve temiz kurulumdan snapshot/regex MCP çağrıları başarılı. npm yayını yapılmadı. Excel/file-core güvenlik kapısı kapandı; XML parser/tool geliştirmesi başlatılmadı.
+
+Son Windows alias kontrolünde hedef yol üzerinde normalizasyon sorgusu kaldırıldı. Uzun/kısa bileşen adları yalnız başlangıçtaki güvenilen kökten alınır; symlink hedefi bu adlarla bellek içinde karşılaştırılır ve kök handle'ıyla açılır. Kök dışı UNC hedefi için watchdog regresyonu eklendi; hedefin dosya sistemine sorgu gönderilmez.

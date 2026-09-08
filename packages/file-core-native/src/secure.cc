@@ -172,6 +172,9 @@ bool absolute(const std::string& path) {
 struct Root {
   Handle handle;
   std::string path;
+#ifdef _WIN32
+  std::deque<std::string> shortNames;
+#endif
   explicit Root(const std::string& raw) : path(slash(raw)) {
     while (path.size() > 1 && path.back() == '/') path.pop_back();
 #ifdef _WIN32
@@ -185,6 +188,11 @@ struct Root {
 #endif
     auto info = infoOf(handle.value);
     if (!info.directory || info.link) throw Failure("not_a_file");
+#ifdef _WIN32
+    std::vector<wchar_t> spelling(32768);
+    auto length = GetShortPathNameW(wide(raw).c_str(), spelling.data(), static_cast<DWORD>(spelling.size()));
+    if (length > 0 && length < spelling.size()) shortNames = parts(utf8(std::wstring(spelling.data(), length)));
+#endif
   }
   std::string relativeTarget(std::string target) const {
     target = slash(std::move(target));
@@ -194,14 +202,20 @@ struct Root {
 #endif
     if (!absolute(target)) return target;
 #ifdef _WIN32
-    // Expand 8.3 aliases as a spelling hint only; access still uses the root handle.
-    auto spelling = wide(target);
-    std::replace(spelling.begin(), spelling.end(), L'/', L'\\');
-    std::vector<wchar_t> expanded(32768);
-    auto length = GetLongPathNameW(spelling.c_str(), expanded.data(), static_cast<DWORD>(expanded.size()));
-    if (length == 0) osFailure();
-    if (length >= expanded.size()) throw Failure("resource_limit");
-    target = slash(utf8(std::wstring(expanded.data(), length)));
+    // Compare only aliases captured from the trusted root. Never query an untrusted UNC/device target.
+    const auto rootNames = parts(path), targetNames = parts(target);
+    if (targetNames.size() < rootNames.size()) throw Failure("path_outside_root");
+    auto equalName = [](const std::string& left, const std::string& right) {
+      const auto a = wide(left), b = wide(right);
+      return CompareStringOrdinal(a.data(), static_cast<int>(a.size()), b.data(), static_cast<int>(b.size()), TRUE) == CSTR_EQUAL;
+    };
+    for (size_t i = 0; i < rootNames.size(); ++i) {
+      if (!equalName(rootNames[i], targetNames[i]) &&
+          (shortNames.size() != rootNames.size() || !equalName(shortNames[i], targetNames[i]))) throw Failure("path_outside_root");
+    }
+    std::vector<std::string> remaining;
+    for (size_t i = rootNames.size(); i < targetNames.size(); ++i) remaining.push_back(targetNames[i]);
+    return joined(remaining);
 #else
     // Absolute symlink targets may use a configured-root alias (/var vs /private/var).
     // Canonicalization is only a hint: the result is still opened through root-relative handles.
@@ -211,18 +225,13 @@ struct Root {
       target = canonical;
       std::free(canonical);
     }
-#endif
     auto prefix = path;
     auto compare = target;
-#ifdef _WIN32
-    auto a = wide(prefix), b = wide(compare.substr(0, prefix.size()));
-    if (CompareStringOrdinal(a.c_str(), static_cast<int>(a.size()), b.c_str(), static_cast<int>(b.size()), TRUE) != CSTR_EQUAL) throw Failure("path_outside_root");
-#else
     if (compare.compare(0, prefix.size(), prefix) != 0) throw Failure("path_outside_root");
-#endif
     if (target.size() == prefix.size()) return "";
     if (prefix != "/" && target[prefix.size()] != '/') throw Failure("path_outside_root");
     return target.substr(prefix.size() + (prefix == "/" ? 0 : 1));
+#endif
   }
 };
 
