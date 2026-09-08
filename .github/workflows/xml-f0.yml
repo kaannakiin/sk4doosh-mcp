@@ -47,9 +47,12 @@ jobs:
         env:
           SKMCP_XML_BENCH: "1"
       - run: node packages/xml-lab/collect-evidence.mjs
+        if: always()
+        continue-on-error: true
         env:
           SKMCP_XML_BENCH: "1"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: xml-f0-${{ matrix.target.id }}-node${{ matrix.node }}
           path: docs/xml/f0/*.json

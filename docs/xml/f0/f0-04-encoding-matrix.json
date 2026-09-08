@@ -604,7 +604,7 @@
     "doc.encoding reported a declared value on 12 of 16 accepted rows; it is never fabricated when the document declares nothing."
   ],
   "provenance": {
-    "commit": "581489465148f3be11f119256f779637b9b50078",
+    "commit": "7b541329179eedc7c36b9aa9c910779494193f67",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null

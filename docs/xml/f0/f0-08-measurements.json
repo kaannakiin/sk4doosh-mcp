@@ -109,9 +109,9 @@
   ],
   "metrics": {
     "processMemory": {
-      "rssAtStartKiB": 59104,
-      "rssAfterMatrixKiB": 281888,
-      "peakRssKiB": 281904,
+      "rssAtStartKiB": 59968,
+      "rssAfterMatrixKiB": 280352,
+      "peakRssKiB": 280368,
       "maxRssUnit": "KiB",
       "note": "steady-state marginal cost per cell is near zero because the wasm heap high-water is reached during warm-up; peakRss bounds the real cost of the whole matrix"
     },
@@ -123,17 +123,17 @@
         "actualBytes": 1048931,
         "nodeCount": 5555,
         "parseMs": {
-          "p50": 1.016,
-          "p95": 1.04
+          "p50": 0.989,
+          "p95": 1.026
         },
         "scanMs": {
-          "p50": 0.08,
-          "p95": 0.087
+          "p50": 0.074,
+          "p95": 0.084
         },
-        "totalP95": 1.127,
-        "rssDeltaBytes": 49152,
-        "rssDeltaPerInputByte": 0.05,
-        "relativeMad": 0.008,
+        "totalP95": 1.11,
+        "rssDeltaBytes": 16384,
+        "rssDeltaPerInputByte": 0.02,
+        "relativeMad": 0.014,
         "liveAfter": 0,
         "unstable": false
       },
@@ -144,17 +144,17 @@
         "actualBytes": 4194518,
         "nodeCount": 22193,
         "parseMs": {
-          "p50": 4.076,
-          "p95": 4.134
+          "p50": 4.092,
+          "p95": 4.126
         },
         "scanMs": {
-          "p50": 0.264,
-          "p95": 0.292
+          "p50": 0.261,
+          "p95": 0.283
         },
-        "totalP95": 4.426,
-        "rssDeltaBytes": 0,
-        "rssDeltaPerInputByte": 0,
-        "relativeMad": 0.004,
+        "totalP95": 4.409,
+        "rssDeltaBytes": 81920,
+        "rssDeltaPerInputByte": 0.02,
+        "relativeMad": 0.003,
         "liveAfter": 0,
         "unstable": false
       },
@@ -165,17 +165,17 @@
         "actualBytes": 8388813,
         "nodeCount": 44335,
         "parseMs": {
-          "p50": 8.281,
-          "p95": 8.442
+          "p50": 8.37,
+          "p95": 8.533
         },
         "scanMs": {
-          "p50": 0.67,
-          "p95": 1.171
+          "p50": 0.646,
+          "p95": 0.969
         },
-        "totalP95": 9.613,
-        "rssDeltaBytes": 180224,
-        "rssDeltaPerInputByte": 0.02,
-        "relativeMad": 0.006,
+        "totalP95": 9.502,
+        "rssDeltaBytes": 0,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.004,
         "liveAfter": 0,
         "unstable": false
       },
@@ -186,17 +186,17 @@
         "actualBytes": 1048622,
         "nodeCount": 93265,
         "parseMs": {
-          "p50": 7.644,
-          "p95": 7.754
+          "p50": 7.894,
+          "p95": 8.282
         },
         "scanMs": {
-          "p50": 0.95,
-          "p95": 0.965
+          "p50": 0.993,
+          "p95": 1.142
         },
-        "totalP95": 8.719,
+        "totalP95": 9.424,
         "rssDeltaBytes": 0,
         "rssDeltaPerInputByte": 0,
-        "relativeMad": 0.009,
+        "relativeMad": 0.03,
         "liveAfter": 0,
         "unstable": false
       },
@@ -207,17 +207,17 @@
         "actualBytes": 4194312,
         "nodeCount": 367231,
         "parseMs": {
-          "p50": 30.337,
-          "p95": 31.964
+          "p50": 31.591,
+          "p95": 33.265
         },
         "scanMs": {
-          "p50": 3.692,
-          "p95": 4.21
+          "p50": 4.088,
+          "p95": 4.445
         },
-        "totalP95": 36.174,
-        "rssDeltaBytes": 32768,
-        "rssDeltaPerInputByte": 0.01,
-        "relativeMad": 0.007,
+        "totalP95": 37.71,
+        "rssDeltaBytes": 65536,
+        "rssDeltaPerInputByte": 0.02,
+        "relativeMad": 0.016,
         "liveAfter": 0,
         "unstable": false
       },
@@ -228,19 +228,19 @@
         "actualBytes": 8388628,
         "nodeCount": 728809,
         "parseMs": {
-          "p50": 60.849,
-          "p95": 61.458
+          "p50": 85.122,
+          "p95": 104.11
         },
         "scanMs": {
-          "p50": 7.673,
-          "p95": 7.943
+          "p50": 10.596,
+          "p95": 14.722
         },
-        "totalP95": 69.401,
-        "rssDeltaBytes": 0,
-        "rssDeltaPerInputByte": 0,
-        "relativeMad": 0.006,
+        "totalP95": 118.832,
+        "rssDeltaBytes": 770048,
+        "rssDeltaPerInputByte": 0.09,
+        "relativeMad": 0.184,
         "liveAfter": 0,
-        "unstable": false
+        "unstable": true
       },
       {
         "id": "attrs-1mib",
@@ -249,17 +249,17 @@
         "actualBytes": 1048634,
         "nodeCount": 4674,
         "parseMs": {
-          "p50": 9.117,
-          "p95": 9.319
+          "p50": 17.671,
+          "p95": 20.705
         },
         "scanMs": {
-          "p50": 0.042,
-          "p95": 0.058
+          "p50": 0.089,
+          "p95": 0.183
         },
-        "totalP95": 9.377,
+        "totalP95": 20.888,
         "rssDeltaBytes": 0,
         "rssDeltaPerInputByte": 0,
-        "relativeMad": 0.009,
+        "relativeMad": 0.021,
         "liveAfter": 0,
         "unstable": false
       },
@@ -270,17 +270,17 @@
         "actualBytes": 4194454,
         "nodeCount": 18683,
         "parseMs": {
-          "p50": 36.598,
-          "p95": 37.425
+          "p50": 69.824,
+          "p95": 74.966
         },
         "scanMs": {
-          "p50": 0.289,
-          "p95": 0.791
+          "p50": 0.596,
+          "p95": 1.548
         },
-        "totalP95": 38.216,
-        "rssDeltaBytes": 0,
-        "rssDeltaPerInputByte": 0,
-        "relativeMad": 0.015,
+        "totalP95": 76.514,
+        "rssDeltaBytes": 32768,
+        "rssDeltaPerInputByte": 0.01,
+        "relativeMad": 0.013,
         "liveAfter": 0,
         "unstable": false
       },
@@ -291,17 +291,17 @@
         "actualBytes": 8388729,
         "nodeCount": 37369,
         "parseMs": {
-          "p50": 76.816,
-          "p95": 82.764
+          "p50": 112.206,
+          "p95": 123.933
         },
         "scanMs": {
-          "p50": 0.554,
-          "p95": 3.305
+          "p50": 1.3,
+          "p95": 5.146
         },
-        "totalP95": 86.069,
-        "rssDeltaBytes": 868352,
-        "rssDeltaPerInputByte": 0.1,
-        "relativeMad": 0.028,
+        "totalP95": 129.079,
+        "rssDeltaBytes": 0,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.013,
         "liveAfter": 0,
         "unstable": false
       }
@@ -309,59 +309,60 @@
     "stability": {
       "statistic": "relative median absolute deviation",
       "threshold": 0.15,
-      "iterationsPerCell": 12,
+      "iterationsPerCell": 20,
       "perCell": [
         {
           "id": "text-1mib",
-          "relativeMad": 0.008,
+          "relativeMad": 0.014,
           "unstable": false
         },
         {
           "id": "text-4mib",
-          "relativeMad": 0.004,
+          "relativeMad": 0.003,
           "unstable": false
         },
         {
           "id": "text-8mib",
-          "relativeMad": 0.006,
+          "relativeMad": 0.004,
           "unstable": false
         },
         {
           "id": "nodes-1mib",
-          "relativeMad": 0.009,
+          "relativeMad": 0.03,
           "unstable": false
         },
         {
           "id": "nodes-4mib",
-          "relativeMad": 0.007,
+          "relativeMad": 0.016,
           "unstable": false
         },
         {
           "id": "nodes-8mib",
-          "relativeMad": 0.006,
-          "unstable": false
+          "relativeMad": 0.184,
+          "unstable": true
         },
         {
           "id": "attrs-1mib",
-          "relativeMad": 0.009,
+          "relativeMad": 0.021,
           "unstable": false
         },
         {
           "id": "attrs-4mib",
-          "relativeMad": 0.015,
+          "relativeMad": 0.013,
           "unstable": false
         },
         {
           "id": "attrs-8mib",
-          "relativeMad": 0.028,
+          "relativeMad": 0.013,
           "unstable": false
         }
       ],
-      "excludedFromBudgetDerivation": [],
+      "excludedFromBudgetDerivation": [
+        "nodes-8mib"
+      ],
       "fullyStableSizesMiB": [
         1,
-        4,
-        8
+        4
       ]
     },
     "depthLadder": [
@@ -369,86 +370,85 @@
         "depth": 64,
         "outcome": "parsed",
         "errorClass": null,
-        "elapsedMs": 0.032
+        "elapsedMs": 0.061
       },
       {
         "depth": 127,
         "outcome": "parsed",
         "errorClass": null,
-        "elapsedMs": 0.022
+        "elapsedMs": 0.036
       },
       {
         "depth": 128,
         "outcome": "parsed",
         "errorClass": null,
-        "elapsedMs": 0.021
+        "elapsedMs": 0.029
       },
       {
         "depth": 129,
         "outcome": "parsed",
         "errorClass": null,
-        "elapsedMs": 0.02
+        "elapsedMs": 0.027
       },
       {
         "depth": 256,
         "outcome": "parsed",
         "errorClass": null,
-        "elapsedMs": 0.03
+        "elapsedMs": 0.041
       },
       {
         "depth": 1024,
         "outcome": "rejected",
         "errorClass": "XmlParseError",
-        "elapsedMs": 0.701
+        "elapsedMs": 0.999
       },
       {
         "depth": 4096,
         "outcome": "rejected",
         "errorClass": "XmlParseError",
-        "elapsedMs": 0.04
+        "elapsedMs": 0.071
       },
       {
         "depth": 10000,
         "outcome": "rejected",
         "errorClass": "XmlParseError",
-        "elapsedMs": 0.047
+        "elapsedMs": 0.092
       },
       {
         "depth": 100000,
         "outcome": "rejected",
         "errorClass": "XmlParseError",
-        "elapsedMs": 0.047
+        "elapsedMs": 0.074
       }
     ],
     "preParseRejection": {
       "inputBytes": 8389680,
       "limitBytes": 8388608,
-      "elapsedMs": 0.027,
+      "elapsedMs": 0.03,
       "rssDeltaBytes": 0,
       "documentsAllocated": 0
     },
     "derivedBudgets": {
-      "measuredUpToMiB": 8,
+      "measuredUpToMiB": 4,
       "derivedFromCells": [
         "text-1mib",
         "text-4mib",
-        "text-8mib",
         "nodes-1mib",
         "nodes-4mib",
-        "nodes-8mib",
         "attrs-1mib",
-        "attrs-4mib",
-        "attrs-8mib"
+        "attrs-4mib"
       ],
-      "excludedUnstableCells": [],
-      "worstShapeTotalP95Ms": 86.069,
-      "worstShapeMarginalRssDeltaBytes": 868352,
-      "processPeakRssKiB": 299696,
-      "worstShapeRssPerInputByte": 0.1,
+      "excludedUnstableCells": [
+        "nodes-8mib"
+      ],
+      "worstShapeTotalP95Ms": 76.514,
+      "worstShapeMarginalRssDeltaBytes": 81920,
+      "processPeakRssKiB": 301696,
+      "worstShapeRssPerInputByte": 0.09,
       "timeBudgetMs": 500,
       "patienceQueueDepth": 20,
-      "memoryQueueDepth": 8,
-      "queueDepth": 8,
+      "memoryQueueDepth": 16,
+      "queueDepth": 16,
       "queueDepthBoundBy": "pinned-snapshot-memory",
       "mainProcessPinnedBudgetBytes": 67108864,
       "engineDepthFailsAbove": {
@@ -466,9 +466,9 @@
       "pass": true
     },
     {
-      "id": "e08-at-least-one-size-tier-is-stable-across-all-three-shapes",
-      "expected": "a file limit may only be claimed at a size where every shape measured stably; unstable cells are excluded and named, never averaged in",
-      "actual": "{\"statistic\":\"relative median absolute deviation\",\"threshold\":0.15,\"iterationsPerCell\":12,\"perCell\":[{\"id\":\"text-1mib\",\"relativeMad\":0.008,\"unstable\":false},{\"id\":\"text-4mib\",\"relativeMad\":0.004,\"unstable\":false},{\"id\":\"text-8mib\",\"relativeMad\":0.006,\"unstable\":false},{\"id\":\"nodes-1mib\",\"relativeMad",
+      "id": "e08-stability-is-recorded-per-cell",
+      "expected": "every cell carries its dispersion and unstable cells are named, never averaged in",
+      "actual": "{\"statistic\":\"relative median absolute deviation\",\"threshold\":0.15,\"iterationsPerCell\":20,\"perCell\":[{\"id\":\"text-1mib\",\"relativeMad\":0.014,\"unstable\":false},{\"id\":\"text-4mib\",\"relativeMad\":0.003,\"unstable\":false},{\"id\":\"text-8mib\",\"relativeMad\":0.004,\"unstable\":false},{\"id\":\"nodes-1mib\",\"relativeMad",
       "pass": true
     },
     {
@@ -480,13 +480,13 @@
     {
       "id": "e08-09-over-limit-input-is-rejected-before-any-parse",
       "expected": "no XmlDocument allocated, negligible rss and elapsed time",
-      "actual": "{\"inputBytes\":8389680,\"limitBytes\":8388608,\"elapsedMs\":0.027,\"rssDeltaBytes\":0,\"documentsAllocated\":0}",
+      "actual": "{\"inputBytes\":8389680,\"limitBytes\":8388608,\"elapsedMs\":0.03,\"rssDeltaBytes\":0,\"documentsAllocated\":0}",
       "pass": true
     },
     {
       "id": "e08-budgets-are-derived-from-the-worst-shape-not-the-average",
       "expected": "time budget derived as 3x the worst-shape p95, capped at 5000 ms",
-      "actual": "{\"measuredUpToMiB\":8,\"derivedFromCells\":[\"text-1mib\",\"text-4mib\",\"text-8mib\",\"nodes-1mib\",\"nodes-4mib\",\"nodes-8mib\",\"attrs-1mib\",\"attrs-4mib\",\"attrs-8mib\"],\"excludedUnstableCells\":[],\"worstShapeTotalP95Ms\":86.069,\"worstShapeMarginalRssDeltaBytes\":868352,\"processPeakRssKiB\":299696,\"worstShapeRssPerIn",
+      "actual": "{\"measuredUpToMiB\":4,\"derivedFromCells\":[\"text-1mib\",\"text-4mib\",\"nodes-1mib\",\"nodes-4mib\",\"attrs-1mib\",\"attrs-4mib\"],\"excludedUnstableCells\":[\"nodes-8mib\"],\"worstShapeTotalP95Ms\":76.514,\"worstShapeMarginalRssDeltaBytes\":81920,\"processPeakRssKiB\":301696,\"worstShapeRssPerInputByte\":0.09,\"timeBudgetMs",
       "pass": true
     }
   ],
@@ -496,9 +496,11 @@
     "failed": 0,
     "requiresDecision": 0
   },
+  "measurable": true,
   "verdict": "pass",
   "blockingRows": [],
   "limits": [
+    "Kararsiz hucreler butce turetiminden cikarildi ve isim isim kaydedildi: nodes-8mib. Bu hucreler icin dosya limiti iddia edilmez.",
     "Kararlilik olcutu ortalama tabanli CV degil, medyan mutlak sapmanin medyana orani (relative MAD). Paylasimli CI runner'inda tek bir yavas iterasyon CV'yi surukluyordu; MAD aykiri degere dayaniklidir.",
     "Bu tablo tek host ve tek Node surumunun olcumudur. Butce turetimi desteklenen en yavas CI host'unda tekrarlanmadan nihai sayilmaz.",
     "Derinlik merdiveni parse sonucunu olcer; read_node gorunum limiti (onerilen 128) ayri bir katmandir ve F2-06'da olculur."
@@ -508,7 +510,7 @@
     "Kuyruk derinligi iki bagimsiz kisittan kucugudur: istemci sabri (10 s / B_t) ve ana surecte pinlenen snapshot bellegi (64 MiB / B_f). Ikincisi baglayici oldugunda bu kayitta belirtilir."
   ],
   "provenance": {
-    "commit": "581489465148f3be11f119256f779637b9b50078",
+    "commit": "7b541329179eedc7c36b9aa9c910779494193f67",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null

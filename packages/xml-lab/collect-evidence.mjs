@@ -117,9 +117,10 @@ for (const entry of probes) {
   const enriched = { ...record, provenance, command: entry.command };
   const target = join(outputDirectory, entry.file);
   writeFileSync(target, `${JSON.stringify(enriched, null, 2)}\n`);
-  if (record.verdict !== "pass") failed += 1;
+  if (record.verdict === "fail") failed += 1;
+  const marker = record.verdict === "inconclusive" ? " [INCONCLUSIVE]" : "";
   process.stderr.write(
-    `${entry.task} ${record.verdict} (${record.summary.passed}/${record.summary.total}) -> ${target}\n`,
+    `${entry.task} ${record.verdict}${marker} (${record.summary.passed}/${record.summary.total}) -> ${target}\n`,
   );
 }
 

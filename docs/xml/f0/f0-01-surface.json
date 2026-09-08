@@ -321,7 +321,7 @@
     {
       "id": "max-rss-unit-resolved",
       "expected": "KiB or bytes",
-      "actual": "KiB (maxRSS=356496, rss=365051904, grew=268812288)",
+      "actual": "KiB (maxRSS=355984, rss=364527616, grew=268713984)",
       "pass": true
     }
   ],
@@ -343,7 +343,7 @@
     "reviewed revision 394487987eece208b5d02274fedc6c292f84ee6b is 0.8.0-dev on master; the published artifact is built from a different commit recorded in the npm provenance attestation."
   ],
   "provenance": {
-    "commit": "581489465148f3be11f119256f779637b9b50078",
+    "commit": "7b541329179eedc7c36b9aa9c910779494193f67",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null
