@@ -93,6 +93,8 @@ Dosya yetkilendirmesi başlangıç kök handle'ına bağlıdır. Eşzamanlı yaz
 
 ## Teslimat ve XML geçiş kapısı
 
+Linux/Windows testlerinin nerede ve nasıl başlatılacağı, PR tetikleyicisi ve manuel çalıştırma koşulu [platform testleri rehberinde](excel-platform-testleri.md) açıklanır. Güncel durum iki ana belgeye de işlendi: [35 bulgu](excel-file-core-bulgular.md), [karar kaydı](excel-acik-maddeler-karar-kaydi.md).
+
 Yerel kaynak, test ve paket doğrulamaları tamamlandı. CI dosyası hazır; Linux glibc x64/arm64, macOS x64 ve Windows x64 çalıştırmaları ile Node 22 sonuçları henüz yok. Beş hedefin hazır binary'leri ve temiz kurulum kanıtı CI'dan alınmadan, A paketinin platform kapsamı kapanmış sayılmayacak. Bu çalışma paket yayımlamaz.
 
 #9/#10/#25 tam destek olarak işaretlenmez. Aşağıdaki üç bağımsız takip kaydı mevcut sınırlılığı, fixture'ı ve kapanış kriterini taşır; runtime `followUp` kimlikleri bu kayıtlara bağlanır. XML parser/tool veya ExcelJS değişimi yapılmadı.
