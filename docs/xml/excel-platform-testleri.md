@@ -18,7 +18,7 @@ Durum: macOS arm64 / Node 24 yerel testleri geçti. Aşağıdaki Linux/Windows v
 
 ## Bu dal için ilk çalıştırma
 
-1. Depo kökünde `git push -u origin codex/excel-file-core-hardening` çalıştır.
+1. Depo kökünde `git push -u origin excel-file-core-hardening` çalıştır.
 2. GitHub'da bu daldan `main` dalına bir pull request aç. Taslak PR kullanılabilir. CI, `pull_request` olayıyla başlar; testleri başlatmak için merge gerekmez.
 3. PR'ın **Checks** bölümünden veya yukarıdaki Actions bağlantısından çalışmayı aç.
 4. `secure files (linux-x64, Node 22)` gibi on işin sonuçlarını incele. Windows için `secure files (win32-x64, Node 22)` ve `Node 24` işlerini kontrol et.
@@ -27,7 +27,7 @@ Bu dal şu anda yalnız yerelde kaydedildi; bu çalışma uzaktaki depoya push v
 
 ## Daha sonraki manuel çalıştırmalar
 
-Workflow'a `workflow_dispatch` eklendi. Bu tanım varsayılan dala girdikten sonra **Actions → CI → Run workflow** üzerinden dal seçilerek çalıştırılabilir. GitHub CLI alternatifi: `gh workflow run ci.yml --ref codex/excel-file-core-hardening`.
+Workflow'a `workflow_dispatch` eklendi. Bu tanım varsayılan dala girdikten sonra **Actions → CI → Run workflow** üzerinden dal seçilerek çalıştırılabilir. GitHub CLI alternatifi: `gh workflow run ci.yml --ref excel-file-core-hardening`.
 
 Manuel çalıştırmanın varsayılan dal koşulu [GitHub'ın resmi açıklamasında](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow) yer alır. İlk doğrulama için PR yöntemi kullanılır; yalnız manuel düğmeyi görünür yapmak amacıyla doğrulanmamış kod merge edilmez.
 
