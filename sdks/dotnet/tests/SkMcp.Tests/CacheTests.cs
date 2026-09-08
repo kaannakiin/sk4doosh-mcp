@@ -176,11 +176,26 @@ public sealed class CacheTests
     {
         await using Harness host = await ProbeHostAsync();
         SkMcpMetaTools tools = host.ToolsFor(Mint("alice"));
-        Interlocked.Exchange(ref VisibilityController.UndeclaredHits, 0);
+        Interlocked.Exchange(ref host.Probes.UndeclaredHits, 0);
 
         await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => SearchAsync(tools)));
 
-        Assert.Equal(1, Volatile.Read(ref VisibilityController.UndeclaredHits));
+        Assert.Equal(1, Volatile.Read(ref host.Probes.UndeclaredHits));
+    }
+
+    [Fact]
+    public async Task K5_SingleFlight_ParallelHosts_HaveIndependentProbeCounts()
+    {
+        await using Harness first = await ProbeHostAsync();
+        await using Harness second = await ProbeHostAsync();
+        SkMcpMetaTools firstTools = first.ToolsFor(Mint("alice"));
+        SkMcpMetaTools secondTools = second.ToolsFor(Mint("alice"));
+
+        await Task.WhenAll(Enumerable.Range(0, 5).SelectMany(_ =>
+            new[] { SearchAsync(firstTools), SearchAsync(secondTools) }));
+
+        Assert.Equal(1, Volatile.Read(ref first.Probes.UndeclaredHits));
+        Assert.Equal(1, Volatile.Read(ref second.Probes.UndeclaredHits));
     }
 
     [Fact]
@@ -219,13 +234,13 @@ public sealed class CacheTests
     {
         await using Harness host = await ProbeHostAsync(o => o.Cache.MaxCallers = 1);
         SkMcpMetaTools alice = host.ToolsFor(Mint("alice"));
-        Interlocked.Exchange(ref VisibilityController.UndeclaredHits, 0);
+        Interlocked.Exchange(ref host.Probes.UndeclaredHits, 0);
 
         await SearchAsync(alice);
         await SearchAsync(host.ToolsFor(Mint("bob")));
         await SearchAsync(alice);
 
-        Assert.Equal(3, Volatile.Read(ref VisibilityController.UndeclaredHits));
+        Assert.Equal(3, Volatile.Read(ref host.Probes.UndeclaredHits));
     }
 
     [Fact]
@@ -233,12 +248,12 @@ public sealed class CacheTests
     {
         await using Harness host = await ProbeHostAsync(o => o.Cache.Lifetime = TimeSpan.Zero);
         SkMcpMetaTools tools = host.ToolsFor(Mint("alice"));
-        Interlocked.Exchange(ref VisibilityController.UndeclaredHits, 0);
+        Interlocked.Exchange(ref host.Probes.UndeclaredHits, 0);
 
         await SearchAsync(tools);
         await SearchAsync(tools);
 
-        Assert.Equal(2, Volatile.Read(ref VisibilityController.UndeclaredHits));
+        Assert.Equal(2, Volatile.Read(ref host.Probes.UndeclaredHits));
     }
 
     [Fact]

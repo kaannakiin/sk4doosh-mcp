@@ -64,7 +64,6 @@ public sealed class CustomGateAttribute : Attribute, IAuthorizationFilter
 public sealed class VisibilityController : ControllerBase
 {
     public static int SideEffects;
-    public static int UndeclaredHits;
 
     [HttpGet("anon")]
     [AllowAnonymous]
@@ -140,7 +139,12 @@ internal sealed class FixedContext(HttpContext context) : IHttpContextAccessor
     public HttpContext? HttpContext { get => context; set { } }
 }
 
-internal sealed record Harness(WebApplication App, SkMcpDispatcher Dispatcher) : IAsyncDisposable
+internal sealed class ProbeCounter
+{
+    public int UndeclaredHits;
+}
+
+internal sealed record Harness(WebApplication App, SkMcpDispatcher Dispatcher, ProbeCounter Probes) : IAsyncDisposable
 {
     public SkMcpMetaTools ToolsFor(string? token, params (string Name, string Value)[] headers)
     {
@@ -199,6 +203,7 @@ internal static class VisibilityHost
         Action<IServiceCollection>? beforeSkMcp = null,
         Action<IServiceCollection>? afterSkMcp = null)
     {
+        ProbeCounter probes = new();
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Logging.ClearProviders();
@@ -238,7 +243,7 @@ internal static class VisibilityHost
             }
             if (context.Request.Path.StartsWithSegments("/vis/undeclared"))
             {
-                Interlocked.Increment(ref VisibilityController.UndeclaredHits);
+                Interlocked.Increment(ref probes.UndeclaredHits);
             }
             if (context.Request.Path.StartsWithSegments("/vis/undeclared")
                 && !context.Request.Headers.ContainsKey("Authorization"))
@@ -262,7 +267,7 @@ internal static class VisibilityHost
             .WithMetadata(new McpToolAttribute());
         app.MapSkMcp("/mcp");
         await app.StartAsync();
-        return new Harness(app, app.Services.GetRequiredService<SkMcpDispatcher>());
+        return new Harness(app, app.Services.GetRequiredService<SkMcpDispatcher>(), probes);
     }
 
     public static Task<Harness> ProbeHostAsync(
