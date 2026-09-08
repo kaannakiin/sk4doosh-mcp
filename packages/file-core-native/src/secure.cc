@@ -54,9 +54,9 @@ std::string utf8(const std::wstring& s) {
 }
 [[noreturn]] void osFailure() {
   auto e = GetLastError();
-  if (e == ERROR_FILE_NOT_FOUND || e == ERROR_PATH_NOT_FOUND) throw Failure("file_not_found");
-  if (e == ERROR_DIRECTORY) throw Failure("not_a_file");
-  throw Failure("path_outside_root");
+  if (e == ERROR_FILE_NOT_FOUND || e == ERROR_PATH_NOT_FOUND) throw Failure("file_not_found", static_cast<int>(e));
+  if (e == ERROR_DIRECTORY) throw Failure("not_a_file", static_cast<int>(e));
+  throw Failure("path_outside_root", static_cast<int>(e));
 }
 Raw duplicate(Raw h) {
   Raw copy;
@@ -193,7 +193,16 @@ struct Root {
     else if (target.rfind("/?" "?/", 0) == 0 || target.rfind("//?/", 0) == 0) target = target.substr(4);
 #endif
     if (!absolute(target)) return target;
-#ifndef _WIN32
+#ifdef _WIN32
+    // Expand 8.3 aliases as a spelling hint only; access still uses the root handle.
+    auto spelling = wide(target);
+    std::replace(spelling.begin(), spelling.end(), L'/', L'\\');
+    std::vector<wchar_t> expanded(32768);
+    auto length = GetLongPathNameW(spelling.c_str(), expanded.data(), static_cast<DWORD>(expanded.size()));
+    if (length == 0) osFailure();
+    if (length >= expanded.size()) throw Failure("resource_limit");
+    target = slash(utf8(std::wstring(expanded.data(), length)));
+#else
     // Absolute symlink targets may use a configured-root alias (/var vs /private/var).
     // Canonicalization is only a hint: the result is still opened through root-relative handles.
     if (target.compare(0, path.size(), path) != 0) {
@@ -234,7 +243,7 @@ Handle openChild(Raw parent, const std::string& name) {
     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 1, 0x00200000 | 0x00000020 | 0x00004000, nullptr, 0);
   if (result < 0) {
     if (static_cast<ULONG>(result) == 0xC0000034 || static_cast<ULONG>(result) == 0xC000003A) throw Failure("file_not_found");
-    throw Failure("path_outside_root");
+    throw Failure("path_outside_root", static_cast<int>(result));
   }
   return Handle(child);
 }
@@ -337,7 +346,11 @@ class Directory {
 public:
   explicit Directory(Raw h)
 #ifdef _WIN32
-    : handle(openChild(h, ".")) {}
+    : handle(ReOpenFile(h, FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)) {
+      if (handle.value == invalid) osFailure();
+    }
 #else
     : dir(nullptr) {
       int fd = openat(h, ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);

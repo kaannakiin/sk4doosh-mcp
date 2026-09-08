@@ -35,6 +35,20 @@ test("traversal budgets count unsupported entries and bound depth/time", async (
     assert.equal(limited.reason, "entries");
     assert.equal((await root.scan("", 20, 64, 1000)).visited, 12);
     assert.equal((await root.scan("", 20, 64, 1000)).reason, null);
+    const parallel = await Promise.all(
+      Array.from({ length: 8 }, () => root.scan("", 20, 64, 1000)),
+    );
+    const expected = Array.from(
+      { length: 12 },
+      (_, i) => `${i}.unsupported`,
+    ).sort();
+    for (const scan of parallel) {
+      assert.equal(scan.reason, null);
+      assert.deepEqual(
+        scan.entries.map((entry) => entry.path).sort(),
+        expected,
+      );
+    }
     assert.equal((await root.scan("", 20, 64, 0)).reason, "time");
     await mkdir(join(path, "a"));
     await mkdir(join(path, "a", "b"));
