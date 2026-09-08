@@ -228,7 +228,7 @@ struct Root {
 
 #ifdef _WIN32
 Handle openChild(Raw parent, const std::string& name) {
-  if (name.find(':') != std::string::npos || name.back() == ' ' || (name != "." && name.back() == '.')) throw Failure("path_outside_root");
+  if (!name.empty() && (name.find(':') != std::string::npos || name.back() == ' ' || name.back() == '.')) throw Failure("path_outside_root");
   auto w = wide(name);
   if (w.size() > 32767) throw Failure("resource_limit");
   UNICODE_STRING us{ static_cast<USHORT>(w.size() * sizeof(wchar_t)), static_cast<USHORT>(w.size() * sizeof(wchar_t)), w.data() };
@@ -240,7 +240,8 @@ Handle openChild(Raw parent, const std::string& name) {
   static auto create = reinterpret_cast<Create>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtCreateFile"));
   if (!create) throw Failure("unsupported_platform");
   auto result = create(&child, FILE_READ_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE, &attributes, &status, nullptr, 0,
-    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 1, 0x00200000 | 0x00000020 | 0x00004000, nullptr, 0);
+    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 1,
+    0x00200000 | 0x00000020 | 0x00004000 | (name.empty() ? 0x00000001 : 0), nullptr, 0);
   if (result < 0) {
     if (static_cast<ULONG>(result) == 0xC0000034 || static_cast<ULONG>(result) == 0xC000003A) throw Failure("file_not_found");
     throw Failure("path_outside_root", static_cast<int>(result));
@@ -346,11 +347,8 @@ class Directory {
 public:
   explicit Directory(Raw h)
 #ifdef _WIN32
-    : handle(ReOpenFile(h, FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)) {
-      if (handle.value == invalid) osFailure();
-    }
+    // An empty NT relative name reopens this directory with an independent enumeration cursor.
+    : handle(openChild(h, "")) {}
 #else
     : dir(nullptr) {
       int fd = openat(h, ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
