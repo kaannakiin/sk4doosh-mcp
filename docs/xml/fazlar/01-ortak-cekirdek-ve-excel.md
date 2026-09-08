@@ -1,16 +1,16 @@
 # F1 — Ortak çekirdek ve Excel düzeltme paketleri
 
-Durum: Excel/file-core güvenlik kapsamı yerelde uygulandı; platform CI ve XML'e özgü işler bekliyor. Sorumlu: file-core/Excel geliştiricisi. Önkoşul: [bulgu raporu](../excel-file-core-bulgular.md). XML motoruna özgü yaşam döngüsü için F0 sonucu gerekir.
+Durum: Excel/file-core güvenlik uygulaması ve platform CI geçti; XML’e özgü işler bekliyor. Sorumlu: file-core/Excel geliştiricisi. Önkoşul: [bulgu raporu](../excel-file-core-bulgular.md). XML motoruna özgü yaşam döngüsü için F0 sonucu gerekir.
 
 ## Hedef
 
-XML ikinci tüketici olurken mevcut dosya sınırlarını güçlendirmek. Excel'e özgü düzeltmeleri ayrı paketlerde tutmak. Excel/file-core uygulaması `b4924d8` commit'inde; 449 yerel test ve temiz paket/MCP doğrulaması geçti. Bu sonuç bütün F1 fazının veya XML işlerinin tamamlandığı anlamına gelmez.
+XML ikinci tüketici olurken mevcut dosya sınırlarını güçlendirmek. Excel'e özgü düzeltmeleri ayrı paketlerde tutmak. Excel/file-core uygulaması `b4924d8` commit'inde; Güncel kaynakta 450 native/file-core/Excel testi; beş hedef × Node 22/24 CI ve birleşik paket/MCP doğrulaması geçti. Bu sonuç bütün F1 fazının veya XML işlerinin tamamlandığı anlamına gelmez.
 
 ## Güncel ilerleme
 
 | Görev / kapsam                                             | Durum ve kanıt                                                                      |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| F1-01/02 native erişim, özel dosya ve snapshot byte sınırı | macOS arm64 / Node 24 geçti; Linux/Windows dahil platform matrisi bekliyor          |
+| F1-01/02 native erişim, özel dosya ve snapshot byte sınırı | Beş hedef × Node 22/24 platform matrisi ve paket doğrulaması geçti                  |
 | F1-04 içerik kimliği, cache ve cursor                      | Yerel regresyonlar geçti; atomik OS snapshot iddiası yok                            |
 | F1-07 artımlı listeleme                                    | Gerçek ziyaret, derinlik/süre ve toplam kesinliği testleri yerelde geçti            |
 | Excel bulguları #1–35                                      | Uygulama/test/sınırlılık kaydı tamamlandı; #9/#10/#25 tam destek takipleri açık     |
@@ -18,7 +18,7 @@ XML ikinci tüketici olurken mevcut dosya sınırlarını güçlendirmek. Excel'
 | F1-05 ortak hata redaksiyonu                               | Yerelde doğrulandı; bütün XML başarı yanıtlarının byte bütçesi henüz uygulanmadı    |
 | F1-06 iki tüketicili regresyon                             | file-core/Excel testleri geçti; XML tüketicisi ve entegrasyonu bekliyor             |
 
-Bulgu/test/fixture eşleştirmesi [kapanış kaydında](../excel-hardening-uygulama.md). [Platform testleri rehberi](../excel-platform-testleri.md) GitHub Actions'ta Linux ve Windows çalıştırma adımlarını açıklar. Platform ve paket kanıtı gelmeden XML geliştirmesine geçilmez. Aşağıdaki tablolar görevlerin kabul sözleşmesini korur.
+Bulgu/test/fixture eşleştirmesi [kapanış kaydında](../excel-hardening-uygulama.md). [Platform testleri rehberi](../excel-platform-testleri.md) GitHub Actions'ta Linux ve Windows çalıştırma adımlarını açıklar. Platform ve paket kanıtı [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) ile alındı; F0 ve XML’e özgü F1-03/05/06 işleri kendi kapılarını korur. Aşağıdaki tablolar görevlerin kabul sözleşmesini korur.
 
 ## XML başlamadan kapanacak kapılar
 

@@ -2,7 +2,7 @@
 
 Tarih: 2026-09-08. Durum: #17/#33/#35 hedef regresyonları çalıştırıldı; #26/#27/#28 için kabul edilen kararlar uygulandı. Uygulama commit’i `b4924d8`; kanıt kaydı `310064e`. Bu belge bu altı maddeyi kapsar; [35 bulgunun tamamı](excel-file-core-bulgular.md) ve [test/fixture/komut kaydı](excel-hardening-uygulama.md) ayrı tutulur.
 
-Yerel ortam macOS arm64 / Node 24.12.0. 449 test, type-check, lint, format ve temiz paket/MCP doğrulaması geçti. Linux/Windows dahil tam platform matrisi henüz çalıştırılmadı. [GitHub Actions çalıştırma rehberi](excel-platform-testleri.md) hazır; XML geçiş kapısı kapalı.
+Yerel ortam macOS arm64 / Node 24.12.0; güncel native/file-core/Excel toplamı 450 test. [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196), `a033103` için beş native hedef × Node 22/24 matrisi ve birleşik paket dahil 13 job ile geçti. Excel/file-core platform kapısı kapandı; XML geliştirmesi başlamadı.
 
 ## Başlangıç iddiası ve ölçüm
 
@@ -84,17 +84,17 @@ Kanıt: `revalidates bytes on a cache hit even after mtime and size are restored
 
 Dosya yetkilendirmesi başlangıçta açılan kök handle’ına bağlıdır. Okuma öncesi/sonrası kimlik ve metadata değişiminde `file_changed` döner. Eşzamanlı yazıya karşı atomik işletim sistemi snapshot’ı garantisi verilmez.
 
-## Doğrulama sonucu ve kalan kapı
+## Doğrulama sonucu
 
-| Madde | Yerel durum                                                | Kalan              |
-| ----- | ---------------------------------------------------------- | ------------------ |
-| #17   | Gerçek byte/hücre sınırları, parser ve handler geçti       | Platform CI        |
-| #33   | Gerçek iki sheet korunuyor; belirsizlik doğru reddediliyor | Platform CI        |
-| #35   | Bağımsız seri/tarih/saat oracle’ları geçti                 | Platform CI        |
-| #26   | Kabul edilen kesin/NFC sözleşmesi doğrulandı               | Platform CI        |
-| #27   | Cursor v2 ve seçenek matrisi geçti                         | Platform CI        |
-| #28   | Byte kimliği, cache ve cursor regresyonları geçti          | Native platform CI |
+| Madde | Yerel durum                                                | Kalan    |
+| ----- | ---------------------------------------------------------- | -------- |
+| #17   | Gerçek byte/hücre sınırları, parser ve handler geçti       | CI geçti |
+| #33   | Gerçek iki sheet korunuyor; belirsizlik doğru reddediliyor | CI geçti |
+| #35   | Bağımsız seri/tarih/saat oracle’ları geçti                 | CI geçti |
+| #26   | Kabul edilen kesin/NFC sözleşmesi doğrulandı               | CI geçti |
+| #27   | Cursor v2 ve seçenek matrisi geçti                         | CI geçti |
+| #28   | Byte kimliği, cache ve cursor regresyonları geçti          | CI geçti |
 
 Tekrar üretme komutu: `pnpm turbo run test:coverage test check-types lint --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --continue=always`.
 
-Son branch coverage: file-core %83,77 (160/191), Excel %86,16 (1220/1416). Yerel başarı bütün platformlarda başarı olarak sunulmaz. Linux/Windows CI run URL’si, commit SHA’sı ve hazır binary artifact’ları [kapanış kaydına](excel-hardening-uygulama.md) eklendiğinde platform kapısı yeniden değerlendirilir.
+Son branch coverage: file-core %83,77 (160/191), Excel %86,12 (1216/1412). Linux/macOS/Windows CI run URL’si, commit SHA’sı ve hazır binary artifact’ları [kapanış kaydında](excel-hardening-uygulama.md) kayıtlı; platform kanıtı tamamlandı.

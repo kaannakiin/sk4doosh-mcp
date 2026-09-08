@@ -1,8 +1,8 @@
 # XML MCP — Araştırmadan uygulama planına
 
-Tarih: 2026-09-08. Durum: **Excel/file-core güvenlik uygulaması yerelde doğrulandı; platform CI bekliyor. XML uygulaması başlamadı.**
+Tarih: 2026-09-08. Durum: **Excel/file-core güvenlik ve platform CI kapısı geçti. XML uygulaması başlamadı.**
 
-Bu çalışma Claude'un geçici araştırmalarını devralır, çelişkileri çözer ve uygulama görevlerine ayırır. Excel/file-core için kaynak, test, native paket ve CI değişiklikleri `b4924d8` commit'inde uygulandı; 449 yerel test geçti. Linux/Windows dahil platform matrisi henüz çalıştırılmadı. XML fazları, aşağıda belirtilen önkoşullar geçene kadar plan durumundadır.
+Araştırma kararları ve XML faz planları korunur. Excel/file-core güvenlik uygulaması ile takip düzeltmeleri `main` üzerinde; `a033103` için [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) 13/13 başarılı. Beş native hedef × Node 22/24, gerçek MCP ve birleşik paket doğrulaması tamamlandı. XML’e özgü fazlar kendi önkoşullarına bağlıdır.
 
 ## Hedef
 
@@ -23,17 +23,17 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 
 ## Faz sırası ve kapsam
 
-| Faz                                                                  | Sonuç                                                                                      | Önkoşul                                          | Durum                               |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------ | ----------------------------------- |
-| [F0 — Kanıt ve teknik karar kapısı](fazlar/00-kanit-ve-karar.md)     | Seçilen XML motorunun gerçek paket üzerinde doğrulanması                                   | Yok                                              | Planlandı                           |
-| [F1 — Ortak çekirdek ve Excel](fazlar/01-ortak-cekirdek-ve-excel.md) | XML'i etkileyen dosya güvenliği ve kaynak ömrü sözleşmeleri; ayrı Excel düzeltme paketleri | Bulgu raporu                                     | Yerel geçti; CI/XML işleri bekliyor |
-| [F2 — Salt okunur MVP](fazlar/02-okuma-mvp.md)                       | Dört tool ile keşif, düğüm okuma ve metin arama                                            | F0 kapısı + F1'in XML bloklayıcıları             | Planlandı                           |
-| [F3 — XPath ve kayıt analizi](fazlar/03-sorgu-ve-kayitlar.md)        | XPath 1.0, açık projeksiyon ve kontrollü aggregate                                         | F2                                               | Planlandı                           |
-| [F4 — Büyük dosya ve çoklu arama](fazlar/04-buyuk-dosya.md)          | DOM sınırının üstünde dar streaming yetenekleri                                            | F3; ölçülmüş ihtiyaç                             | İsteğe bağlı                        |
-| [F5 — Ayrı genişletmeler](fazlar/05-genisletmeler.md)                | XSD özeti/doğrulama, container, dönüşüm ve diff için bağımsız kapılar                      | F2 veya F3; görevde belirtilir                   | İsteğe bağlı                        |
-| [F6 — Yayın ve agent kabulü](fazlar/06-yayin-ve-kabul.md)            | Seçilen kapsamın kurulum, entegrasyon ve kabul kanıtları                                   | İlk yayın için F2; ek özellikler için ilgili faz | Planlandı                           |
+| Faz                                                                  | Sonuç                                                                                      | Önkoşul                                          | Durum                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------ | ----------------------------- |
+| [F0 — Kanıt ve teknik karar kapısı](fazlar/00-kanit-ve-karar.md)     | Seçilen XML motorunun gerçek paket üzerinde doğrulanması                                   | Yok                                              | Planlandı                     |
+| [F1 — Ortak çekirdek ve Excel](fazlar/01-ortak-cekirdek-ve-excel.md) | XML'i etkileyen dosya güvenliği ve kaynak ömrü sözleşmeleri; ayrı Excel düzeltme paketleri | Bulgu raporu                                     | CI geçti; XML işleri bekliyor |
+| [F2 — Salt okunur MVP](fazlar/02-okuma-mvp.md)                       | Dört tool ile keşif, düğüm okuma ve metin arama                                            | F0 kapısı + F1'in XML bloklayıcıları             | Planlandı                     |
+| [F3 — XPath ve kayıt analizi](fazlar/03-sorgu-ve-kayitlar.md)        | XPath 1.0, açık projeksiyon ve kontrollü aggregate                                         | F2                                               | Planlandı                     |
+| [F4 — Büyük dosya ve çoklu arama](fazlar/04-buyuk-dosya.md)          | DOM sınırının üstünde dar streaming yetenekleri                                            | F3; ölçülmüş ihtiyaç                             | İsteğe bağlı                  |
+| [F5 — Ayrı genişletmeler](fazlar/05-genisletmeler.md)                | XSD özeti/doğrulama, container, dönüşüm ve diff için bağımsız kapılar                      | F2 veya F3; görevde belirtilir                   | İsteğe bağlı                  |
+| [F6 — Yayın ve agent kabulü](fazlar/06-yayin-ve-kabul.md)            | Seçilen kapsamın kurulum, entegrasyon ve kabul kanıtları                                   | İlk yayın için F2; ek özellikler için ilgili faz | Planlandı                     |
 
-İlk yayın yolu **F0 → F1/XML bloklayıcıları → F2 → F6**. XPath isteyen sonraki sürüm F3'ü tamamlar ve F6'yı tekrar uygular. F4 ve F5, MVP'nin bitiş şartı değildir. Kullanıcının kabul ettiği güncel kapı: 35 Excel/file-core bulgusu uygulama, test veya açık destek sınırlılığıyla ele alınacak; platform CI ve hazır paket kanıtı tamamlanacak. #9/#10/#25 tam metadata desteği ayrı takip işleridir; kabul edilen sınırlılıklar belgelenmiştir.
+İlk yayın yolu **F0 → F1/XML bloklayıcıları → F2 → F6**. XPath isteyen sonraki sürüm F3'ü tamamlar ve F6'yı tekrar uygular. F4 ve F5, MVP'nin bitiş şartı değildir. Kullanıcının kabul ettiği Excel/file-core kapısı tamamlandı: 35 bulgu uygulama, test veya açık destek sınırlılığıyla ele alındı; platform CI ve hazır paket kanıtı alındı. F0 teknik deneyleri ve XML’e özgü F1 işleri henüz tamamlanmadı. #9/#10/#25 tam metadata desteği ayrı takip işleridir; kabul edilen sınırlılıklar belgelenmiştir.
 
 ## Yönetim kuralları
 

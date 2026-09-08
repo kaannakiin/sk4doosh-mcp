@@ -1,8 +1,8 @@
 # Excel ve file-core güvenlik kapatma kaydı
 
-**Merge sonrası CI güncellemesi:** `4f2f595` için [CI #34221182771](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34221182771) çalıştırıldı. Linux native derleme ve Windows MSVC hazırlık hataları doğrulandı; platform kapısı geçmedi. [Ayrıntılı inceleme](excel-ci-inceleme-2026-09-08.md). Aşağıdaki yerel sonuçlar korunur; ilk teslimattaki “CI bekliyor” durumu artık başarılı CI anlamına gelmez.
+**Nihai CI kanıtı:** `a033103bc802b098b3cfe03e5e3aa808a35f4808` için [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) **success** ile tamamlandı: 13/13 job geçti. [npm-tarballs artifact](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196/artifacts/10055082654), beş native hedefi içeriyor. Önceki hatalar ve düzeltmeler [CI inceleme kaydında](excel-ci-inceleme-2026-09-08.md).
 
-Durum: uygulama ve yerel doğrulama tamamlandı; macOS arm64/x64 × Node 22/24 CI işleri geçti. Merge sonrası CI sonucu `failure`: Linux native derlemesi ve Windows MSVC hazırlığı başarısız; düzeltme ve yeni CI kanıtı gerekiyor. Birleşik paket işi atlandı. XML geçiş kapısı kapalı; XML geliştirmesi başlamadı.
+Durum: Excel/file-core uygulaması, yerel kontroller, Linux glibc x64/arm64 + macOS x64/arm64 + Windows x64 üzerinde Node 22/24 matrisi ve birleşik paket doğrulaması tamamlandı. Excel/file-core güvenlik geçiş kapısı geçti. #9/#10/#25 kabul edilen destek sınırlılıkları olarak ayrı takipte; XML geliştirmesi başlamadı.
 
 ## Kabul edilen kapsam
 
@@ -20,7 +20,7 @@ Kesin/NFC sayfa seçimi korunur. Cursor çatışmaları reddedilir. Min/max karm
 
 | Paket                                | Bulgular                                  | Durum                                                  |
 | ------------------------------------ | ----------------------------------------- | ------------------------------------------------------ |
-| A — Dosya erişimi/snapshot/listeleme | 3, 7, 19, 28, 29, 30, 34                  | Yerel doğrulama geçti; platform matrisi bekliyor       |
+| A — Dosya erişimi/snapshot/listeleme | 3, 7, 19, 28, 29, 30, 34                  | Yerel ve platform CI doğrulaması geçti                 |
 | B — CSV                              | 1, 14, 15, 17                             | Uygulandı, regresyonlar geçti                          |
 | C — Regex ve hesaplama               | 2, 4, 5, 6, 22, 23                        | Uygulandı, watchdog testleri geçti                     |
 | D — Header/hücre/cursor              | 8, 12, 13, 16, 20, 21, 27                 | Uygulandı, regresyonlar geçti                          |
@@ -28,12 +28,12 @@ Kesin/NFC sayfa seçimi korunur. Cursor çatışmaları reddedilir. Min/max karm
 
 ## Tekrar üretme ve kanıt
 
-- **T**: `pnpm turbo run test:coverage test check-types lint --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --continue=always`. Native build bağımlılığı ve Excel worker build'i dahildir. Yerel sonuç: 97 file-core + 350 Excel + 2 native = **449 test**, type-check ve lint başarılı. Kullanılmayan import uyarısı kaldırıldı.
+- **T**: `pnpm turbo run test:coverage test check-types lint --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --continue=always`. Native build bağımlılığı ve Excel worker build'i dahildir. Yerel sonuç: 97 file-core + 351 Excel + 2 native = **450 test**, type-check ve lint başarılı. Kullanılmayan import uyarısı kaldırıldı.
 - **P**: Üç paketi `pnpm --filter <paket> pack --pack-destination ../../local/hardening-tarballs` ile paketle; `python3 .github/scripts/check-npm-tarballs.py local/hardening-tarballs`; `node .github/scripts/smoke-file-packages.mjs local/hardening-tarballs`. Temiz kurulum, gerçek stdio MCP `read_sheet` ve regex çağrısı yerel macOS paketleriyle geçti. Native binary ve worker tarball içinde doğrulanır.
 - **F**: Değişen kaynak/config/dokümanlarda `pnpm exec prettier --check <dosyalar>`; `git diff --check`.
-- **CI**: `.github/workflows/ci.yml` beş native hedef × Node 22/24 için build/test/temiz kurulum/MCP smoke tanımlar. Node 24 çıktıları birleştirilir; yayın tarball kontrolü beş binary'yi de zorunlu tutar. Bu matris yerelde çalıştırılmadı; CI sonuçları ve beş platform binary'si henüz teslim edilmiş sayılmaz.
-- Coverage sağlayıcısı Vitest ile aynı sürümde: 3.2.7. Yerel son ölçüm: file-core branch %83,77 (160/191); Excel branch %86,16 (1220/1416). #17 byte/hücre, #33 `ambiguous_sheet`, #35 1904 dalları hedef testlerle çalıştırıldı. Coverage raporları paketlerin `coverage/` dizininde üretilir.
-- Commit kanıtı: `b4924d8` (`fix(excel): harden file access, queries and metadata contracts`), dal `excel-file-core-hardening`. Aşağıdaki 35 satırın kaynak/test uygulaması bu commit'tedir. Worker heap bütçesi 24 MiB old + 8 MiB young olarak ayarlandıktan sonra Excel'in 350 testi, type-check ve lint yeniden geçti. Çalıştırılmamış kontroller başarılı sayılmaz.
+- **CI**: `.github/workflows/ci.yml` beş native hedef × Node 22/24 için build/test/temiz kurulum/MCP smoke çalıştırdı; on matris işi geçti. Genel Node ve .NET işleri ile son paket işi de geçti. Node 24 binary’leri birleştirildi; `SKMCP_REQUIRE_ALL_PREBUILDS=1` ile beş binary zorunlu doğrulandı; birleşik tarball’lardan gerçek MCP snapshot/regex çağrıları başarılı.
+- Coverage sağlayıcısı Vitest ile aynı sürümde: 3.2.7. Yerel son ölçüm: file-core branch %83,77 (160/191); Excel branch %86,12 (1216/1412). #17 byte/hücre, #33 `ambiguous_sheet`, #35 1904 dalları hedef testlerle çalıştırıldı. Coverage raporları paketlerin `coverage/` dizininde üretilir.
+- Commit kanıtı: başlangıç uygulaması `b4924d8`; CI düzeltmeleri `2212d16`, `13cb74c`, `30a6f0a`; .NET test izolasyonu `7e9645c`; büyük CSV testlerinin ayrılması ve worker bütçesi `a033103`. Bütün değişiklikler `main` üzerinde push edildi. Önceki geliştirme branch’i merge sonrası yerel/uzak depodan silindi.
 
 Test kısaltmaları: **EH** = `packages/excel-mcp/test/hardening.spec.ts`, **FH** = `packages/file-core/test/hardening.spec.ts`, **NS** = `packages/file-core-native/test/security.test.mjs` + `watchdog.mjs`, **RW** = `packages/excel-mcp/test/regex-security.spec.ts` + `fixtures/regex-watchdog.mjs`, **RS** = `packages/excel-mcp/test/resource-security.spec.ts` + `fixtures/measure-hardening.mjs`. Fixture'lar test sırasında geçici dizinde üretilir; OOXML değişiklikleri yalnız testlerde JSZip ile yapılır.
 
@@ -42,8 +42,8 @@ Test kısaltmaları: **EH** = `packages/excel-mcp/test/hardening.spec.ts`, **FH*
 | #   | Uygulama / sözleşme                                                               | Test ve fixture kanıtı                                                                                      | Komut / kalan sınır                          |
 | --- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | 1   | Açık/otomatik UTF decode daima fatal                                              | EH `CSV security and limits`: bozuk UTF-8/LE/BE, BOM matrisi                                                | T geçti                                      |
-| 2   | 2 worker, 8 kuyruk, 2 s sorgu, 32 MiB heap, 64 KiB mesaj; iptal/kapanış temizliği | RW: patolojik pattern, paralel normal MCP, syntax/backreference/lookahead, queue, abort, shutdown, recovery | T geçti; platform CI bekliyor                |
-| 3   | Özel dosya reddi, nonblocking POSIX açma, native handle sınırı                    | NS: FIFO/socket/directory, watchdog, descriptor kontrolü                                                    | T geçti; platform CI bekliyor                |
+| 2   | 2 worker, 8 kuyruk, 2 s sorgu, 32 MiB heap, 64 KiB mesaj; iptal/kapanış temizliği | RW: patolojik pattern, paralel normal MCP, syntax/backreference/lookahead, queue, abort, shutdown, recovery | T geçti; platform CI geçti                   |
+| 3   | Özel dosya reddi, nonblocking POSIX açma, native handle sınırı                    | NS: FIFO/socket/directory, watchdog, descriptor kontrolü                                                    | T geçti; platform CI geçti                   |
 | 4   | Sonluluk, metrik bazlı durum, taşma hatası                                        | EH `numeric and predicate contracts`: 1e400, sum/avg/stddev taşması, boş toplam ve gerçek sıfır             | T geçti                                      |
 | 5   | Tür etiketli min/max, karma türde hücre bilgili hata                              | EH karma sayı/metin, ters sıra ve case matrisi                                                              | T geçti                                      |
 | 6   | `between` tür/sıra/case doğrulaması tarama öncesinde                              | EH `uses the requested case policy…`, uyumsuz sınırlar matrisi                                              | T geçti                                      |
@@ -59,7 +59,7 @@ Test kısaltmaları: **EH** = `packages/excel-mcp/test/hardening.spec.ts`, **FH*
 | 16  | Header ve veri aynı merge politikasını kullanır                                   | EH yatay table + dikey merge fixture'ı, handler                                                             | T geçti                                      |
 | 17  | Gerçek byte/hücre sınır dalları çalıştırılır                                      | EH tam 16 MiB/+1 ve 2.000.000 hücre/+1 parser ve handler; decode öncesi Proxy kontrolü                      | T geçti                                      |
 | 18  | Registry çözümleme, unsupported extension ve names dedup                          | FH `resolves formats, rejects extensions and deduplicates format names`                                     | T geçti                                      |
-| 19  | Handle üzerinden artımlı, tüm girdileri sayan tarama                              | NS 5.001 desteklenmeyen dosya, depth/time; FH liste bütçeleri                                               | T geçti; platform CI bekliyor                |
+| 19  | Handle üzerinden artımlı, tüm girdileri sayan tarama                              | NS 5.001 desteklenmeyen dosya, depth/time; FH liste bütçeleri                                               | T geçti; platform CI geçti                   |
 | 20  | Eksik kolon adı `null`; pozisyon ve uyarı korunur                                 | EH `preserves missing middle table-column positions through get_tables`: table1.xml ortadaki name eksik     | T geçti                                      |
 | 21  | Formula/hyperlink notlarında `truncatedFrom`                                      | EH `retains formula and hyperlink truncation facts`, 603 karakter rich-text handler fixture'ı               | T geçti                                      |
 | 22  | `orderByMetric` gerçek metrik sayısına göre doğrulanır                            | EH `rejects an out-of-range metric index with multiple groups`                                              | T geçti                                      |
@@ -70,7 +70,7 @@ Test kısaltmaları: **EH** = `packages/excel-mcp/test/hardening.spec.ts`, **FH*
 | 27  | Cursor v2 seçenek bağlama; omit/same/different, v1 reddi                          | EH cursor matrisi, CSV encoding/delimiter, farklı maxCells; mevcut cursor/read-sheet testleri               | T geçti; v1 uyumsuzluğu changelog'da         |
 | 28  | Her erişimde güvenli byte okuması; SHA-256 aynı parse byte'larından               | EH `revalidates bytes on a cache hit…` ve ayrı cursor testi; aynı boyut + geri yüklenen mtime               | T geçti; atomik OS snapshot iddiası yok      |
 | 29  | Serileştirme sınırında message/recovery mutlak yol arındırması                    | FH kardeş/başka kök, Windows, boşluklu yol; göreli yol/URL korunur                                          | T geçti                                      |
-| 30  | Kök handle'a bağlı native bileşen erişimi; güvenli fallback yok                   | NS leaf/ancestor değişimi, inward/outward link, loop, root rename ve dış secret                             | T geçti; Linux/Windows runtime CI bekliyor   |
+| 30  | Kök handle'a bağlı native bileşen erişimi; güvenli fallback yok                   | NS leaf/ancestor değişimi, inward/outward link, loop, root rename ve dış secret                             | T geçti; Linux/Windows runtime CI geçti      |
 | 31  | Boolean/enum varsayılanları ve cursor kısıtları tool açıklamalarında              | `src/tools.ts` sözleşme incelemesi; mevcut tools testleri ve type-check                                     | T/F geçti                                    |
 | 32  | Liste tool açıklaması CSV içerir                                                  | `src/tools.ts` sözleşme incelemesi; P gerçek CSV MCP çağrısı                                                | T/P/F geçti                                  |
 | 33  | Gerçek NFC çakışan iki sheet korunur; sessiz ilk eşleşme yok                      | EH NFC fixture'ı; `ambiguous_sheet` branch hit                                                              | T geçti                                      |
@@ -95,11 +95,13 @@ Dosya yetkilendirmesi başlangıç kök handle'ına bağlıdır. Eşzamanlı yaz
 
 ## Teslimat ve XML geçiş kapısı
 
-Linux/Windows testlerinin nerede ve nasıl başlatılacağı, PR tetikleyicisi ve manuel çalıştırma koşulu [platform testleri rehberinde](excel-platform-testleri.md) açıklanır. Güncel durum iki ana belgeye de işlendi: [35 bulgu](excel-file-core-bulgular.md), [karar kaydı](excel-acik-maddeler-karar-kaydi.md).
+[CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) ve `a033103bc802b098b3cfe03e5e3aa808a35f4808` aynı kaynak durumunu doğrular. 13 job başarılı: 10 platform/Node kombinasyonu, genel Node kontrolleri, .NET testleri ve paket toplama. Native/file-core/Excel toplamı 450 test; .NET `net8.0` ve `net10.0` için 164’er test.
 
-Yerel kaynak, test ve paket doğrulamaları tamamlandı. CI dosyası hazır; Linux glibc x64/arm64, macOS x64 ve Windows x64 çalıştırmaları ile Node 22 sonuçları henüz yok. Beş hedefin hazır binary'leri ve temiz kurulum kanıtı CI'dan alınmadan, A paketinin platform kapsamı kapanmış sayılmayacak. Bu çalışma paket yayımlamaz.
+[npm-tarballs](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196/artifacts/10055082654) artifact’ı üç npm paketi ile beş hedef native binary’sini içerir. Paket denetimi ve gerçek stdio MCP çağrıları geçti; npm yayını yapılmadı. Artifact süreli GitHub saklama politikasına tabidir.
 
-#9/#10/#25 tam destek olarak işaretlenmez. Aşağıdaki üç bağımsız takip kaydı mevcut sınırlılığı, fixture'ı ve kapanış kriterini taşır; runtime `followUp` kimlikleri bu kayıtlara bağlanır. XML parser/tool veya ExcelJS değişimi yapılmadı.
+Güvenlik kapısının platform bekleyişi kapandı. XML geliştirmesi başlatılmadı; F0 teknik karar kapısı ve XML’e özgü F1 yaşam döngüsü/yanıt bütçesi/ikinci tüketici işleri kendi planında kalır. #9/#10/#25 tam destek olarak işaretlenmez; aşağıdaki üç takip kaydı korunur.
+
+Yeni çalıştırmalar için [platform testleri rehberi](excel-platform-testleri.md); güncel ana belgeler: [35 bulgu](excel-file-core-bulgular.md), [karar kaydı](excel-acik-maddeler-karar-kaydi.md).
 
 ## Zorunlu takip işleri
 
