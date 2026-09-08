@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     include: ["test/**/*.spec.ts"],
     globalSetup: ["test/fixtures/global-setup.ts"],
+    maxWorkers: 2,
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "json", "json-summary"],

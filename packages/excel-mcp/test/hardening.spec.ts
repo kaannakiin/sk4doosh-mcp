@@ -156,6 +156,9 @@ describe("CSV security and limits (#1 #14 #15 #17)", () => {
     await expect(
       parseCsv(forbidden, limits.maxCsvBytes + 1, {}, "over.csv"),
     ).rejects.toMatchObject({ code: "file_too_large" });
+  }, 30000);
+  it("enforces the real 16 MiB byte boundary through the handler", async () => {
+    const at = Buffer.alloc(limits.maxCsvBytes, 0x61);
     await writeFile(join(directory, "at.csv"), at);
     expect(
       (
