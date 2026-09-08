@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "task": "F0-02",
+  "probe": "isolated-consumer",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "24.6.0",
+    "cpuCount": 10,
+    "totalMemMiB": 16384,
+    "ci": false
+  },
+  "runtime": {
+    "node": "v24.12.0",
+    "v8": "13.6.233.17-node.37",
+    "execArgv": [],
+    "maxRssUnit": "KiB"
+  },
+  "engine": {
+    "name": "libxml2-wasm",
+    "specifier": "0.7.2",
+    "version": "0.7.2",
+    "installedFrom": "public registry"
+  },
+  "rows": [
+    {
+      "id": "install-without-scripts-succeeds",
+      "expected": "npm install --ignore-scripts exits 0",
+      "actual": "status=0 npm notice\nnpm notice New minor version of npm available! 11.6.2 -> 11.19.1\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.19.1\nnpm notice To update run: npm install -g npm@11.19.1\n",
+      "pass": true
+    },
+    {
+      "id": "engine-resolves-inside-consumer-node-modules",
+      "expected": "path under /private/var/folders/n7/d3r8g4t9571fjz4s8bz8nlmr0000gn/T/sk-mcp-xml-f0-consumer-cimmqc/node_modules/libxml2-wasm/",
+      "actual": "inside",
+      "pass": true
+    },
+    {
+      "id": "wasm-carrier-identical-to-integrity-pinned-copy",
+      "expected": "df6c8801906c0dad66e0da3db8c3849e3e8528246db513de4d4716cb82792d2e",
+      "actual": "df6c8801906c0dad66e0da3db8c3849e3e8528246db513de4d4716cb82792d2e",
+      "pass": true
+    },
+    {
+      "id": "no-standalone-wasm-file-in-consumer-tree",
+      "expected": "no .wasm sibling; SINGLE_FILE carrier only",
+      "actual": "LICENSE,LICENSE.libxml2,README.md,lib,package.json",
+      "pass": true
+    },
+    {
+      "id": "engine-import-and-parse-make-no-network-call",
+      "expected": "fetch/http.request/https.request never called",
+      "actual": "[{\"fetch\":0,\"httpRequest\":0,\"httpsRequest\":0},{\"fetch\":0,\"httpRequest\":0,\"httpsRequest\":0},{\"fetch\":0,\"httpRequest\":0,\"httpsRequest\":0},{\"fetch\":0,\"httpRequest\":0,\"httpsRequest\":0},{\"fetch\":0,\"httpRequest\":0,\"httpsRequest\":0}]",
+      "pass": true
+    },
+    {
+      "id": "cold-and-warm-are-measured-separately",
+      "expected": "module import, first parse and warm parse reported as distinct numbers",
+      "actual": "{\"coldModuleImportMs\":{\"p50\":13.952,\"p95\":14.101},\"coldFirstParseMs\":{\"p50\":1.589,\"p95\":1.595},\"warmParseMs\":{\"p50\":0.004,\"p95\":0.015,\"samples\":150}}",
+      "pass": true
+    },
+    {
+      "id": "stdout-carries-only-jsonrpc-on-valid-document",
+      "expected": "every stdout line is a jsonrpc 2.0 message",
+      "actual": "lines=2 foreign=[]",
+      "pass": true
+    },
+    {
+      "id": "stdout-carries-only-jsonrpc-when-libxml2-error-handler-runs",
+      "expected": "every stdout line is a jsonrpc 2.0 message",
+      "actual": "lines=2 foreign=[]",
+      "pass": true
+    },
+    {
+      "id": "malformed-document-does-not-yield-a-partial-document",
+      "expected": "tool result reports an error class, not a parsed root",
+      "actual": "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"XmlParseError\\\"}\"}]}}",
+      "pass": true
+    },
+    {
+      "id": "no-jdk-required",
+      "expected": "engine installed and parsed without any JDK involvement",
+      "actual": "java present on host but unused",
+      "pass": true
+    }
+  ],
+  "metrics": {
+    "installMs": 997.4,
+    "wasmCarrierBytes": 963362,
+    "wasmCarrierSha256": "df6c8801906c0dad66e0da3db8c3849e3e8528246db513de4d4716cb82792d2e",
+    "coldModuleImportMs": {
+      "p50": 13.952,
+      "p95": 14.101
+    },
+    "coldFirstParseMs": {
+      "p50": 1.589,
+      "p95": 1.595
+    },
+    "warmParseMs": {
+      "p50": 0.004,
+      "p95": 0.015,
+      "samples": 150
+    },
+    "stderrBytesOnMalformed": 0
+  },
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "requiresDecision": 0
+  },
+  "verdict": "pass",
+  "blockingRows": [],
+  "limits": [
+    "F0-02 registry erişimi gerektirir; SKMCP_XML_F0_NO_NETWORK=1 ile atlanırsa kanıt 'not run' olarak kaydedilir, 'pass' olarak değil.",
+    "Node 22 ve 24 olcutu tek runner'da kapanmaz; kapi ancak platform CI iki major'i da kaydettiginde saglanir."
+  ],
+  "notes": [
+    "Bu ölçüt kurulum ve çalıştırma yolunda JDK/native derleme adımı bulunmadığını gösterir; host'ta java bulunması sonucu değiştirmez."
+  ],
+  "provenance": {
+    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "workingTreeDirty": true,
+    "githubRunId": null,
+    "githubRunUrl": null
+  },
+  "command": "node packages/xml-lab/test/probes/isolated-consumer.mjs"
+}

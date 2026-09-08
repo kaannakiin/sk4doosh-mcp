@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "task": "F0-01",
+  "probe": "surface",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "24.6.0",
+    "cpuCount": 10,
+    "totalMemMiB": 16384,
+    "ci": false
+  },
+  "runtime": {
+    "node": "v24.12.0",
+    "v8": "13.6.233.17-node.37",
+    "execArgv": [],
+    "maxRssUnit": "KiB"
+  },
+  "engine": {
+    "name": "libxml2-wasm",
+    "specifier": "0.7.2",
+    "version": "0.7.2",
+    "lockfileIntegrity": "sha512-Ek8Fdb8fIl6mBCvrMGImkOP02aDpANwus0PV827v4gobV9jnoYEHNoPTwWokt71egUBl+sng53fjZ5y2PexLqQ==",
+    "wrapperLicense": "MIT",
+    "embeddedLicenseFile": "LICENSE.libxml2",
+    "embeddedLibxml2Version": "2.15.1",
+    "embeddedLibxml2VersionSource": "upstream-pin",
+    "provenanceCommit": "6e4dc82a323b6d27f2b3aca6dbec868949be83b7",
+    "reviewedRevision": "394487987eece208b5d02274fedc6c292f84ee6b",
+    "artifactMatchesReviewedRevision": false
+  },
+  "rows": [
+    {
+      "id": "root-exports-omit-fs-providers",
+      "expected": "xmlRegisterFsInputProviders and fsInputProviders absent from package root",
+      "actual": "none",
+      "pass": true
+    },
+    {
+      "id": "root-exports-diag",
+      "expected": "diag namespace present",
+      "actual": "configure,report,tracker",
+      "pass": true
+    },
+    {
+      "id": "root-exports-cleanup-input-provider",
+      "expected": "xmlCleanupInputProvider present",
+      "actual": "function",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_DEFAULT",
+      "expected": "0",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_RECOVER",
+      "expected": "1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NOENT",
+      "expected": "2",
+      "actual": "2",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_DTDLOAD",
+      "expected": "4",
+      "actual": "4",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_DTDATTR",
+      "expected": "8",
+      "actual": "8",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_DTDVALID",
+      "expected": "16",
+      "actual": "16",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NOERROR",
+      "expected": "32",
+      "actual": "32",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NOWARNING",
+      "expected": "64",
+      "actual": "64",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NOBLANKS",
+      "expected": "256",
+      "actual": "256",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_XINCLUDE",
+      "expected": "1024",
+      "actual": "1024",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NONET",
+      "expected": "2048",
+      "actual": "2048",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NSCLEAN",
+      "expected": "8192",
+      "actual": "8192",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NOCDATA",
+      "expected": "16384",
+      "actual": "16384",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_HUGE",
+      "expected": "524288",
+      "actual": "524288",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_IGNORE_ENC",
+      "expected": "2097152",
+      "actual": "2097152",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NO_XXE",
+      "expected": "8388608",
+      "actual": "8388608",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_UNZIP",
+      "expected": "16777216",
+      "actual": "16777216",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_NO_SYS_CATALOG",
+      "expected": "33554432",
+      "actual": "33554432",
+      "pass": true
+    },
+    {
+      "id": "parse-option-XML_PARSE_CATALOG_PI",
+      "expected": "67108864",
+      "actual": "67108864",
+      "pass": true
+    },
+    {
+      "id": "hardened-word-excludes-forbidden-flags",
+      "expected": "none of the forbidden flags set",
+      "actual": "none",
+      "pass": true
+    },
+    {
+      "id": "document-carries-warnings",
+      "expected": "warnings array reachable on the instance",
+      "actual": "array",
+      "pass": true
+    },
+    {
+      "id": "from-buffer-is-synchronous",
+      "expected": "timer has not fired when fromBuffer returns",
+      "actual": "timer pending",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-empty-nodeset",
+      "expected": "[]",
+      "actual": "array(0)",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-empty-string",
+      "expected": "\"\"",
+      "actual": "",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-zero",
+      "expected": "0",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-negative-zero",
+      "expected": "-0",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-nan",
+      "expected": "NaN",
+      "actual": "NaN",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-positive-infinity",
+      "expected": "Infinity",
+      "actual": "Infinity",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-negative-infinity",
+      "expected": "-Infinity",
+      "actual": "-Infinity",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-false",
+      "expected": "false",
+      "actual": "false",
+      "pass": true
+    },
+    {
+      "id": "xpath-scalar-true",
+      "expected": "true",
+      "actual": "true",
+      "pass": true
+    },
+    {
+      "id": "namespace-uri-selects-only-matching",
+      "expected": "1 node, uri urn:a, text 1",
+      "actual": "urn:a|t|1",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-does-not-bind-default-namespace",
+      "expected": "1 node, empty uri, text 2",
+      "actual": "|t|2",
+      "pass": true
+    },
+    {
+      "id": "get-throws-on-scalar",
+      "expected": "throws",
+      "actual": "throws",
+      "pass": true
+    },
+    {
+      "id": "get-returns-null-on-empty-nodeset",
+      "expected": "null (conflation hazard confirmed; eval is the only safe entry point)",
+      "actual": "null",
+      "pass": true
+    },
+    {
+      "id": "declared-encoding-UTF-8",
+      "expected": "UTF-8",
+      "actual": "UTF-8",
+      "pass": true
+    },
+    {
+      "id": "declared-encoding-absent",
+      "expected": "null",
+      "actual": "null",
+      "pass": true
+    },
+    {
+      "id": "declared-encoding-absent",
+      "expected": "null",
+      "actual": "null",
+      "pass": true
+    },
+    {
+      "id": "diag-tracks-live-instance",
+      "expected": "XmlDocument totalInstances 1",
+      "actual": "1",
+      "pass": true
+    },
+    {
+      "id": "diag-clears-entry-on-dispose",
+      "expected": "empty report",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "diag-reports-garbage-collected-counter",
+      "expected": "garbageCollected 0 after explicit dispose",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "compiled-xpath-surface-present",
+      "expected": "XmlXPath exported with compile-like surface",
+      "actual": "length,name,prototype,compile",
+      "pass": true
+    },
+    {
+      "id": "wasm-glue-has-no-network-or-fs-loader",
+      "expected": "no fetch / readFileSync / instantiateStreaming / locateFile / wasmBinaryFile",
+      "actual": "{\"fetch\":false,\"readFileSync\":false,\"instantiateStreaming\":false,\"locateFile\":false,\"wasmBinaryFile\":false}",
+      "pass": true
+    },
+    {
+      "id": "embedded-license-is-a-separate-file",
+      "expected": "LICENSE.libxml2 present and distinct from LICENSE",
+      "actual": "present",
+      "pass": true
+    },
+    {
+      "id": "embedded-libxml2-version-determined",
+      "expected": "a version string from runtime-export, wasm-data-scan or upstream-pin",
+      "actual": "2.15.1 (upstream-pin)",
+      "pass": true
+    },
+    {
+      "id": "max-rss-unit-resolved",
+      "expected": "KiB or bytes",
+      "actual": "KiB (maxRSS=357472, rss=366051328, grew=268763136)",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 49,
+    "passed": 49,
+    "failed": 0,
+    "requiresDecision": 0
+  },
+  "verdict": "pass",
+  "blockingRows": [],
+  "limits": [
+    "Gomulu libxml2 surumu yalniz upstream-pin ile belirlendi: runtime export yok ve WASM string tablosu --without-debug nedeniyle surum tasimiyor. Bu basamak kaynagi tarif eder, dagitilan artifact'i degil.",
+    "Gomulu kaynak upstream GNOME/libxml2 degil https://github.com/jameslan/libxml2.git fork'udur (f52e859efe97cf3f0b78d731976402748878529a); fork ustunde yerel yama vardir. CVE takibi 2.15.1 uzerinden yapilir, fork farki ayrica izlenir.",
+    "libxml2 2.15 nanohttp'yi kaldirdi; XML_PARSE_NONET bu derlemede no-op olabilir. Ag canary'sinin sifir hit'i asiri-belirlenmistir ve ek guvence sayilmaz (F0-05).",
+    "Bu probe agsizdir; provenance attestation ve advisory kapsami F0-01 karar ekinde ayrica kaydedilir."
+  ],
+  "notes": [
+    "reviewed revision 394487987eece208b5d02274fedc6c292f84ee6b is 0.8.0-dev on master; the published artifact is built from a different commit recorded in the npm provenance attestation."
+  ],
+  "provenance": {
+    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "workingTreeDirty": true,
+    "githubRunId": null,
+    "githubRunUrl": null
+  },
+  "command": "node packages/xml-lab/test/probes/surface.mjs"
+}

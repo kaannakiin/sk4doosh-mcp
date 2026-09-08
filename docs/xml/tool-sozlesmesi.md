@@ -78,4 +78,4 @@ TRX `testId` veya XBRL context/unit bağlantısı kendiliğinden çözümlenmez.
 | DOM derinliği      | 128 başlangıç uygulama sınırı             | Parser limitinden bağımsız kontrol, derin fixture        |
 | Sayfa              | Varsayılan 50, en fazla 200 düğüm/eşleşme | Byte bütçesi daha erken durdurabilir                     |
 
-Bu değerler mevcut XML uygulamasının ölçümü değildir. F0 final değerleri ve test ortamını kaydetmeden F2 yayınlanmaz. `file-core` 50 MiB dosya sınırı XML DOM için otomatik kabul edilmez.
+Yukarıdaki sütun başlangıç önerisidir. F0-08 ölçümü ve türetilmiş final değerler [F0 kanıt kaydındadır](f0-kanit-kaydi.md): dosya 8 MiB korundu, süre bütçesi 2 s yerine **0,5 s** çıktı, kuyruk 4 yerine **8** (sınırlayan istemci sabri değil, ana süreçte pinlenen snapshot belleği), derinlik 128 korundu (motor 256'da parse ediyor, 1024'te reddediyor). Sayfa ve yanıt zarfı bütçesi henüz ölçülmedi; F2-08'e aittir. Bu değerler tek host ve tek Node sürümünün ölçümüdür; platform CI'ı beklemektedir. `file-core` 50 MiB dosya sınırı XML DOM için otomatik kabul edilmez.

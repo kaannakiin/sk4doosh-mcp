@@ -1,0 +1,346 @@
+{
+  "schemaVersion": 1,
+  "task": "F0-07",
+  "probe": "resource-lifetime",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "24.6.0",
+    "cpuCount": 10,
+    "totalMemMiB": 16384,
+    "ci": false
+  },
+  "runtime": {
+    "node": "v24.12.0",
+    "v8": "13.6.233.17-node.37",
+    "execArgv": [
+      "--expose-gc",
+      "--max-old-space-size=1536"
+    ],
+    "maxRssUnit": "KiB"
+  },
+  "engine": {
+    "name": "libxml2-wasm",
+    "specifier": "0.7.2",
+    "version": "0.7.2"
+  },
+  "metrics": {
+    "noiseFloor": {
+      "slope": 67584,
+      "shift": 6766592,
+      "spread": 3325952,
+      "natural": {
+        "id": "noise-floor",
+        "gcForced": false,
+        "slopeBytesPerIteration": 67584,
+        "medianShiftBytes": 6766592,
+        "plateauSpreadBytes": 3325952,
+        "liveAfter": 0,
+        "collectedAfter": 0
+      },
+      "forced": {
+        "id": "noise-floor-gc",
+        "gcForced": true,
+        "slopeBytesPerIteration": 1046,
+        "medianShiftBytes": 131072,
+        "plateauSpreadBytes": 16384,
+        "liveAfter": 0,
+        "collectedAfter": 0
+      }
+    },
+    "tier2PositiveControl": {
+      "series": {
+        "id": "tier2-positive-control",
+        "gcForced": false,
+        "slopeBytesPerIteration": 140451,
+        "medianShiftBytes": 14057472,
+        "plateauSpreadBytes": 6864896,
+        "liveAfter": 220,
+        "collectedAfter": 0
+      },
+      "tier2DetectedIt": false,
+      "liveInstancesObserved": 220
+    },
+    "normalSeries": {
+      "natural": {
+        "id": "e07-01-normal-completion",
+        "gcForced": false,
+        "slopeBytesPerIteration": 596,
+        "medianShiftBytes": 344064,
+        "plateauSpreadBytes": 0,
+        "liveAfter": 0,
+        "collectedAfter": 0
+      },
+      "forced": {
+        "id": "e07-01-normal-completion-gc",
+        "gcForced": true,
+        "slopeBytesPerIteration": 171,
+        "medianShiftBytes": 16384,
+        "plateauSpreadBytes": 16384,
+        "liveAfter": 0,
+        "collectedAfter": 0
+      },
+      "verdict": "pass-no-retention"
+    },
+    "errorSeries": {
+      "natural": {
+        "id": "e07-02-error-path",
+        "gcForced": false,
+        "slopeBytesPerIteration": 9362,
+        "medianShiftBytes": 999424,
+        "plateauSpreadBytes": 0,
+        "liveAfter": 0,
+        "collectedAfter": 0
+      },
+      "forced": {
+        "id": "e07-02-error-path-gc",
+        "gcForced": true,
+        "slopeBytesPerIteration": 0,
+        "medianShiftBytes": 0,
+        "plateauSpreadBytes": 16384,
+        "liveAfter": 0,
+        "collectedAfter": 0
+      },
+      "verdict": "pass-no-retention"
+    },
+    "evictionSeries": {
+      "id": "e07-03-lru-eviction",
+      "gcForced": false,
+      "slopeBytesPerIteration": 0,
+      "medianShiftBytes": 0,
+      "plateauSpreadBytes": 0,
+      "liveAfter": 4,
+      "collectedAfter": 0
+    },
+    "workerCycles": {
+      "baselineKiB": 130512,
+      "cycles": [
+        {
+          "cycle": 0,
+          "peakKiB": 156128,
+          "afterKiB": 142896
+        },
+        {
+          "cycle": 1,
+          "peakKiB": 165088,
+          "afterKiB": 151472
+        },
+        {
+          "cycle": 2,
+          "peakKiB": 167984,
+          "afterKiB": 154304
+        },
+        {
+          "cycle": 3,
+          "peakKiB": 168608,
+          "afterKiB": 154912
+        },
+        {
+          "cycle": 4,
+          "peakKiB": 169728,
+          "afterKiB": 156064
+        },
+        {
+          "cycle": 5,
+          "peakKiB": 170656,
+          "afterKiB": 156960
+        },
+        {
+          "cycle": 6,
+          "peakKiB": 170992,
+          "afterKiB": 157296
+        },
+        {
+          "cycle": 7,
+          "peakKiB": 172240,
+          "afterKiB": 158528
+        }
+      ],
+      "controlCycles": [
+        {
+          "cycle": 0,
+          "afterKiB": 144128
+        },
+        {
+          "cycle": 1,
+          "afterKiB": 153264
+        },
+        {
+          "cycle": 2,
+          "afterKiB": 154576
+        },
+        {
+          "cycle": 3,
+          "afterKiB": 155472
+        },
+        {
+          "cycle": 4,
+          "afterKiB": 156480
+        },
+        {
+          "cycle": 5,
+          "afterKiB": 156960
+        },
+        {
+          "cycle": 6,
+          "afterKiB": 157296
+        },
+        {
+          "cycle": 7,
+          "afterKiB": 158560
+        }
+      ],
+      "workerDeltasKiB": [
+        8576,
+        2832,
+        608,
+        1152,
+        896,
+        336,
+        1232
+      ],
+      "controlDeltasKiB": [
+        9136,
+        1312,
+        896,
+        1008,
+        480,
+        336,
+        1264
+      ],
+      "attributableDeltasKiB": [
+        -560,
+        1520,
+        -288,
+        144,
+        416,
+        0,
+        -32
+      ],
+      "medianAttributableKiB": 0,
+      "medianWorkerFootprintKiB": 13696,
+      "outlierResistantStatistic": "median",
+      "measurable": true,
+      "survivingFraction": 0,
+      "gcAvailable": true
+    }
+  },
+  "rows": [
+    {
+      "id": "e07-00-positive-control-detects-a-known-leak",
+      "expected": "live instance count rises with retained, never-disposed documents",
+      "actual": "0 -> 40",
+      "pass": true
+    },
+    {
+      "id": "e07-00b-positive-control-returns-to-zero-after-disposal",
+      "expected": "live count back to the pre-leak baseline",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "e07-tier2-sensitivity-is-measured-not-assumed",
+      "expected": "recorded: whether the statistical tier can detect a deliberate 220-document leak on this host",
+      "actual": "{\"series\":{\"id\":\"tier2-positive-control\",\"gcForced\":false,\"slopeBytesPerIteration\":140451,\"medianShiftBytes\":14057472,\"plateauSpreadBytes\":6864896,\"liveAfter\":220,\"collectedAfter\":0},\"tier2DetectedIt\":false,\"liveInstancesObserved\":220}",
+      "pass": true
+    },
+    {
+      "id": "e07-tier1-detects-the-tier2-positive-control",
+      "expected": "the diag oracle sees every retained instance regardless of allocator noise",
+      "actual": "220",
+      "pass": true
+    },
+    {
+      "id": "e07-01-normal-completion-leaves-nothing-live",
+      "expected": "live 0, garbageCollected 0, and the natural/forced pair shows no retention",
+      "actual": "{\"natural\":{\"id\":\"e07-01-normal-completion\",\"gcForced\":false,\"slopeBytesPerIteration\":596,\"medianShiftBytes\":344064,\"plateauSpreadBytes\":0,\"liveAfter\":0,\"collectedAfter\":0},\"forced\":{\"id\":\"e07-01-normal-completion-gc\",\"gcForced\":true,\"slopeBytesPerIteration\":171,\"medianShiftBytes\":16384,\"plateauSpre",
+      "pass": true
+    },
+    {
+      "id": "e07-02-failed-parse-frees-the-partial-context",
+      "expected": "live 0 and no retention across 200 malformed inputs",
+      "actual": "{\"natural\":{\"id\":\"e07-02-error-path\",\"gcForced\":false,\"slopeBytesPerIteration\":9362,\"medianShiftBytes\":999424,\"plateauSpreadBytes\":0,\"liveAfter\":0,\"collectedAfter\":0},\"forced\":{\"id\":\"e07-02-error-path-gc\",\"gcForced\":true,\"slopeBytesPerIteration\":0,\"medianShiftBytes\":0,\"plateauSpreadBytes\":16384,\"liv",
+      "pass": true
+    },
+    {
+      "id": "e07-03-eviction-disposes-at-eviction-time",
+      "expected": "live count stays exactly at the cache capacity, never above",
+      "actual": "live=4 capacity=4 {\"id\":\"e07-03-lru-eviction\",\"gcForced\":false,\"slopeBytesPerIteration\":0,\"medianShiftBytes\":0,\"plateauSpreadBytes\":0,\"liveAfter\":4,\"collectedAfter\":0}",
+      "pass": true
+    },
+    {
+      "id": "e07-06-shutdown-clears-every-tracked-instance",
+      "expected": "live 0 after releasing the cache",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "e07-07-compiled-xpath-disposal-order-is-safe-both-ways",
+      "expected": "both orders complete without a crash and leave nothing live",
+      "actual": "documentFirst=completed expressionFirst=completed live=0",
+      "pass": true
+    },
+    {
+      "id": "e07-08-double-dispose-is-a-no-op",
+      "expected": "second dispose does not crash the process",
+      "actual": "no-op",
+      "pass": true
+    },
+    {
+      "id": "e07-09-use-after-dispose-throws-rather-than-aliasing",
+      "expected": "a stale handle must not read another document",
+      "actual": "threw:XmlError",
+      "pass": true
+    },
+    {
+      "id": "e07-05-worker-death-is-a-reclamation-boundary",
+      "expected": "less than 10 percent of what a worker allocates survives its termination, measured as a median against an interleaved worker-free control",
+      "actual": "{\"baselineKiB\":130512,\"cycles\":[{\"cycle\":0,\"peakKiB\":156128,\"afterKiB\":142896},{\"cycle\":1,\"peakKiB\":165088,\"afterKiB\":151472},{\"cycle\":2,\"peakKiB\":167984,\"afterKiB\":154304},{\"cycle\":3,\"peakKiB\":168608,\"afterKiB\":154912},{\"cycle\":4,\"peakKiB\":169728,\"afterKiB\":156064},{\"cycle\":5,\"peakKiB\":170656,\"afte",
+      "pass": true
+    },
+    {
+      "id": "e07-04-worker-side-cache-tracks-its-own-instances",
+      "expected": "worker diag reports the documents it holds",
+      "actual": "{\"live\":{\"XmlDocument\":8},\"garbageCollected\":{\"XmlDocument\":0},\"cached\":8}",
+      "pass": true
+    },
+    {
+      "id": "e07-tier1-nothing-live-at-the-end",
+      "expected": "0 live instances in the main process",
+      "actual": "0",
+      "pass": true
+    },
+    {
+      "id": "e07-tier1-no-implicit-garbage-collection",
+      "expected": "garbageCollected stays 0 on every explicitly disposed path",
+      "actual": "0",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "requiresDecision": 0
+  },
+  "verdict": "pass",
+  "blockingRows": [],
+  "limits": [
+    "WASM linear memory kuculmez; gecis kurali 'erken plato yapar ve duz kalir', 'basa doner' degildir. Bu kural olmadan dogru bir implementasyon bile dusurulurdu.",
+    "Tier-2 esikleri XML'siz bir gurultu tabani serisinden turetilir (olculen gurultunun 3 kati ya da sabit taban, hangisi buyukse). Sabit esik kullanmak gurultu bandinin icinde kalip kapiyi kosudan kosuya oynatiyordu; ikili kapi her zaman tier-1 diag oracle'idir, tier-2 yalniz destekleyicidir.",
+    "e07-05 medyan kullanir: tek bir host gurultusu ornegi (bir kosuda +23 MiB gozlendi) ortalamayi surukluyordu. Ayni gerekce Theil-Sen'in OLS yerine secilmesindeki gerekcedir.",
+    "e07-05 tek esikle ikili karar vermez: worker ve worker'siz kontrol donguleri serpistirilir, her donguye dusen artistan kontrol payi cikarilir ve kalanin yavaslayip yavaslamadigina bakilir. Tek kosuda olculen mutlak drift host gurultusune duyarli oldugu icin kullanilmaz."
+  ],
+  "notes": [
+    "Tier-2 istatistiksel katman bu host'ta kasitli leak'i YAKALAYAMADI: allocator gurultusu (median shift ~6-22 MiB) sinyalin uzerinde. Kapi tier-1 diag oracle'idir; tier-2 yalniz kayit amaclidir ve tek basina kanit sayilmaz.",
+    "garbageCollected sifir kalmasi kritik: sifirdan buyuk olsaydi WASM bellegi explicit dispose yerine GC zamanlamasina bagli olurdu ve RSS bunu asla gostermezdi.",
+    "Tier-2 verdict'i dogal ve GC-zorlanmis serilerin ciftinden turetilir: yukselen/duz allocator high-water demektir ve leak degildir; yukselen/yukselen gercek retention'dir ve kapiyi dusurur."
+  ],
+  "provenance": {
+    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "workingTreeDirty": true,
+    "githubRunId": null,
+    "githubRunUrl": null
+  },
+  "command": "node --expose-gc packages/xml-lab/test/probes/resource-lifetime.mjs"
+}

@@ -1,0 +1,442 @@
+{
+  "schemaVersion": 1,
+  "task": "F0-03",
+  "probe": "namespace",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "24.6.0",
+    "cpuCount": 10,
+    "totalMemMiB": 16384,
+    "ci": false
+  },
+  "runtime": {
+    "node": "v24.12.0",
+    "v8": "13.6.233.17-node.37",
+    "execArgv": [
+      "--max-old-space-size=768"
+    ],
+    "maxRssUnit": "KiB"
+  },
+  "engine": {
+    "name": "libxml2-wasm",
+    "specifier": "0.7.2",
+    "version": "0.7.2",
+    "parseOptionWord": 41945088
+  },
+  "fixtures": [
+    {
+      "id": "ns-none",
+      "bytes": 23,
+      "sha256": "043646d2e913e1ff3c3bfdaf9f3caf93dd1949e0840d52c36de86d9458775ad0",
+      "isolates": "no namespaces anywhere; every element carries an empty uri"
+    },
+    {
+      "id": "ns-default-only",
+      "bytes": 42,
+      "sha256": "a60b1a1b3ef885c9a52e8c91729069b10133c0117d9ba45bdc7a460476e3f6cf",
+      "isolates": "a default namespace inherits to children, and an unprefixed XPath step must not bind to it"
+    },
+    {
+      "id": "ns-default-redefined",
+      "bytes": 72,
+      "sha256": "d5a5553748a230b2cdb1436755bacb022feaa9d08f7498b35615a2e398ed87d1",
+      "isolates": "three default-namespace states in one tree including an undeclaration"
+    },
+    {
+      "id": "ns-prefix-rebound",
+      "bytes": 104,
+      "sha256": "691d0eb11c38d5bfe66c8929a9775d64e5031d9c2a2baf4dde4f778af31d8d3f",
+      "isolates": "the same prefix bound to two different uris at two depths"
+    },
+    {
+      "id": "ns-prefix-renamed",
+      "bytes": 104,
+      "sha256": "49018de5f43570257266c620699f136f2f90377174e658989e0058293688e4a1",
+      "isolates": "byte-different twin of ns-prefix-rebound using other prefixes and identical uris"
+    },
+    {
+      "id": "ns-same-localname-siblings",
+      "bytes": 105,
+      "sha256": "ed42c5e73ce9dc0cd901119268045ba09560f83e1f16a9c7df0cedf98550c9f4",
+      "isolates": "one local name across three different namespace identities"
+    },
+    {
+      "id": "ns-attributes",
+      "bytes": 74,
+      "sha256": "0ff12457b0cea50ffa7bf854ef3855212d67fc1bb4cce34ba4b98551918c4f55",
+      "isolates": "an unprefixed attribute is in no namespace even when the element is in the default namespace"
+    },
+    {
+      "id": "ns-reserved-xml",
+      "bytes": 39,
+      "sha256": "35360f8bcfaf8127440db3cf42e69e69d941c00e10233807c902bb7295cbc58b",
+      "isolates": "the xml prefix is bound implicitly without a declaration"
+    }
+  ],
+  "rows": [
+    {
+      "id": "crossproduct-ns-none-urn:x-sk:a-total",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-none-urn:x-sk:b-total",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-none-total",
+      "expected": "[\"|total|1\"]",
+      "actual": "[\"|total|1\"]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-none",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\",\"total\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-only-urn:x-sk:a-total",
+      "expected": "[\"urn:x-sk:a|total|1\"]",
+      "actual": "[\"urn:x-sk:a|total|1\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-only-urn:x-sk:b-total",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-default-only-total",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-default-only",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\",\"total\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-redefined-urn:x-sk:a-r",
+      "expected": "[\"urn:x-sk:a|r|\"]",
+      "actual": "[\"urn:x-sk:a|r|\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-redefined-urn:x-sk:a-mid",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-redefined-urn:x-sk:a-leaf",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-redefined-urn:x-sk:b-r",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-redefined-urn:x-sk:b-mid",
+      "expected": "[\"urn:x-sk:b|mid|\"]",
+      "actual": "[\"urn:x-sk:b|mid|\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-default-redefined-urn:x-sk:b-leaf",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-default-redefined-r",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-default-redefined-mid",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-default-redefined-leaf",
+      "expected": "[\"|leaf|\"]",
+      "actual": "[\"|leaf|\"]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-default-redefined",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\",\"mid\",\"leaf\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-prefix-rebound-urn:x-sk:a-item",
+      "expected": "[\"urn:x-sk:a|item|outer\"]",
+      "actual": "[\"urn:x-sk:a|item|outer\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-prefix-rebound-urn:x-sk:b-item",
+      "expected": "[\"urn:x-sk:b|item|inner\"]",
+      "actual": "[\"urn:x-sk:b|item|inner\"]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-prefix-rebound-item",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-prefix-rebound",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\",\"item\",\"mid\",\"item\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-prefix-renamed-urn:x-sk:a-item",
+      "expected": "[\"urn:x-sk:a|item|outer\"]",
+      "actual": "[\"urn:x-sk:a|item|outer\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-prefix-renamed-urn:x-sk:b-item",
+      "expected": "[\"urn:x-sk:b|item|inner\"]",
+      "actual": "[\"urn:x-sk:b|item|inner\"]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-prefix-renamed-item",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-prefix-renamed",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\",\"item\",\"mid\",\"item\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-same-localname-siblings-urn:x-sk:a-total",
+      "expected": "[\"urn:x-sk:a|total|1\"]",
+      "actual": "[\"urn:x-sk:a|total|1\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-same-localname-siblings-urn:x-sk:b-total",
+      "expected": "[\"urn:x-sk:b|total|2\"]",
+      "actual": "[\"urn:x-sk:b|total|2\"]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-same-localname-siblings-total",
+      "expected": "[\"|total|3\"]",
+      "actual": "[\"|total|3\"]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-same-localname-siblings",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\",\"total\",\"total\",\"total\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-attributes-urn:x-sk:a-r",
+      "expected": "[\"urn:x-sk:a|r|\"]",
+      "actual": "[\"urn:x-sk:a|r|\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-attributes-urn:x-sk:b-r",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-attributes-r",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-attributes",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\"]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-reserved-xml-urn:x-sk:a-r",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "crossproduct-ns-reserved-xml-urn:x-sk:b-r",
+      "expected": "[]",
+      "actual": "[]",
+      "pass": true
+    },
+    {
+      "id": "unprefixed-selects-only-no-namespace-ns-reserved-xml-r",
+      "expected": "[\"|r|\"]",
+      "actual": "[\"|r|\"]",
+      "pass": true
+    },
+    {
+      "id": "local-name-never-prefixed-ns-reserved-xml",
+      "expected": "no colon in any reported node name",
+      "actual": "[\"r\"]",
+      "pass": true
+    },
+    {
+      "id": "prefix-rename-does-not-change-selection",
+      "expected": "[{\"uri\":\"urn:x-sk:a\",\"name\":\"item\",\"text\":\"outer\"}]",
+      "actual": "[{\"uri\":\"urn:x-sk:a\",\"name\":\"item\",\"text\":\"outer\"}]",
+      "pass": true
+    },
+    {
+      "id": "namespace-declarations-are-not-ordinary-attributes",
+      "expected": "no xmlns or xmlns:p entry in the attribute list",
+      "actual": "[{\"key\":\"0\",\"uri\":\"\",\"name\":\"id\"},{\"key\":\"1\",\"uri\":\"urn:x-sk:p\",\"name\":\"id\"},{\"key\":\"2\",\"uri\":\"http://www.w3.org/XML/1998/namespace\",\"name\":\"lang\"}]",
+      "pass": true
+    },
+    {
+      "id": "scalar-empty-nodeset",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "nodeset:array(0)",
+      "pass": true
+    },
+    {
+      "id": "scalar-default-ns-trap-empty",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "nodeset:array(0)",
+      "pass": true
+    },
+    {
+      "id": "scalar-empty-string",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "string:",
+      "pass": true
+    },
+    {
+      "id": "scalar-normalize-space-empty",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "string:",
+      "pass": true
+    },
+    {
+      "id": "scalar-big-id-stays-string",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "string:00012345678901234567890",
+      "pass": true
+    },
+    {
+      "id": "scalar-zero",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "number:0",
+      "pass": true
+    },
+    {
+      "id": "scalar-negative-zero",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "number:0",
+      "pass": true
+    },
+    {
+      "id": "scalar-nan",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "number:NaN",
+      "pass": true
+    },
+    {
+      "id": "scalar-positive-infinity",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "number:Infinity",
+      "pass": true
+    },
+    {
+      "id": "scalar-negative-infinity",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "number:-Infinity",
+      "pass": true
+    },
+    {
+      "id": "scalar-false",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "boolean:false",
+      "pass": true
+    },
+    {
+      "id": "scalar-true",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "boolean:true",
+      "pass": true
+    },
+    {
+      "id": "scalar-mapped-prefix-absent-uri",
+      "expected": "identity preserved and exactly one evaluation",
+      "actual": "nodeset:array(0)",
+      "pass": true
+    },
+    {
+      "id": "unmapped-prefix-is-an-explicit-error",
+      "expected": "throws rather than silently selecting nothing",
+      "actual": "XmlXPathError",
+      "pass": true
+    },
+    {
+      "id": "xpath-2-function-is-explicit-unsupported",
+      "expected": "throws rather than returning a value",
+      "actual": "XmlXPathError",
+      "pass": true
+    },
+    {
+      "id": "json-envelope-is-lossy-and-measured",
+      "expected": "NaN and Infinity become null, -0 becomes 0 across JSON",
+      "actual": "{\"nan\":null,\"infinity\":null,\"negativeZero\":false}",
+      "pass": true
+    },
+    {
+      "id": "no-silent-reevaluation",
+      "expected": "one engine evaluation per request, expression handed over byte-identical",
+      "actual": "66",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 57,
+    "passed": 57,
+    "failed": 0,
+    "requiresDecision": 0
+  },
+  "verdict": "pass",
+  "blockingRows": [],
+  "limits": [
+    "Bu deney tek surecte, ana thread uzerinde kosar. Worker siniri ve MCP zarfi uzerinden tasima F0-06 ve F2-08'de ayrica olculur."
+  ],
+  "notes": [
+    "JSON zarfi NaN/Infinity'yi null'a, -0'i 0'a cevirir. Bu hop motorun degil sozlesmenin sorunudur; F3 acik tur gosterimi (numberKind) secmek zorundadir."
+  ],
+  "provenance": {
+    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "workingTreeDirty": true,
+    "githubRunId": null,
+    "githubRunUrl": null
+  },
+  "command": "node packages/xml-lab/test/probes/namespace.mjs"
+}

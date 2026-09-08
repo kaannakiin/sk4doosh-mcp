@@ -8,15 +8,15 @@ Excel/file-core güvenlik teslimi tamamlandı. Başlangıç uygulaması `b4924d8
 
 ## Güncel ilerleme
 
-| Görev / kapsam                                             | Durum ve kanıt                                                                                |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| F1-01/02 native erişim, özel dosya ve snapshot byte sınırı | Beş hedef × Node 22/24 platform matrisi ve paket doğrulaması geçti                            |
-| F1-04 içerik kimliği, cache ve cursor                      | Tamamlandı; aynı boyut/mtime değişimi dahil platform CI geçti; atomik OS snapshot iddiası yok |
-| F1-07 artımlı listeleme                                    | Tamamlandı; ziyaret, derinlik/süre ve toplam kesinliği regresyonları platform CI'da geçti     |
-| Excel bulguları #1–35                                      | Uygulama/test/sınırlılık kaydı tamamlandı; #9/#10/#25 tam destek takipleri açık               |
-| F1-03 XML DOM/WASM kaynak sahipliği                        | Bekliyor; Excel regex worker uygulaması XML motoru yaşam döngüsünün kanıtı değildir           |
-| F1-05 ortak hata redaksiyonu                               | Kısmen tamamlandı; ortak hata sınırı CI'da geçti, XML başarı/envelope byte bütçesi açık       |
-| F1-06 iki tüketicili regresyon                             | file-core/Excel testleri geçti; XML tüketicisi ve entegrasyonu bekliyor                       |
+| Görev / kapsam                                             | Durum ve kanıt                                                                                            |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| F1-01/02 native erişim, özel dosya ve snapshot byte sınırı | Beş hedef × Node 22/24 platform matrisi ve paket doğrulaması geçti                                        |
+| F1-04 içerik kimliği, cache ve cursor                      | Tamamlandı; aynı boyut/mtime değişimi dahil platform CI geçti; atomik OS snapshot iddiası yok             |
+| F1-07 artımlı listeleme                                    | Tamamlandı; ziyaret, derinlik/süre ve toplam kesinliği regresyonları platform CI'da geçti                 |
+| Excel bulguları #1–35                                      | Uygulama/test/sınırlılık kaydı tamamlandı; #9/#10/#25 tam destek takipleri açık                           |
+| F1-03 XML DOM/WASM kaynak sahipliği                        | F0-07 ile tasarım kararı verildi: worker sahiplenir, `file-core` disposal hook'u gerekmez; uygulama F2'de |
+| F1-05 ortak hata redaksiyonu                               | Kısmen tamamlandı; ortak hata sınırı CI'da geçti, XML başarı/envelope byte bütçesi açık                   |
+| F1-06 iki tüketicili regresyon                             | file-core/Excel testleri geçti; XML tüketicisi ve entegrasyonu bekliyor                                   |
 
 Bulgu/test/fixture/commit eşleştirmesi [kapanış kaydında](../excel-hardening-uygulama.md). [Platform rehberi](../excel-platform-testleri.md), main push veya manuel GitHub Actions çalıştırmasını açıklar. Aşağıdaki tablolar tamamlanan işlerin kabul sözleşmesini ve açık XML entegrasyon işlerini birlikte tutar; tamamlanan ortak katman yeniden yapılacak iş değildir.
 

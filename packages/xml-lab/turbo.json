@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      "cache": false,
+      "env": [
+        "CI",
+        "GITHUB_REPOSITORY",
+        "GITHUB_RUN_ID",
+        "GITHUB_SERVER_URL",
+        "SKMCP_XML_BENCH",
+        "SKMCP_XML_F0_NO_NETWORK"
+      ]
+    }
+  }
+}

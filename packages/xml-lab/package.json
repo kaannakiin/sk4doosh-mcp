@@ -1,0 +1,27 @@
+{
+  "name": "@sk-mcp/xml-lab",
+  "version": "0.0.0",
+  "description": "F0 evidence harness for the XML MCP engine gate. Never published, never imported.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "10.9.1",
+    "libxml2-wasm": "0.7.2",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4",
+    "zod": "^4.5.4"
+  }
+}

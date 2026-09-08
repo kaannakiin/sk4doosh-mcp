@@ -1,0 +1,56 @@
+name: XML F0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "packages/xml-lab/**"
+      - "docs/xml/**"
+      - "pnpm-lock.yaml"
+  pull_request:
+    paths:
+      - "packages/xml-lab/**"
+      - "docs/xml/**"
+      - "pnpm-lock.yaml"
+
+concurrency:
+  group: xml-f0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: xml f0 (${{ matrix.target.id }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.target.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+        target:
+          - { id: linux-x64, os: ubuntu-24.04 }
+          - { id: linux-arm64, os: ubuntu-24.04-arm }
+          - { id: darwin-x64, os: macos-15-intel }
+          - { id: darwin-arm64, os: macos-15 }
+          - { id: win32-x64, os: windows-2022 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.23.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run check-types lint --filter=@sk-mcp/xml-lab
+      - run: pnpm turbo run test --filter=@sk-mcp/xml-lab --force
+        env:
+          SKMCP_XML_BENCH: "1"
+      - run: node packages/xml-lab/collect-evidence.mjs
+        env:
+          SKMCP_XML_BENCH: "1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xml-f0-${{ matrix.target.id }}-node${{ matrix.node }}
+          path: docs/xml/f0/*.json
+          if-no-files-found: error

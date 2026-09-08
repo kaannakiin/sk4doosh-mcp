@@ -1,10 +1,10 @@
 # F0 — Kanıt ve karar kapısı
 
-Durum: başlanmadı (2026-09-08). Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. XML öncesi Excel/file-core güvenlik kapısı tamamlandı. F0-01–09 deneylerinin sonuçları henüz üretilmedi; `packages/xml-mcp` mevcut değil.
+Durum: F0-01–09 için yerel kanıt üretildi; **platform CI bekliyor** (2026-09-08). Sonuçlar: [F0 kanıt kaydı](../f0-kanit-kaydi.md), makine kayıtları [docs/xml/f0/](../f0/). Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. XML öncesi Excel/file-core güvenlik kapısı tamamlandı. F0-01 için yerel kanıt üretildi ve [bağımlılık karar ekine](../bagimlilik-karar-eki.md) yazıldı; **platform CI kanıtı henüz yok, bu nedenle hiçbir görev `tamamlandı` değildir.** F0-02–09 deneyleri açık. Deney harness'ı `packages/xml-lab`; `packages/xml-mcp` hâlâ mevcut değil ve F0 onu oluşturmaz.
 
 ## Güncel başlangıç noktası
 
-[Ortak çekirdek ve Excel kapanışı](01-ortak-cekirdek-ve-excel.md), kök handle'ına bağlı erişim, byte snapshot'ı ve platform paketlerini sağlıyor. Sıradaki iş F0-01 ile XML motorunun paket/sürüm/lisans kaydını oluşturmak ve F0-02–08 deneylerini yürütmek. Excel regex worker testleri XML parse/XPath, WASM disposal veya dış kaynak çözümlemesi için kabul kanıtı değildir. F0-02'deki native derleme gerektirmeme ölçütü son kullanıcı kurulumuna aittir; file-core hazır native paket kullanır.
+[Ortak çekirdek ve Excel kapanışı](01-ortak-cekirdek-ve-excel.md), kök handle'ına bağlı erişim, byte snapshot'ı ve platform paketlerini sağlıyor. F0-01 paket/sürüm/lisans kaydı üretildi; sıradaki iş F0-02 izole tüketici kapısı ve F0-03–08 deneyleridir. Excel regex worker testleri XML parse/XPath, WASM disposal veya dış kaynak çözümlemesi için kabul kanıtı değildir. F0-02'deki native derleme gerektirmeme ölçütü son kullanıcı kurulumuna aittir; file-core hazır native paket kullanır.
 
 ## Hedef
 

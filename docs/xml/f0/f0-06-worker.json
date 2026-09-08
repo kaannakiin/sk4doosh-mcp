@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "task": "F0-06",
+  "probe": "worker-lifecycle",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "24.6.0",
+    "cpuCount": 10,
+    "totalMemMiB": 16384,
+    "ci": false
+  },
+  "runtime": {
+    "node": "v24.12.0",
+    "v8": "13.6.233.17-node.37",
+    "execArgv": [
+      "--max-old-space-size=1536"
+    ],
+    "maxRssUnit": "KiB"
+  },
+  "engine": {
+    "name": "libxml2-wasm",
+    "specifier": "0.7.2",
+    "version": "0.7.2"
+  },
+  "metrics": {
+    "timeoutResponseMs": 1502.9,
+    "busyFractionAfterTerminate": 0.0002,
+    "busyFractionWithoutTerminate": 0.982,
+    "cpuOracle": {
+      "busyFractionAfterTerminate": 0.0002,
+      "busyFractionWithoutTerminate": 0.982,
+      "stopRatio": 4934.6,
+      "negativeControlEstablishedBaseline": true
+    },
+    "beaconAtStop": 3557,
+    "beaconLater": 3557,
+    "mainLoopTurnMsWhilePathologicalRuns": 1.24,
+    "restartCycles": 12,
+    "rssAfterCyclesKiB": 95712
+  },
+  "rows": [
+    {
+      "id": "e06-00-baseline-parse-succeeds",
+      "expected": "ok",
+      "actual": "{\"ok\":true,\"result\":{\"root\":\"r\",\"live\":1}}",
+      "pass": true
+    },
+    {
+      "id": "e06-02-expensive-query-on-valid-document-times-out",
+      "expected": "resource_limit within budget + slack",
+      "actual": "{\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"timeout\"} in 1502.9ms",
+      "pass": true
+    },
+    {
+      "id": "e06-10-queue-and-snapshots-cleared-after-termination",
+      "expected": "queueDepth 0, no live snapshots, generation advanced",
+      "actual": "{\"generation\":1,\"spawnCount\":1,\"terminations\":1,\"queueDepth\":0,\"liveSnapshots\":0,\"alive\":false}",
+      "pass": true
+    },
+    {
+      "id": "e06-08-next-normal-request-works-after-timeout",
+      "expected": "ok, exactly one respawn",
+      "actual": "{\"ok\":true,\"result\":{\"root\":\"r\",\"live\":1}} {\"generation\":2,\"spawnCount\":2,\"terminations\":1,\"queueDepth\":0,\"liveSnapshots\":0,\"alive\":true}",
+      "pass": true
+    },
+    {
+      "id": "e06-05b-negative-control-establishes-a-busy-baseline",
+      "expected": "without terminate the same job keeps a core busy, so a low reading after terminate cannot be explained by the fixture finishing on its own",
+      "actual": "{\"busyFractionAfterTerminate\":0.0002,\"busyFractionWithoutTerminate\":0.982,\"stopRatio\":4934.6,\"negativeControlEstablishedBaseline\":true}",
+      "pass": true
+    },
+    {
+      "id": "e06-05a-work-stops-after-terminate",
+      "expected": "cpu after terminate is at least ten times lower than the negative control on the same host",
+      "actual": "{\"busyFractionAfterTerminate\":0.0002,\"busyFractionWithoutTerminate\":0.982,\"stopRatio\":4934.6,\"negativeControlEstablishedBaseline\":true}",
+      "pass": true
+    },
+    {
+      "id": "e06-06-shared-counter-stops-advancing-after-terminate",
+      "expected": "counter frozen after terminate and exit",
+      "actual": "stopped=3557 later=3557 result={\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"timeout\"}",
+      "pass": true
+    },
+    {
+      "id": "e06-09-queue-overflow-rejects-immediately-beyond-cap",
+      "expected": "submissions past the cap of 4 get resource_limit at once",
+      "actual": "[\"ok\",\"ok\",\"ok\",\"ok\",\"queue_full\",\"queue_full\"]",
+      "pass": true
+    },
+    {
+      "id": "e06-03-queued-cancellation-never-starts-work",
+      "expected": "cancelled_in_queue and spawnCount unchanged",
+      "actual": "{\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"cancelled_in_queue\"} spawn=1->1",
+      "pass": true
+    },
+    {
+      "id": "e06-14-cursor-from-a-dead-generation-is-rejected",
+      "expected": "fresh resolves, post-restart resolve is stale_cursor",
+      "actual": "{\"ok\":true,\"docId\":\"doc\"} -> {\"ok\":false,\"code\":\"stale_cursor\"}",
+      "pass": true
+    },
+    {
+      "id": "e06-12-shutdown-settles-every-queued-promise",
+      "expected": "each queued job rejects with a shutdown resource_limit, none dangles",
+      "actual": "[\"resource_limit:shutdown\",\"resource_limit:shutdown\"]",
+      "pass": true
+    },
+    {
+      "id": "e06-15-main-event-loop-stays-live",
+      "expected": "a main-thread turn completes in under 100 ms while a pathological job runs",
+      "actual": "1.24",
+      "pass": true
+    },
+    {
+      "id": "e06-13-repeated-terminate-restart-converges",
+      "expected": "every post-restart request succeeds",
+      "actual": "failures=0 rssKiB=95712",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0,
+    "requiresDecision": 0
+  },
+  "verdict": "pass",
+  "blockingRows": [],
+  "limits": [
+    "CPU oracle'i host gurultusune duyarlidir; olcum tek thread'li ve bos ana thread ile alinir. SharedArrayBuffer beacon'i (e06-06) gurultuye bagisiz ikinci kanittir.",
+    "Bu deney tek senkron parse'in kesilebildigini degil, thread'in oldugunu ve isin durdugunu kanitlar. WASM trap kurtarilabilirligi ve DOM disposal'i F0-07'de olculur."
+  ],
+  "notes": [
+    "e06-05a mutlak esik yerine ayni host uzerindeki iki kolun oranini kullanir; yavas veya asiri yuklu bir runner'da mutlak CPU kesri duserken oran korunur. Negatif kontrol busy baseline kuramazsa sonuc 'inconclusive'dir, 'pass' degil.",
+    "e06-05b negatif kontrolu e06-05a'nin duyarliligini kanitlar: terminate edilmeyen ayni is CPU'yu mesgul tutmaya devam ediyor, dolayisiyla terminate sonrasi dusuk CPU 'fixture kendiliginden bitti' ile aciklanamaz."
+  ],
+  "provenance": {
+    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "workingTreeDirty": true,
+    "githubRunId": null,
+    "githubRunUrl": null
+  },
+  "command": "node packages/xml-lab/test/probes/worker-lifecycle.mjs"
+}

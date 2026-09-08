@@ -1,0 +1,520 @@
+{
+  "schemaVersion": 1,
+  "task": "F0-08",
+  "probe": "budget",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "24.6.0",
+    "cpuCount": 10,
+    "totalMemMiB": 16384,
+    "ci": false
+  },
+  "runtime": {
+    "node": "v24.12.0",
+    "v8": "13.6.233.17-node.37",
+    "execArgv": [
+      "--max-old-space-size=3072"
+    ],
+    "maxRssUnit": "KiB"
+  },
+  "engine": {
+    "name": "libxml2-wasm",
+    "specifier": "0.7.2",
+    "version": "0.7.2",
+    "parseOptionWord": 41945088
+  },
+  "fixtures": [
+    {
+      "id": "text-1mib",
+      "shape": "text",
+      "targetBytes": 1048576,
+      "actualBytes": 1048931,
+      "sha256": "b843a4a98559b590e4a6f0d9305766752c3a1b559fc9279ca1244e70a5465782",
+      "seed": 23881,
+      "generatorVersion": 1
+    },
+    {
+      "id": "text-4mib",
+      "shape": "text",
+      "targetBytes": 4194304,
+      "actualBytes": 4194518,
+      "sha256": "a4ec29dbcd1037f1753e5ad966b77f35d6346c7201588fbc2d591eb39a40f765",
+      "seed": 22601,
+      "generatorVersion": 1
+    },
+    {
+      "id": "text-8mib",
+      "shape": "text",
+      "targetBytes": 8388608,
+      "actualBytes": 8388813,
+      "sha256": "ea7dbbbb4e13516fb84d0f0b7e28b8356b90245ab8867cd0295d71e24632c52c",
+      "seed": 21577,
+      "generatorVersion": 1
+    },
+    {
+      "id": "nodes-1mib",
+      "shape": "nodes",
+      "targetBytes": 1048576,
+      "actualBytes": 1048622,
+      "sha256": "2b46bd52d3d3c5802545c2d5b3ed81a12953779a237bf3292d7dcfd34e39829a",
+      "seed": 23880,
+      "generatorVersion": 1
+    },
+    {
+      "id": "nodes-4mib",
+      "shape": "nodes",
+      "targetBytes": 4194304,
+      "actualBytes": 4194312,
+      "sha256": "80681daae8759848f4f7f13d568f03af22b45dbdf1819ad7a68aae8266be3486",
+      "seed": 22600,
+      "generatorVersion": 1
+    },
+    {
+      "id": "nodes-8mib",
+      "shape": "nodes",
+      "targetBytes": 8388608,
+      "actualBytes": 8388628,
+      "sha256": "94402d5eff7a63521c986bc1b591c7a7bc81c3a4fe0595eadccd5586600e8947",
+      "seed": 21576,
+      "generatorVersion": 1
+    },
+    {
+      "id": "attrs-1mib",
+      "shape": "attrs",
+      "targetBytes": 1048576,
+      "actualBytes": 1048634,
+      "sha256": "b2aa93e1c2a2ca171da54cbe91f6663491398cdce8dd468d622a6c3ad3603ec1",
+      "seed": 23880,
+      "generatorVersion": 1
+    },
+    {
+      "id": "attrs-4mib",
+      "shape": "attrs",
+      "targetBytes": 4194304,
+      "actualBytes": 4194454,
+      "sha256": "c1fc8984afae2c267f44916e48110a594aee895610f384809d75d04751cf2182",
+      "seed": 22600,
+      "generatorVersion": 1
+    },
+    {
+      "id": "attrs-8mib",
+      "shape": "attrs",
+      "targetBytes": 8388608,
+      "actualBytes": 8388729,
+      "sha256": "5caebde1a87167f848455b04714977302fa575662a14a50778f776f6fed8f175",
+      "seed": 21576,
+      "generatorVersion": 1
+    }
+  ],
+  "metrics": {
+    "processMemory": {
+      "rssAtStartKiB": 57856,
+      "rssAfterMatrixKiB": 256064,
+      "peakRssKiB": 256096,
+      "maxRssUnit": "KiB",
+      "note": "steady-state marginal cost per cell is near zero because the wasm heap high-water is reached during warm-up; peakRss bounds the real cost of the whole matrix"
+    },
+    "measurements": [
+      {
+        "id": "text-1mib",
+        "shape": "text",
+        "sizeMiB": 1,
+        "actualBytes": 1048931,
+        "nodeCount": 5555,
+        "parseMs": {
+          "p50": 1.129,
+          "p95": 1.418
+        },
+        "scanMs": {
+          "p50": 0.08,
+          "p95": 0.095
+        },
+        "totalP95": 1.513,
+        "rssDeltaBytes": 32768,
+        "rssDeltaPerInputByte": 0.03,
+        "relativeMad": 0.019,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "text-4mib",
+        "shape": "text",
+        "sizeMiB": 4,
+        "actualBytes": 4194518,
+        "nodeCount": 22193,
+        "parseMs": {
+          "p50": 4.333,
+          "p95": 4.419
+        },
+        "scanMs": {
+          "p50": 0.338,
+          "p95": 0.506
+        },
+        "totalP95": 4.925,
+        "rssDeltaBytes": 16384,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.005,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "text-8mib",
+        "shape": "text",
+        "sizeMiB": 8,
+        "actualBytes": 8388813,
+        "nodeCount": 44335,
+        "parseMs": {
+          "p50": 9.162,
+          "p95": 27.113
+        },
+        "scanMs": {
+          "p50": 2.326,
+          "p95": 6.176
+        },
+        "totalP95": 33.289,
+        "rssDeltaBytes": 147456,
+        "rssDeltaPerInputByte": 0.02,
+        "relativeMad": 0.043,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "nodes-1mib",
+        "shape": "nodes",
+        "sizeMiB": 1,
+        "actualBytes": 1048622,
+        "nodeCount": 93265,
+        "parseMs": {
+          "p50": 8.571,
+          "p95": 44.937
+        },
+        "scanMs": {
+          "p50": 1.25,
+          "p95": 4.146
+        },
+        "totalP95": 49.083,
+        "rssDeltaBytes": 0,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.169,
+        "liveAfter": 0,
+        "unstable": true
+      },
+      {
+        "id": "nodes-4mib",
+        "shape": "nodes",
+        "sizeMiB": 4,
+        "actualBytes": 4194312,
+        "nodeCount": 367231,
+        "parseMs": {
+          "p50": 33.157,
+          "p95": 35.35
+        },
+        "scanMs": {
+          "p50": 4.295,
+          "p95": 8.372
+        },
+        "totalP95": 43.722,
+        "rssDeltaBytes": 0,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.018,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "nodes-8mib",
+        "shape": "nodes",
+        "sizeMiB": 8,
+        "actualBytes": 8388628,
+        "nodeCount": 728809,
+        "parseMs": {
+          "p50": 62.883,
+          "p95": 73.289
+        },
+        "scanMs": {
+          "p50": 8.202,
+          "p95": 9.35
+        },
+        "totalP95": 82.639,
+        "rssDeltaBytes": 0,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.015,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "attrs-1mib",
+        "shape": "attrs",
+        "sizeMiB": 1,
+        "actualBytes": 1048634,
+        "nodeCount": 4674,
+        "parseMs": {
+          "p50": 9.52,
+          "p95": 9.919
+        },
+        "scanMs": {
+          "p50": 0.299,
+          "p95": 0.459
+        },
+        "totalP95": 10.378,
+        "rssDeltaBytes": 16384,
+        "rssDeltaPerInputByte": 0.02,
+        "relativeMad": 0.02,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "attrs-4mib",
+        "shape": "attrs",
+        "sizeMiB": 4,
+        "actualBytes": 4194454,
+        "nodeCount": 18683,
+        "parseMs": {
+          "p50": 37.353,
+          "p95": 40.457
+        },
+        "scanMs": {
+          "p50": 1.912,
+          "p95": 2.252
+        },
+        "totalP95": 42.709,
+        "rssDeltaBytes": 0,
+        "rssDeltaPerInputByte": 0,
+        "relativeMad": 0.013,
+        "liveAfter": 0,
+        "unstable": false
+      },
+      {
+        "id": "attrs-8mib",
+        "shape": "attrs",
+        "sizeMiB": 8,
+        "actualBytes": 8388729,
+        "nodeCount": 37369,
+        "parseMs": {
+          "p50": 73.878,
+          "p95": 77.749
+        },
+        "scanMs": {
+          "p50": 3.74,
+          "p95": 4.272
+        },
+        "totalP95": 82.021,
+        "rssDeltaBytes": 3129344,
+        "rssDeltaPerInputByte": 0.37,
+        "relativeMad": 0.009,
+        "liveAfter": 0,
+        "unstable": false
+      }
+    ],
+    "stability": {
+      "statistic": "relative median absolute deviation",
+      "threshold": 0.15,
+      "iterationsPerCell": 12,
+      "perCell": [
+        {
+          "id": "text-1mib",
+          "relativeMad": 0.019,
+          "unstable": false
+        },
+        {
+          "id": "text-4mib",
+          "relativeMad": 0.005,
+          "unstable": false
+        },
+        {
+          "id": "text-8mib",
+          "relativeMad": 0.043,
+          "unstable": false
+        },
+        {
+          "id": "nodes-1mib",
+          "relativeMad": 0.169,
+          "unstable": true
+        },
+        {
+          "id": "nodes-4mib",
+          "relativeMad": 0.018,
+          "unstable": false
+        },
+        {
+          "id": "nodes-8mib",
+          "relativeMad": 0.015,
+          "unstable": false
+        },
+        {
+          "id": "attrs-1mib",
+          "relativeMad": 0.02,
+          "unstable": false
+        },
+        {
+          "id": "attrs-4mib",
+          "relativeMad": 0.013,
+          "unstable": false
+        },
+        {
+          "id": "attrs-8mib",
+          "relativeMad": 0.009,
+          "unstable": false
+        }
+      ],
+      "excludedFromBudgetDerivation": [
+        "nodes-1mib"
+      ],
+      "fullyStableSizesMiB": [
+        4,
+        8
+      ]
+    },
+    "depthLadder": [
+      {
+        "depth": 64,
+        "outcome": "parsed",
+        "errorClass": null,
+        "elapsedMs": 0.04
+      },
+      {
+        "depth": 127,
+        "outcome": "parsed",
+        "errorClass": null,
+        "elapsedMs": 0.022
+      },
+      {
+        "depth": 128,
+        "outcome": "parsed",
+        "errorClass": null,
+        "elapsedMs": 0.021
+      },
+      {
+        "depth": 129,
+        "outcome": "parsed",
+        "errorClass": null,
+        "elapsedMs": 0.019
+      },
+      {
+        "depth": 256,
+        "outcome": "parsed",
+        "errorClass": null,
+        "elapsedMs": 0.027
+      },
+      {
+        "depth": 1024,
+        "outcome": "rejected",
+        "errorClass": "XmlParseError",
+        "elapsedMs": 0.759
+      },
+      {
+        "depth": 4096,
+        "outcome": "rejected",
+        "errorClass": "XmlParseError",
+        "elapsedMs": 0.037
+      },
+      {
+        "depth": 10000,
+        "outcome": "rejected",
+        "errorClass": "XmlParseError",
+        "elapsedMs": 0.043
+      },
+      {
+        "depth": 100000,
+        "outcome": "rejected",
+        "errorClass": "XmlParseError",
+        "elapsedMs": 0.044
+      }
+    ],
+    "preParseRejection": {
+      "inputBytes": 8389680,
+      "limitBytes": 8388608,
+      "elapsedMs": 0.026,
+      "rssDeltaBytes": 0,
+      "documentsAllocated": 0
+    },
+    "derivedBudgets": {
+      "measuredUpToMiB": 8,
+      "derivedFromCells": [
+        "text-1mib",
+        "text-4mib",
+        "text-8mib",
+        "nodes-4mib",
+        "nodes-8mib",
+        "attrs-1mib",
+        "attrs-4mib",
+        "attrs-8mib"
+      ],
+      "excludedUnstableCells": [
+        "nodes-1mib"
+      ],
+      "worstShapeTotalP95Ms": 82.639,
+      "worstShapeMarginalRssDeltaBytes": 3129344,
+      "processPeakRssKiB": 280272,
+      "worstShapeRssPerInputByte": 0.37,
+      "timeBudgetMs": 500,
+      "patienceQueueDepth": 20,
+      "memoryQueueDepth": 8,
+      "queueDepth": 8,
+      "queueDepthBoundBy": "pinned-snapshot-memory",
+      "mainProcessPinnedBudgetBytes": 67108864,
+      "engineDepthFailsAbove": {
+        "deepestParsed": 256,
+        "shallowestRejected": 1024
+      },
+      "tier": "full"
+    }
+  },
+  "rows": [
+    {
+      "id": "e08-every-cell-disposes-cleanly",
+      "expected": "no live instances after any shape/size cell",
+      "actual": "[\"text-1mib:0\",\"text-4mib:0\",\"text-8mib:0\",\"nodes-1mib:0\",\"nodes-4mib:0\",\"nodes-8mib:0\",\"attrs-1mib:0\",\"attrs-4mib:0\",\"attrs-8mib:0\"]",
+      "pass": true
+    },
+    {
+      "id": "e08-at-least-one-size-tier-is-stable-across-all-three-shapes",
+      "expected": "a file limit may only be claimed at a size where every shape measured stably; unstable cells are excluded and named, never averaged in",
+      "actual": "{\"statistic\":\"relative median absolute deviation\",\"threshold\":0.15,\"iterationsPerCell\":12,\"perCell\":[{\"id\":\"text-1mib\",\"relativeMad\":0.019,\"unstable\":false},{\"id\":\"text-4mib\",\"relativeMad\":0.005,\"unstable\":false},{\"id\":\"text-8mib\",\"relativeMad\":0.043,\"unstable\":false},{\"id\":\"nodes-1mib\",\"relativeMad",
+      "pass": true
+    },
+    {
+      "id": "e08-engine-depth-limit-is-measured-separately-from-the-application-limit",
+      "expected": "the engine's own failure depth is recorded and lies above the proposed 128",
+      "actual": "[\"64:parsed\",\"127:parsed\",\"128:parsed\",\"129:parsed\",\"256:parsed\",\"1024:rejected\",\"4096:rejected\",\"10000:rejected\",\"100000:rejected\"]",
+      "pass": true
+    },
+    {
+      "id": "e08-09-over-limit-input-is-rejected-before-any-parse",
+      "expected": "no XmlDocument allocated, negligible rss and elapsed time",
+      "actual": "{\"inputBytes\":8389680,\"limitBytes\":8388608,\"elapsedMs\":0.026,\"rssDeltaBytes\":0,\"documentsAllocated\":0}",
+      "pass": true
+    },
+    {
+      "id": "e08-budgets-are-derived-from-the-worst-shape-not-the-average",
+      "expected": "time budget derived as 3x the worst-shape p95, capped at 5000 ms",
+      "actual": "{\"measuredUpToMiB\":8,\"derivedFromCells\":[\"text-1mib\",\"text-4mib\",\"text-8mib\",\"nodes-4mib\",\"nodes-8mib\",\"attrs-1mib\",\"attrs-4mib\",\"attrs-8mib\"],\"excludedUnstableCells\":[\"nodes-1mib\"],\"worstShapeTotalP95Ms\":82.639,\"worstShapeMarginalRssDeltaBytes\":3129344,\"processPeakRssKiB\":280272,\"worstShapeRssPerIn",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "requiresDecision": 0
+  },
+  "verdict": "pass",
+  "blockingRows": [],
+  "limits": [
+    "Kararsiz hucreler butce turetiminden cikarildi ve isim isim kaydedildi: nodes-1mib. Bu hucreler icin dosya limiti iddia edilmez.",
+    "Kararlilik olcutu ortalama tabanli CV degil, medyan mutlak sapmanin medyana orani (relative MAD). Paylasimli CI runner'inda tek bir yavas iterasyon CV'yi surukluyordu; MAD aykiri degere dayaniklidir.",
+    "Bu tablo tek host ve tek Node surumunun olcumudur. Butce turetimi desteklenen en yavas CI host'unda tekrarlanmadan nihai sayilmaz.",
+    "Derinlik merdiveni parse sonucunu olcer; read_node gorunum limiti (onerilen 128) ayri bir katmandir ve F2-06'da olculur."
+  ],
+  "notes": [
+    "Fixture'lar mulberry32 ile deterministik uretilir, uint32 modulo kullanilir (float yolu yok) ve her birinin sha256'si kaydedilir; ayni seed ayni byte'lari verir.",
+    "Kuyruk derinligi iki bagimsiz kisittan kucugudur: istemci sabri (10 s / B_t) ve ana surecte pinlenen snapshot bellegi (64 MiB / B_f). Ikincisi baglayici oldugunda bu kayitta belirtilir."
+  ],
+  "provenance": {
+    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "workingTreeDirty": true,
+    "githubRunId": null,
+    "githubRunUrl": null
+  },
+  "command": "SKMCP_XML_BENCH=1 node --max-old-space-size=3072 packages/xml-lab/test/probes/budget.mjs"
+}
