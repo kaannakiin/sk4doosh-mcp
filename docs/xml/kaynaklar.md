@@ -1,6 +1,6 @@
 # Kaynaklar, devir izi ve kanıt sınırı
 
-Devir tarihi: 2026-09-08. İncelenen repository HEAD: `f389cdd75d87cc7a17cc1fb0dddeb3789135dcd1`. Başlangıç çalışma ağacı temizdi; `docs/xml` yoktu. Bu klasör araştırma sentezidir, XML implementasyonu değildir.
+İlk araştırma devri: 2026-09-08, HEAD `f389cdd75d87cc7a17cc1fb0dddeb3789135dcd1`; o tarihte `docs/xml` yoktu. Bu bilgi tarihsel başlangıç kaydıdır. Güncel kaynak/doküman tabanı `6b2bc89`: Excel/file-core uygulaması, testleri ve platform CI tamamlandı; XML uygulaması başlamadı. Güncel kanıt [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) ve [kapanış kaydında](excel-hardening-uygulama.md).
 
 ## Claude'un bıraktığı çalışma
 
@@ -56,4 +56,4 @@ Node worker belgesi kontrol anında v26 dokümanıydı; planın Node 22/24 hedef
 
 Claude raporlarındaki advisory/CVE sayıları, yıldız/indirme sayıları, arşivlenme tarihleri ve bazı pazar/mevzuat iddiaları bu devirde bağımsız tam taramayla doğrulanmadı. Karar gerekçesine güvenlik puanı veya hukuki gerçek diye taşınmadı. “Sıfır CVE”, “WASM her bellek hatasını güvenle kapsüller”, “tüm encoding'ler doğru”, “streaming sınırsız bellek tasarrufu sağlar” gibi sonuçlar verilmez.
 
-Excel bulguları [ayrı raporda](excel-file-core-bulgular.md) statik kanıt, koşul ve test ihtiyacı olarak sınıflandırıldı. Eski raporun çalıştırıldığı söylenen testleri burada yeniden koşulmuş sayılmaz. Kaynak satırları HEAD değişince yeniden kontrol edilmelidir.
+Excel bulgularının ilk statik sınıflandırması tarihsel denetim olarak korunur. Sonraki uygulama ve hedefli regresyon sonuçları [bulgu raporunun güncel durum bölümünde](excel-file-core-bulgular.md) ve [kapanış kaydında](excel-hardening-uygulama.md): 32 bulgu uygulama/test ile, #9/#10/#25 ise kabul edilen metadata sınırlılığı ve ayrı takiplerle ele alındı. Eski denetim satır numaraları güncel kaynak konumu sayılmaz. XML motoru için yukarıdaki kaynak incelemesi, F0 runtime kanıtı yerine geçmez.

@@ -1,17 +1,20 @@
 # XML MCP test ve agent değerlendirme planı
 
-Durum: uygulanacak test tasarımı. Bu devirde XML test kodu yazılmadı, runtime test veya benchmark çalıştırılmadı. Kabul eşikleri aşağıdaki faz görevlerine bağlıdır; eski araştırmanın test sonuçları yeni ürün sonucu sayılmaz.
+Durum: XML'e özgü test tasarımı henüz uygulanmadı (2026-09-08). Ortak native/file-core/Excel testleri uygulanıp çalıştırıldı: 450 test ve beş hedef × Node 22/24 için [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 başarılı. XML runtime testi, XML benchmark'ı ve agent kabul kaydı henüz yok.
+
+T10/T11/T12/T15'in ortak dosya katmanı regresyonları mevcut; bu tablodaki XML uzantısı/handler/cursor bağlantısı ayrıca kanıtlanacak. Excel regex worker testleri T09 veya XML disposal testlerinin yerine geçmez. Bulgu bazlı sonuçlar [kapanış kaydında](excel-hardening-uygulama.md); aşağıdaki T kimlikleri XML kabul görevleri olarak açık kalır.
 
 ## Katmanlar ve sahiplik
 
-| Katman                  | Testin yeri                                  | Ne doğrular?                                                                          |
-| ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Generic dosya davranışı | `packages/file-core/test`                    | Sandbox, gerçek byte sınırı, listeleme, cache/cursor base davranışı, hata arındırma   |
-| XML anlamı              | Gelecekte `packages/xml-mcp/test`            | Namespace, sıralı içerik, encoding, parser policy, adres ve sorgu                     |
-| XML bağlantısı          | Gelecekte `packages/xml-mcp/test`            | Registry/vocabulary/error factory/file-core entegrasyonu; generic suite kopyası değil |
-| Worker ve kaynak        | XML entegrasyon testi, izole süreç           | Timeout/cancel/shutdown, disposal, kuyruk, sonraki isteğin sağlığı                    |
-| MCP protokolü           | Gerçek istemciyle stdio testi                | Şema, anotasyon, tool yanıtı, error, stdout ve cancellation                           |
-| Agent görevi            | Fixture manifesti ve kayıtlı tool transcript | Doğru bilgiye az çağrı ve kontrollü çıktı ile ulaşma                                  |
+| Katman                  | Testin yeri                                  | Ne doğrular?                                                                                              |
+| ----------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Native erişim           | `packages/file-core-native/test`             | Kök handle'ı, özel dosya ve symlink/ancestor/UNC watchdog regresyonları; mevcut CI'da geçti               |
+| Generic dosya davranışı | `packages/file-core/test`                    | Sandbox, gerçek byte sınırı, listeleme, cache/cursor base davranışı ve hata arındırma; mevcut CI'da geçti |
+| XML anlamı              | Gelecekte `packages/xml-mcp/test`            | Namespace, sıralı içerik, encoding, parser policy, adres ve sorgu                                         |
+| XML bağlantısı          | Gelecekte `packages/xml-mcp/test`            | Registry/vocabulary/error factory/file-core entegrasyonu; generic suite kopyası değil                     |
+| Worker ve kaynak        | XML entegrasyon testi, izole süreç           | Timeout/cancel/shutdown, disposal, kuyruk, sonraki isteğin sağlığı                                        |
+| MCP protokolü           | Gerçek istemciyle stdio testi                | Şema, anotasyon, tool yanıtı, error, stdout ve cancellation                                               |
+| Agent görevi            | Fixture manifesti ve kayıtlı tool transcript | Doğru bilgiye az çağrı ve kontrollü çıktı ile ulaşma                                                      |
 
 XML fixture'ları format ürününde tutulur; HTTP spec/conformance paketine format runtime bağımlılığı eklenmez. Doğrulama generic mantığın sahibi olan pakette yapılır. Doğrudan paket testi stale dependency dist kullanmamalı; Turbo build bağımlılıklarıyla çalışır.
 
@@ -72,4 +75,4 @@ Hedef: golden görevlerde yanlış alan/değer sıfır; namespace çakışmasın
 
 ## Kapanış kanıtı şablonu
 
-Her görev kaydı şu alanları içerir: görev kimliği, durum, commit/artifact, test komutu, ortam, fixture kimlikleri, beklenen/gerçek sonuç, elapsed/peak RSS gerekiyorsa ölçüm, kalan sınır, inceleyen. Bu şablon gelecekte doldurulur; mevcut belgelerde ölçülmüş gibi boş başarı işaretleri yoktur.
+Her XML görev kaydı şu alanları içerecek: görev kimliği, durum, commit/artifact, test komutu, ortam, fixture kimlikleri, beklenen/gerçek sonuç, gerekiyorsa elapsed/peak RSS, kalan sınır ve inceleyen. Bu şablon XML için henüz doldurulmadı. Excel/file-core için doldurulmuş bulgu/test/fixture ve CI kayıtları [kapanış belgesinde](excel-hardening-uygulama.md) bulunur.

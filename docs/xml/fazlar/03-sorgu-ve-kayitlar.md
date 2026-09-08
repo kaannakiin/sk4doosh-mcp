@@ -1,6 +1,8 @@
 # F3 — XPath ve açık kayıt analizi
 
-Durum: planlandı. Sorumlu: XML sorgu geliştiricisi. Önkoşul: F2; worker parse/sorgu ve snapshot kapıları açık olmamalı.
+Durum: başlanmadı (2026-09-08). Sorumlu: XML sorgu geliştiricisi. Önkoşul: F2'nin tamamlanması; XML worker parse/sorgu ve snapshot kapılarının geçmesi.
+
+F3-01–07 açık. Excel predicate/aggregate ve regex worker düzeltmeleri tamamlandı; bunlar XPath motoru, XML kayıt projeksiyonu veya XML aggregate desteği sağlamaz. F3 sonuçları XML fixture'ları ve worker yaşam döngüsüyle ayrıca doğrulanacak.
 
 ## Hedef
 

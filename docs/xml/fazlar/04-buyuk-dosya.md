@@ -1,6 +1,8 @@
 # F4 — Büyük dosya ve çoklu belge araması
 
-Durum: isteğe bağlı, planlandı. Sorumlu: XML performans geliştiricisi. Önkoşul: F3 ve DOM sınırının gerçek kullanımda yetersiz kaldığını gösteren kayıt. MVP için zorunlu değildir.
+Durum: başlanmadı; isteğe bağlı (2026-09-08). Sorumlu: XML performans geliştiricisi. Önkoşul: F3 ve DOM sınırının gerçek kullanımda yetersiz kaldığını gösteren kayıt. MVP için zorunlu değildir.
+
+F4-01–07 açık; XML streaming parser veya indeks uygulanmadı. Mevcut file-core, sınırlı dosyayı tek byte snapshot'ı olarak okur. Artımlı dizin listelemesinin tamamlanması streaming XML okuması anlamına gelmez. F4, büyük dosya erişimini tasarlarken kök handle yetkilendirmesini, okuma sınırlarını ve kaynak değişimi kontrolünü korumalı; pathname ile güvensiz yeniden açma eklememeli.
 
 ## Hedef
 

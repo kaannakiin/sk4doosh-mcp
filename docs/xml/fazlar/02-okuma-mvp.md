@@ -1,6 +1,10 @@
 # F2 — Salt okunur XML MVP
 
-Durum: planlandı. Sorumlu: XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi. Önkoşul: F0 geçişi ve F1-01–07'nin kullanılan yolda kapanması.
+Durum: başlanmadı (2026-09-08). Sorumlu: XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi. Önkoşul: F0 geçişi ve F1-03/05/06'nın XML kapsamının kapanması.
+
+## Hazır altyapı ve kalan entegrasyon
+
+F1-01/02/04/07'nin ortak dosya erişimi, snapshot/cache ve listeleme uygulaması platform CI'ında geçti. F2 bu altyapıyı tüketir: parser girdisi `ParseContext.bytes`, içerik kimliği `stamp`, kullanıcıya gösterilen yol `displayPath` olur; `path` parser tarafından yeniden açılmaz. XML registry, worker, node modeli ve dört tool henüz yok; F2-01–09 açık. Ortak kaynak güvenliğinin XML handler'ına doğru bağlandığı F1-06/F2 bağlantı testleriyle ayrıca kanıtlanacak.
 
 ## Teslim
 

@@ -1,6 +1,10 @@
 # F6 — Yayın ve agent kabulü
 
-Durum: planlandı. Sorumlu: paket/yayın geliştiricisi ve doğrulayıcı. İlk yayın önkoşulu F2; sonraki özellik yayını ilgili F3/F4/F5 görevinin kapanışıdır. Bu devir çalışması yayın yapmaz.
+Durum: XML için başlanmadı (2026-09-08). Sorumlu: paket/yayın geliştiricisi ve doğrulayıcı. İlk yayın önkoşulu F2; sonraki özellik yayını ilgili F3/F4/F5 görevinin kapanışıdır.
+
+## Mevcut paket kanıtı ve XML kapsamı
+
+`6b2bc89` için [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 başarılı. Mevcut native/file-core/Excel paketleri Linux glibc x64/arm64, macOS x64/arm64 ve Windows x64 üzerinde Node 22/24 ile test edildi; temiz kurulum, gerçek MCP ve birleşik tarball denetimi geçti. Bu altyapı F6'da genişletilecek. XML paketi, WASM artifact'ı ve XML tool protokol testleri henüz yok; F6-01–08 XML için açık. CI artifact üretimi npm yayını değildir.
 
 | Görev | İş                            | Kabul ölçütü                                                                                                                                                          |
 | ----- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -15,6 +19,6 @@ Durum: planlandı. Sorumlu: paket/yayın geliştiricisi ve doğrulayıcı. İlk 
 
 ## Çıkış
 
-Sonuç kaydı; commit, paket tarball hash'i, ortam matrisi, koşan komutlar, test sonuçları, ölçülen limitler ve kalan kapsam sınırını içerir. Uygulama sırasında `pnpm turbo run test --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp` ilgili tüketicileri sınar; repo genel lint/type/build kapıları da değişikliğe uygun çalışır. Bu komutlar bu dokümantasyon turunda çalıştırılmış değildir.
+Sonuç kaydı; commit, paket tarball hash'i, ortam matrisi, koşan komutlar, test sonuçları, ölçülen limitler ve kalan kapsam sınırını içerir. XML paketi eklendiğinde `pnpm turbo run test --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp` ilgili tüketicileri bağımlılık build'leriyle sınar; repo genel lint/type/build kapıları da değişikliğe uygun çalışır. XML filtresi içeren bu gelecek kabul komutu henüz çalıştırılmadı; mevcut üç dosya paketinin testleri yukarıdaki CI'da geçti.
 
 İlk yayın için F4/F5 şart koşulmaz. Geçmeyen isteğe bağlı özellik tool listesine eklenmez; başarısız özellik gizlenerek destekleniyormuş gibi duyurulmaz. Yayın işlemi ayrı uygulama tesliminin parçasıdır.

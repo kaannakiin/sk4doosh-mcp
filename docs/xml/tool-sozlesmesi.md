@@ -1,6 +1,6 @@
 # Tool ve veri sözleşmesi
 
-Bu belge hedef davranıştır; makine şeması veya uygulanmış API değildir. İngilizce alan/tool adları uygulama için adlandırma önerisidir. F0/F2 sırasında şemaya dönüştürülürken davranış korunur, nihai alan şekli bu belgeyle birlikte güncellenir.
+Bu belge XML için hedef davranıştır; makine şeması veya uygulanmış API değildir. Güncelleme: 2026-09-08. `packages/xml-mcp` henüz yok; ortak file-core altyapısı ve Excel cursor v2 uygulanmış durumda. XML alan/tool adları F0/F2 sırasında şemaya dönüştürülürken bu belge birlikte güncellenecek.
 
 ## Ortak kurallar
 
@@ -8,7 +8,9 @@ Girdi dosyaları sandbox'a göre göreli `filePath` kullanır. Tool çağrısı 
 
 Yanıt metadata'sı en az `snapshotId`, `truncated`, kesilmişse `truncationReason`, `returnedCount` ve varsa `nextCursor` taşır. `list_documents` tek bir belge snapshot'ı taşımak zorunda değildir; dosya sistemi listesinin atomik snapshot olmadığı açıkça belirtilir. `complete` bütün kaynak taramasının bittiğini, `truncated` ise istenen çıktının kesildiğini belirtir: tarama tamamlanmışken uzun bir snippet yine kesilebilir.
 
-`totalMatches` yalnız tam taramada kullanılır; erken durmada `scannedCount` ve `matchedSoFar` döner. Hata zarfı mevcut `file-core` yaklaşımıyla uyumludur. Önerilen XML hataları: `malformed_xml`, `unsupported_encoding`, `doctype_not_allowed`, `query_not_supported`, `query_timeout`, `resource_limit`, `stale_cursor`, `invalid_cursor`, `document_changed`. Nihai kodlar mevcut base kodlarla çakışmayacak şekilde F2'de kesinleştirilir. Başarısız parse kısmi “başarılı belge” üretmez.
+`totalMatches` yalnız tam taramada kullanılır; erken durmada `scannedCount` ve `matchedSoFar` döner. Mevcut ortak hata kodları `file_changed`, `unsupported_platform` ve `resource_limit` dahil yeniden kullanılır; aynı durum için ayrıca `document_changed` kodu türetilmez. XML'e özgü adaylar `malformed_xml`, `unsupported_encoding`, `doctype_not_allowed`, `query_not_supported`, `query_timeout`, `stale_cursor` ve `invalid_cursor`; nihai eşleme F2'de kesinleştirilir. Başarısız parse kısmi başarılı belge üretmez.
+
+Ortak listeleme zaten `totalExact`, `scanTruncated` ve `scanTruncationReason` döndürür; ziyaret bütçesi 5.000 giriş, 64 derinlik ve 1 saniyedir. XML `list_documents` bu bilgiyi koruyacak; yanıt sayfasının `maxResults` nedeniyle kesilmesiyle taramanın eksik kalmasını birleştirmeyecek. Bu alanların XML yanıt zarfına bağlantısı F2-03'te açıktır.
 
 Hata mesajları host mutlak yolu, ham dosya içeriği veya stack trace sızdırmaz. Metin okuma yetkisi verilmiş dosyanın içeriği kullanıcıya gösterilebilir; sunucu içerikteki talimatları uygulamaz, özel anahtar veya bağlantı metnini varsayılan log'a dökmez.
 

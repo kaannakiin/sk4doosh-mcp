@@ -1,6 +1,6 @@
 # XML MCP kararları
 
-Durum: uygulama planı kararı. Tarih: 2026-09-08. Kütüphane kabulü F0 kanıt kapısına bağlıdır; mevcut global ADR numaraları değiştirilmez.
+Durum: XML mimarisi için kabul kapılarına bağlı uygulama kararı; Excel/file-core altyapısı uygulanmış durumda. Güncelleme: 2026-09-08, kaynak tabanı `6b2bc89`. XML motorunun üretim kabulü F0'a bağlıdır; aşağıdaki XML davranışları henüz çalışan API değildir. Mevcut global ADR numaraları değiştirilmez.
 
 ## K1 — Birincil motor: libxml2-wasm
 
@@ -55,7 +55,7 @@ F0/F1 worker'ın DOM ve derlenmiş XPath nesnelerini sahiplenmesini kanıtlar. A
 
 ## K7 — Dosya sandbox'ı ile XML çözümleyicisi iki ayrı sınır
 
-Kullanıcının seçtiği dosya `file-core` üzerinden açılır. Parser'a açılmış dosyadan sınırlı okunan byte'lar verilir; worker dosya yolunu yeniden açmaz. Açılan dosya kimliği, symlink yarışı ve okuma esnasında büyüme F1'de ele alınır.
+Kullanıcının seçtiği dosya için ortak erişim sınırı uygulanmıştır: `file-core-native` başlangıçta açılan kök handle'ına bağlı okur; `file-core` parser'a `ParseContext.bytes`, `stamp` ve göreli `displayPath` sağlar. Boyut sınırı, özel dosya reddi, symlink/ancestor yarışı ve içerik değişimi regresyonları beş hedef × Node 22/24 CI'ında geçti. XML worker bu snapshot'ı tüketmeli, `path` üzerinden yeniden dosya açmamalı. XML bağlantısı F1-06/F2'de açık; [kanıt ve kalan işler](fazlar/01-ortak-cekirdek-ve-excel.md).
 
 Parser'a dış entity, DTD, XInclude veya şema için genel dosya/ağ resolver'ı verilmez. `xmlRegisterFsInputProviders` ve eşdeğer geniş sağlayıcılar MVP'de kullanılmaz. Kaynak modülde bu kayıt açık bir fonksiyondur; yalnız modül adından “import tek başına erişim açar” sonucu çıkarılmaz. [Node sağlayıcı kaynağı](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/nodejs.mts).
 

@@ -1,6 +1,8 @@
 # F5 — Bağımsız genişletme kapıları
 
-Durum: isteğe bağlı, planlandı. Her alt grup ayrı teslim ve bağımlılık kararıdır; hepsinin yapılması gerekmez. Sorumlu: ilgili XML özellik geliştiricisi. Genel önkoşul: F2 kaynak güvenliği ve bütçe sözleşmesi.
+Durum: başlanmadı; isteğe bağlı (2026-09-08). Her alt grup ayrı teslim ve bağımlılık kararıdır; hepsinin yapılması gerekmez. Sorumlu: ilgili XML özellik geliştiricisi. Genel önkoşul: F2 kaynak güvenliği ve bütçe sözleşmesi.
+
+F5-S1–S4, F5-C1–C3 ve F5-D1–D4 açık. Excel metadata bulguları #9/#10/#25 için belgelenen destek sınırlılıkları ve üç takip işi F5'in tamamlandığı anlamına gelmez. Bu takiplerin kapsamı [Excel kapanış kaydında](../excel-hardening-uygulama.md); XML container desteğiyle aynı teslim olarak sayılmaz.
 
 ## F5-S — Şema özeti ve doğrulama
 
