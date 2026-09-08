@@ -189,8 +189,8 @@ struct Root {
   std::string relativeTarget(std::string target) const {
     target = slash(std::move(target));
 #ifdef _WIN32
-    if (target.rfind("/??/UNC/", 0) == 0) target = "//" + target.substr(8);
-    else if (target.rfind("/??/", 0) == 0 || target.rfind("//?/", 0) == 0) target = target.substr(4);
+    if (target.rfind("/?" "?/UNC/", 0) == 0) target = "//" + target.substr(8);
+    else if (target.rfind("/?" "?/", 0) == 0 || target.rfind("//?/", 0) == 0) target = target.substr(4);
 #endif
     if (!absolute(target)) return target;
 #ifndef _WIN32

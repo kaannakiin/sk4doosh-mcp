@@ -67,11 +67,14 @@ if (process.platform === "win32") {
   if (vs.status !== 0 || !vs.stdout.trim())
     throw new Error("MSVC installation not found");
   const command = `call "${join(vs.stdout.trim(), "Common7", "Tools", "VsDevCmd.bat")}" -arch=x64 >nul && set`;
-  const environment = spawnSync("cmd.exe", ["/d", "/s", "/c", command], {
+  const environment = spawnSync("cmd.exe", ["/d", "/s", "/c", `"${command}"`], {
     encoding: "utf8",
+    windowsVerbatimArguments: true,
   });
   if (environment.status !== 0)
-    throw new Error("MSVC environment setup failed");
+    throw new Error(
+      `MSVC environment setup failed (exit ${environment.status}): ${environment.error?.message ?? environment.stderr?.trim().slice(0, 2000) ?? "no stderr"}`,
+    );
   for (const line of environment.stdout.split(/\r?\n/)) {
     const equals = line.indexOf("=");
     const key = line.slice(0, equals);

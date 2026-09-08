@@ -1,6 +1,8 @@
 # Excel ve file-core güvenlik kapatma kaydı
 
-Durum: uygulama ve macOS arm64 / Node 24 yerel doğrulaması tamamlandı. Linux/Windows ve diğer Node/mimari kombinasyonları CI çalışması bekliyor. XML geçiş kapısı bu kanıtlar gelene kadar kapalı; XML geliştirmesi başlamadı.
+**Merge sonrası CI güncellemesi:** `4f2f595` için [CI #34221182771](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34221182771) çalıştırıldı. Linux native derleme ve Windows MSVC hazırlık hataları doğrulandı; platform kapısı geçmedi. [Ayrıntılı inceleme](excel-ci-inceleme-2026-09-08.md). Aşağıdaki yerel sonuçlar korunur; ilk teslimattaki “CI bekliyor” durumu artık başarılı CI anlamına gelmez.
+
+Durum: uygulama ve yerel doğrulama tamamlandı; macOS arm64/x64 × Node 22/24 CI işleri geçti. Merge sonrası CI sonucu `failure`: Linux native derlemesi ve Windows MSVC hazırlığı başarısız; düzeltme ve yeni CI kanıtı gerekiyor. Birleşik paket işi atlandı. XML geçiş kapısı kapalı; XML geliştirmesi başlamadı.
 
 ## Kabul edilen kapsam
 
