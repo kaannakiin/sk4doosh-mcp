@@ -1,6 +1,6 @@
 # Excel MCP ve file-core: 35 bulgunun yeniden değerlendirilmesi
 
-Tarih: 2026-09-08. Durum: 35 bulgu uygulama, hedefli regresyon veya kabul edilen destek sınırlılığıyla ele alındı. `a033103` için [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) 13/13 başarılı: beş native hedef × Node 22/24, genel Node/.NET kontrolleri ve birleşik paket. İlgili native/file-core/Excel toplamı 450 test. Excel/file-core güvenlik kapısı geçti; XML geliştirmesi başlamadı.
+Tarih: 2026-09-08. Durum: 35 bulgu uygulama, hedefli regresyon veya kabul edilen destek sınırlılığıyla ele alındı. `4472332` için [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) 13/13 başarılı: beş native hedef × Node 22/24, genel Node/.NET kontrolleri ve birleşik paket. İlgili native/file-core/Excel toplamı 450 test. Excel/file-core güvenlik kapısı geçti; XML geliştirmesi başlamadı.
 
 Güncel bulgu/test/fixture/komut eşleştirmesi: [uygulama ve kapanış kaydı](excel-hardening-uygulama.md). Linux ve Windows çalıştırma adımları: [platform testleri](excel-platform-testleri.md). #9/#10/#25 tam destek olarak kapanmadı; EXCEL-META-009/010/025 takip kayıtları açık.
 
@@ -85,7 +85,7 @@ Başlangıç kanıt yolları depo köküne göredir; satır numaraları uygulama
 2. Güncel sonuç: 97 file-core + 351 Excel + 2 native = 450 test. Son branch coverage: file-core %83,77; Excel %86,12. #17/#33/#35 hedef dalları çalıştırıldı.
 3. #26 kesin/NFC seçimi korundu; #27 cursor v2 seçenek çatışmaları reddediliyor; #28 cache ve cursor gerçek byte içeriğiyle doğrulanıyor. Ayrıntılar [güncel karar kaydında](excel-acik-maddeler-karar-kaydi.md).
 4. #9/#10/#25 gerçek OOXML fixture’larıyla doğrulanan ExcelJS kayıplarıdır. Yanıtlar destek sınırlılığı/tamlık bilgisi taşır; tam destek işleri EXCEL-META-009/010/025 olarak ayrı tutulur.
-5. [GitHub Actions platform matrisi](excel-platform-testleri.md) ve beş binary içeren paket kanıtı tamamlandı; [artifact bağlantısı](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196/artifacts/10055082654).
+5. [GitHub Actions platform matrisi](excel-platform-testleri.md) ve beş binary içeren paket kanıtı tamamlandı; [artifact bağlantısı](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867/artifacts/10055754548).
 
 ## Kanıt kapsamı sınırı
 

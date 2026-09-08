@@ -1,6 +1,6 @@
 # Excel ve file-core güvenlik kapatma kaydı
 
-**Nihai CI kanıtı:** `a033103bc802b098b3cfe03e5e3aa808a35f4808` için [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) **success** ile tamamlandı: 13/13 job geçti. [npm-tarballs artifact](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196/artifacts/10055082654), beş native hedefi içeriyor. Önceki hatalar ve düzeltmeler [CI inceleme kaydında](excel-ci-inceleme-2026-09-08.md).
+**Nihai CI kanıtı:** `44723329f1a8ae7251f6b63ae855e88acf405ff6` için [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) **success** ile tamamlandı: 13/13 job geçti. [npm-tarballs artifact](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867/artifacts/10055754548), beş native hedefi içeriyor. Önceki hatalar ve düzeltmeler [CI inceleme kaydında](excel-ci-inceleme-2026-09-08.md).
 
 Durum: Excel/file-core uygulaması, yerel kontroller, Linux glibc x64/arm64 + macOS x64/arm64 + Windows x64 üzerinde Node 22/24 matrisi ve birleşik paket doğrulaması tamamlandı. Excel/file-core güvenlik geçiş kapısı geçti. #9/#10/#25 kabul edilen destek sınırlılıkları olarak ayrı takipte; XML geliştirmesi başlamadı.
 
@@ -33,7 +33,7 @@ Kesin/NFC sayfa seçimi korunur. Cursor çatışmaları reddedilir. Min/max karm
 - **F**: Değişen kaynak/config/dokümanlarda `pnpm exec prettier --check <dosyalar>`; `git diff --check`.
 - **CI**: `.github/workflows/ci.yml` beş native hedef × Node 22/24 için build/test/temiz kurulum/MCP smoke çalıştırdı; on matris işi geçti. Genel Node ve .NET işleri ile son paket işi de geçti. Node 24 binary’leri birleştirildi; `SKMCP_REQUIRE_ALL_PREBUILDS=1` ile beş binary zorunlu doğrulandı; birleşik tarball’lardan gerçek MCP snapshot/regex çağrıları başarılı.
 - Coverage sağlayıcısı Vitest ile aynı sürümde: 3.2.7. Yerel son ölçüm: file-core branch %83,77 (160/191); Excel branch %86,12 (1216/1412). #17 byte/hücre, #33 `ambiguous_sheet`, #35 1904 dalları hedef testlerle çalıştırıldı. Coverage raporları paketlerin `coverage/` dizininde üretilir.
-- Commit kanıtı: başlangıç uygulaması `b4924d8`; CI düzeltmeleri `2212d16`, `13cb74c`, `30a6f0a`; .NET test izolasyonu `7e9645c`; büyük CSV testlerinin ayrılması ve worker bütçesi `a033103`. Bütün değişiklikler `main` üzerinde push edildi. Önceki geliştirme branch’i merge sonrası yerel/uzak depodan silindi.
+- Commit kanıtı: başlangıç uygulaması `b4924d8`; CI düzeltmeleri `2212d16`, `13cb74c`, `30a6f0a`; .NET test izolasyonu `7e9645c`; büyük CSV testlerinin ayrılması ve worker bütçesi `a033103`; kök alias kontrolü ve UNC regresyonu `4472332`. Bütün değişiklikler `main` üzerinde push edildi. Önceki geliştirme branch’i merge sonrası yerel/uzak depodan silindi.
 
 Test kısaltmaları: **EH** = `packages/excel-mcp/test/hardening.spec.ts`, **FH** = `packages/file-core/test/hardening.spec.ts`, **NS** = `packages/file-core-native/test/security.test.mjs` + `watchdog.mjs`, **RW** = `packages/excel-mcp/test/regex-security.spec.ts` + `fixtures/regex-watchdog.mjs`, **RS** = `packages/excel-mcp/test/resource-security.spec.ts` + `fixtures/measure-hardening.mjs`. Fixture'lar test sırasında geçici dizinde üretilir; OOXML değişiklikleri yalnız testlerde JSZip ile yapılır.
 
@@ -95,9 +95,9 @@ Dosya yetkilendirmesi başlangıç kök handle'ına bağlıdır. Eşzamanlı yaz
 
 ## Teslimat ve XML geçiş kapısı
 
-[CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) ve `a033103bc802b098b3cfe03e5e3aa808a35f4808` aynı kaynak durumunu doğrular. 13 job başarılı: 10 platform/Node kombinasyonu, genel Node kontrolleri, .NET testleri ve paket toplama. Native/file-core/Excel toplamı 450 test; .NET `net8.0` ve `net10.0` için 164’er test.
+[CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) ve `44723329f1a8ae7251f6b63ae855e88acf405ff6` aynı kaynak durumunu doğrular. 13 job başarılı: 10 platform/Node kombinasyonu, genel Node kontrolleri, .NET testleri ve paket toplama. Native/file-core/Excel toplamı 450 test; .NET `net8.0` ve `net10.0` için 164’er test.
 
-[npm-tarballs](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196/artifacts/10055082654) artifact’ı üç npm paketi ile beş hedef native binary’sini içerir. Paket denetimi ve gerçek stdio MCP çağrıları geçti; npm yayını yapılmadı. Artifact süreli GitHub saklama politikasına tabidir.
+[npm-tarballs](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867/artifacts/10055754548) artifact’ı üç npm paketi ile beş hedef native binary’sini içerir. Paket denetimi ve gerçek stdio MCP çağrıları geçti; npm yayını yapılmadı. Artifact süreli GitHub saklama politikasına tabidir.
 
 Güvenlik kapısının platform bekleyişi kapandı. XML geliştirmesi başlatılmadı; F0 teknik karar kapısı ve XML’e özgü F1 yaşam döngüsü/yanıt bütçesi/ikinci tüketici işleri kendi planında kalır. #9/#10/#25 tam destek olarak işaretlenmez; aşağıdaki üç takip kaydı korunur.
 

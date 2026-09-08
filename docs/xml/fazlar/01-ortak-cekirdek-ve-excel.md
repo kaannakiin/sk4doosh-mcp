@@ -18,7 +18,7 @@ XML ikinci tüketici olurken mevcut dosya sınırlarını güçlendirmek. Excel'
 | F1-05 ortak hata redaksiyonu                               | Yerelde doğrulandı; bütün XML başarı yanıtlarının byte bütçesi henüz uygulanmadı    |
 | F1-06 iki tüketicili regresyon                             | file-core/Excel testleri geçti; XML tüketicisi ve entegrasyonu bekliyor             |
 
-Bulgu/test/fixture eşleştirmesi [kapanış kaydında](../excel-hardening-uygulama.md). [Platform testleri rehberi](../excel-platform-testleri.md) GitHub Actions'ta Linux ve Windows çalıştırma adımlarını açıklar. Platform ve paket kanıtı [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) ile alındı; F0 ve XML’e özgü F1-03/05/06 işleri kendi kapılarını korur. Aşağıdaki tablolar görevlerin kabul sözleşmesini korur.
+Bulgu/test/fixture eşleştirmesi [kapanış kaydında](../excel-hardening-uygulama.md). [Platform testleri rehberi](../excel-platform-testleri.md) GitHub Actions'ta Linux ve Windows çalıştırma adımlarını açıklar. Platform ve paket kanıtı [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) ile alındı; F0 ve XML’e özgü F1-03/05/06 işleri kendi kapılarını korur. Aşağıdaki tablolar görevlerin kabul sözleşmesini korur.
 
 ## XML başlamadan kapanacak kapılar
 

@@ -2,7 +2,7 @@
 
 Tarih: 2026-09-08. Durum: **Excel/file-core güvenlik ve platform CI kapısı geçti. XML uygulaması başlamadı.**
 
-Araştırma kararları ve XML faz planları korunur. Excel/file-core güvenlik uygulaması ile takip düzeltmeleri `main` üzerinde; `a033103` için [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) 13/13 başarılı. Beş native hedef × Node 22/24, gerçek MCP ve birleşik paket doğrulaması tamamlandı. XML’e özgü fazlar kendi önkoşullarına bağlıdır.
+Araştırma kararları ve XML faz planları korunur. Excel/file-core güvenlik uygulaması ile takip düzeltmeleri `main` üzerinde; `4472332` için [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) 13/13 başarılı. Beş native hedef × Node 22/24, gerçek MCP ve birleşik paket doğrulaması tamamlandı. XML’e özgü fazlar kendi önkoşullarına bağlıdır.
 
 ## Hedef
 

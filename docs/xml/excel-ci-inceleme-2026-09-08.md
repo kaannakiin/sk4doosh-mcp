@@ -1,6 +1,6 @@
 # Merge sonrası Excel/file-core CI incelemesi
 
-**Güncel sonuç: başarılı.** `a033103bc802b098b3cfe03e5e3aa808a35f4808` için [CI #34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196) 13/13 job ile geçti. Beş native hedef × Node 22/24, genel Node/.NET ve birleşik paket doğrulaması tamamlandı. [npm-tarballs artifact](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196/artifacts/10055082654) üretildi. Aşağıdaki ilk çalışma hataları tarihsel teşhis kaydıdır; güncel durum olarak okunmamalı.
+**Güncel sonuç: başarılı.** `44723329f1a8ae7251f6b63ae855e88acf405ff6` için [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) 13/13 job ile geçti. Beş native hedef × Node 22/24, genel Node/.NET ve birleşik paket doğrulaması tamamlandı. [npm-tarballs artifact](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867/artifacts/10055754548) üretildi. Aşağıdaki ilk çalışma hataları tarihsel teşhis kaydıdır; güncel durum olarak okunmamalı.
 
 İncelenen commit: `4f2f595a0ffa411a6c9324607c4a0da097446993` (PR #1 merge).
 Çalışma: [CI #34221182771](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34221182771), `main` push, 2026-09-08 14:31:56 Türkiye saati.
@@ -52,6 +52,7 @@ Yukarıdaki sonuç ilk merge çalışmasının tarihsel kaydıdır. Kullanıcın
 | `30a6f0a` | Windows dizinlerini boş NT göreli adla kök handle üzerinden yeniden açma                   | [34223235373](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34223235373): Windows test/paket/MCP geçti; bağımsız .NET test sayacı yarışı yakalandı |
 | `7e9645c` | .NET test probe sayacı host'a özel; iki paralel host regresyonu                            | [34223587567](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34223587567): Windows/.NET geçti; macOS x64 birleşik CSV testi süreyi aştı             |
 | `a033103` | Büyük CSV parser/handler testlerini ayırma; test concurrency sınırı                        | [34224085196](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34224085196): 13/13 başarılı; birleşik paket üretildi                                  |
+| `4472332` | Kök alias kontrolü ve UNC regresyonu                                                       | [34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867): 13/13 başarılı                                                           |
 
 .NET değişikliği ürün cache davranışını değiştirmez. Paralel test host'larının ortak statik sayacı birbirini etkiliyordu; sayaç host'a taşındı. Test paralelliği ve assertion'lar korundu. Yerelde `net8.0` ve `net10.0` için 164'er test ve lint geçti. Native eşzamanlı dizin taramaları da ayrı enumeration state ile doğrulandı.
 
