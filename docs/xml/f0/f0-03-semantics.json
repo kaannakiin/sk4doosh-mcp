@@ -433,7 +433,7 @@
     "JSON zarfi NaN/Infinity'yi null'a, -0'i 0'a cevirir. Bu hop motorun degil sozlesmenin sorunudur; F3 acik tur gosterimi (numberKind) secmek zorundadir."
   ],
   "provenance": {
-    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "commit": "581489465148f3be11f119256f779637b9b50078",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null

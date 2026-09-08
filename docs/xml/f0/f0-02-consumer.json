@@ -26,12 +26,12 @@
     {
       "id": "install-without-scripts-succeeds",
       "expected": "npm install --ignore-scripts exits 0",
-      "actual": "status=0 npm notice\nnpm notice New minor version of npm available! 11.6.2 -> 11.19.1\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.19.1\nnpm notice To update run: npm install -g npm@11.19.1\n",
+      "actual": "status=0 ",
       "pass": true
     },
     {
       "id": "engine-resolves-inside-consumer-node-modules",
-      "expected": "path under /private/var/folders/n7/d3r8g4t9571fjz4s8bz8nlmr0000gn/T/sk-mcp-xml-f0-consumer-cimmqc/node_modules/libxml2-wasm/",
+      "expected": "path under /private/var/folders/n7/d3r8g4t9571fjz4s8bz8nlmr0000gn/T/sk-mcp-xml-f0-consumer-Ujg0PQ/node_modules/libxml2-wasm/",
       "actual": "inside",
       "pass": true
     },
@@ -56,7 +56,7 @@
     {
       "id": "cold-and-warm-are-measured-separately",
       "expected": "module import, first parse and warm parse reported as distinct numbers",
-      "actual": "{\"coldModuleImportMs\":{\"p50\":13.952,\"p95\":14.101},\"coldFirstParseMs\":{\"p50\":1.589,\"p95\":1.595},\"warmParseMs\":{\"p50\":0.004,\"p95\":0.015,\"samples\":150}}",
+      "actual": "{\"coldModuleImportMs\":{\"p50\":13.086,\"p95\":13.604},\"coldFirstParseMs\":{\"p50\":1.428,\"p95\":1.602},\"warmParseMs\":{\"p50\":0.004,\"p95\":0.014,\"samples\":150}}",
       "pass": true
     },
     {
@@ -85,20 +85,20 @@
     }
   ],
   "metrics": {
-    "installMs": 997.4,
+    "installMs": 645.7,
     "wasmCarrierBytes": 963362,
     "wasmCarrierSha256": "df6c8801906c0dad66e0da3db8c3849e3e8528246db513de4d4716cb82792d2e",
     "coldModuleImportMs": {
-      "p50": 13.952,
-      "p95": 14.101
+      "p50": 13.086,
+      "p95": 13.604
     },
     "coldFirstParseMs": {
-      "p50": 1.589,
-      "p95": 1.595
+      "p50": 1.428,
+      "p95": 1.602
     },
     "warmParseMs": {
       "p50": 0.004,
-      "p95": 0.015,
+      "p95": 0.014,
       "samples": 150
     },
     "stderrBytesOnMalformed": 0
@@ -119,7 +119,7 @@
     "Bu ölçüt kurulum ve çalıştırma yolunda JDK/native derleme adımı bulunmadığını gösterir; host'ta java bulunması sonucu değiştirmez."
   ],
   "provenance": {
-    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "commit": "581489465148f3be11f119256f779637b9b50078",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null

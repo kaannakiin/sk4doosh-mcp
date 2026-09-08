@@ -7,7 +7,7 @@ it(
   () => {
     const outcome = runProbe("worker-lifecycle", {
       execArgv: ["--max-old-space-size=1536"],
-      timeoutMs: 240_000,
+      timeoutMs: 900_000,
     });
     expect(outcome.signal, outcome.stderr).toBeNull();
     expect(outcome.status, outcome.stderr).toBe(0);

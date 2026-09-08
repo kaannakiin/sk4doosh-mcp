@@ -26,24 +26,24 @@
   },
   "metrics": {
     "noiseFloor": {
-      "slope": 67584,
+      "slope": 67502,
       "shift": 6766592,
-      "spread": 3325952,
+      "spread": 3309568,
       "natural": {
         "id": "noise-floor",
         "gcForced": false,
-        "slopeBytesPerIteration": 67584,
+        "slopeBytesPerIteration": 67502,
         "medianShiftBytes": 6766592,
-        "plateauSpreadBytes": 3325952,
+        "plateauSpreadBytes": 3309568,
         "liveAfter": 0,
         "collectedAfter": 0
       },
       "forced": {
         "id": "noise-floor-gc",
         "gcForced": true,
-        "slopeBytesPerIteration": 1046,
-        "medianShiftBytes": 131072,
-        "plateauSpreadBytes": 16384,
+        "slopeBytesPerIteration": 2800,
+        "medianShiftBytes": 327680,
+        "plateauSpreadBytes": 81920,
         "liveAfter": 0,
         "collectedAfter": 0
       }
@@ -52,8 +52,8 @@
       "series": {
         "id": "tier2-positive-control",
         "gcForced": false,
-        "slopeBytesPerIteration": 140451,
-        "medianShiftBytes": 14057472,
+        "slopeBytesPerIteration": 140314,
+        "medianShiftBytes": 14041088,
         "plateauSpreadBytes": 6864896,
         "liveAfter": 220,
         "collectedAfter": 0
@@ -65,18 +65,18 @@
       "natural": {
         "id": "e07-01-normal-completion",
         "gcForced": false,
-        "slopeBytesPerIteration": 596,
-        "medianShiftBytes": 344064,
-        "plateauSpreadBytes": 0,
+        "slopeBytesPerIteration": 11854,
+        "medianShiftBytes": 1966080,
+        "plateauSpreadBytes": 65536,
         "liveAfter": 0,
         "collectedAfter": 0
       },
       "forced": {
         "id": "e07-01-normal-completion-gc",
         "gcForced": true,
-        "slopeBytesPerIteration": 171,
-        "medianShiftBytes": 16384,
-        "plateauSpreadBytes": 16384,
+        "slopeBytesPerIteration": 319,
+        "medianShiftBytes": 32768,
+        "plateauSpreadBytes": 32768,
         "liveAfter": 0,
         "collectedAfter": 0
       },
@@ -86,8 +86,8 @@
       "natural": {
         "id": "e07-02-error-path",
         "gcForced": false,
-        "slopeBytesPerIteration": 9362,
-        "medianShiftBytes": 999424,
+        "slopeBytesPerIteration": 15019,
+        "medianShiftBytes": 2146304,
         "plateauSpreadBytes": 0,
         "liveAfter": 0,
         "collectedAfter": 0
@@ -113,115 +113,115 @@
       "collectedAfter": 0
     },
     "workerCycles": {
-      "baselineKiB": 130512,
+      "baselineKiB": 131856,
       "cycles": [
         {
           "cycle": 0,
-          "peakKiB": 156128,
-          "afterKiB": 142896
+          "peakKiB": 156384,
+          "afterKiB": 143024
         },
         {
           "cycle": 1,
-          "peakKiB": 165088,
-          "afterKiB": 151472
+          "peakKiB": 165024,
+          "afterKiB": 151392
         },
         {
           "cycle": 2,
-          "peakKiB": 167984,
-          "afterKiB": 154304
+          "peakKiB": 167216,
+          "afterKiB": 153504
         },
         {
           "cycle": 3,
-          "peakKiB": 168608,
-          "afterKiB": 154912
+          "peakKiB": 168688,
+          "afterKiB": 154992
         },
         {
           "cycle": 4,
-          "peakKiB": 169728,
-          "afterKiB": 156064
+          "peakKiB": 168864,
+          "afterKiB": 155184
         },
         {
           "cycle": 5,
-          "peakKiB": 170656,
-          "afterKiB": 156960
+          "peakKiB": 170784,
+          "afterKiB": 157072
         },
         {
           "cycle": 6,
-          "peakKiB": 170992,
-          "afterKiB": 157296
+          "peakKiB": 172112,
+          "afterKiB": 158400
         },
         {
           "cycle": 7,
-          "peakKiB": 172240,
-          "afterKiB": 158528
+          "peakKiB": 172816,
+          "afterKiB": 159120
         }
       ],
       "controlCycles": [
         {
           "cycle": 0,
-          "afterKiB": 144128
+          "afterKiB": 146144
         },
         {
           "cycle": 1,
-          "afterKiB": 153264
+          "afterKiB": 152528
         },
         {
           "cycle": 2,
-          "afterKiB": 154576
+          "afterKiB": 153712
         },
         {
           "cycle": 3,
-          "afterKiB": 155472
+          "afterKiB": 154992
         },
         {
           "cycle": 4,
-          "afterKiB": 156480
+          "afterKiB": 155456
         },
         {
           "cycle": 5,
-          "afterKiB": 156960
+          "afterKiB": 157104
         },
         {
           "cycle": 6,
-          "afterKiB": 157296
+          "afterKiB": 158400
         },
         {
           "cycle": 7,
-          "afterKiB": 158560
+          "afterKiB": 160000
         }
       ],
       "workerDeltasKiB": [
-        8576,
-        2832,
-        608,
-        1152,
-        896,
-        336,
-        1232
+        8368,
+        2112,
+        1488,
+        192,
+        1888,
+        1328,
+        720
       ],
       "controlDeltasKiB": [
-        9136,
-        1312,
-        896,
-        1008,
-        480,
-        336,
-        1264
+        6384,
+        1184,
+        1280,
+        464,
+        1648,
+        1296,
+        1600
       ],
       "attributableDeltasKiB": [
-        -560,
-        1520,
-        -288,
-        144,
-        416,
-        0,
-        -32
+        1984,
+        928,
+        208,
+        -272,
+        240,
+        32,
+        -880
       ],
-      "medianAttributableKiB": 0,
+      "medianAttributableKiB": 208,
       "medianWorkerFootprintKiB": 13696,
       "outlierResistantStatistic": "median",
       "measurable": true,
-      "survivingFraction": 0,
+      "survivingFraction": 0.0152,
       "gcAvailable": true
     }
   },
@@ -241,7 +241,7 @@
     {
       "id": "e07-tier2-sensitivity-is-measured-not-assumed",
       "expected": "recorded: whether the statistical tier can detect a deliberate 220-document leak on this host",
-      "actual": "{\"series\":{\"id\":\"tier2-positive-control\",\"gcForced\":false,\"slopeBytesPerIteration\":140451,\"medianShiftBytes\":14057472,\"plateauSpreadBytes\":6864896,\"liveAfter\":220,\"collectedAfter\":0},\"tier2DetectedIt\":false,\"liveInstancesObserved\":220}",
+      "actual": "{\"series\":{\"id\":\"tier2-positive-control\",\"gcForced\":false,\"slopeBytesPerIteration\":140314,\"medianShiftBytes\":14041088,\"plateauSpreadBytes\":6864896,\"liveAfter\":220,\"collectedAfter\":0},\"tier2DetectedIt\":false,\"liveInstancesObserved\":220}",
       "pass": true
     },
     {
@@ -253,13 +253,13 @@
     {
       "id": "e07-01-normal-completion-leaves-nothing-live",
       "expected": "live 0, garbageCollected 0, and the natural/forced pair shows no retention",
-      "actual": "{\"natural\":{\"id\":\"e07-01-normal-completion\",\"gcForced\":false,\"slopeBytesPerIteration\":596,\"medianShiftBytes\":344064,\"plateauSpreadBytes\":0,\"liveAfter\":0,\"collectedAfter\":0},\"forced\":{\"id\":\"e07-01-normal-completion-gc\",\"gcForced\":true,\"slopeBytesPerIteration\":171,\"medianShiftBytes\":16384,\"plateauSpre",
+      "actual": "{\"natural\":{\"id\":\"e07-01-normal-completion\",\"gcForced\":false,\"slopeBytesPerIteration\":11854,\"medianShiftBytes\":1966080,\"plateauSpreadBytes\":65536,\"liveAfter\":0,\"collectedAfter\":0},\"forced\":{\"id\":\"e07-01-normal-completion-gc\",\"gcForced\":true,\"slopeBytesPerIteration\":319,\"medianShiftBytes\":32768,\"plat",
       "pass": true
     },
     {
       "id": "e07-02-failed-parse-frees-the-partial-context",
       "expected": "live 0 and no retention across 200 malformed inputs",
-      "actual": "{\"natural\":{\"id\":\"e07-02-error-path\",\"gcForced\":false,\"slopeBytesPerIteration\":9362,\"medianShiftBytes\":999424,\"plateauSpreadBytes\":0,\"liveAfter\":0,\"collectedAfter\":0},\"forced\":{\"id\":\"e07-02-error-path-gc\",\"gcForced\":true,\"slopeBytesPerIteration\":0,\"medianShiftBytes\":0,\"plateauSpreadBytes\":16384,\"liv",
+      "actual": "{\"natural\":{\"id\":\"e07-02-error-path\",\"gcForced\":false,\"slopeBytesPerIteration\":15019,\"medianShiftBytes\":2146304,\"plateauSpreadBytes\":0,\"liveAfter\":0,\"collectedAfter\":0},\"forced\":{\"id\":\"e07-02-error-path-gc\",\"gcForced\":true,\"slopeBytesPerIteration\":0,\"medianShiftBytes\":0,\"plateauSpreadBytes\":16384,\"l",
       "pass": true
     },
     {
@@ -295,7 +295,7 @@
     {
       "id": "e07-05-worker-death-is-a-reclamation-boundary",
       "expected": "less than 10 percent of what a worker allocates survives its termination, measured as a median against an interleaved worker-free control",
-      "actual": "{\"baselineKiB\":130512,\"cycles\":[{\"cycle\":0,\"peakKiB\":156128,\"afterKiB\":142896},{\"cycle\":1,\"peakKiB\":165088,\"afterKiB\":151472},{\"cycle\":2,\"peakKiB\":167984,\"afterKiB\":154304},{\"cycle\":3,\"peakKiB\":168608,\"afterKiB\":154912},{\"cycle\":4,\"peakKiB\":169728,\"afterKiB\":156064},{\"cycle\":5,\"peakKiB\":170656,\"afte",
+      "actual": "{\"baselineKiB\":131856,\"cycles\":[{\"cycle\":0,\"peakKiB\":156384,\"afterKiB\":143024},{\"cycle\":1,\"peakKiB\":165024,\"afterKiB\":151392},{\"cycle\":2,\"peakKiB\":167216,\"afterKiB\":153504},{\"cycle\":3,\"peakKiB\":168688,\"afterKiB\":154992},{\"cycle\":4,\"peakKiB\":168864,\"afterKiB\":155184},{\"cycle\":5,\"peakKiB\":170784,\"afte",
       "pass": true
     },
     {
@@ -337,7 +337,7 @@
     "Tier-2 verdict'i dogal ve GC-zorlanmis serilerin ciftinden turetilir: yukselen/duz allocator high-water demektir ve leak degildir; yukselen/yukselen gercek retention'dir ve kapiyi dusurur."
   ],
   "provenance": {
-    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "commit": "581489465148f3be11f119256f779637b9b50078",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null

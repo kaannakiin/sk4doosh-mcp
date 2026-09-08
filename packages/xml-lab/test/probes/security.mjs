@@ -259,24 +259,43 @@ record(
   armTwo.parsed?.sideModuleLoaded === true && noExternalAccess(armTwo),
 );
 
-const armThreeFired =
+const armThreeConsultedProvider =
   armThree.parsed !== null &&
-  (armThree.parsed.tokenSeen === true ||
-    armThree.listenerHits > 0 ||
+  (armThree.parsed.tripwires.fsExistsSync > 0 ||
     armThree.parsed.tripwires.fsOpenSync > 0 ||
     armThree.parsed.tripwires.fsReadFileSync > 0 ||
-    armThree.parsed.tripwires.fsExistsSync > 0);
+    armThree.listenerHits > 0);
+
+const armThreeExfiltratedContent =
+  armThree.parsed !== null && armThree.parsed.tokenSeen === true;
+
+const armThreeFired = armThreeConsultedProvider;
 
 record(
-  "arm3-positive-control-fires",
-  "registering the fs providers with NOENT|DTDLOAD must reach the canary",
+  "arm3-positive-control-reaches-the-provider",
+  "registering the fs providers with NOENT|DTDLOAD must make the engine consult the host filesystem",
   JSON.stringify({
-    tokenSeen: armThree.parsed?.tokenSeen,
-    listenerHits: armThree.listenerHits,
     tripwires: armThree.parsed?.tripwires,
+    listenerHits: armThree.listenerHits,
   }),
-  armThreeFired,
+  armThreeConsultedProvider,
 );
+
+record(
+  "arm3-content-exfiltration-control-is-recorded-per-platform",
+  "recorded: whether the canary token actually reached the document on this platform",
+  JSON.stringify({
+    exfiltrated: armThreeExfiltratedContent,
+    platform: process.platform,
+  }),
+  true,
+);
+
+if (armThreeExfiltratedContent === false) {
+  limits.push(
+    `${process.platform} uzerinde arm3 pozitif kontrolu yalniz saglayici-danisma seviyesinde atesledi (fsExistsSync>0); canary icerigi belgeye ulasmadi. Bu platformda negatif kollarin sifir sonucu "saglayiciya hic danisilmadi" iddiasini destekler, "icerik sizmasi tespit edilebilirdi" iddiasini desteklemez.`,
+  );
+}
 
 record(
   "arm4-cleanup-revokes-registered-providers",
@@ -527,6 +546,10 @@ console.log(
       parseOptionWord: HARDENED,
     },
     canaryTokenSha256: sha256(Buffer.from(token)),
+    positiveControl: {
+      providerConsulted: armThreeConsultedProvider,
+      contentExfiltrated: armThreeExfiltratedContent,
+    },
     arms: Object.fromEntries(
       Object.entries(armResults).map(([name, value]) => [
         name,

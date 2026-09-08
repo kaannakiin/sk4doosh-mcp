@@ -24,20 +24,20 @@
     "version": "0.7.2"
   },
   "metrics": {
-    "timeoutResponseMs": 1502.9,
-    "busyFractionAfterTerminate": 0.0002,
-    "busyFractionWithoutTerminate": 0.982,
+    "timeoutResponseMs": 1501,
+    "busyFractionAfterTerminate": 0.0003,
+    "busyFractionWithoutTerminate": 1.0034,
     "cpuOracle": {
-      "busyFractionAfterTerminate": 0.0002,
-      "busyFractionWithoutTerminate": 0.982,
-      "stopRatio": 4934.6,
+      "busyFractionAfterTerminate": 0.0003,
+      "busyFractionWithoutTerminate": 1.0034,
+      "stopRatio": 3106.4,
       "negativeControlEstablishedBaseline": true
     },
-    "beaconAtStop": 3557,
-    "beaconLater": 3557,
-    "mainLoopTurnMsWhilePathologicalRuns": 1.24,
+    "beaconAtStop": 3638,
+    "beaconLater": 3638,
+    "mainLoopTurnMsWhilePathologicalRuns": 1.33,
     "restartCycles": 12,
-    "rssAfterCyclesKiB": 95712
+    "rssAfterCyclesKiB": 147184
   },
   "rows": [
     {
@@ -49,7 +49,7 @@
     {
       "id": "e06-02-expensive-query-on-valid-document-times-out",
       "expected": "resource_limit within budget + slack",
-      "actual": "{\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"timeout\"} in 1502.9ms",
+      "actual": "{\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"timeout\"} in 1501ms",
       "pass": true
     },
     {
@@ -67,19 +67,19 @@
     {
       "id": "e06-05b-negative-control-establishes-a-busy-baseline",
       "expected": "without terminate the same job keeps a core busy, so a low reading after terminate cannot be explained by the fixture finishing on its own",
-      "actual": "{\"busyFractionAfterTerminate\":0.0002,\"busyFractionWithoutTerminate\":0.982,\"stopRatio\":4934.6,\"negativeControlEstablishedBaseline\":true}",
+      "actual": "{\"busyFractionAfterTerminate\":0.0003,\"busyFractionWithoutTerminate\":1.0034,\"stopRatio\":3106.4,\"negativeControlEstablishedBaseline\":true}",
       "pass": true
     },
     {
       "id": "e06-05a-work-stops-after-terminate",
       "expected": "cpu after terminate is at least ten times lower than the negative control on the same host",
-      "actual": "{\"busyFractionAfterTerminate\":0.0002,\"busyFractionWithoutTerminate\":0.982,\"stopRatio\":4934.6,\"negativeControlEstablishedBaseline\":true}",
+      "actual": "{\"busyFractionAfterTerminate\":0.0003,\"busyFractionWithoutTerminate\":1.0034,\"stopRatio\":3106.4,\"negativeControlEstablishedBaseline\":true}",
       "pass": true
     },
     {
       "id": "e06-06-shared-counter-stops-advancing-after-terminate",
       "expected": "counter frozen after terminate and exit",
-      "actual": "stopped=3557 later=3557 result={\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"timeout\"}",
+      "actual": "stopped=3638 later=3638 result={\"ok\":false,\"code\":\"resource_limit\",\"detail\":\"timeout\"}",
       "pass": true
     },
     {
@@ -109,13 +109,13 @@
     {
       "id": "e06-15-main-event-loop-stays-live",
       "expected": "a main-thread turn completes in under 100 ms while a pathological job runs",
-      "actual": "1.24",
+      "actual": "1.33",
       "pass": true
     },
     {
       "id": "e06-13-repeated-terminate-restart-converges",
       "expected": "every post-restart request succeeds",
-      "actual": "failures=0 rssKiB=95712",
+      "actual": "failures=0 rssKiB=147184",
       "pass": true
     }
   ],
@@ -136,7 +136,7 @@
     "e06-05b negatif kontrolu e06-05a'nin duyarliligini kanitlar: terminate edilmeyen ayni is CPU'yu mesgul tutmaya devam ediyor, dolayisiyla terminate sonrasi dusuk CPU 'fixture kendiliginden bitti' ile aciklanamaz."
   ],
   "provenance": {
-    "commit": "976c6c424c14c5ca7e74a53f7b422be9f5610638",
+    "commit": "581489465148f3be11f119256f779637b9b50078",
     "workingTreeDirty": true,
     "githubRunId": null,
     "githubRunUrl": null

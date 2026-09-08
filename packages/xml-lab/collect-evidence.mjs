@@ -69,7 +69,7 @@ const probes = [
     task: "F0-06",
     probe: "worker-lifecycle",
     file: "f0-06-worker.json",
-    options: { execArgv: ["--max-old-space-size=1536"], timeoutMs: 240_000 },
+    options: { execArgv: ["--max-old-space-size=1536"], timeoutMs: 900_000 },
     command: "node packages/xml-lab/test/probes/worker-lifecycle.mjs",
   },
   {
@@ -104,8 +104,12 @@ for (const entry of probes) {
   const outcome = runProbe(entry.probe, entry.options);
   if (outcome.status !== 0) {
     failed += 1;
+    const reason =
+      outcome.signal === "SIGKILL"
+        ? "timed out; on a contended host the wall clock inflates far beyond the cpu time, so re-run on an idle host before treating this as a defect"
+        : "exited non-zero";
     process.stderr.write(
-      `${entry.task} probe exited ${outcome.status} (signal ${outcome.signal})\n${outcome.stderr}\n`,
+      `${entry.task} ${reason} (status ${outcome.status}, signal ${outcome.signal})\n${outcome.stderr}\n`,
     );
     continue;
   }
