@@ -20,7 +20,7 @@ describe("asExcelError", () => {
   it("maps an unclassified throw to internal_error, not corrupt_workbook", () => {
     const mapped = asExcelError(new TypeError("x is not a function"));
     expect(mapped.code).toBe("internal_error");
-    expect(mapped.message).toContain("x is not a function");
+    expect(mapped.message).not.toContain("x is not a function");
   });
 
   it("does not offer workbook recovery advice for an internal failure", () => {
@@ -40,7 +40,7 @@ describe("asExcelError", () => {
       { root: "/data/sheets" },
     );
     expect(mapped.message).not.toContain("/data/sheets");
-    expect(mapped.message).toContain("q1");
+    expect(mapped.message).not.toContain("q1");
   });
 
   it("accepts a throw that is not an Error", () => {

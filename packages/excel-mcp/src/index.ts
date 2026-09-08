@@ -152,3 +152,5 @@ export type {
 export { createHandlers, toolDefinitions, toolNames } from "./tools.js";
 export type { ToolHandlers, ToolName } from "./tools.js";
 export { createExcelMcpServer } from "./server.js";
+export { metadataLimitations } from "./metadata-support.js";
+export type { MetadataLimitation } from "./metadata-support.js";

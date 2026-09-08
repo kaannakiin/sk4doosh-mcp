@@ -54,17 +54,15 @@ async function parseDocument(
   const format = formats.formatFor(context.path);
   if (format === "csv") {
     const table = await parseCsv(
-      context.handle,
+      context.bytes,
       context.sizeBytes,
       options,
-      context.path,
+      context.displayPath,
     );
     return { format, table };
   }
-  const magic = Buffer.alloc(8);
-  await context.handle.read(magic, 0, 8, 0);
-  assertReadableFormat(magic, context.path);
-  const workbook = await parseXlsx(context.handle, context.path);
+  assertReadableFormat(context.bytes.subarray(0, 8), context.displayPath);
+  const workbook = await parseXlsx(context.bytes, context.displayPath);
   return { format, workbook };
 }
 
@@ -82,6 +80,10 @@ export function createDocumentCache(root?: string): DocumentCache {
   const store: DocumentStore<DocumentBody, CsvOptions> = createDocumentStore({
     maxEntries: limits.documentCacheSize,
     maxBytes: limits.maxFileBytes,
+    maxBytesFor: (path) =>
+      formats.formatFor(path) === "csv"
+        ? limits.maxCsvBytes
+        : limits.maxFileBytes,
     ...(root === undefined ? {} : { root }),
     vocabulary,
     fail,

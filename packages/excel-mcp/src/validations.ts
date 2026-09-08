@@ -88,6 +88,7 @@ export interface ValidationRule {
   readonly prompt?: string;
   readonly errorTitle?: string;
   readonly error?: string;
+  readonly errorStyle?: DataValidation["errorStyle"];
   readonly showInputMessage?: boolean;
   readonly showErrorMessage?: boolean;
 }
@@ -139,6 +140,7 @@ export function collectValidations(worksheet: Worksheet): ValidationReport {
       ...(rule.prompt === undefined ? {} : { prompt: rule.prompt }),
       ...(rule.errorTitle === undefined ? {} : { errorTitle: rule.errorTitle }),
       ...(rule.error === undefined ? {} : { error: rule.error }),
+      ...(rule.errorStyle === undefined ? {} : { errorStyle: rule.errorStyle }),
       ...(rule.showInputMessage === undefined
         ? {}
         : { showInputMessage: rule.showInputMessage }),

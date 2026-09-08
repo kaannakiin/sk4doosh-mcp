@@ -90,6 +90,8 @@ export interface AggregateResult {
   readonly returnedGroups: number;
   readonly scannedRows: number;
   readonly matchedRows: number;
+  readonly returnedMatchedRows: number;
+  readonly omittedMatchedRows: number;
   readonly firstScannedRow: number;
   readonly blankRows: number;
   readonly columnStats?: Readonly<Record<string, Partial<Census>>>;
@@ -109,7 +111,10 @@ interface MetricState {
   skipped: number;
   readonly sums: SumState;
   distinct: Set<string> | undefined;
-  extreme: CellScalar;
+  extreme:
+    | { readonly kind: "number"; readonly value: number }
+    | { readonly kind: "text" | "date"; readonly value: string }
+    | undefined;
   mean: number;
   m2: number;
 }
@@ -121,16 +126,28 @@ interface GroupState {
 }
 
 function accumulate(state: SumState, value: number): void {
-  const total = state.sum + value;
-  state.compensation +=
-    Math.abs(state.sum) >= Math.abs(value)
-      ? state.sum - total + value
-      : value - total + state.sum;
+  const total = finite(state.sum + value);
+  state.compensation = finite(
+    state.compensation +
+      (Math.abs(state.sum) >= Math.abs(value)
+        ? state.sum - total + value
+        : value - total + state.sum),
+  );
   state.sum = total;
 }
 
 function sumOf(state: SumState): number {
-  return state.sum + state.compensation;
+  return finite(state.sum + state.compensation);
+}
+
+function finite(value: number): number {
+  if (!Number.isFinite(value))
+    throw new SkMcpExcelError(
+      "numeric_overflow",
+      "A metric calculation exceeded the finite number range.",
+      "Narrow the range or scale the numeric values.",
+    );
+  return value;
 }
 
 function newMetricState(fn: MetricFunction): MetricState {
@@ -139,7 +156,7 @@ function newMetricState(fn: MetricFunction): MetricState {
     skipped: 0,
     sums: { sum: 0, compensation: 0 },
     distinct: fn === "countDistinct" ? new Set<string>() : undefined,
-    extreme: null,
+    extreme: undefined,
     mean: 0,
     m2: 0,
   };
@@ -226,9 +243,9 @@ function finish(metric: MetricRequest, state: MetricState): CellScalar {
     case "stddev":
       return state.counted < 2
         ? null
-        : Math.sqrt(state.m2 / (state.counted - 1));
+        : finite(Math.sqrt(state.m2 / (state.counted - 1)));
     default:
-      return state.counted === 0 ? null : state.extreme;
+      return state.extreme?.value ?? null;
   }
 }
 
@@ -241,6 +258,17 @@ export function aggregateSheet(
       "invalid_argument",
       "At least one metric is required.",
       'Pass metrics, for example [{"fn":"count"}].',
+    );
+  }
+  if (
+    options.orderByMetric !== undefined &&
+    (!Number.isSafeInteger(options.orderByMetric) ||
+      options.orderByMetric < 1 ||
+      options.orderByMetric > options.metrics.length)
+  ) {
+    throw new SkMcpExcelError(
+      "invalid_argument",
+      "orderByMetric must identify an entry in metrics.",
     );
   }
   const sheet = source.sheetFor(options.sheetName);
@@ -280,7 +308,7 @@ export function aggregateSheet(
     }
   }
   const conditions = (options.where ?? []).map((condition) => {
-    validateCondition(condition);
+    validateCondition(condition, options.caseSensitive);
     return {
       condition,
       column: resolveColumn(index, condition.column, options.columnMode),
@@ -411,31 +439,55 @@ export function aggregateSheet(
           continue;
         }
         state.counted += 1;
-        if (state.extreme === null) {
-          state.extreme = value;
+        if (kindNow === "number") coerceNumber(value);
+        const candidate =
+          typeof value === "number"
+            ? { kind: "number" as const, value }
+            : typeof value === "string"
+              ? {
+                  kind:
+                    kindNow === "date" ? ("date" as const) : ("text" as const),
+                  value,
+                }
+              : undefined;
+        if (candidate === undefined) continue;
+        if (state.extreme === undefined) {
+          state.extreme = candidate;
           continue;
         }
+        if (state.extreme.kind !== candidate.kind)
+          throw new SkMcpExcelError(
+            "invalid_argument",
+            `Metric '${entry.metric.fn}' mixes ${state.extreme.kind} and ${candidate.kind} at ${columnToLetters(column)}${row}.`,
+            "Use a homogeneous range or filter the source values.",
+          );
         const order = compareWithin(
           kindNow,
           value,
-          state.extreme,
+          state.extreme.value,
           options.caseSensitive,
         );
         if (entry.metric.fn === "min" ? order < 0 : order > 0) {
-          state.extreme = value;
+          state.extreme = candidate;
         }
         continue;
       }
-      const numeric = typeof value === "number" ? value : undefined;
+      const numeric =
+        typeof value === "number" ? coerceNumber(value) : undefined;
       if (numeric === undefined) {
         state.skipped += 1;
         continue;
       }
       state.counted += 1;
-      accumulate(state.sums, numeric);
-      const delta = numeric - state.mean;
-      state.mean += delta / state.counted;
-      state.m2 += delta * (numeric - state.mean);
+      if (entry.metric.fn === "sum" || entry.metric.fn === "avg")
+        accumulate(state.sums, numeric);
+      if (entry.metric.fn === "stddev") {
+        const delta = finite(numeric - state.mean);
+        state.mean = finite(state.mean + delta / state.counted);
+        state.m2 = finite(
+          state.m2 + finite(delta * finite(numeric - state.mean)),
+        );
+      }
     }
   }
 
@@ -595,6 +647,9 @@ export function aggregateSheet(
     returnedGroups: page.length,
     scannedRows,
     matchedRows,
+    returnedMatchedRows: page.reduce((sum, group) => sum + group.rows, 0),
+    omittedMatchedRows:
+      matchedRows - page.reduce((sum, group) => sum + group.rows, 0),
     firstScannedRow: startRow,
     blankRows,
     ...(Object.keys(stats).length > 0 ? { columnStats: stats } : {}),

@@ -1,0 +1,30 @@
+{
+  "name": "@sk-mcp/file-core-native",
+  "version": "0.1.0",
+  "description": "Handle-relative filesystem access for file-core (Node-API).",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "prebuilds",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "check-types": "node --check index.js",
+    "test": "node --test test/*.test.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,4 +1,6 @@
-import { readdir, realpath, stat } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
+import type { NativeRoot } from "@sk-mcp/file-core-native";
+import { accessError, pinRoot } from "./access.js";
 import {
   basename,
   dirname,
@@ -27,6 +29,7 @@ export interface SandboxEnvironment {
 
 export interface SandboxRoot extends SandboxEnvironment {
   readonly real: string;
+  readonly access: NativeRoot;
 }
 
 export function isContained(root: string, candidate: string): boolean {
@@ -63,22 +66,40 @@ export async function createSandboxRoot(
       `The ${environment.vocabulary.rootLabel} '${raw}' is not a directory.`,
     );
   }
-  return { real, ...environment };
+  try {
+    return { real, access: pinRoot(real), ...environment };
+  } catch (error) {
+    throw accessError(error, environment.fail);
+  }
 }
 
-async function canonicalEquivalent(target: string): Promise<string> {
+async function canonicalEquivalent(
+  root: SandboxRoot,
+  target: string,
+): Promise<string> {
   try {
-    await stat(target);
-    return target;
-  } catch {
+    return await root.access.resolve(target);
+  } catch (error) {
+    if (
+      typeof error !== "object" ||
+      error === null ||
+      !("code" in error) ||
+      error.code !== "file_not_found"
+    )
+      throw error;
     const wanted = canonical(basename(target));
     const parent = dirname(target);
-    const entries = await readdir(parent);
-    const match = entries.find((entry) => canonical(entry) === wanted);
+    const listing = await root.access.scan(parent, root.maxListScan, 0, 1000);
+    const matches = listing.entries.filter(
+      (entry) =>
+        dirname(entry.path) === (parent === "." ? "." : parent) &&
+        canonical(basename(entry.path)) === wanted,
+    );
+    const match = matches.length === 1 ? matches[0] : undefined;
     if (match === undefined) {
-      return target;
+      throw error;
     }
-    return join(parent, match);
+    return root.access.resolve(match.path);
   }
 }
 
@@ -114,13 +135,19 @@ export async function resolveSourcePath(
   }
   let real: string;
   try {
-    real = await realpath(await canonicalEquivalent(joined));
-  } catch {
-    throw root.fail(
-      "file_not_found",
-      `No file at '${requested}' under the ${words.rootLabel}.`,
-      `Call ${words.listTool} to see readable files under the root.`,
+    real = join(
+      root.real,
+      await canonicalEquivalent(root, relative(root.real, joined)),
     );
+  } catch (error) {
+    const mapped = accessError(error, root.fail);
+    if (mapped.code === "file_not_found")
+      throw root.fail(
+        "file_not_found",
+        `No source exists under the ${words.rootLabel}.`,
+        `Call ${words.listTool} to see readable files.`,
+      );
+    throw mapped;
   }
   if (!isContained(root.real, real)) {
     throw outside;

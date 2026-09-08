@@ -49,13 +49,13 @@ function createProbe(
   const store = createDocumentStore<Body, Options>({
     maxEntries,
     maxBytes,
-    ...(root === undefined ? {} : { root }),
+    root: root ?? dir,
     vocabulary,
     fail,
     variantKey: (options) => options.mode ?? "",
     parse: async (context: ParseContext, options: Options) => {
       parses += 1;
-      const text = await context.handle.readFile("utf8");
+      const text = context.bytes.toString("utf8");
       return { text: `${options.mode ?? "plain"}:${text}` };
     },
   });
@@ -165,19 +165,19 @@ describe("the document store", () => {
     } catch (error) {
       const failure = error as FileSourceError;
       expect(failure.code).toBe("not_a_file");
-      expect(failure.message).toBe("'nested-dir.probe' is not a regular file.");
+      expect(failure.message).toContain("not a regular file");
       expect(failure.message).not.toContain(dir);
     }
   });
 
-  it("keeps the absolute path when no root is known", async () => {
+  it("does not expose the absolute path in access errors", async () => {
     const probe = createProbe(4);
     const path = join(dir, "nested-dir.probe") as SandboxedPath;
     try {
       await probe.store.load(path, {});
       expect.unreachable();
     } catch (error) {
-      expect((error as FileSourceError).message).toContain(path);
+      expect((error as FileSourceError).message).not.toContain(path);
     }
   });
 

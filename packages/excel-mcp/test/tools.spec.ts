@@ -233,13 +233,13 @@ describe("error surfacing", () => {
     expect(payload(result)["error"]).toBe("invalid_argument");
   });
 
-  it("refuses headerScan combined with a cursor", async () => {
+  it("rejects an invalid cursor before inheriting headerScan", async () => {
     const result = await handlers.read_sheet({
       filePath: "title-band.xlsx",
       headerScan: true,
       cursor: "x",
     });
-    expect(payload(result)["error"]).toBe("invalid_argument");
+    expect(payload(result)["error"]).toBe("invalid_cursor");
   });
 
   it("refuses headerScan for a delimited file", async () => {
@@ -323,7 +323,7 @@ describe("a directory that carries a readable extension", () => {
     expect(result.isError).toBe(true);
     const body = payload(result);
     expect(body["error"]).toBe("not_a_file");
-    expect(body["message"]).toBe("'trap.xlsx' is not a regular file.");
+    expect(String(body["message"])).toContain("not a regular file");
     expect(JSON.stringify(body)).not.toContain(dir);
   });
 });

@@ -1,4 +1,3 @@
-import type { FileHandle } from "node:fs/promises";
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
 import { truncate, type CellSnapshot } from "./cell-value.js";
@@ -32,6 +31,7 @@ export interface CsvOptions {
 }
 
 export interface CsvReport {
+  readonly warnings?: readonly string[];
   readonly delimiter: DelimiterName;
   readonly delimiterSource: "explicit" | "sniffed" | "default";
   readonly encoding: string;
@@ -147,7 +147,7 @@ function decode(
       : bom !== undefined
         ? "bom"
         : "default";
-  const strict = requested === undefined && chosen.startsWith("utf-");
+  const strict = chosen.startsWith("utf-");
   const decoder = new TextDecoder(chosen, { fatal: strict, ignoreBOM: false });
   let text: string;
   try {
@@ -302,7 +302,7 @@ function mapCsvError(error: unknown, path: string): SkMcpExcelError {
 }
 
 export async function parseCsv(
-  handle: FileHandle,
+  bytes: Buffer,
   sizeBytes: number,
   options: CsvOptions,
   path: string,
@@ -314,12 +314,12 @@ export async function parseCsv(
       "Split the file or read a smaller one.",
     );
   }
-  const bytes = await handle.readFile();
   const decoded = decode(bytes, options.encoding, path);
   if (!decoded.encoding.startsWith("utf-16")) {
     assertNoNulBytes(bytes, path);
   }
   const choice = sniffDelimiter(decoded.text, options.delimiter);
+  assertRecordWidth(decoded.text, delimiterNames[choice.delimiter]);
 
   let cells = 0;
   let raw: string[][];
@@ -406,10 +406,51 @@ export async function parseCsv(
       columnCount,
       raggedRecordCount,
       blankRecordCount,
+      ...(rows[0]?.length === 0
+        ? {
+            warnings: [
+              "The first CSV record is blank and remains the default header. Physical records are preserved; pass headerRow to select a different header.",
+            ],
+          }
+        : {}),
       formulaLikeCellCount,
       ...(duplicates.size > 0 ? { duplicateHeaders: [...duplicates] } : {}),
     },
   };
+}
+
+/** Count fields before csv-parse allocates a wide record. Quoted newlines and doubled quotes are data. */
+function assertRecordWidth(text: string, delimiter: string): void {
+  let quoted = false;
+  let fieldStart = true;
+  let fields = 1;
+  for (let i = 0; i < text.length; i += 1) {
+    const character = text[i];
+    if (quoted) {
+      if (character === '"') {
+        if (text[i + 1] === '"') i += 1;
+        else quoted = false;
+      }
+      continue;
+    }
+    if (character === '"' && fieldStart) {
+      quoted = true;
+      fieldStart = false;
+    } else if (character === delimiter) {
+      fields += 1;
+      if (fields > limits.maxCsvColumns)
+        throw new SkMcpExcelError(
+          "file_too_large",
+          `A CSV record exceeds ${limits.maxCsvColumns} fields.`,
+          "Read a narrower file, or split it.",
+        );
+      fieldStart = true;
+    } else if (character === "\n" || character === "\r") {
+      fields = 1;
+      fieldStart = true;
+      if (character === "\r" && text[i + 1] === "\n") i += 1;
+    } else fieldStart = false;
+  }
 }
 
 export function csvSheetView(table: CsvTable): SheetView {
@@ -462,11 +503,13 @@ export function describeCsv(
         declaredColumnCount: null,
         mergeCount: null,
         dataValidationRuleCount: null,
+        dataValidationRuleCountExact: false,
         formulaCellCount: null,
         cachedFormulaValueCount: null,
         tableCount: null,
         conditionalFormatRuleCount: null,
         imageCount: null,
+        imageCountExact: false,
         autoFilterRef: null,
         frozenRowCount: null,
         frozenColumnCount: null,

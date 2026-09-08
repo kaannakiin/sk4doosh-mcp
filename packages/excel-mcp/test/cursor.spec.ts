@@ -12,7 +12,7 @@ const stamp = fingerprint("/q1.xlsx", 1, 10);
 const otherStamp = fingerprint("/q1.xlsx", 2, 10);
 
 const cursor: SheetCursor = {
-  v: 1,
+  v: 2,
   f: stamp,
   s: "Q1",
   r: 41,
@@ -21,6 +21,13 @@ const cursor: SheetCursor = {
   m: "values",
   g: "master",
   h: 1,
+  o: {
+    valueMode: "values",
+    mergedCells: "master",
+    headerRow: 1,
+    headerScan: false,
+    includeHyperlinks: false,
+  },
 };
 
 function codeOf(action: () => unknown): string {

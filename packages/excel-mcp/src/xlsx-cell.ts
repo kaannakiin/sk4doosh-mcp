@@ -1,5 +1,6 @@
 import type { CellValue } from "exceljs";
 import { truncate, type CellFacts, type CellSnapshot } from "./cell-value.js";
+import { SkMcpExcelError } from "./errors.js";
 
 const mergeValueType = 1;
 
@@ -41,6 +42,11 @@ function factsOf(
     return { value: null };
   }
   if (typeof value === "number" || typeof value === "boolean") {
+    if (typeof value === "number" && !Number.isFinite(value))
+      throw new SkMcpExcelError(
+        "numeric_overflow",
+        "A cell contains a non-finite number.",
+      );
     return { value };
   }
   if (typeof value === "string") {
@@ -56,7 +62,26 @@ function factsOf(
     return truncate(value.richText.map((run) => run.text).join(""));
   }
   if ("hyperlink" in value) {
-    return { ...truncate(value.text), href: value.hyperlink };
+    const text: unknown = value.text;
+    const display =
+      typeof text === "string"
+        ? text
+        : typeof text === "object" &&
+            text !== null &&
+            "richText" in text &&
+            Array.isArray(text.richText)
+          ? text.richText
+              .map((run: unknown) =>
+                typeof run === "object" &&
+                run !== null &&
+                "text" in run &&
+                typeof run.text === "string"
+                  ? run.text
+                  : "",
+              )
+              .join("")
+          : "";
+    return { ...truncate(display), href: value.hyperlink };
   }
   if ("sharedFormula" in value) {
     return { value: null };

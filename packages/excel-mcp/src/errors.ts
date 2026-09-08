@@ -24,6 +24,7 @@ export type SkMcpExcelErrorCode =
   | "ambiguous_header_row"
   | "invalid_range"
   | "invalid_pattern"
+  | "numeric_overflow"
   | "range_outside_used_range";
 
 export class SkMcpExcelError extends FileSourceError {

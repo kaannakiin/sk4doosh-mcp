@@ -1,9 +1,8 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
   "extends": ["//"],
   "tasks": {
-    "build": {
-      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"]
-    }
+    "build": { "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"] },
+    "test": { "dependsOn": ["build"] },
+    "test:coverage": { "dependsOn": ["build"], "outputs": ["coverage/**"] }
   }
 }

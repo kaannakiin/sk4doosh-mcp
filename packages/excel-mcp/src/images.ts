@@ -1,5 +1,9 @@
 import type { Workbook, Worksheet } from "exceljs";
 import { limits } from "./limits.js";
+import {
+  metadataLimitations,
+  type MetadataLimitation,
+} from "./metadata-support.js";
 import { formatRectangle } from "./range.js";
 
 export interface SheetImage {
@@ -16,6 +20,8 @@ export interface SheetImage {
 }
 
 export interface ImageReport {
+  readonly complete: false;
+  readonly limitations: readonly MetadataLimitation[];
   readonly sheet: string;
   readonly count: number;
   readonly images: readonly SheetImage[];
@@ -130,6 +136,8 @@ export function collectImages(
     sheet: worksheet.name,
     count: found.length,
     images: kept.map((image) => describe(image, media)),
+    complete: false,
+    limitations: [metadataLimitations.images],
     truncated,
     ...(truncated
       ? {

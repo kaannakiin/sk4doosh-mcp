@@ -77,6 +77,11 @@ export function resolveColumn(
   const byHeader = index.byHeader.get(fold(reference));
   const byLetter = letterOf(index, reference);
 
+  if (mode === "letter") {
+    if (byLetter === undefined) throw unknownColumn(index, reference, "letter");
+    return byLetter;
+  }
+
   if (byHeader !== undefined && byHeader.length > 1) {
     throw new SkMcpExcelError(
       "ambiguous_column",
@@ -91,12 +96,6 @@ export function resolveColumn(
       throw unknownColumn(index, reference, "header");
     }
     return only;
-  }
-  if (mode === "letter") {
-    if (byLetter === undefined) {
-      throw unknownColumn(index, reference, "letter");
-    }
-    return byLetter;
   }
 
   const header = byHeader?.[0];

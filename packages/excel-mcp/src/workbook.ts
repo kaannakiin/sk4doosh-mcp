@@ -1,4 +1,3 @@
-import type { FileHandle } from "node:fs/promises";
 import { canonical } from "@sk-mcp/file-core";
 import ExcelJS from "exceljs";
 import type { DataValidation, Workbook, Worksheet } from "exceljs";
@@ -6,6 +5,10 @@ import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
 import { SkMcpExcelError } from "./errors.js";
 import { imageCountOf } from "./images.js";
 import { limits } from "./limits.js";
+import {
+  metadataLimitations,
+  type MetadataLimitation,
+} from "./metadata-support.js";
 import { formatRange, type GridBounds } from "./range.js";
 import { autoFilterRefOf, declaredTablesOf, tableCountOf } from "./tables.js";
 import { requireSheetBounds, type SheetView } from "./sheet.js";
@@ -21,23 +24,20 @@ function mapXlsxError(error: unknown, path: string): SkMcpExcelError {
   if (error instanceof SkMcpExcelError) {
     return error;
   }
-  const detail = error instanceof Error ? error.message : String(error);
   return new SkMcpExcelError(
     "corrupt_workbook",
-    `'${path}' could not be parsed as .xlsx: ${detail}`,
+    `'${path}' could not be parsed as .xlsx.`,
     "Open the file in Excel and re-save it as .xlsx.",
   );
 }
 
 export async function parseXlsx(
-  handle: FileHandle,
+  bytes: Buffer,
   path: string,
 ): Promise<Workbook> {
   const workbook = new ExcelJS.Workbook();
   try {
-    await workbook.xlsx.read(
-      handle.createReadStream({ start: 0, autoClose: false }),
-    );
+    await workbook.xlsx.load(Uint8Array.from(bytes).buffer);
   } catch (error) {
     throw mapXlsxError(error, path);
   }
@@ -216,17 +216,21 @@ export interface SheetSummary {
   readonly declaredColumnCount: number | null;
   readonly mergeCount: number | null;
   readonly dataValidationRuleCount: number | null;
+  readonly dataValidationRuleCountExact: boolean;
   readonly formulaCellCount: number | null;
   readonly cachedFormulaValueCount: number | null;
   readonly tableCount: number | null;
   readonly conditionalFormatRuleCount: number | null;
   readonly imageCount: number | null;
+  readonly imageCountExact: boolean;
   readonly autoFilterRef: string | null;
   readonly frozenRowCount: number | null;
   readonly frozenColumnCount: number | null;
 }
 
 export interface WorkbookDescription {
+  readonly limitations?: readonly MetadataLimitation[];
+  readonly definedNamesComplete?: false;
   readonly filePath: string;
   readonly sizeBytes: number;
   readonly modifiedAt: string;
@@ -239,6 +243,35 @@ export interface WorkbookDescription {
   readonly guidance?: string;
 }
 
+const validationCounts = new WeakMap<
+  Worksheet,
+  { readonly count: number | null; readonly exact: boolean }
+>();
+function validationCount(worksheet: Worksheet): {
+  readonly count: number | null;
+  readonly exact: boolean;
+} {
+  const cached = validationCounts.get(worksheet);
+  if (cached !== undefined) return cached;
+  const rules = validationsOf(worksheet);
+  const unique = new Set<string>();
+  let visited = 0;
+  for (const key in rules) {
+    if (!Object.hasOwn(rules, key)) continue;
+    if (visited >= limits.maxValidationCountEntries) {
+      const result = { count: null, exact: false };
+      validationCounts.set(worksheet, result);
+      return result;
+    }
+    visited += 1;
+    const rule = rules[key];
+    if (rule !== undefined) unique.add(JSON.stringify(rule));
+  }
+  const result = { count: unique.size, exact: true };
+  validationCounts.set(worksheet, result);
+  return result;
+}
+
 export function describeWorkbook(
   workbook: Workbook,
   meta: DocumentMeta,
@@ -248,11 +281,7 @@ export function describeWorkbook(
     const bounds = usedBounds(worksheet);
     const stats = formulaStats(worksheet);
     const panes = frozenPanesOf(worksheet);
-    const validations = new Set(
-      Object.values(validationsOf(worksheet))
-        .filter((rule): rule is DataValidation => rule !== undefined)
-        .map((rule) => JSON.stringify(rule)),
-    );
+    const validations = validationCount(worksheet);
     return {
       name: worksheet.name,
       index: ordinal + 1,
@@ -263,12 +292,14 @@ export function describeWorkbook(
       declaredRowCount: worksheet.rowCount,
       declaredColumnCount: worksheet.columnCount,
       mergeCount: worksheet.model.merges.length,
-      dataValidationRuleCount: validations.size,
+      dataValidationRuleCount: validations.count,
+      dataValidationRuleCountExact: validations.exact,
       formulaCellCount: stats.formulaCellCount,
       cachedFormulaValueCount: stats.cachedFormulaValueCount,
       tableCount: tableCountOf(worksheet),
       conditionalFormatRuleCount: conditionalFormatRuleCountOf(worksheet),
       imageCount: imageCountOf(worksheet),
+      imageCountExact: false,
       autoFilterRef: autoFilterRefOf(worksheet) ?? null,
       frozenRowCount: panes.rows,
       frozenColumnCount: panes.columns,
@@ -284,8 +315,16 @@ export function describeWorkbook(
     modifiedAt: meta.modifiedAt,
     dateSystem: workbook.properties.date1904 === true ? "1904" : "1900",
     sheets,
+    limitations: [
+      metadataLimitations.images,
+      metadataLimitations.thresholds,
+      ...(includeDefinedNames ? [metadataLimitations.definedNames] : []),
+    ],
     ...(includeDefinedNames
-      ? { definedNames: workbook.definedNames.model }
+      ? {
+          definedNames: workbook.definedNames.model,
+          definedNamesComplete: false as const,
+        }
       : {}),
     ...(tallest > limits.guidanceRowThreshold
       ? {

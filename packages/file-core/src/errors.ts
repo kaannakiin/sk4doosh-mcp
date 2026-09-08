@@ -1,5 +1,5 @@
-import { sep } from "node:path";
 import type { Vocabulary } from "./vocabulary.js";
+import { asciiLower } from "./unicode.js";
 
 export type CoreErrorCode =
   | "invalid_argument"
@@ -11,6 +11,9 @@ export type CoreErrorCode =
   | "unsupported_for_format"
   | "invalid_cursor"
   | "stale_cursor"
+  | "file_changed"
+  | "unsupported_platform"
+  | "resource_limit"
   | "internal_error";
 
 export class FileSourceError extends Error {
@@ -36,19 +39,36 @@ export interface ErrorContext {
 }
 
 export function redactRoot(detail: string, root: string | undefined): string {
-  if (root === undefined || root === "") {
-    return detail;
-  }
-  return detail.split(`${root}${sep}`).join("").split(root).join(".");
+  const base = root?.replaceAll("\\", "/").replace(/\/$/, "");
+  const sanitize = (path: string): string => {
+    const normalized = path.replaceAll("\\", "/");
+    const compare = /^[A-Za-z]:/.test(normalized)
+      ? asciiLower(normalized)
+      : normalized;
+    const rootKey =
+      base !== undefined && /^[A-Za-z]:/.test(base) ? asciiLower(base) : base;
+    if (rootKey !== undefined && compare === rootKey) return ".";
+    if (rootKey !== undefined && compare.startsWith(`${rootKey}/`))
+      return normalized.slice(rootKey.length + 1);
+    return "[path]";
+  };
+  const quoted = detail.replace(
+    /(['"])((?:[A-Za-z]:[\\/]|\\\\|\/)[^'"]*)\1/g,
+    (_match: string, quote: string, path: string) =>
+      quote + sanitize(path) + quote,
+  );
+  return quoted.replace(
+    /(^|[\s'"(])((?:[A-Za-z]:[\\/]|\\\\|\/)[^\s'"()<>]*)/g,
+    (_match: string, prefix: string, path: string) => prefix + sanitize(path),
+  );
 }
 
 export function internalErrorMessage(
-  error: unknown,
+  _error: unknown,
   context: ErrorContext,
 ): string {
-  const detail = error instanceof Error ? error.message : String(error);
   const subject = context.tool ?? "The tool";
-  return `${subject} failed unexpectedly: ${redactRoot(detail, context.root)}`;
+  return `${subject} failed unexpectedly.`;
 }
 
 export function internalErrorRecovery(vocabulary: Vocabulary<string>): string {
