@@ -14,6 +14,8 @@ export const limits = {
   maxImagesPerSheet: 200,
   maxCsvBytes: 16 * 1024 * 1024,
   maxCsvCells: 2_000_000,
+  maxCsvColumns: 16_384,
+  maxValidationCountEntries: 5_000,
   csvNulScanBytes: 8 * 1024,
   csvSniffBytes: 64 * 1024,
   csvSniffLines: 20,

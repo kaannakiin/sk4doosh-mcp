@@ -19,6 +19,8 @@ import {
   type HeaderRowSource,
 } from "./header.js";
 import { limits } from "./limits.js";
+import { withRegex } from "./regex.js";
+import { inheritCursorOptions, type CursorOptions } from "./cursor.js";
 import {
   columnToLetters,
   formatCellRef,
@@ -45,11 +47,14 @@ export interface ReadSheetOptions {
   readonly range?: string;
   readonly cursor?: string;
   readonly maxCells: number;
-  readonly valueMode: ValueMode;
-  readonly mergedCells: MergePolicy;
-  readonly headerRow: number;
+  readonly valueMode?: ValueMode;
+  readonly mergedCells?: MergePolicy;
+  readonly headerRow?: number;
   readonly headerRowSource: HeaderRowSource;
-  readonly includeHyperlinks: boolean;
+  readonly includeHyperlinks?: boolean;
+  readonly headerScan?: boolean;
+  readonly delimiter?: CursorOptions["delimiter"];
+  readonly encoding?: CursorOptions["encoding"];
 }
 
 export interface ReadSheetResult {
@@ -82,7 +87,11 @@ interface Window {
   readonly headerRowSource: HeaderRowSource;
 }
 
-function resolveWindow(source: SheetSource, options: ReadSheetOptions): Window {
+function resolveWindow(
+  source: SheetSource,
+  options: ReadSheetOptions &
+    Required<Pick<ReadSheetOptions, "valueMode" | "mergedCells" | "headerRow">>,
+): Window {
   if (options.cursor === undefined) {
     const sheet = source.sheetFor(options.sheetName);
     const used = requireSheetBounds(sheet);
@@ -156,8 +165,17 @@ function overlaps(merge: string, bounds: GridBounds): boolean {
 
 export function readSheet(
   source: SheetSource,
-  options: ReadSheetOptions,
+  input: ReadSheetOptions,
 ): ReadSheetResult {
+  const inherited = inheritCursorOptions(input);
+  const options = {
+    ...inherited,
+    valueMode: inherited.valueMode ?? "values",
+    mergedCells: inherited.mergedCells ?? "master",
+    headerRow: inherited.headerRow ?? 1,
+    headerScan: inherited.headerScan ?? false,
+    includeHyperlinks: inherited.includeHyperlinks ?? false,
+  };
   const window = resolveWindow(source, options);
   const normalizeOptions: NormalizeOptions = {
     valueMode: window.valueMode,
@@ -290,7 +308,7 @@ export function readSheet(
     ...(truncated
       ? {
           nextCursor: encodeCursor({
-            v: 1,
+            v: 2,
             f: source.stamp,
             s: window.sheet.name,
             r: nextRow,
@@ -299,6 +317,19 @@ export function readSheet(
             m: window.valueMode,
             g: window.mergedCells,
             h: window.headerRow,
+            o: {
+              valueMode: window.valueMode,
+              mergedCells: window.mergedCells,
+              headerRow: window.headerRow,
+              headerScan: options.headerScan,
+              includeHyperlinks: options.includeHyperlinks,
+              ...(options.delimiter === undefined
+                ? {}
+                : { delimiter: options.delimiter }),
+              ...(options.encoding === undefined
+                ? {}
+                : { encoding: options.encoding }),
+            },
           }),
           hint: `${remaining} rows remain. Prefer aggregate_sheet for totals, find_in_sheet to locate a value, or a narrower range over paging.`,
         }
@@ -308,6 +339,7 @@ export function readSheet(
 }
 
 export interface FindOptions {
+  readonly signal?: AbortSignal;
   readonly query: string;
   readonly sheetName?: string;
   readonly matchMode: "contains" | "exact" | "regex";
@@ -341,40 +373,12 @@ interface Matcher {
   readonly test: (text: string) => boolean;
 }
 
-function createRegexMatcher(options: FindOptions): Matcher {
-  if (options.query.length > limits.maxRegexSource) {
-    throw new SkMcpExcelError(
-      "invalid_pattern",
-      `The regular expression is longer than ${limits.maxRegexSource} characters.`,
-      "Shorten the pattern or use matchMode 'contains'.",
-    );
-  }
-  if (options.query.includes("\\p{") || options.query.includes("\\P{")) {
-    throw new SkMcpExcelError(
-      "invalid_pattern",
-      "Unicode property escapes are not supported in regex patterns.",
-      "Use matchMode 'contains', which folds case and diacritics.",
-    );
-  }
-  let expression: RegExp;
-  try {
-    expression = new RegExp(options.query, options.caseSensitive ? "" : "i");
-  } catch (error) {
-    throw new SkMcpExcelError(
-      "invalid_pattern",
-      `The regular expression is not valid: ${error instanceof Error ? error.message : ""}`,
-      "Use matchMode 'contains' for plain text search.",
-    );
-  }
-  return {
-    matching: "regex",
-    test: (text) => expression.test(canonical(text)),
-  };
-}
-
 function createMatcher(options: FindOptions): Matcher {
   if (options.matchMode === "regex") {
-    return createRegexMatcher(options);
+    throw new SkMcpExcelError(
+      "internal_error",
+      "Regex evaluation requires an isolated worker.",
+    );
   }
   const prepare = options.caseSensitive ? canonical : fold;
   const matching: Matching = options.caseSensitive ? "canonical" : "folded";
@@ -385,14 +389,29 @@ function createMatcher(options: FindOptions): Matcher {
   return { matching, test: (text) => prepare(text).includes(needle) };
 }
 
-export function findInSheet(
+export async function findInSheet(
   source: SheetSource,
   options: FindOptions,
-): FindResult {
+): Promise<FindResult> {
+  if (options.matchMode === "regex")
+    return withRegex(
+      options.query,
+      options.caseSensitive,
+      (test) => findWithMatcher(source, options, test),
+      options.signal,
+    );
+  return findWithMatcher(source, options);
+}
+
+async function findWithMatcher(
+  source: SheetSource,
+  options: FindOptions,
+  regexTest?: (texts: readonly string[]) => Promise<readonly boolean[]>,
+): Promise<FindResult> {
   const sheet = source.sheetFor(options.sheetName);
   const used = requireSheetBounds(sheet);
   const bounds = resolveRange(used, options.range);
-  const matcher = createMatcher(options);
+  const matcher = regexTest === undefined ? createMatcher(options) : undefined;
   const normalizeOptions: NormalizeOptions = {
     valueMode: "values",
     mergePolicy: "master",
@@ -401,8 +420,32 @@ export function findInSheet(
   const found: FindMatch[] = [];
   let total = 0;
   let scannedCells = 0;
+  let batch: {
+    readonly match: FindMatch;
+    readonly texts: readonly string[];
+  }[] = [];
+  let batchBytes = 2;
+  const flush = async (): Promise<void> => {
+    if (regexTest === undefined || batch.length === 0) return;
+    const hits = await regexTest(batch.flatMap((entry) => entry.texts));
+    let offset = 0;
+    for (const entry of batch) {
+      const matched = hits
+        .slice(offset, offset + entry.texts.length)
+        .some(Boolean);
+      offset += entry.texts.length;
+      if (matched) {
+        total += 1;
+        if (found.length < options.maxResults) found.push(entry.match);
+      }
+    }
+    batch = [];
+    batchBytes = 2;
+  };
 
   for (let rowNumber = bounds.top; rowNumber <= bounds.bottom; rowNumber += 1) {
+    if (regexTest !== undefined && (rowNumber - bounds.top) % 128 === 0)
+      await regexTest([]);
     const row = sheet.rowAt(rowNumber);
     if (row === undefined) {
       continue;
@@ -424,7 +467,28 @@ export function findInSheet(
       ) {
         haystacks.push(`=${snapshot.formula}`);
       }
-      if (!haystacks.some((text) => text !== "" && matcher.test(text))) {
+      if (regexTest !== undefined) {
+        const bytes = Buffer.byteLength(JSON.stringify(haystacks)) + 1;
+        if (bytes > 65530)
+          throw new SkMcpExcelError(
+            "resource_limit",
+            "A cell exceeds the regex message budget.",
+          );
+        if (batchBytes + bytes > 65530) await flush();
+        batch.push({
+          match: {
+            address: formatCellRef(rowNumber, column),
+            row: rowNumber,
+            column,
+            value: normalized.value,
+          },
+          texts: haystacks,
+        });
+        batchBytes += bytes;
+        if (batch.length >= 128) await flush();
+        continue;
+      }
+      if (!haystacks.some((text) => text !== "" && matcher?.test(text))) {
         continue;
       }
       total += 1;
@@ -438,14 +502,14 @@ export function findInSheet(
       }
     }
   }
-
+  await flush();
   return {
     sheet: sheet.name,
     range: formatRange(bounds),
     total,
     truncated: total > found.length,
     scannedCells,
-    matching: matcher.matching,
+    matching: matcher?.matching ?? "regex",
     matches: found,
   };
 }

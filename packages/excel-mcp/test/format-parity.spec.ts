@@ -1,6 +1,5 @@
 import { describe, expect, inject, it } from "vitest";
 import { loadDocument, sheetSource } from "../src/document.js";
-import type { SheetSource } from "../src/sheet.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
 import {
   findInSheet,
@@ -78,8 +77,8 @@ describe("the grid layer cannot see the format", () => {
       searchIn: "values" as const,
       maxResults: 50,
     };
-    const xlsx = findInSheet(await open("parity.xlsx"), find);
-    const csv = findInSheet(await open("csv/simple.csv"), find);
+    const xlsx = await findInSheet(await open("parity.xlsx"), find);
+    const csv = await findInSheet(await open("csv/simple.csv"), find);
     expect(csv.matches).toEqual(xlsx.matches);
     expect(csv.matching).toBe(xlsx.matching);
   });

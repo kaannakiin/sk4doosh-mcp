@@ -30,6 +30,17 @@ export default [
   ...casing,
   { ignores: ["dist/**"] },
   {
+    files: ["test/fixtures/*.mjs"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        performance: "readonly",
+        AbortController: "readonly",
+      },
+    },
+  },
+  {
     files: gridLayer,
     rules: {
       "no-restricted-imports": [

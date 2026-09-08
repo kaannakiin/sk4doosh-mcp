@@ -4,7 +4,7 @@ import { columnToLetters, parseCellRef } from "./range.js";
 import type { DeclaredTable } from "./sheet.js";
 
 export interface TableColumnDetail {
-  readonly name: string;
+  readonly name: string | null;
   readonly letter?: string;
   readonly totalsRowFunction?: string;
   readonly totalsRowLabel?: string;
@@ -29,6 +29,7 @@ export interface TableReport {
   readonly truncated: boolean;
   readonly truncationReason?: "maxTablesPerSheet";
   readonly hint?: string;
+  readonly warnings?: readonly string[];
 }
 
 interface StoredTableColumn {
@@ -79,9 +80,9 @@ export function declaredTablesOf(worksheet: Worksheet): DeclaredTable[] {
     name: table.name ?? key,
     ref: table.tableRef,
     headerRow: table.headerRow !== false,
-    columns: (table.columns ?? [])
-      .map((column) => column.name)
-      .filter((name): name is string => typeof name === "string"),
+    columns: (table.columns ?? []).map((column) =>
+      typeof column.name === "string" ? column.name : null,
+    ),
   }));
 }
 
@@ -118,7 +119,6 @@ function columnDetail(
   column: StoredTableColumn,
   offset: number,
   origin: Origin | undefined,
-  key: string,
   totalsRow: boolean,
 ): TableColumnDetail {
   const index = origin === undefined ? undefined : origin.left + offset;
@@ -132,7 +132,7 @@ function columnDetail(
       ? undefined
       : column.totalsRowFunction;
   return {
-    name: column.name ?? key,
+    name: typeof column.name === "string" ? column.name : null,
     ...(letter === undefined ? {} : { letter }),
     ...(totalsRowFunction === undefined ? {} : { totalsRowFunction }),
     ...(!totalsRow || column.totalsRowLabel === undefined
@@ -164,7 +164,7 @@ function tableDetail(key: string, table: RefTable): DeclaredTableDetail {
       ? {}
       : { autoFilterRef: table.autoFilterRef }),
     columns: kept.map((column, offset) =>
-      columnDetail(column, offset, origin, `${name}${offset + 1}`, totalsRow),
+      columnDetail(column, offset, origin, totalsRow),
     ),
     columnsTruncated,
   };
@@ -187,6 +187,15 @@ export function collectTables(worksheet: Worksheet): TableReport {
     sheet: worksheet.name,
     count: ordered.length,
     tables: kept.map((entry) => tableDetail(entry.key, entry.table)),
+    ...(kept.some((entry) =>
+      entry.table.columns?.some((column) => typeof column.name !== "string"),
+    )
+      ? {
+          warnings: [
+            "Table metadata has missing column names; null entries preserve column positions.",
+          ],
+        }
+      : {}),
     truncated,
     ...(truncated
       ? {

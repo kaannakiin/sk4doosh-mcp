@@ -11,6 +11,7 @@ export {
   decodeCursorPayload,
   encodeCursor,
   fingerprint,
+  contentFingerprint,
   isFresh,
   type Cursor,
   type CursorEnvelope,

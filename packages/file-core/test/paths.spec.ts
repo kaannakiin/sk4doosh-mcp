@@ -277,9 +277,10 @@ describe("the sandbox", () => {
       expect(names.some((path) => path.startsWith("escape-dir"))).toBe(false);
     });
 
-    it("does not report unreadable entries when nothing vanished", async () => {
+    it("marks totals inexact when unsafe or unreadable entries were skipped", async () => {
       const listing = await listSources(root, { maxResults: 200 });
-      expect(listing.unreadable).toBeUndefined();
+      expect(listing.unreadable).toBeGreaterThan(0);
+      expect(listing.totalExact).toBe(false);
     });
 
     it("returns a listed symlink path the resolver accepts", async () => {

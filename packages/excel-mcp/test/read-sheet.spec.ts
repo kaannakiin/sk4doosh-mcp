@@ -257,7 +257,7 @@ describe("findInSheet", () => {
   };
 
   it("finds a value by substring", async () => {
-    const result = findInSheet(await open("q1/sample.xlsx"), {
+    const result = await findInSheet(await open("q1/sample.xlsx"), {
       ...find,
       query: "EMEA2",
     });
@@ -267,7 +267,7 @@ describe("findInSheet", () => {
   });
 
   it("matches formulas when asked", async () => {
-    const result = findInSheet(await open("q1/sample.xlsx"), {
+    const result = await findInSheet(await open("q1/sample.xlsx"), {
       ...find,
       query: "NOCACHE",
       searchIn: "formulas",
@@ -276,7 +276,7 @@ describe("findInSheet", () => {
   });
 
   it("truncates at maxResults but reports the total", async () => {
-    const result = findInSheet(await open("large.xlsx"), {
+    const result = await findInSheet(await open("large.xlsx"), {
       ...find,
       query: "name-",
       maxResults: 5,
@@ -311,21 +311,21 @@ describe("findInSheet", () => {
   it("folds case and diacritics by default", async () => {
     const loaded = await open("turkish.xlsx");
     for (const query of ["istanbul", "İSTANBUL", "ıstanbul", "Istanbul"]) {
-      const result = findInSheet(loaded, { ...find, query });
+      const result = await findInSheet(loaded, { ...find, query });
       expect(result.matching).toBe("folded");
       expect(result.total).toBeGreaterThan(0);
     }
     expect(
-      findInSheet(loaded, { ...find, query: "sisli" }).total,
+      (await findInSheet(loaded, { ...find, query: "sisli" })).total,
     ).toBeGreaterThan(0);
     expect(
-      findInSheet(loaded, { ...find, query: "ogrenci" }).total,
+      (await findInSheet(loaded, { ...find, query: "ogrenci" })).total,
     ).toBeGreaterThan(0);
   });
 
   it("reports canonical matching when case sensitive", async () => {
     const loaded = await open("turkish.xlsx");
-    const result = findInSheet(loaded, {
+    const result = await findInSheet(loaded, {
       ...find,
       query: "istanbul",
       caseSensitive: true,

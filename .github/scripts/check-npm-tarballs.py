@@ -32,8 +32,21 @@ def check(path):
                     f"{path.name}: {field}.{name} resolves to 0.0.0, which is not publishable"
                 )
 
-    if REQUIRED_ENTRY not in names:
-        problems += fail(f"{path.name} carries no {REQUIRED_ENTRY}")
+    required = "package/index.js" if manifest.get("name") == "@sk-mcp/file-core-native" else REQUIRED_ENTRY
+    if required not in names:
+        problems += fail(f"{path.name} carries no {required}")
+    if manifest.get("name") == "@sk-mcp/file-core-native":
+        import os
+        targets = ["linux-x64", "linux-arm64", "darwin-x64", "darwin-arm64", "win32-x64"]
+        binaries = [name for name in names if name.endswith("/secure.node")]
+        if not binaries:
+            problems += fail(f"{path.name} has no secure filesystem binary")
+        if os.environ.get("SKMCP_REQUIRE_ALL_PREBUILDS") == "1":
+            for target in targets:
+                if f"package/prebuilds/{target}/secure.node" not in names:
+                    problems += fail(f"{path.name} is missing {target}")
+    if manifest.get("name") == "@sk-mcp/excel-mcp" and "package/dist/regex-worker.js" not in names:
+        problems += fail(f"{path.name} is missing the regex worker")
 
     maps = [name for name in names if name.endswith(".d.ts.map")]
     if maps:

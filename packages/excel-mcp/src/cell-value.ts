@@ -13,8 +13,13 @@ export type CellNote =
       readonly kind: "formula";
       readonly formula: string;
       readonly cached: boolean;
+      readonly truncatedFrom?: number;
     }
-  | { readonly kind: "hyperlink"; readonly href: string }
+  | {
+      readonly kind: "hyperlink";
+      readonly href: string;
+      readonly truncatedFrom?: number;
+    }
   | { readonly kind: "truncated"; readonly length: number };
 
 export interface CellFacts {
@@ -59,7 +64,13 @@ function noteOf(
   options: NormalizeOptions,
 ): CellNote | undefined {
   if (facts.href !== undefined && options.includeHyperlinks) {
-    return { kind: "hyperlink", href: facts.href };
+    return {
+      kind: "hyperlink",
+      href: facts.href,
+      ...(facts.truncatedFrom === undefined
+        ? {}
+        : { truncatedFrom: facts.truncatedFrom }),
+    };
   }
   if (facts.truncatedFrom !== undefined) {
     return { kind: "truncated", length: facts.truncatedFrom };
@@ -97,7 +108,14 @@ export function normalizeCell(
   if (options.valueMode === "both" || !cached) {
     return {
       value: scalar.value,
-      note: { kind: "formula", formula: text, cached },
+      note: {
+        kind: "formula",
+        formula: text,
+        cached,
+        ...(snapshot.cached?.truncatedFrom === undefined
+          ? {}
+          : { truncatedFrom: snapshot.cached.truncatedFrom }),
+      },
     };
   }
   return scalar;

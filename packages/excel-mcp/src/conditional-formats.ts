@@ -1,10 +1,15 @@
 import { truncateWellFormed } from "@sk-mcp/file-core";
 import type { Worksheet } from "exceljs";
 import { limits } from "./limits.js";
+import {
+  metadataLimitations,
+  type MetadataLimitation,
+} from "./metadata-support.js";
 
 export interface ConditionalFormatThreshold {
   readonly type: string;
   readonly value?: number;
+  readonly unsupported?: true;
 }
 
 export interface ConditionalFormatRule {
@@ -24,6 +29,8 @@ export interface ConditionalFormatRule {
 }
 
 export interface ConditionalFormatReport {
+  readonly complete: false;
+  readonly limitations: readonly MetadataLimitation[];
   readonly sheet: string;
   readonly count: number;
   readonly rules: readonly ConditionalFormatRule[];
@@ -98,7 +105,12 @@ function thresholdsOf(
     )
     .map((entry) => ({
       type: entry.type,
-      ...(entry.value === undefined ? {} : { value: entry.value }),
+      ...(entry.type === "formula" ||
+      (entry.value !== undefined && !Number.isFinite(entry.value))
+        ? { unsupported: true as const }
+        : entry.value === undefined
+          ? {}
+          : { value: entry.value }),
     }));
 }
 
@@ -169,6 +181,8 @@ export function collectConditionalFormats(
     sheet: worksheet.name,
     count: flattened.length,
     rules: kept,
+    complete: false,
+    limitations: [metadataLimitations.thresholds],
     rangesTruncated: kept.some((rule) => rule.rangesTruncated),
     truncated,
     ...(truncated

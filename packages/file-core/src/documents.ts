@@ -1,6 +1,7 @@
-import { open, type FileHandle } from "node:fs/promises";
-import { fingerprint, type Fingerprint } from "./cursor.js";
-import { redactRoot, type CoreErrorCode, type ErrorFactory } from "./errors.js";
+import { relative } from "node:path";
+import { accessError, assertSnapshot, knownRoot, pinRoot } from "./access.js";
+import { contentFingerprint, type Fingerprint } from "./cursor.js";
+import { type CoreErrorCode, type ErrorFactory } from "./errors.js";
 import type { SandboxedPath } from "./paths.js";
 import type { Vocabulary } from "./vocabulary.js";
 
@@ -13,13 +14,15 @@ export interface OpenedFile {
 }
 
 export interface ParseContext extends OpenedFile {
-  readonly handle: FileHandle;
+  readonly bytes: Buffer;
   readonly path: SandboxedPath;
+  readonly displayPath: string;
 }
 
 export interface DocumentStoreSpec<Loaded, Options> {
   readonly maxEntries: number;
   readonly maxBytes: number;
+  readonly maxBytesFor?: (path: SandboxedPath, options: Options) => number;
   readonly root?: string;
   readonly vocabulary: Vocabulary<string>;
   readonly fail: ErrorFactory<CoreErrorCode>;
@@ -37,6 +40,10 @@ export function createDocumentStore<Loaded, Options>(
   spec: DocumentStoreSpec<Loaded, Options>,
 ): DocumentStore<Loaded, Options> {
   const cache = new Map<string, Loaded & OpenedFile>();
+  const configured =
+    spec.root === undefined
+      ? undefined
+      : { real: spec.root, access: pinRoot(spec.root) };
 
   function remember(
     key: string,
@@ -63,37 +70,55 @@ export function createDocumentStore<Loaded, Options>(
     },
     async load(path, options) {
       const key = [path, spec.variantKey(options)].join(variantSeparator);
-      const handle = await open(path, "r");
+      const root = configured ?? knownRoot(path);
+      if (root === undefined)
+        throw spec.fail(
+          "invalid_argument",
+          "A pinned sandbox root is required to load a document.",
+        );
+      const displayPath = relative(root.real, path);
+      const maxBytes = Math.min(
+        spec.maxBytes,
+        spec.maxBytesFor?.(path, options) ?? spec.maxBytes,
+      );
+      let snapshot;
       try {
-        const info = await handle.stat();
-        if (!info.isFile()) {
-          throw spec.fail(
-            "not_a_file",
-            `'${redactRoot(path, spec.root)}' is not a regular file.`,
-          );
-        }
-        if (info.size > spec.maxBytes) {
+        snapshot = await root.access.read(displayPath, maxBytes);
+        assertSnapshot(snapshot, maxBytes);
+      } catch (error) {
+        const mapped = accessError(error, spec.fail);
+        if (mapped.code === "file_too_large")
           throw spec.fail(
             "file_too_large",
-            `The file is ${info.size} bytes; the limit is ${spec.maxBytes}.`,
+            mapped.message,
             spec.vocabulary.tooLargeRecovery,
           );
-        }
-        const stamp = fingerprint(path, info.mtimeMs, info.size);
-        const cached = cache.get(key);
-        if (cached !== undefined && cached.stamp === stamp) {
-          return remember(key, cached);
-        }
-        const opened: OpenedFile = {
-          stamp,
-          sizeBytes: info.size,
-          modifiedAt: new Date(info.mtimeMs).toISOString(),
-        };
-        const parsed = await spec.parse({ ...opened, handle, path }, options);
-        return remember(key, { ...parsed, ...opened });
-      } finally {
-        await handle.close();
+        throw mapped;
       }
+      const stamp = contentFingerprint(
+        path,
+        snapshot.bytes,
+        spec.variantKey(options),
+      );
+      const cached = cache.get(key);
+      const modifiedAt = new Date(snapshot.modifiedMs).toISOString();
+      if (
+        cached !== undefined &&
+        cached.stamp === stamp &&
+        cached.modifiedAt === modifiedAt
+      ) {
+        return remember(key, cached);
+      }
+      const opened: OpenedFile = {
+        stamp,
+        sizeBytes: snapshot.size,
+        modifiedAt,
+      };
+      const parsed = await spec.parse(
+        { ...opened, bytes: snapshot.bytes, path, displayPath },
+        options,
+      );
+      return remember(key, { ...parsed, ...opened });
     },
   };
 }

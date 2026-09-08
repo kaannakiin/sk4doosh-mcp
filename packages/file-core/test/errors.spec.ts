@@ -62,18 +62,18 @@ describe("redactRoot", () => {
 describe("internalErrorMessage", () => {
   it("names the tool when one is given", () => {
     expect(internalErrorMessage(new Error("boom"), { tool: "read_page" })).toBe(
-      "read_page failed unexpectedly: boom",
+      "read_page failed unexpectedly.",
     );
   });
 
   it("falls back to a generic subject", () => {
     expect(internalErrorMessage(new Error("boom"), {})).toBe(
-      "The tool failed unexpectedly: boom",
+      "The tool failed unexpectedly.",
     );
   });
 
   it("accepts a throw that is not an Error", () => {
-    expect(internalErrorMessage("boom", {})).toContain("boom");
+    expect(internalErrorMessage("boom", {})).not.toContain("boom");
   });
 
   it("redacts the root from the detail", () => {
@@ -82,7 +82,7 @@ describe("internalErrorMessage", () => {
       { root: "/data/sheets" },
     );
     expect(message).not.toContain("/data/sheets");
-    expect(message).toContain("q1");
+    expect(message).not.toContain("q1");
   });
 });
 

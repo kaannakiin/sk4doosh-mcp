@@ -41,10 +41,21 @@ export function isNumericText(value: CellScalar): boolean {
 
 export function coerceNumber(value: CellScalar): number | undefined {
   if (typeof value === "number") {
+    if (!Number.isFinite(value))
+      throw new SkMcpExcelError(
+        "numeric_overflow",
+        "A numeric value is outside the finite number range.",
+      );
     return value;
   }
   if (isNumericText(value)) {
-    return Number((value as string).trim());
+    const number = Number(value);
+    if (!Number.isFinite(number))
+      throw new SkMcpExcelError(
+        "numeric_overflow",
+        "Numeric text is outside the finite number range.",
+      );
+    return number;
   }
   return undefined;
 }
@@ -152,7 +163,17 @@ function comparableKindOf(
   );
 }
 
-export function validateCondition(condition: Condition): void {
+export function validateCondition(
+  condition: Condition,
+  caseSensitive = true,
+): void {
+  for (const operand of [condition.value, ...(condition.values ?? [])]) {
+    if (typeof operand === "number" && !Number.isFinite(operand))
+      throw new SkMcpExcelError(
+        "invalid_argument",
+        "Predicate numbers must be finite.",
+      );
+  }
   if (nullaryOperators.has(condition.op)) {
     return;
   }
@@ -178,9 +199,20 @@ export function validateCondition(condition: Condition): void {
         "Pass values as [low, high].",
       );
     }
-    const [low, high] = pair as [PredicateScalar, PredicateScalar];
+    const low = pair[0];
+    const high = pair[1];
+    if (low === undefined || high === undefined)
+      throw new SkMcpExcelError(
+        "invalid_argument",
+        "between needs two bounds.",
+      );
     const kind = comparableKindOf(condition, low);
-    if (compareWithin(kind, low as CellScalar, high as CellScalar, true) > 0) {
+    if (kind !== comparableKindOf(condition, high))
+      throw new SkMcpExcelError(
+        "invalid_argument",
+        "between bounds must have the same comparable type.",
+      );
+    if (compareWithin(kind, low, high, caseSensitive) > 0) {
       throw new SkMcpExcelError(
         "invalid_argument",
         `Operator 'between' on column '${condition.column}' was given a low bound above its high bound.`,

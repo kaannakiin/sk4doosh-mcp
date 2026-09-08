@@ -66,7 +66,7 @@ function namesTheRowBelow(
   let matched = 0;
   for (let offset = 0; offset < table.columns.length; offset += 1) {
     const name = table.columns[offset];
-    if (name === undefined || name === "") {
+    if (name === undefined || name === null || name === "") {
       continue;
     }
     compared += 1;
@@ -102,26 +102,43 @@ export function declaredHeaderRow(
   bounds: GridBounds,
   mergePolicy: MergePolicy,
 ): DeclaredHeader | undefined {
+  const candidates: DeclaredHeader[] = [];
   for (const table of sheet.tables) {
-    const [start] = table.ref.split(":");
+    const [start, end] = table.ref.split(":");
     if (start === undefined) {
       continue;
     }
     const topLeft = parseCellRef(start);
+    const bottomRight = parseCellRef(end ?? start);
+    if (topLeft.column > bounds.left || bottomRight.column < bounds.right)
+      continue;
     if (topLeft.row < bounds.top || topLeft.row > bounds.bottom) {
       continue;
     }
     if (!declaresHeaderRow(sheet, table, topLeft, mergePolicy)) {
       continue;
     }
-    return { row: topLeft.row, source: `table ${table.name}` };
+    candidates.push({ row: topLeft.row, source: `table ${table.name}` });
   }
+  if (candidates.length > 1)
+    throw new SkMcpExcelError(
+      "ambiguous_header_row",
+      "Multiple tables can provide the header for this range.",
+      "Pass headerRow explicitly.",
+    );
+  if (candidates.length === 1) return candidates[0];
   const filter = sheet.autoFilter;
   if (filter !== undefined) {
-    const [start] = filter.split(":");
+    const [start, end] = filter.split(":");
     if (start !== undefined) {
       const topLeft = parseCellRef(start);
-      if (topLeft.row >= bounds.top && topLeft.row <= bounds.bottom) {
+      const bottomRight = parseCellRef(end ?? start);
+      if (
+        topLeft.row >= bounds.top &&
+        topLeft.row <= bounds.bottom &&
+        topLeft.column <= bounds.left &&
+        bottomRight.column >= bounds.right
+      ) {
         return { row: topLeft.row, source: "the sheet autofilter" };
       }
     }
@@ -257,6 +274,13 @@ export function headerWarnings(
   hasExplicitRange: boolean,
   mergePolicy: MergePolicy,
 ): string[] {
+  const malformed = sheet.tables.filter((table) =>
+    table.columns.some((name) => name === null),
+  );
+  if (malformed.length > 0)
+    return [
+      `Table metadata has missing column names (${malformed.map((table) => table.name).join(", ")}); column positions were preserved.`,
+    ];
   const width = bounds.right - bounds.left + 1;
   if (headerRow <= 0 || width < 2 || hasExplicitRange) {
     return [];

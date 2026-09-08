@@ -7,7 +7,7 @@ export interface DeclaredTable {
   readonly name: string;
   readonly ref: string;
   readonly headerRow: boolean;
-  readonly columns: readonly string[];
+  readonly columns: readonly (string | null)[];
 }
 
 export interface RowView {

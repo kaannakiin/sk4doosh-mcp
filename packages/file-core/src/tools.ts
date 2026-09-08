@@ -3,7 +3,7 @@ import type {
   ToolAnnotations,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
-import { FileSourceError, type ErrorContext } from "./errors.js";
+import { FileSourceError, redactRoot, type ErrorContext } from "./errors.js";
 
 export interface ReadOnlyAnnotations extends ToolAnnotations {
   readonly readOnlyHint: true;
@@ -35,7 +35,10 @@ export type ToolInputOf<
 export type GuardedHandler<
   D extends ToolDefinitions,
   K extends ToolNameOf<D>,
-> = ((args: ToolInputOf<D, K>) => Promise<CallToolResult>) & {
+> = ((
+  args: ToolInputOf<D, K>,
+  extra?: { readonly signal?: AbortSignal },
+) => Promise<CallToolResult>) & {
   readonly guardedTool: K;
 };
 
@@ -52,15 +55,20 @@ export function json(payload: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(payload) }] };
 }
 
-export function toToolError(error: FileSourceError): CallToolResult {
+export function toToolError(
+  error: FileSourceError,
+  context: ErrorContext = {},
+): CallToolResult {
   return {
     content: [
       {
         type: "text",
         text: JSON.stringify({
           error: error.code,
-          message: error.message,
-          ...(error.recovery === undefined ? {} : { recovery: error.recovery }),
+          message: redactRoot(error.message, context.root),
+          ...(error.recovery === undefined
+            ? {}
+            : { recovery: redactRoot(error.recovery, context.root) }),
         }),
       },
     ],
@@ -70,12 +78,19 @@ export function toToolError(error: FileSourceError): CallToolResult {
 
 export function guard<D extends ToolDefinitions, K extends ToolNameOf<D>>(
   context: ErrorContext & { readonly tool: K },
-  handler: (args: ToolInputOf<D, K>, tool: K) => Promise<CallToolResult>,
+  handler: (
+    args: ToolInputOf<D, K>,
+    tool: K,
+    signal?: AbortSignal,
+  ) => Promise<CallToolResult>,
   normalize: ErrorNormalizer,
 ): GuardedHandler<D, K> {
-  const guarded = async (args: ToolInputOf<D, K>): Promise<CallToolResult> => {
+  const guarded = async (
+    args: ToolInputOf<D, K>,
+    extra?: { readonly signal?: AbortSignal },
+  ): Promise<CallToolResult> => {
     try {
-      return await handler(args, context.tool);
+      return await handler(args, context.tool, extra?.signal);
     } catch (error) {
       if (!(error instanceof FileSourceError)) {
         const raw =
@@ -84,7 +99,7 @@ export function guard<D extends ToolDefinitions, K extends ToolNameOf<D>>(
             : String(error);
         process.stderr.write(`${context.tool}: ${raw}\n`);
       }
-      return toToolError(normalize(error, context));
+      return toToolError(normalize(error, context), context);
     }
   };
   return Object.assign(guarded, { guardedTool: context.tool });

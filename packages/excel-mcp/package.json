@@ -29,7 +29,8 @@
     "dev": "tsc --watch",
     "lint": "eslint .",
     "check-types": "tsc -p tsconfig.test.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -42,7 +43,9 @@
     "@sk-mcp/eslint-config": "workspace:*",
     "@sk-mcp/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
+    "@vitest/coverage-v8": "3.2.7",
     "eslint": "10.9.1",
+    "jszip": "3.10.1",
     "typescript": "7.0.2",
     "vitest": "^3.2.4"
   }
