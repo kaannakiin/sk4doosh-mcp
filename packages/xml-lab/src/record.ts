@@ -5,7 +5,15 @@ export type Sha256 = string & { readonly __sha256: unique symbol };
 export type FixtureId = string & { readonly __fixtureId: unique symbol };
 
 export type F0Task =
-  "F0-01" | "F0-02" | "F0-03" | "F0-04" | "F0-05" | "F0-06" | "F0-07" | "F0-08";
+  | "F0-01"
+  | "F0-02"
+  | "F0-03"
+  | "F0-04"
+  | "F0-05"
+  | "F0-06"
+  | "F0-07"
+  | "F0-08"
+  | "F2-10";
 
 export type Verdict = "pass" | "fail" | "inconclusive";
 

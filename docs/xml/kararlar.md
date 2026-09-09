@@ -1,6 +1,6 @@
 # XML MCP kararları
 
-Durum: XML mimarisi kararları. Güncelleme: 2026-09-09. F0 kapısı geçti; **K1, K5, K6 ve K7 artık `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin dört tool'undan `list_documents` çalışıyor; K3/K4'ün düğüm modeli ile kalan üç tool F2-04–09'dadır ve o maddeler hâlâ hedef davranıştır. Bu değişikliğin global kaydı [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md); mevcut global ADR numaraları değiştirilmez.
+Durum: XML mimarisi kararları. Güncelleme: 2026-09-09. F0 kapısı geçti; **K1, K3, K4, K5, K6, K7 ve K8 `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin dört tool'u da çalışıyor; K2'nin F3 yarısı (`select_xpath`, `project_records`, `aggregate_document`) hâlâ hedef davranıştır. Global kayıtlar [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md) ve [karar 017](../kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md); mevcut global ADR numaraları değiştirilmez.
 
 ## K1 — Birincil motor: libxml2-wasm
 
@@ -25,11 +25,13 @@ Alternatiflerin güncel güvenlik durumu hakkında Claude raporundaki CVE sayıl
 
 ## K2 — Başlangıçta dört tool; XPath sonraki kapı
 
-F2: `list_documents`, `describe_document`, `read_node`, `find_in_document`. Namespace haritası `describe_document` içinde sunulur; başlangıçta ayrı `get_namespaces` gerekmez. F3 `select_xpath`, `project_records`, `aggregate_document` ekler. `project_records` tekrarlanan düğümlerden açık sütun seçimi yapar; tablo çıkarımının kullanıcıya açıklanmayan sezgilere dayanmasını önler.
+**Dördü de uygulandı (F2).** `list_documents`, `describe_document`, `read_node`, `find_in_document`. Namespace haritası `describe_document` içinde sunulur; başlangıçta ayrı `get_namespaces` gerekmez. F3 `select_xpath`, `project_records`, `aggregate_document` ekler. `project_records` tekrarlanan düğümlerden açık sütun seçimi yapar; tablo çıkarımının kullanıcıya açıklanmayan sezgilere dayanmasını önler.
 
 Claude'un domain özetindeki 14 satırlık ilk faz listesi MVP olarak alınmadı. ZIP, formatlama, çift yönlü dönüşüm, diff ve XSD özeti kendi test yükleriyle F5'e ayrıldı. Güçlü sorgulama tasarımının tamamı ilk yayın için zorunlu tutulmadı.
 
 ## K3 — Namespace URI kimliktir
+
+**Uygulandı (F2-04/05).** `describe_document` her URI için kararlı alias veriyor ve boş olmayan default namespace her zaman sentetik alias alıyor; adres `{namespaceUri, localName, occurrence}` üçlüsüyle çözülüyor. Kanıt [F2 kapanış kaydında](xml-f2-kapanis.md).
 
 Adlar `{namespaceUri, localName}` çiftiyle değerlendirilir. Prefix yalnızca belge içindeki gösterimdir; yeniden bağlanabilir. Canonical düğüm adresi namespace kimliğini ve aynı genişletilmiş ada sahip kardeşlerin sırasını korur. Sırf `local-name()` ile üretilmiş adresler kabul edilmez.
 
@@ -38,6 +40,8 @@ XPath 1.0'da prefixsiz element adı, varsayılan namespace'e otomatik bağlanmaz
 Araştırmadaki `agnostic` varsayılanı reddedildi: aynı local name farklı URI'lerde farklı alanları gösterebilir. İleride namespace'siz arama istenirse açık opt-in ve çakışma bildirimi gerekir; F3 sözleşmesine dahil değildir.
 
 ## K4 — Veri kaybını saklamayan okuma
+
+**Uygulandı (F2-06).** Baştaki sıfır, büyük tamsayı, ondalık ve `false`/`0` string olarak dönüyor; whitespace trim edilmiyor; CDATA text'ten ayrı bir `kind` taşıyor. Ölçülen bir sessiz kayıp bu madde sayesinde yakalandı ve düzeltildi: düz `next` yürüyüşü ilk processing instruction'da duruyordu (kapanış kaydında **M12**).
 
 Ham metin string kalır. Başında sıfır olan kimlik, büyük tamsayı, ondalık tutar ve tarih kendiliğinden JS değerine çevrilmez. Mixed content'te text/element sırası korunur; attribute'lar ayrı sunulur. Eksik düğüm, boş element ve boş text aynı değere indirgenmez.
 
@@ -49,7 +53,7 @@ F0-06 doğruladı: `fromBuffer` senkrondur, `Promise.race` tek başına işi dur
 
 Parse dahil maliyetli işler worker içinde yürütülür. İlk uygulama tek etkin worker, en fazla 5 derinlikli bekleme kuyruğu ve istek başına 2 saniyelik süre bütçesiyle teslim edildi. Kuyruk kapısı **okumadan önce** alınır; böylece bekleyen istek snapshot byte'ı pinlemez. `Promise.race` senkron parser'ı durdurmaz; timeout sonrasında worker sonlandırılır, çıkışı beklenir, ilgili snapshot'lar geçersizleşir. [Node worker yaşam döngüsü](https://nodejs.org/api/worker_threads.html#workerterminate).
 
-`worker.resourceLimits` toplam RSS veya WASM bellek tavanı değildir; JS motoru sınırlarıdır ve dış bellek dahil edilmez. Bu nedenle “256 MiB worker limiti = süreç en fazla 256 MiB” iddiası kullanılmaz. Byte sınırı, eşzamanlılık, kuyruk ve ölçülmüş RSS birlikte izlenir; eşzamanlı DOM'ların şişme katsayısının ölçümü ve cache boyutunun yapılandırılabilir hale gelmesi **F2-10**'dadır. Kesin süreç bellek izolasyonu gerektiren dağıtımda OS/container sınırı veya ayrı süreç tasarımı ayrıca gerekir. F0 bunu karşılamıyorsa limitsiz üretim vaadiyle ilerlenmez. [Node Worker seçenekleri](https://nodejs.org/api/worker_threads.html#new-workerfilename-options).
+`worker.resourceLimits` toplam RSS veya WASM bellek tavanı değildir; JS motoru sınırlarıdır ve dış bellek dahil edilmez. Bu nedenle “256 MiB worker limiti = süreç en fazla 256 MiB” iddiası kullanılmaz. Byte sınırı, eşzamanlılık, kuyruk ve ölçülmüş RSS birlikte izlenir; eşzamanlı DOM'ların şişme katsayısı **F2-10'da ölçüldü**: kaynak byte'ı başına 9,25–10,08× (düz, attribute-yoğun, derin), relative MAD ≤ 0,0047. 8 MiB tavanda kalıcı belge başına ≈ 81 MiB; `documentCacheSize` S=4 ve türetilen W=2S=8 ile worker tarafındaki en kötü hâl ≈ 645 MiB. Knob bir bütçedir, yaptırım değildir. [Ölçüm](xml-f2-kapanis.md). Kesin süreç bellek izolasyonu gerektiren dağıtımda OS/container sınırı veya ayrı süreç tasarımı ayrıca gerekir. F0 bunu karşılamıyorsa limitsiz üretim vaadiyle ilerlenmez. [Node Worker seçenekleri](https://nodejs.org/api/worker_threads.html#new-workerfilename-options).
 
 ## K6 — XML kaynaklarının sahibi worker
 
@@ -72,6 +76,8 @@ Parser'a dış entity, DTD, XInclude veya şema için genel dosya/ağ resolver'�
 `NOENT`, `DTDLOAD`, `DTDATTR`, `DTDVALID`, `HUGE`, recovery ve XInclude işleme başlangıçta kapalıdır. Uygulama, DOCTYPE içeren belgeyi **parse etmeden önce**, ana süreçte çalışan prolog tarayıcısıyla reddeder; yorum/CDATA/PI içindeki aynı karakterler gerçek declaration sayılmaz. `doc.dtd` yalnız ikinci bir denetim katmanıdır ve birincil kapı olamaz: ölçüldü ki `XML_PARSE_NO_XXE` internal DTD subset'ini engellemiyor, yani `doc.dtd` okunabildiğinde internal entity zaten genişlemiş oluyor. Bu politika güvenli parser ayarlarının yerine geçmez. DTD'siz XML yolu F0'da yerel dosya ve ağ canary'leriyle kanıtlanır; DTD kullanan belge aileleri başlangıçta desteklenmez.
 
 ## K8 — Sınırlar sonuç semantiğini değiştirir
+
+**Uygulandı (F2-06/07/08).** Sayfa bütçesi ölçüldü; `totalMatches` yalnız tam taramada, kesik taramada `scannedCount` + `matchedSoFar` dönüyor; cursor `stamp`'e bağlı ve içerik değişince reddediliyor. Bütçenin süreçler arası bölüşümü [karar 017](../kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md)'dedir.
 
 Satır sayısı sınırı tek başına payload sınırı değildir. Bütün yanıt, hata ve snippet'ler byte bütçesine tabidir. `totalMatches` yalnız tarama bittiyse exact olabilir; kesilen taramada toplam gibi gösterilmez. Cursor sorgu, seçenekler, dosya snapshot'ı ve tool ile bağlıdır; aynı dosya değiştiğinde eski cursor yanlış veri üretmek yerine reddedilir.
 

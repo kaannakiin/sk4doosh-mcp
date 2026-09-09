@@ -9,7 +9,10 @@ import {
 import { vocabulary } from "./vocabulary.js";
 
 export type SkMcpXmlErrorCode =
-  CoreErrorCode | "malformed_xml" | "doctype_not_allowed";
+  | CoreErrorCode
+  | "malformed_xml"
+  | "doctype_not_allowed"
+  | "unsupported_encoding";
 
 export class SkMcpXmlError extends FileSourceError {
   declare readonly code: SkMcpXmlErrorCode;

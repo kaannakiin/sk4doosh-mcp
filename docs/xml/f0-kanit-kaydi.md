@@ -75,14 +75,14 @@ Dördüncü bir kontrol **negatif** sonuç verdi ve bu da on ayakta tutarlı: F0
 
 `tool-sozlesmesi.md`'deki başlangıç değerleri ölçüm hedefiydi. Türetim kuralı **en yavaş kesin ölçüm veren ayaktır**; on ayağın onu da kesin ölçtü, en yavaşı `darwin-x64` Node 22 (toplam p95 523,311 ms).
 
-| Kaynak             | Başlangıç önerisi | Ölçülen sonuç       | Not                                                                                                            |
-| ------------------ | ----------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| DOM'a alınan dosya | 8 MiB             | **8 MiB korunuyor** | On ayakta da üç şekil geçti (`measuredUpToMiB: 8`)                                                             |
-| Parse/sorgu süresi | 2 s               | **2 s doğrulandı**  | 3 × 523,311 ms → 2000 ms; hızlı hostlarda 500 ms çıkıyordu                                                     |
-| Etkin worker       | 1                 | **1**               | Değişmedi                                                                                                      |
-| Kuyruk             | en fazla 4        | **5**               | En yavaş hostta istemci sabri (10 s / 2 s) bağlıyor; hızlı hostlarda 8 ve sınırlayan pinlenen snapshot belleği |
-| DOM derinliği      | 128               | **128 korunuyor**   | Motor on ayakta da 256'da parse ediyor, 1024'te reddediyor                                                     |
-| Sayfa              | 50 / 200          | Ölçülmedi           | Yanıt zarfı F2-08'e ait                                                                                        |
+| Kaynak             | Başlangıç önerisi | Ölçülen sonuç           | Not                                                                                                            |
+| ------------------ | ----------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| DOM'a alınan dosya | 8 MiB             | **8 MiB korunuyor**     | On ayakta da üç şekil geçti (`measuredUpToMiB: 8`)                                                             |
+| Parse/sorgu süresi | 2 s               | **2 s doğrulandı**      | 3 × 523,311 ms → 2000 ms; hızlı hostlarda 500 ms çıkıyordu                                                     |
+| Etkin worker       | 1                 | **1**                   | Değişmedi                                                                                                      |
+| Kuyruk             | en fazla 4        | **5**                   | En yavaş hostta istemci sabri (10 s / 2 s) bağlıyor; hızlı hostlarda 8 ve sınırlayan pinlenen snapshot belleği |
+| DOM derinliği      | 128               | **128 korunuyor**       | Motor on ayakta da 256'da parse ediyor, 1024'te reddediyor                                                     |
+| Sayfa              | 50 / 200          | **50 / 200 doğrulandı** | F2-08'de dört tool birlikte ölçüldü; byte kapısı yalnız derin belgelerde önce bağlıyor                         |
 
 **Yerel ölçüm yanıltıcıydı ve bu türetim kuralının neden var olduğunu gösteriyor.** Kendi makinemde süre bütçesi 500 ms çıkıyordu ve "hedeflenenin dörtte biri" diye kaydedilmişti. En yavaş desteklenen host 523 ms p95 verince bütçe 2000 ms'e çıktı — yani `tool-sozlesmesi.md`'nin başlangıçtaki 2 s önerisi doğruymuş. Tek host ölçümüyle yayınlansaydı bütçe dört kat dar olacaktı.
 
@@ -132,8 +132,8 @@ Ortalamadan medyana ve CV'den MAD'a geçişin gerekçesi aynı: tek bir aykırı
 3. **Windows'ta pozitif kontrol yalnız sağlayıcı-danışma seviyesinde ateşliyor** (yukarıda ölçüldü). O platformda içerik sızması tespit edilebilirliği kanıtlanmadı.
 4. **Tier-2 bellek istatistiği hiçbir ayakta ayırt edici değil.** Bellek kapısı `diag`'dır.
 5. **Dosya canary'si** okumanın denenip atıldığını kanıtlamaz; yalnız içeriğin belgeye veya hataya sızmadığını gösterir.
-6. **Sayfa/yanıt zarfı bütçesi ölçülmedi**; F2-08'e aittir.
-7. **Derinlik merdiveni parse sonucunu ölçer.** `read_node` görünüm limiti ayrı katmandır ve F2-06'da ölçülür.
+6. **Sayfa/yanıt zarfı bütçesi ölçülmedi**; F2-08'e aittir. **Kapandı**: ölçüldü ve `50 / 200` doğrulandı, [F2 kapanış kaydı](xml-f2-kapanis.md).
+7. **Derinlik merdiveni parse sonucunu ölçer.** `read_node` görünüm limiti ayrı katmandır ve F2-06'da ölçülür. **Kapandı**: görünüm limiti uygulandı ve ölçüldü; derin belgelerde kayıt başına maliyet 2.940 byte, [F2 kapanış kaydı](xml-f2-kapanis.md).
 8. **Bütçeler bu on runner'ın ölçümüdür.** Daha yavaş bir dağıtım hedefi eklenirse `B_t` yeniden türetilmelidir.
 
 ## Karar (F0-09)

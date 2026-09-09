@@ -17,7 +17,12 @@ describe("the parse worker lifecycle", () => {
     try {
       const before = pool.stats();
       const timedOut = await pool
-        .parse("stamp", "logical", Uint8Array.from(Buffer.from("<r/>")))
+        .ask({
+          kind: "parse",
+          stamp: "stamp",
+          logical: "logical",
+          bytes: Uint8Array.from(Buffer.from("<r/>")),
+        })
         .catch(() => undefined);
       void timedOut;
 
@@ -49,7 +54,7 @@ describe("the parse worker lifecycle", () => {
       expect(cache.size).toBe(1);
       const generationBefore = pool.generation;
 
-      await pool.release();
+      await pool.ask({ kind: "release" });
       await pool.close();
       expect(pool.generation).toBeGreaterThan(generationBefore);
       expect(cache.size).toBe(0);
@@ -63,11 +68,12 @@ describe("the parse worker lifecycle", () => {
     const pool = createXmlWorkerPool();
     await pool.close();
     const spawnsAfterClose = pool.stats().spawns;
-    const outcome = await pool.parse(
-      "stamp",
-      "logical",
-      Uint8Array.from(Buffer.from("<r/>")),
-    );
+    const outcome = await pool.ask({
+      kind: "parse",
+      stamp: "stamp",
+      logical: "logical",
+      bytes: Uint8Array.from(Buffer.from("<r/>")),
+    });
     expect(outcome.ok).toBe(false);
     expect(pool.stats().spawns).toBe(spawnsAfterClose);
     expect(pool.stats().alive).toBe(false);

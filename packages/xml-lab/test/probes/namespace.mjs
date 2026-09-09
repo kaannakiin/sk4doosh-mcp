@@ -130,18 +130,24 @@ renamed.dispose();
 
 const attributes = parse(corpus.find((f) => f.id === "ns-attributes").source);
 const root = attributes.root;
-const attributeList = Object.entries(root.attrs ?? {}).map(([key, value]) => ({
-  key,
-  uri: value?.namespaceUri ?? null,
-  name: value?.name ?? null,
+/**
+ * attrs is an XmlAttribute[], so Object.entries yields array indices: the earlier
+ * form of this row compared "0", "1" against "xmlns" and passed without
+ * measuring anything. Read the attribute names themselves.
+ */
+const attributeList = (root.attrs ?? []).map((attribute) => ({
+  name: attribute.name,
+  prefix: attribute.prefix,
+  uri: attribute.namespaceUri,
 }));
 record(
   "namespace-declarations-are-not-ordinary-attributes",
-  "no xmlns or xmlns:p entry in the attribute list",
+  "at least one real attribute, and no xmlns or xmlns:p among them",
   JSON.stringify(attributeList).slice(0, 300),
-  attributeList.every(
-    (entry) => entry.key !== "xmlns" && !entry.key.startsWith("xmlns:"),
-  ),
+  attributeList.length > 0 &&
+    attributeList.every(
+      (entry) => entry.name !== "xmlns" && entry.prefix !== "xmlns",
+    ),
 );
 attributes.dispose();
 

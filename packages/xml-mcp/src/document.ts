@@ -10,7 +10,12 @@ import { SkMcpXmlError, fail } from "./errors.js";
 import { limits } from "./limits.js";
 import { vocabulary } from "./vocabulary.js";
 import type { XmlWorkerPool } from "./worker-pool.js";
-import type { RootFacts } from "./worker-protocol.js";
+import type {
+  RootFacts,
+  WorkerBodyOf,
+  WorkerKind,
+  WorkerResultOf,
+} from "./worker-protocol.js";
 
 export interface XmlDocumentBody {
   readonly format: "xml";
@@ -23,8 +28,18 @@ export interface XmlDocumentBody {
 
 export type LoadedXmlDocument = XmlDocumentBody & OpenedFile;
 
+export type ResidentKind = Extract<WorkerKind, "describe" | "read" | "find">;
+
+export type ResidentBody = WorkerBodyOf<ResidentKind>;
+
 export interface XmlDocumentCache {
   load(path: SandboxedPath): Promise<LoadedXmlDocument>;
+  ask<B extends ResidentBody>(
+    path: SandboxedPath,
+    stamp: string,
+    body: (stamp: string) => B,
+    signal?: AbortSignal,
+  ): Promise<WorkerResultOf<B["kind"]>>;
   clear(): void;
   readonly size: number;
 }
@@ -38,6 +53,13 @@ function translate(failure: string, detail: string | undefined): never {
       "doctype_not_allowed",
       doctypeRefusal,
       "Remove the DOCTYPE declaration, or read a document that does not use one.",
+    );
+  }
+  if (failure === "address_not_found") {
+    throw new SkMcpXmlError(
+      "invalid_argument",
+      "No node matches that address in this document.",
+      "Call describe_document for a usable address, or drop address to start at the document element.",
     );
   }
   if (failure === "resource_limit") {
@@ -59,9 +81,17 @@ function translate(failure: string, detail: string | undefined): never {
 export function createXmlDocumentCache(
   pool: XmlWorkerPool,
   root?: string,
+  maxEntries: number = limits.documentCacheSize,
 ): XmlDocumentCache {
   async function parse(context: ParseContext): Promise<XmlDocumentBody> {
     const prolog = scanProlog(context.bytes, limits.prologScanBytes);
+    if (prolog.unsupportedEncoding !== undefined) {
+      throw new SkMcpXmlError(
+        "unsupported_encoding",
+        `The document is encoded as ${prolog.unsupportedEncoding}, which this server cannot read.`,
+        "Re-encode the document as UTF-8 or UTF-16.",
+      );
+    }
     if (prolog.doctype) {
       throw new SkMcpXmlError(
         "doctype_not_allowed",
@@ -70,11 +100,12 @@ export function createXmlDocumentCache(
       );
     }
     const logical = context.path as string;
-    const outcome = await pool.parse(
-      context.stamp,
+    const outcome = await pool.ask({
+      kind: "parse",
+      stamp: context.stamp,
       logical,
-      Uint8Array.from(context.bytes),
-    );
+      bytes: Uint8Array.from(context.bytes),
+    });
     if (!outcome.ok) {
       translate(outcome.failure, outcome.detail);
     }
@@ -92,7 +123,7 @@ export function createXmlDocumentCache(
     XmlDocumentBody,
     Record<string, never>
   > = createDocumentStore({
-    maxEntries: limits.documentCacheSize,
+    maxEntries,
     maxBytes: limits.maxXmlBytes,
     ...(root === undefined ? {} : { root }),
     vocabulary,
@@ -105,22 +136,47 @@ export function createXmlDocumentCache(
     store.clear();
   });
 
+  async function load(path: SandboxedPath): Promise<LoadedXmlDocument> {
+    const first = await store.load(path, {});
+    if (first.generation === pool.generation) {
+      return first;
+    }
+    store.clear();
+    const second = await store.load(path, {});
+    if (second.generation !== pool.generation) {
+      throw new SkMcpXmlError(
+        "internal_error",
+        "The parse worker restarted twice while reading one document.",
+        "Retry the call.",
+      );
+    }
+    return second;
+  }
+
   return {
-    async load(path) {
-      const first = await store.load(path, {});
-      if (first.generation === pool.generation) {
-        return first;
+    load,
+    async ask(path, stamp, body, signal) {
+      const first = await pool.ask(body(stamp), signal);
+      if (first.ok) {
+        return first.value;
+      }
+      if (first.failure !== "unknown_residency") {
+        translate(first.failure, first.detail);
       }
       store.clear();
-      const second = await store.load(path, {});
-      if (second.generation !== pool.generation) {
+      const reloaded = await load(path);
+      const second = await pool.ask(body(reloaded.stamp), signal);
+      if (second.ok) {
+        return second.value;
+      }
+      if (second.failure === "unknown_residency") {
         throw new SkMcpXmlError(
           "internal_error",
-          "The parse worker restarted twice while reading one document.",
+          "The parse worker lost the document twice while answering one call.",
           "Retry the call.",
         );
       }
-      return second;
+      return translate(second.failure, second.detail);
     },
     clear() {
       store.clear();

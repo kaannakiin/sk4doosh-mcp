@@ -94,11 +94,11 @@ describe("the document store adapter", () => {
 
 describe("resource ownership", () => {
   it("frees the partial context when a parse fails", async () => {
-    await pool.release();
+    await pool.ask({ kind: "release" });
     for (let attempt = 0; attempt < 20; attempt += 1) {
       await codeOf(async () => cache.load(await at(fixtures.malformed)));
     }
-    const diag = await pool.diagnose();
+    const diag = await pool.ask({ kind: "diag" });
     expect(diag.ok).toBe(true);
     if (diag.ok) {
       expect(diag.value.live).toBe(0);
@@ -107,16 +107,16 @@ describe("resource ownership", () => {
   });
 
   it("frees the document a refused DOCTYPE produced", async () => {
-    await pool.release();
+    await pool.ask({ kind: "release" });
     await codeOf(async () => cache.load(await at(fixtures.doctype)));
-    const diag = await pool.diagnose();
+    const diag = await pool.ask({ kind: "diag" });
     if (diag.ok) {
       expect(diag.value.live).toBe(0);
     }
   });
 
   it("holds no more live documents than the worker capacity", async () => {
-    await pool.release();
+    await pool.ask({ kind: "release" });
     cache.clear();
     const paths = [
       fixtures.simple,
@@ -130,7 +130,7 @@ describe("resource ownership", () => {
         await resolveDocumentPath(root, path.slice(fixtures.root.length + 1)),
       );
     }
-    const diag = await pool.diagnose();
+    const diag = await pool.ask({ kind: "diag" });
     if (diag.ok) {
       expect(diag.value.cached).toBeLessThanOrEqual(limits.workerCacheEntries);
       expect(diag.value.live).toBe(diag.value.cached);
@@ -139,7 +139,7 @@ describe("resource ownership", () => {
   });
 
   it("supersedes the old document when the content changes", async () => {
-    await pool.release();
+    await pool.ask({ kind: "release" });
     cache.clear();
     const churn = `${fixtures.root}/churn.xml`;
     await writeFile(churn, "<r><a/></r>", "utf8");
@@ -147,7 +147,7 @@ describe("resource ownership", () => {
     await writeFile(churn, "<r><b/></r>", "utf8");
     const second = await cache.load(await at(churn));
     expect(second.stamp).not.toBe(first.stamp);
-    const diag = await pool.diagnose();
+    const diag = await pool.ask({ kind: "diag" });
     if (diag.ok) {
       expect(diag.value.cached).toBe(1);
       expect(diag.value.live).toBe(1);
@@ -156,8 +156,8 @@ describe("resource ownership", () => {
 
   it("releases everything on shutdown", async () => {
     await cache.load(await at(fixtures.simple));
-    await pool.release();
-    const diag = await pool.diagnose();
+    await pool.ask({ kind: "release" });
+    const diag = await pool.ask({ kind: "diag" });
     if (diag.ok) {
       expect(diag.value.live).toBe(0);
       expect(diag.value.cached).toBe(0);
