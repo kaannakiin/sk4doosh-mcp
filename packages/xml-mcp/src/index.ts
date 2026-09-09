@@ -82,3 +82,61 @@ export type {
   ProcessingInstructionRecord,
 } from "./node-model.js";
 export type { NamespaceAlias } from "./namespaces.js";
+export type {
+  AggregateOutcome,
+  AggregateProbe,
+  Cell,
+  ColumnReport,
+  ColumnSource,
+  ColumnSpec,
+  Condition,
+  ConditionOp,
+  GroupResult,
+  ItemSelector,
+  MemberKind,
+  MetricFunction,
+  MetricRequest,
+  MetricValue,
+  MultiplePolicy,
+  NodeSetMember,
+  NumberKind,
+  NumericMode,
+  RecordPage,
+  RecordProbe,
+  Row,
+  Unaddressable,
+  XPathOutcome,
+  XPathProbe,
+} from "./query-model.js";
+export {
+  cursorTtlMs,
+  encodePosition,
+  optionsHash,
+  type CursorTool,
+  type XmlCursor,
+  type XmlCursorOf,
+  type XmlPosition,
+} from "./cursor.js";
+export { lex, type Lexed } from "./xpath-lex.js";
+export {
+  diagnoseQuery,
+  emptyResultDiagnostic,
+  type QueryDiagnostic,
+} from "./xpath-diagnosis.js";
+export {
+  assembleXPath,
+  type NodeSetEnvelope,
+  type XPathEnvelope,
+  type XPathTruncation,
+} from "./xpath-page.js";
+export {
+  assembleRecordPage,
+  type RecordEnvelope,
+  type RecordTruncation,
+} from "./record-page.js";
+export {
+  assembleAggregate,
+  type AggregateEnvelope,
+  type MetricEcho,
+  type AggregateTruncation,
+} from "./aggregate-envelope.js";

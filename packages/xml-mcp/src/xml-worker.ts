@@ -1,15 +1,20 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { diag, XmlDocument } from "libxml2-wasm";
+import { aggregateDocument } from "./aggregate.js";
 import { describeDocument, rootFactsOf } from "./describe.js";
 import { scan } from "./find.js";
+import { NumericPrecisionError } from "./numeric.js";
 import { HARDENED } from "./parse-policy.js";
+import { projectRecords } from "./records.js";
 import { resolveAddress, resolveScopePath, walk } from "./traverse.js";
 import {
   projectDiag,
   type ParsedFacts,
+  type WorkerFailure,
   type WorkerReply,
   type WorkerRequest,
 } from "./worker-protocol.js";
+import { evaluate } from "./xpath.js";
 
 const port = parentPort;
 if (port === null) {
@@ -178,6 +183,30 @@ function handle(request: WorkerRequest): WorkerReply {
         value: scan(scope, request.probe),
       };
     }
+    case "xpath": {
+      const document = touch(request.stamp);
+      if (document === undefined) return missing(request.kind, request.id);
+      return {
+        kind: "xpath",
+        id: request.id,
+        ok: true,
+        value: evaluate(document, request.probe),
+      };
+    }
+    case "records": {
+      const document = touch(request.stamp);
+      if (document === undefined) return missing(request.kind, request.id);
+      const page = projectRecords(document.root, request.probe);
+      if (page === undefined) return unaddressed(request.kind, request.id);
+      return { kind: "records", id: request.id, ok: true, value: page };
+    }
+    case "aggregate": {
+      const document = touch(request.stamp);
+      if (document === undefined) return missing(request.kind, request.id);
+      const outcome = aggregateDocument(document.root, request.probe);
+      if (outcome === undefined) return unaddressed(request.kind, request.id);
+      return { kind: "aggregate", id: request.id, ok: true, value: outcome };
+    }
     case "diag":
       return {
         kind: "diag",
@@ -200,21 +229,46 @@ function handle(request: WorkerRequest): WorkerReply {
   }
 }
 
+interface Classified {
+  readonly failure: WorkerFailure;
+  readonly detail?: string;
+}
+
+function classify(error: unknown): Classified {
+  if (error instanceof NumericPrecisionError) {
+    return { failure: "numeric_precision", detail: error.text.slice(0, 80) };
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  if (message === "doctype_not_allowed") {
+    return { failure: "doctype_not_allowed" };
+  }
+  if (message === "xpath_compile" || message === "xpath_eval") {
+    const cause = error instanceof Error ? error.cause : undefined;
+    const detail = cause instanceof Error ? cause.message : undefined;
+    return {
+      failure: message,
+      ...(detail === undefined ? {} : { detail: detail.slice(0, 200) }),
+    };
+  }
+  if (
+    message === "unsupported_node_kind" ||
+    message === "locate_received_attribute"
+  ) {
+    return { failure: "internal_error", detail: message };
+  }
+  return { failure: "malformed_xml", detail: message.slice(0, 200) };
+}
+
 port.on("message", (request: WorkerRequest) => {
   let reply: WorkerReply;
   try {
     reply = handle(request);
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
     reply = {
       kind: request.kind,
       id: request.id,
       ok: false,
-      failure:
-        detail === "doctype_not_allowed"
-          ? "doctype_not_allowed"
-          : "malformed_xml",
-      detail: detail.slice(0, 200),
+      ...classify(error),
     };
   }
   port.postMessage(reply);

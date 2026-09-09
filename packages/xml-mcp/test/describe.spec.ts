@@ -78,7 +78,7 @@ describe("structure discovery", () => {
     expect(line?.countExact).toBe(true);
     expect(body["capabilities"]).toMatchObject({
       schemaValidation: false,
-      xpath: false,
+      xpath: true,
       write: false,
     });
   });

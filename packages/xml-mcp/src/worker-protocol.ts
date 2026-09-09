@@ -1,6 +1,14 @@
 import type { DescribeFacts, RootFacts } from "./describe.js";
 import type { FindPage, FindProbe } from "./find-model.js";
 import type {
+  AggregateOutcome,
+  AggregateProbe,
+  RecordPage,
+  RecordProbe,
+  XPathOutcome,
+  XPathProbe,
+} from "./query-model.js";
+import type {
   ContextRecord,
   NodeAddress,
   NodePath,
@@ -56,6 +64,15 @@ interface WorkerOps {
   };
   read: { req: Resident & { readonly view: ReadView }; res: ReadPage };
   find: { req: Resident & { readonly probe: FindProbe }; res: FindPage };
+  xpath: { req: Resident & { readonly probe: XPathProbe }; res: XPathOutcome };
+  records: {
+    req: Resident & { readonly probe: RecordProbe };
+    res: RecordPage;
+  };
+  aggregate: {
+    req: Resident & { readonly probe: AggregateProbe };
+    res: AggregateOutcome;
+  };
   diag: { req: Record<never, never>; res: DiagProjection };
   release: { req: Record<never, never>; res: null };
 }
@@ -85,6 +102,9 @@ export type WorkerFailure =
   | "doctype_not_allowed"
   | "unknown_residency"
   | "address_not_found"
+  | "xpath_compile"
+  | "xpath_eval"
+  | "numeric_precision"
   | "internal_error";
 
 export type WorkerSuccess = {

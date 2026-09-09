@@ -28,9 +28,17 @@ export interface XmlDocumentBody {
 
 export type LoadedXmlDocument = XmlDocumentBody & OpenedFile;
 
-export type ResidentKind = Extract<WorkerKind, "describe" | "read" | "find">;
+export type ResidentKind = Extract<
+  WorkerKind,
+  "describe" | "read" | "find" | "xpath" | "records" | "aggregate"
+>;
 
 export type ResidentBody = WorkerBodyOf<ResidentKind>;
+
+export type FailureMapper = (
+  failure: string,
+  detail: string | undefined,
+) => SkMcpXmlError | undefined;
 
 export interface XmlDocumentCache {
   load(path: SandboxedPath): Promise<LoadedXmlDocument>;
@@ -39,6 +47,7 @@ export interface XmlDocumentCache {
     stamp: string,
     body: (stamp: string) => B,
     signal?: AbortSignal,
+    mapFailure?: FailureMapper,
   ): Promise<WorkerResultOf<B["kind"]>>;
   clear(): void;
   readonly size: number;
@@ -47,7 +56,20 @@ export interface XmlDocumentCache {
 const doctypeRefusal =
   "The document declares a DOCTYPE. Document type declarations are refused so no external entity, DTD or XInclude is ever resolved.";
 
-function translate(failure: string, detail: string | undefined): never {
+function translate(
+  failure: string,
+  detail: string | undefined,
+  mapFailure?: FailureMapper,
+): never {
+  const mapped = mapFailure?.(failure, detail);
+  if (mapped !== undefined) throw mapped;
+  if (failure === "numeric_precision") {
+    throw new SkMcpXmlError(
+      "numeric_precision",
+      `The value ${detail ?? ""} carries more digits than a binary64 number holds, so a numeric metric would change it.`,
+      "Use count, countValues or countDistinct, or project the rows and total them outside this server.",
+    );
+  }
   if (failure === "doctype_not_allowed") {
     throw new SkMcpXmlError(
       "doctype_not_allowed",
@@ -155,13 +177,13 @@ export function createXmlDocumentCache(
 
   return {
     load,
-    async ask(path, stamp, body, signal) {
+    async ask(path, stamp, body, signal, mapFailure) {
       const first = await pool.ask(body(stamp), signal);
       if (first.ok) {
         return first.value;
       }
       if (first.failure !== "unknown_residency") {
-        translate(first.failure, first.detail);
+        translate(first.failure, first.detail, mapFailure);
       }
       store.clear();
       const reloaded = await load(path);
@@ -176,7 +198,7 @@ export function createXmlDocumentCache(
           "Retry the call.",
         );
       }
-      return translate(second.failure, second.detail);
+      return translate(second.failure, second.detail, mapFailure);
     },
     clear() {
       store.clear();

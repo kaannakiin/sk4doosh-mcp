@@ -81,7 +81,7 @@ export function piTargetOf(node: XmlNode): string {
   return end === -1 ? body : body.slice(0, end);
 }
 
-function clampChars(text: string, maxChars: number): string {
+export function clampChars(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
   const cut = text.slice(0, maxChars);
   const last = cut.charCodeAt(cut.length - 1);

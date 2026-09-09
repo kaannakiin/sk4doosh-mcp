@@ -25,6 +25,12 @@ export interface Fixtures {
   readonly ebcdicDoctype: string;
   readonly pom: string;
   readonly modernProject: string;
+  readonly junit: string;
+  readonly prologNodes: string;
+  readonly records: string;
+  readonly amounts: string;
+  readonly wideQuery: string;
+  readonly heavyQuery: string;
 }
 
 const utf16le = (text: string): Buffer =>
@@ -76,6 +82,12 @@ export async function buildFixtures(): Promise<Fixtures> {
     ebcdicDoctype: join(root, "ebcdic-doctype.xml"),
     pom: join(root, "pom.xml"),
     modernProject: join(root, "modern.csproj"),
+    junit: join(root, "junit.xml"),
+    prologNodes: join(root, "prolog-nodes.xml"),
+    records: join(root, "records.xml"),
+    amounts: join(root, "amounts.xml"),
+    wideQuery: join(root, "wide-query.xml"),
+    heavyQuery: join(root, "heavy-query.xml"),
   };
 
   await writeFile(
@@ -205,6 +217,86 @@ export async function buildFixtures(): Promise<Fixtures> {
   await writeFile(
     fixtures.modernProject,
     '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>\n',
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.junit,
+    '<?xml version="1.0"?>\n' +
+      "<testsuites>" +
+      '<testsuite name="suite.one" tests="3">' +
+      '<testcase name="passes" classname="Alpha"/>' +
+      '<testcase name="breaks" classname="Alpha">' +
+      '<failure message="expected 2 but was 3">at Alpha.breaks(Alpha.java:11)</failure>' +
+      "</testcase>" +
+      '<testcase name="throws" classname="Beta">' +
+      '<failure message="null pointer">at Beta.throws(Beta.java:4)</failure>' +
+      "</testcase>" +
+      "</testsuite>" +
+      '<testsuite name="suite.two" tests="1">' +
+      '<testcase name="skipped" classname="Gamma"><skipped/></testcase>' +
+      "</testsuite>" +
+      "</testsuites>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.prologNodes,
+    '<?xml version="1.0"?>\n' +
+      "<!-- prolog remark -->\n" +
+      '<?prolog-instruction mode="early"?>\n' +
+      '<root xmlns="urn:default"><id>one</id><?body-instruction go?><!--inner remark--></root>\n',
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.records,
+    '<?xml version="1.0"?>\n' +
+      "<catalogue>" +
+      '<entry code="a"><name>alpha</name><tag>x</tag></entry>' +
+      '<entry code="b"><name></name><tag>x</tag><tag>y</tag></entry>' +
+      '<entry code="c"><tag>z</tag></entry>' +
+      '<entry code="d"><name>lead<em>mid</em>tail</name></entry>' +
+      "<other><name>ignored</name></other>" +
+      '<entry code="e"><name>epsilon</name></entry>' +
+      "</catalogue>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.amounts,
+    '<?xml version="1.0"?>\n' +
+      "<ledger>" +
+      "<row><cur>TRY</cur><amount>10.50</amount></row>" +
+      "<row><cur>TRY</cur><amount>10.10</amount></row>" +
+      "<row><cur>TRY</cur><amount>abc</amount></row>" +
+      "<row><cur>EUR</cur><amount>1e400</amount></row>" +
+      "<row><cur>EUR</cur><amount>-0</amount></row>" +
+      "<row><cur>EUR</cur><amount/></row>" +
+      "<row><cur>USD</cur></row>" +
+      "<row><cur>HUGE</cur><amount>1234567890123456789</amount></row>" +
+      "</ledger>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.wideQuery,
+    `<catalogue>${Array.from(
+      { length: 300 },
+      (_, index) =>
+        `<entry code="c${String(index)}"><name>n${String(index)}</name></entry>`,
+    ).join("")}</catalogue>\n`,
+    "utf8",
+  );
+
+  const wrappers = 45;
+  const cellText = "z".repeat(600);
+  await writeFile(
+    fixtures.heavyQuery,
+    `${"<wrapper>".repeat(wrappers)}${Array.from(
+      { length: 250 },
+      () => `<cell>${cellText}</cell>`,
+    ).join("")}${"</wrapper>".repeat(wrappers)}\n`,
     "utf8",
   );
 

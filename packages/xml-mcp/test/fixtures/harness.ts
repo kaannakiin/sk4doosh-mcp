@@ -13,9 +13,12 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function createHarness(rootPath: string): Promise<Harness> {
+export async function createHarness(
+  rootPath: string,
+  poolOptions?: Parameters<typeof createXmlWorkerPool>[0],
+): Promise<Harness> {
   const root = await createDocumentRoot(rootPath);
-  const pool = createXmlWorkerPool();
+  const pool = createXmlWorkerPool(poolOptions);
   const cache = createXmlDocumentCache(pool, root.real);
   const handlers = createHandlers(root, { pool, cache });
   return {

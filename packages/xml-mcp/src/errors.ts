@@ -12,7 +12,9 @@ export type SkMcpXmlErrorCode =
   | CoreErrorCode
   | "malformed_xml"
   | "doctype_not_allowed"
-  | "unsupported_encoding";
+  | "unsupported_encoding"
+  | "query_not_supported"
+  | "numeric_precision";
 
 export class SkMcpXmlError extends FileSourceError {
   declare readonly code: SkMcpXmlErrorCode;

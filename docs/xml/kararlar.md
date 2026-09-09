@@ -1,6 +1,6 @@
 # XML MCP kararları
 
-Durum: XML mimarisi kararları. Güncelleme: 2026-09-09. F0 kapısı geçti; **K1, K3, K4, K5, K6, K7 ve K8 `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin dört tool'u da çalışıyor; K2'nin F3 yarısı (`select_xpath`, `project_records`, `aggregate_document`) hâlâ hedef davranıştır. Global kayıtlar [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md) ve [karar 017](../kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md); mevcut global ADR numaraları değiştirilmez.
+Durum: XML mimarisi kararları. Güncelleme: 2026-09-09. F0 kapısı geçti; **K1, K3, K4, K5, K6, K7 ve K8 `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin yedi tool'u da çalışıyor: F3 yarısı (`select_xpath`, `project_records`, `aggregate_document`) da uygulandı ve platform kanıtı bekliyor. Global kayıtlar [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md), [karar 017](../kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md) ve [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md); mevcut global ADR numaraları değiştirilmez.
 
 ## K1 — Birincil motor: libxml2-wasm
 
@@ -25,7 +25,7 @@ Alternatiflerin güncel güvenlik durumu hakkında Claude raporundaki CVE sayıl
 
 ## K2 — Başlangıçta dört tool; XPath sonraki kapı
 
-**Dördü de uygulandı (F2).** `list_documents`, `describe_document`, `read_node`, `find_in_document`. Namespace haritası `describe_document` içinde sunulur; başlangıçta ayrı `get_namespaces` gerekmez. F3 `select_xpath`, `project_records`, `aggregate_document` ekler. `project_records` tekrarlanan düğümlerden açık sütun seçimi yapar; tablo çıkarımının kullanıcıya açıklanmayan sezgilere dayanmasını önler.
+**Dördü F2'de, üçü F3'te uygulandı.** `list_documents`, `describe_document`, `read_node`, `find_in_document`; ardından `select_xpath`, `project_records`, `aggregate_document`. Namespace haritası `describe_document` içinde sunulur; başlangıçta ayrı `get_namespaces` gerekmez. `project_records` tekrarlanan düğümlerden açık sütun seçimi yapar; tablo çıkarımının kullanıcıya açıklanmayan sezgilere dayanmasını önler ve tekrar kümesi bir örnek elementten sezgisel türetilmez. F3'ün sözleşme kararları [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md)'dedir; kanıt [F3 kapanış kaydında](xml-f3-kapanis.md).
 
 Claude'un domain özetindeki 14 satırlık ilk faz listesi MVP olarak alınmadı. ZIP, formatlama, çift yönlü dönüşüm, diff ve XSD özeti kendi test yükleriyle F5'e ayrıldı. Güçlü sorgulama tasarımının tamamı ilk yayın için zorunlu tutulmadı.
 

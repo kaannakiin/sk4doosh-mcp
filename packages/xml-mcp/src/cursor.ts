@@ -10,19 +10,38 @@ import { SkMcpXmlError } from "./errors.js";
 import { limits } from "./limits.js";
 import type { NodePath } from "./node-model.js";
 
-export type CursorTool = "read" | "find";
+export type CursorTool = "read" | "find" | "xpath" | "records";
 
 export const cursorTtlMs = 10 * 60 * 1000;
 
-export interface XmlPosition {
-  readonly t: CursorTool;
-  readonly p: NodePath;
-  readonly s: NodePath;
+interface Bound {
   readonly o: string;
   readonly x: number;
 }
 
-export type XmlCursor = Cursor<XmlPosition, 1>;
+interface Walked extends Bound {
+  readonly p: NodePath;
+  readonly s: NodePath;
+}
+
+interface Ordinal extends Bound {
+  readonly i: number;
+}
+
+export type XmlPosition =
+  | (Walked & { readonly t: "read" })
+  | (Walked & { readonly t: "find" })
+  | (Ordinal & { readonly t: "xpath" })
+  | (Ordinal & { readonly t: "records" });
+
+export type XmlPositionOf<K extends CursorTool> = Extract<
+  XmlPosition,
+  { readonly t: K }
+>;
+
+export type XmlCursorOf<K extends CursorTool> = Cursor<XmlPositionOf<K>, 1>;
+
+export type XmlCursor = XmlCursorOf<CursorTool>;
 
 export function optionsHash(value: unknown): string {
   return createHash("sha256")
@@ -44,20 +63,48 @@ function isPath(value: unknown): value is NodePath {
   );
 }
 
-function isXmlCursor(candidate: unknown): candidate is XmlCursor {
+function isOrdinal(value: unknown): boolean {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 1;
+}
+
+function isWalked(value: Record<string, unknown>): boolean {
+  return isPath(value["p"]) && isPath(value["s"]);
+}
+
+const shapes: {
+  readonly [K in CursorTool]: (value: Record<string, unknown>) => boolean;
+} = {
+  read: isWalked,
+  find: isWalked,
+  xpath: (value) => isOrdinal(value["i"]),
+  records: (value) => isOrdinal(value["i"]),
+};
+
+function isXmlCursor<K extends CursorTool>(
+  candidate: unknown,
+  tool: K,
+): candidate is XmlCursorOf<K> {
   if (typeof candidate !== "object" || candidate === null) return false;
   const value = candidate as Record<string, unknown>;
   return (
     value["v"] === 1 &&
     typeof value["f"] === "string" &&
     /^[a-f0-9]{16,64}$/u.test(value["f"]) &&
-    (value["t"] === "read" || value["t"] === "find") &&
-    isPath(value["p"]) &&
-    isPath(value["s"]) &&
+    value["t"] === tool &&
     typeof value["o"] === "string" &&
     /^[a-f0-9]{16}$/u.test(value["o"]) &&
     typeof value["x"] === "number" &&
-    Number.isSafeInteger(value["x"])
+    Number.isSafeInteger(value["x"]) &&
+    shapes[tool](value)
+  );
+}
+
+function isKnownTool(value: unknown): value is CursorTool {
+  return (
+    value === "read" ||
+    value === "find" ||
+    value === "xpath" ||
+    value === "records"
   );
 }
 
@@ -68,34 +115,44 @@ export function encodePosition(
   return encodeCursor({ v: 1, f: stamp, ...position });
 }
 
-export function decodeCursor(raw: string, tool: CursorTool): XmlCursor {
+export function decodeCursor<K extends CursorTool>(
+  raw: string,
+  tool: K,
+): XmlCursorOf<K> {
   const parsed = decodeCursorPayload(raw);
-  if (!isXmlCursor(parsed)) {
-    throw new SkMcpXmlError(
-      "invalid_cursor",
-      "The cursor is not a token produced by a previous response.",
-      "Call the tool again without a cursor.",
-    );
+  if (isXmlCursor(parsed, tool)) {
+    if (parsed.x <= Date.now()) {
+      throw new SkMcpXmlError(
+        "invalid_cursor",
+        "The cursor expired.",
+        "Call the tool again without a cursor.",
+      );
+    }
+    return parsed;
   }
-  if (parsed.t !== tool) {
+  const claimed =
+    typeof parsed === "object" && parsed !== null
+      ? (parsed as Record<string, unknown>)["t"]
+      : undefined;
+  if (isKnownTool(claimed) && claimed !== tool) {
     throw new SkMcpXmlError(
       "invalid_cursor",
-      `That cursor belongs to a different tool.`,
+      "That cursor belongs to a different tool.",
       "Use the nextCursor this tool returned, or call it again without a cursor.",
     );
   }
-  if (parsed.x <= Date.now()) {
-    throw new SkMcpXmlError(
-      "invalid_cursor",
-      "The cursor expired.",
-      "Call the tool again without a cursor.",
-    );
-  }
-  return parsed;
+  throw new SkMcpXmlError(
+    "invalid_cursor",
+    "The cursor is not a token produced by a previous response.",
+    "Call the tool again without a cursor.",
+  );
 }
 
-export function assertFresh(cursor: XmlCursor, current: Fingerprint): void {
-  if (!isFresh(cursor, current)) {
+export function assertFresh(
+  cursor: { readonly f: Fingerprint },
+  current: Fingerprint,
+): void {
+  if (!isFresh({ v: 1, f: cursor.f }, current)) {
     throw new SkMcpXmlError(
       "stale_cursor",
       "The document changed while the previous page was being read.",
@@ -104,7 +161,10 @@ export function assertFresh(cursor: XmlCursor, current: Fingerprint): void {
   }
 }
 
-export function assertSameOptions(cursor: XmlCursor, hash: string): void {
+export function assertSameOptions(
+  cursor: { readonly o: string },
+  hash: string,
+): void {
   if (cursor.o !== hash) {
     throw new SkMcpXmlError(
       "invalid_argument",

@@ -74,6 +74,180 @@ export const scenarios: readonly ScenarioExpectation[] = [
   },
 ];
 
+export interface CorpusEntry {
+  readonly id: string;
+  readonly file: string;
+  readonly xpath: string;
+  readonly namespaces?: readonly {
+    readonly prefix: string;
+    readonly uri: string;
+  }[];
+  readonly expect: "nodeset" | "string" | "number" | "boolean" | "error";
+  readonly code?: string;
+}
+
+const mavenBinding = [{ prefix: "m", uri: maven }] as const;
+
+export const queryCorpus: readonly CorpusEntry[] = [
+  { id: "root-element", file: "pom.xml", xpath: "/*", expect: "nodeset" },
+  { id: "root-node", file: "pom.xml", xpath: "/", expect: "nodeset" },
+  {
+    id: "prefixed-descendants",
+    file: "pom.xml",
+    xpath: "//m:dependency",
+    namespaces: mavenBinding,
+    expect: "nodeset",
+  },
+  {
+    id: "empty-by-default-namespace",
+    file: "pom.xml",
+    xpath: "//dependency",
+    expect: "nodeset",
+  },
+  {
+    id: "positional-predicate",
+    file: "pom.xml",
+    xpath: "(//m:dependency)[2]",
+    namespaces: mavenBinding,
+    expect: "nodeset",
+  },
+  {
+    id: "union-out-of-order",
+    file: "wide.xml",
+    xpath: "//i[@k='3'] | //i[@k='1']",
+    expect: "nodeset",
+  },
+  {
+    id: "union-repeating-one-node",
+    file: "wide.xml",
+    xpath: "//i[@k='1'] | //i[@k='1']",
+    expect: "nodeset",
+  },
+  {
+    id: "reverse-axis",
+    file: "deep.xml",
+    xpath: "//n[last()]/ancestor::*",
+    expect: "nodeset",
+  },
+  {
+    id: "attribute-axis",
+    file: "wide.xml",
+    xpath: "//i/@k",
+    expect: "nodeset",
+  },
+  { id: "text-nodes", file: "mixed.xml", xpath: "//text()", expect: "nodeset" },
+  {
+    id: "comments",
+    file: "mixed.xml",
+    xpath: "//comment()",
+    expect: "nodeset",
+  },
+  {
+    id: "processing-instructions",
+    file: "mixed.xml",
+    xpath: "//processing-instruction()",
+    expect: "nodeset",
+  },
+  {
+    id: "prolog-nodes",
+    file: "prolog-nodes.xml",
+    xpath: "/comment() | /processing-instruction()",
+    expect: "nodeset",
+  },
+  { id: "count", file: "wide.xml", xpath: "count(//i)", expect: "number" },
+  { id: "sum", file: "invoice.xml", xpath: "sum(//Qty)", expect: "number" },
+  {
+    id: "not-a-number",
+    file: "wide.xml",
+    xpath: "number('abc')",
+    expect: "number",
+  },
+  { id: "infinity", file: "wide.xml", xpath: "1 div 0", expect: "number" },
+  { id: "negative-zero", file: "wide.xml", xpath: "-0", expect: "number" },
+  {
+    id: "string-value",
+    file: "invoice.xml",
+    xpath: "string(//Amount)",
+    expect: "string",
+  },
+  {
+    id: "big-integer-stays-text",
+    file: "invoice.xml",
+    xpath: "string(//Line[2]/Amount)",
+    expect: "string",
+  },
+  {
+    id: "boolean-false",
+    file: "wide.xml",
+    xpath: "boolean(//nothing)",
+    expect: "boolean",
+  },
+  {
+    id: "quoted-name-is-not-a-prefix",
+    file: "wide.xml",
+    xpath: "//i[@k='zz:1']",
+    expect: "nodeset",
+  },
+  {
+    id: "unbound-prefix",
+    file: "pom.xml",
+    xpath: "//zz:dependency",
+    expect: "error",
+    code: "invalid_argument",
+  },
+  {
+    id: "later-version-function",
+    file: "pom.xml",
+    xpath: "//m:dependency[matches(., 'a')]",
+    namespaces: mavenBinding,
+    expect: "error",
+    code: "query_not_supported",
+  },
+  {
+    id: "namespace-axis",
+    file: "pom.xml",
+    xpath: "//namespace::*",
+    expect: "error",
+    code: "query_not_supported",
+  },
+  {
+    id: "syntax-fault",
+    file: "pom.xml",
+    xpath: "//[",
+    expect: "error",
+    code: "invalid_argument",
+  },
+  {
+    id: "unclosed-predicate",
+    file: "pom.xml",
+    xpath: "//m:dependency[1",
+    namespaces: mavenBinding,
+    expect: "error",
+    code: "invalid_argument",
+  },
+  {
+    id: "misspelled-function",
+    file: "pom.xml",
+    xpath: "countt(//*)",
+    expect: "error",
+    code: "invalid_argument",
+  },
+  {
+    id: "malformed-document",
+    file: "malformed.xml",
+    xpath: "//*",
+    expect: "error",
+    code: "malformed_xml",
+  },
+  {
+    id: "doctype-document",
+    file: "doctype.xml",
+    xpath: "//*",
+    expect: "error",
+    code: "doctype_not_allowed",
+  },
+];
+
 export const expectedTargetFrameworkAddress = {
   legacy: [
     { namespaceUri: msbuild, localName: "Project", occurrence: 1 },
