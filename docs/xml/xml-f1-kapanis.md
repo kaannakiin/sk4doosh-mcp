@@ -188,15 +188,15 @@ doğru döndürdü.
 
 1. **Sayfa ve toplam payload bütçesi ölçülmedi.** Dört tool birlikte çalışmadan ölçülemez; **F2-08**'e aittir. Bu teslim yalnız zarf kapısını kurar.
 2. **`unsupported_encoding` yayınlanan hata birleşimine alınmadı.** libxml2 encoding ve well-formedness hatalarını aynı `XmlParseError` ile bildiriyor; ayırmak motor-mesajı eşlemesi ister (**F2-02**). Üretilemeyen bir kodu ilan etmek atlamaktan kötüdür.
-3. **N eşzamanlı DOM'un bellek tavanı ölçülmedi.** F0-08 tek belge ölçtü; worker kapasitesi 8 bir yerleşim teoreminden geliyor, ölçümden değil. Ayrı bir ölçüm görevi gerekiyor.
-4. **Prolog tarayıcısı UTF-32 ve EBCDIC prologlarında sınanmadı.** Fixture yok; `doc.dtd` backstop olarak kalıyor ve maliyeti yukarıdaki M11 satırıdır.
+3. **Eşzamanlı DOM bellek bütçesi ölçülmedi ve cache boyutu sabit.** F0-08 tek belge ölçtü; worker kapasitesi 8 bir yerleşim teoreminden (`W ≥ 2S−1`) geliyor, ölçümden değil. **F2-10**'a aittir.
+4. **Prolog tarayıcısı UTF-32 ve EBCDIC prologlarında sınanmadı.** Fixture yok; `doc.dtd` backstop olarak kalıyor ve maliyeti yukarıdaki M11 satırıdır. **F2-11**'e aittir.
 5. **Eşzamanlı listeleme sayısı sınırsız.** Bugün de öyle; F1-03'ün işi değil.
 6. **`text-encoding` çıkarılmadı.** Ölçülen örtüşme yalnız BOM tablosuydu; gerekçe [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md).
 7. **`file-core` 1.0 kararı verilmedi.** [Karar 015](../kararlar/015-dosya-kaynagi-cekirdegi.md) yalnız `0.x` kilidini kaldırır; karar **F6-08**'dedir.
 
 ## Sonraki faza devir
 
-| Nerede                            | Ne                                                                                                                                              |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [F2](fazlar/02-okuma-mvp.md)      | F2-04 genişletilmiş ad/adres/sıralı düğüm modeli, F2-05/06/07 kalan üç tool, **F2-08 sayfa ve zarf bütçesinin ölçümü**, F2-09 agent walkthrough |
-| [F6](fazlar/06-yayin-ve-kabul.md) | `file-core` 1.0 kararı, temiz tüketici kurulumu, yayın sırası                                                                                   |
+| Nerede                            | Ne                                                                                                                                                                                                                                                        |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [F2](fazlar/02-okuma-mvp.md)      | F2-04 genişletilmiş ad/adres/sıralı düğüm modeli, F2-05/06/07 kalan üç tool, **F2-08 sayfa ve zarf bütçesinin ölçümü**, F2-09 agent walkthrough, **F2-10 bellek bütçesi ve yapılandırılabilir cache boyutu**, **F2-11 UTF-32/EBCDIC prolog fixture'ları** |
+| [F6](fazlar/06-yayin-ve-kabul.md) | `file-core` 1.0 kararı, temiz tüketici kurulumu, yayın sırası                                                                                                                                                                                             |
