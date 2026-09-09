@@ -2,7 +2,7 @@
 
 Tarih: 2026-09-08. Durum: #17/#33/#35 hedef regresyonları çalıştırıldı; #26/#27/#28 için kabul edilen kararlar uygulandı. Uygulama commit’i `b4924d8`; kanıt kaydı `310064e`. Bu belge bu altı maddeyi kapsar; [35 bulgunun tamamı](excel-file-core-bulgular.md) ve [test/fixture/komut kaydı](excel-hardening-uygulama.md) ayrı tutulur.
 
-Yerel ortam macOS arm64 / Node 24.12.0; güncel native/file-core/Excel toplamı 450 test. [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867), `4472332` için beş native hedef × Node 22/24 matrisi ve birleşik paket dahil 13 job ile geçti. Excel/file-core platform kapısı kapandı; XML geliştirmesi başlamadı.
+Yerel ortam macOS arm64 / Node 24.12.0; güncel native/file-core/Excel toplamı 450 test. [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867), `4472332` için beş native hedef × Node 22/24 matrisi ve birleşik paket dahil 13 job ile geçti. Excel/file-core platform kapısı kapandı; bu kaydın tarihinde XML geliştirmesi başlamamıştı.
 
 ## Başlangıç iddiası ve ölçüm
 

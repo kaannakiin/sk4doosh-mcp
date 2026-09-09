@@ -2,7 +2,7 @@
 
 **Nihai CI kanıtı:** `44723329f1a8ae7251f6b63ae855e88acf405ff6` için [CI #34225705867](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867) **success** ile tamamlandı: 13/13 job geçti. [npm-tarballs artifact](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867/artifacts/10055754548), beş native hedefi içeriyor. Önceki hatalar ve düzeltmeler [CI inceleme kaydında](excel-ci-inceleme-2026-09-08.md).
 
-Durum: Excel/file-core uygulaması, yerel kontroller, Linux glibc x64/arm64 + macOS x64/arm64 + Windows x64 üzerinde Node 22/24 matrisi ve birleşik paket doğrulaması tamamlandı. Excel/file-core güvenlik geçiş kapısı geçti. #9/#10/#25 kabul edilen destek sınırlılıkları olarak ayrı takipte; XML geliştirmesi başlamadı.
+Durum: Excel/file-core uygulaması, yerel kontroller, Linux glibc x64/arm64 + macOS x64/arm64 + Windows x64 üzerinde Node 22/24 matrisi ve birleşik paket doğrulaması tamamlandı. Excel/file-core güvenlik geçiş kapısı geçti. #9/#10/#25 kabul edilen destek sınırlılıkları olarak ayrı takipte; bu kaydın tarihinde XML geliştirmesi başlamamıştı.
 
 ## Kabul edilen kapsam
 
@@ -99,7 +99,7 @@ Dosya yetkilendirmesi başlangıç kök handle'ına bağlıdır. Eşzamanlı yaz
 
 [npm-tarballs](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34225705867/artifacts/10055754548) artifact’ı üç npm paketi ile beş hedef native binary’sini içerir. Paket denetimi ve gerçek stdio MCP çağrıları geçti; npm yayını yapılmadı. Artifact süreli GitHub saklama politikasına tabidir.
 
-Güvenlik kapısının platform bekleyişi kapandı. XML geliştirmesi başlatılmadı; F0 teknik karar kapısı ve XML’e özgü F1 yaşam döngüsü/yanıt bütçesi/ikinci tüketici işleri kendi planında kalır. #9/#10/#25 tam destek olarak işaretlenmez; aşağıdaki üç takip kaydı korunur.
+Güvenlik kapısının platform bekleyişi kapandı. Bu kaydın tarihinde XML geliştirmesi başlatılmamıştı; F0 teknik karar kapısı ve XML'e özgü F1 yaşam döngüsü/yanıt bütçesi/ikinci tüketici işleri sonradan kendi planlarında kapandı. #9/#10/#25 tam destek olarak işaretlenmez; aşağıdaki üç takip kaydı korunur.
 
 Yeni çalıştırmalar için [platform testleri rehberi](excel-platform-testleri.md); güncel ana belgeler: [35 bulgu](excel-file-core-bulgular.md), [karar kaydı](excel-acik-maddeler-karar-kaydi.md).
 

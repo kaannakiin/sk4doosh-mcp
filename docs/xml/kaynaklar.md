@@ -1,6 +1,6 @@
 # Kaynaklar, devir izi ve kanıt sınırı
 
-İlk araştırma devri: 2026-09-08, HEAD `f389cdd75d87cc7a17cc1fb0dddeb3789135dcd1`; o tarihte `docs/xml` yoktu. Bu bilgi tarihsel başlangıç kaydıdır. Güncel kaynak/doküman tabanı `6b2bc89`: Excel/file-core uygulaması, testleri ve platform CI tamamlandı; XML uygulaması başlamadı. Güncel kanıt [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) ve [kapanış kaydında](excel-hardening-uygulama.md).
+İlk araştırma devri: 2026-09-08, HEAD `f389cdd75d87cc7a17cc1fb0dddeb3789135dcd1`; o tarihte `docs/xml` yoktu. Bu bilgi tarihsel başlangıç kaydıdır. Güncel kaynak/doküman tabanı `6b2bc89`: Excel/file-core uygulaması, testleri ve platform CI tamamlandı; o tarihte XML uygulaması başlamamıştı. F0 ve F1'in XML kapıları sonradan kapandı ([F0](f0-kanit-kaydi.md), [F1](xml-f1-kapanis.md)). Güncel kanıt [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) ve [kapanış kaydında](excel-hardening-uygulama.md).
 
 ## Claude'un bıraktığı çalışma
 

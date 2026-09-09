@@ -1,8 +1,8 @@
 # XML MCP test ve agent değerlendirme planı
 
-Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F2 ve sonrasına ait T kimlikleri açık (2026-09-09). Ortak native/file-core/Excel testleri uygulanıp çalıştırıldı: 450 test ve beş hedef × Node 22/24 için [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 başarılı. XML runtime testi, XML benchmark'ı ve agent kabul kaydı henüz yok.
+Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F1 kapanışıyla **T08, T15, T16 ve T17'nin ürün kodu ayakları** uygulandı; T10/T11/T12'nin XML ayağı eklendi ve T13'ün zarf yarısı kapandı. Kanıt [F1 kapanış kaydında](xml-f1-kapanis.md); dört paketli toplam **529 test**. T01–T04, T14 ve T18–T23 açık (2026-09-09). XML benchmark'ı ve agent kabul kaydı henüz yok.
 
-T10/T11/T12/T15'in ortak dosya katmanı regresyonları mevcut; bu tablodaki XML uzantısı/handler/cursor bağlantısı ayrıca kanıtlanacak. Excel regex worker testleri T09 veya XML disposal testlerinin yerine geçmez. Bulgu bazlı sonuçlar [kapanış kaydında](excel-hardening-uygulama.md); aşağıdaki T kimlikleri XML kabul görevleri olarak açık kalır.
+T10/T11/T15'in XML uzantı ve handler ayakları `packages/xml-mcp/test` içinde uygulandı ve ortak dosya katmanı regresyonlarıyla birlikte koşuyor. T12'nin içerik değişimi ayağı worker tarafında kapandı; cursor ayağı ile T13'ün sayfa ayağı F2-06'yı bekliyor. Excel regex worker testleri T09 veya XML disposal testlerinin yerine geçmez. Bulgu bazlı sonuçlar [kapanış kaydında](excel-hardening-uygulama.md); aşağıdaki T kimlikleri XML kabul görevleri olarak açık kalır.
 
 ## Katmanlar ve sahiplik
 
@@ -10,8 +10,8 @@ T10/T11/T12/T15'in ortak dosya katmanı regresyonları mevcut; bu tablodaki XML 
 | ----------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Native erişim           | `packages/file-core-native/test`             | Kök handle'ı, özel dosya ve symlink/ancestor/UNC watchdog regresyonları; mevcut CI'da geçti               |
 | Generic dosya davranışı | `packages/file-core/test`                    | Sandbox, gerçek byte sınırı, listeleme, cache/cursor base davranışı ve hata arındırma; mevcut CI'da geçti |
-| XML anlamı              | Gelecekte `packages/xml-mcp/test`            | Namespace, sıralı içerik, encoding, parser policy, adres ve sorgu                                         |
-| XML bağlantısı          | Gelecekte `packages/xml-mcp/test`            | Registry/vocabulary/error factory/file-core entegrasyonu; generic suite kopyası değil                     |
+| XML anlamı              | `packages/xml-mcp/test`                      | Parser policy ve DOCTYPE kapısı uygulandı; namespace, sıralı içerik, adres ve sorgu F2-04+ ile genişler   |
+| XML bağlantısı          | `packages/xml-mcp/test`                      | Registry/vocabulary/error factory/file-core entegrasyonu; generic suite kopyası değil — 40 test           |
 | Worker ve kaynak        | XML entegrasyon testi, izole süreç           | Timeout/cancel/shutdown, disposal, kuyruk, sonraki isteğin sağlığı                                        |
 | MCP protokolü           | Gerçek istemciyle stdio testi                | Şema, anotasyon, tool yanıtı, error, stdout ve cancellation                                               |
 | Agent görevi            | Fixture manifesti ve kayıtlı tool transcript | Doğru bilgiye az çağrı ve kontrollü çıktı ile ulaşma                                                      |
@@ -75,4 +75,4 @@ Hedef: golden görevlerde yanlış alan/değer sıfır; namespace çakışmasın
 
 ## Kapanış kanıtı şablonu
 
-Her XML görev kaydı şu alanları içerecek: görev kimliği, durum, commit/artifact, test komutu, ortam, fixture kimlikleri, beklenen/gerçek sonuç, gerekiyorsa elapsed/peak RSS, kalan sınır ve inceleyen. Bu şablon XML için henüz doldurulmadı. Excel/file-core için doldurulmuş bulgu/test/fixture ve CI kayıtları [kapanış belgesinde](excel-hardening-uygulama.md) bulunur.
+Her XML görev kaydı şu alanları içerecek: görev kimliği, durum, commit/artifact, test komutu, ortam, fixture kimlikleri, beklenen/gerçek sonuç, gerekiyorsa elapsed/peak RSS, kalan sınır ve inceleyen. Şablon ilk kez F1 kapanışı için dolduruldu: [XML F1 kapanış kaydı](xml-f1-kapanis.md). Excel/file-core için doldurulmuş bulgu/test/fixture ve CI kayıtları [kapanış belgesinde](excel-hardening-uygulama.md) bulunur.

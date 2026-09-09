@@ -2,6 +2,8 @@
 
 Tarih: 2026-09-07. Durum: **kabul edildi, kodla kanıtlandı** ([packages/file-core](../../packages/file-core), 84 test; [packages/excel-mcp](../../packages/excel-mcp), 327 test).
 
+İkinci tüketici eşiği 2026-09-09'da `packages/xml-mcp` ile karşılandı; bu kararın parametrelediği maddelerin ölçülmüş cevapları [karar 016](016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md)'dadır.
+
 ## Ne yapıldı
 
 `packages/excel-mcp` içindeki, Excel'e özgü olmayan makine `@sk-mcp/file-core` paketine çıkarıldı ve `excel-mcp` onun ilk tüketicisi oldu. Çıkan yüzey: sandbox yol çözümü, dizin listeleme, doküman açma/önbellekleme zarfı, hata sınıfı ve zarfı, cursor codec, format kayıt defteri, kelime tablosu, MCP tool kayıt katmanı, stdio CLI ayrıştırması, Unicode katlama.
@@ -28,10 +30,10 @@ Dürüst istisna: hata kodu birleşimi. `SkMcpExcelErrorCode` tier-3 kodlarını
 - `zod` ve `@modelcontextprotocol/sdk` çekirdekte `peerDependencies`. İki `zod` kopyası `z.infer` tip kimliğini bozar ve SDK'nın şema introspection'ı `instanceof` kontrolü yapan koddur. Precedent: [sdks/nestjs](../../sdks/nestjs/package.json).
 - Çekirdek kendisi peer **değil** `dependencies`: `excel-mcp`'yi barındıran bir host yok, `npx` stdio CLI'ı, süreç başına bir sunucu.
 - **Yayın sırası core-first, her zaman.** Çekirdek npm'de olmadan ürün yayınlanamaz.
-- Çekirdek `0.x`'te kalır, `xml-mcp` onu gerçekten tüketene kadar. Bu, [karar 010](010-versiyonlama-politikasi.md)'un spec için kullandığı "iki bağımsız implementasyon" eşiğinin aynısıdır. 010 lockstep sürümlemeyi reddetmişti; burada da bağımsız sürüm kullanılıyor.
+- Çekirdek `0.x`'te kalır, `xml-mcp` onu gerçekten tüketene kadar. Bu, [karar 010](010-versiyonlama-politikasi.md)'un spec için kullandığı "iki bağımsız implementasyon" eşiğinin aynısıdır. 010 lockstep sürümlemeyi reddetmişti; burada da bağımsız sürüm kullanılıyor. **Eşik karşılandı (2026-09-09):** `xml-mcp` çekirdeği gerçekten tüketiyor ve `file-core` `0.2.0`'a çıktı. `0.x` kilidi kalktı; `1.0` otomatik değildir ve kararı [F6-08](../xml/fazlar/06-yayin-ve-kabul.md)'dedir.
 - `declarationMap: false` zorunlu. Yayınlanan her `.d.ts.map` yayınlanmayan `src`'ye kırık referans olurdu — [paket-yerlesimi.md](../paket-yerlesimi.md)'nin `excel-mcp` için yazdığı gerekçe geçişli olarak buraya da uygulanır.
 - CI'da `pack` job'ı iki tarball'ı paketler ve [.github/scripts/check-npm-tarballs.py](../../.github/scripts/check-npm-tarballs.py) ile doğrular: `workspace:` protokolü sağkalmamış, `@sk-mcp/*` bağımlılığı `0.0.0` değil, `dist/index.js` var, `.d.ts.map` yok. Script dört hata modunun her biri için sentetik tarball'la sınandı.
-- `ci.yml`'deki test filtresi tersine çevrildi: `--filter='!@sk-mcp/sdk-dotnet'`. Eski hard-code'lu izin listesi, yeni bir paketin testlerinin sessizce hiç koşmamasının mekanizmasıydı; `xml-mcp` ve `pdf-mcp` artık var oldukları an kapsanır.
+- `ci.yml`'deki test filtresi tersine çevrildi: `--filter='!@sk-mcp/sdk-dotnet'`. Eski hard-code'lu izin listesi, yeni bir paketin testlerinin sessizce hiç koşmamasının mekanizmasıydı. **Ölçülen sınır (2026-09-09):** ters filtre yalnız `node` job'ının test adımını kapsıyor. `native` ve `pack` job'larındaki dört `--filter=` satırı hâlâ açık izin listesidir ve `xml-mcp` oraya elle eklendi. Yeni bir ürün paketi bugün de o dört satırı ister; aksi halde paketlenmez, tarball denetiminden ve temiz kurulum testinden hiç geçmez.
 
 ## Yol güvenliği sırası
 
@@ -57,7 +59,7 @@ Kural: **generic bir özelliğin testi, o özelliği implemente eden pakette dur
 
 `excel-mcp/test/paths.spec.ts` (7 test, 342 → 110 satır) yalnızca `environment` sabitinin doğru bağlandığını doğrular: kayıt defteri üç uzantıyı da çözüyor ve dördüncüyü reddediyor, mesajlar "workbook root" ve "readable spreadsheet" diyor, `recovery` `list_workbooks`'a yönlendiriyor, dizin hatası kökü sızdırmıyor, fırlatılan hata `SkMcpExcelError` — ve gerçek fixture kökü üzerinde uçtan uca listeleme çalışıyor.
 
-`xml-mcp` de kendi eşdeğerini yazacaktır: 342 satırın kopyası değil, kendi kelime tablosu ve kayıt defteri için ~7 test.
+`xml-mcp` de kendi eşdeğerini yazacaktır: 342 satırın kopyası değil, kendi kelime tablosu ve kayıt defteri için ~7 test. **Uygulandı:** `packages/xml-mcp/test/connection.spec.ts` bu şekli izliyor ve güvenlik suite'i kopyalanmadı.
 
 ## Bulunan hata: readable uzantı taşıyan dizin
 
@@ -142,11 +144,13 @@ Seam temiz değildi. Ölçüldü: `sheet.ts` doğrudan `exceljs`'i ve `workbook.
 - `CellSnapshot` exceljs'ten arındırıldı. Adaptör artık **olgu** (`CellFacts`: değer, `truncatedFrom`, `href`), `normalizeCell` ise **politika** üretir. Bu ayrım zorunluydu: orijinalde `includeHyperlinks` açıkken hyperlink notu `truncated` notunun yerini alıyor, kapalıyken `truncated` hayatta kalıyordu. Adaptör notu doğrudan üretirse bu öncelik kaybolurdu.
 - `no-restricted-imports` kuralı grid katmanının bir format adaptörüne uzanmasını işaretler. `eslint-plugin-only-warn` her kuralı uyarıya indirdiği için kural tavsiye eder, kapı tutmaz; gerçek oracle davranışsal testlerdir. İhlal sayısı 10'dan 0'a indi ve bağımlılık kapanışı ölçüldü: grid katmanı yalnızca kendisini ve `@sk-mcp/file-core`'u import ediyor.
 
-**Tetikleyici:** tablo katmanı ancak **ikinci bir sunucu verisinin dikdörtgen görünümünü isterse** çıkarılır — yani `pdf-mcp` tablo çıkarımı, "`xml-mcp` var olması" değil.
+**Tetikleyici:** tablo katmanı ancak **ikinci bir sunucu verisinin dikdörtgen görünümünü isterse** çıkarılır — yani `pdf-mcp` tablo çıkarımı, "`xml-mcp` var olması" değil. **Doğrulandı (2026-09-09):** `xml-mcp` geldi, tetikleyici ateşlemedi, katman `excel-mcp`'de kaldı.
 
 ## Metin kodlama ertelendi
 
 BOM tespiti, `EncodingName` birleşimi, `TextDecoder` kullanımı ve `undecodable_text` hatası `csv.ts` içinde kaldı. Gerçek gelecek talebini beklediğim tek yer burasıdır — XML hepsine artı `<?xml encoding=?>` prologuna ihtiyaç duyar. Ama bugün tam olarak bir tüketicisi var ve CSV implementasyonu aynı 64 KB baş tamponu üzerinde delimiter sniffing'e yapışık. `text-encoding` **`xml-mcp` değişikliğinde** çıkarılır: ikinci tüketici var olduğunda ve seam iki taraftan da görünür olduğunda.
+
+**Ölçülen sonuç (2026-09-09): çıkarılmadı, ve bu bilinçlidir.** Seam iki taraftan ölçüldü ve ortak olan tek şey BOM tablosu çıktı; o çekirdeğe alındı (`packages/file-core/src/bom.ts`, saf veri, throw yok). `EncodingName` birleşimi Türkçe Excel'in kod sayfalarıdır ve XML hiçbirini adlandırmaz; `TextDecoder` kullanımının ikinci tüketicisi yok değil, ikinci tüketicinin mimarisi onu dışlıyor — XML byte'ı libxml2'ye verir ve JS'te hiç decode etmez; `undecodable_text` tier-3 Excel kodudur ve XML'in politikası ayrıdır. Cetvel'in "her dosya okuyan sunucunun ihtiyacıdır" şartı karşılanmıyor. Bu madde artık ertelenmiş değil, **kapalıdır**; yeniden açmak için `TextDecoder` tabanlı çözmeye ihtiyaç duyan üçüncü bir sunucu gerekir. Gerekçe [karar 016](016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md).
 
 ## Fold ayrışması korunur
 
@@ -203,7 +207,7 @@ Bu sessizce gidiyordu: hiçbir test sunucunun bildirdiği sürümü kontrol etmi
 - **`UnionToIntersection` ile format seçeneklerini birleştirmek.** Bivariance hack'i gerektirir, adlandırılamaz, çakışmada okunmaz hatalar üretir. Ürünün kendi tool şemasına `...csvOptions.shape` yaymak aynı işi bedavaya yapar.
 - **`const` type parametreleri.** Çağrı yerlerindeki `as const` bu kod tabanının her yerde yaptığı şeydir; `const` type param reponun ilki olurdu ve kendisi bir paragraf isterdi.
 - **Template-literal tool adları / kelime tablosu.** Tool adları vocabulary'den türetilse `toolDefinitions` statik anahtarlı bir nesne literali olamazdı; bu `keyof typeof toolDefinitions` → `ToolName` → `ToolInput` → `ToolHandlers` zincirinin tamamını yok eder.
-- **`capabilities.ts` ve harness'ını çıkarmak.** Dokuz anahtarın tamamı hesap tablosu ismidir; XML'in eksenleri (`namespaces`, `dtd`, `cdata`, `mixedContent`) sıfır örtüşür. Çıkarmak ya boş bir arayüz ya `Record<string, boolean>` üretir. Ayrıca harness bir spec dosyasının içinde yaşıyor; çıkarmak test-only kodu yayınlanan `dist`'e koyardı. `xml-mcp` deseni kopyalar — repoda bunun konvansiyonu var (`fixturesOf` iki yerde bilinçli kopyalı).
+- **`capabilities.ts` ve harness'ını çıkarmak.** Dokuz anahtarın tamamı hesap tablosu ismidir; XML'in eksenleri (`namespaces`, `dtd`, `cdata`, `mixedContent`) sıfır örtüşür. Çıkarmak ya boş bir arayüz ya `Record<string, boolean>` üretir. Ayrıca harness bir spec dosyasının içinde yaşıyor; çıkarmak test-only kodu yayınlanan `dist`'e koyardı. `xml-mcp` deseni kopyalar — repoda bunun konvansiyonu var (`fixturesOf` iki yerde bilinçli kopyalı). **Uygulandı:** `xml-mcp` ortak bir yetenek arayüzü üretmedi.
 - **Güvenlik testlerini `excel-mcp`'de bırakmak.** İlk denemede bırakıldı, gerekçe "aksi halde `excel-mcp`'nin `environment` sabiti test edilmeden kalır"dı. Ölçüm bu gerekçeyi çürüttü: 30 testin 25'i `file-core`'un kendi testiyle duplike, 4'ü `file-core`'da **eksik**, ve yalnızca 1 assertion gerçekten excel'e özgüydü (`recovery` içinde `list_workbooks`). Geri kalanı hata **kodlarını** assert ediyordu; `.xlsx` orada sadece "okunabilir uzantı" rolündeydi. Yani sonuç katmanlı kapsama değil, duplikasyon artı bir boşluktu. Bkz. "Güvenlik testleri hangi katmanda durur".
 - **`packages/conformance`'a yeni bir fixture kind'ı.** Paketin beyan edilmiş invaryantı saf JSON'dur ve `dotnet test`'in Node'a ihtiyaç duymaması için dosya sistemi yoluyla tüketilir; dosya-kaynağı fixture'ları gerçek `.xlsx` binary'si, `crc32`'li elle kurulmuş zip ve windows-1254 byte dizileri ister. Ayrıca [fixture-formati.md](../../packages/spec/fixture-formati.md) her `kind`'ın bir spec prose dokümanıyla yönetilmesini gerektirir ve conformance diller arası taşınabilirlik içindir — ikinci dilde dosya-kaynağı implementasyonu yok.
 - **`packages/spec`'e prose eklemek.** Spec, HTTP katalog sözleşmesi için normatiftir; `file-core` onun hiçbirini implemente etmez. [Karar 014](014-spec-v1-0-ve-amendment-listesi.md) spec v1.0'ı sabit sekiz maddelik amendment listesiyle kapattı, ve karar 010'un eşiği metnin iki bağımsız implementasyonla anlam kazandığını söyler.

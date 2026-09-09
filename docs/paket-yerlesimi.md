@@ -11,6 +11,8 @@ sk-mcp/
 │   ├── core/                 # @sk-mcp/core — TS referans implementasyonu (HTTP katalog; Faz 3+)
 │   ├── file-core/            # @sk-mcp/file-core — dosya okuyan sunucuların paylaşılan makinesi (core ile ilgisi yok)
 │   ├── excel-mcp/            # @sk-mcp/excel-mcp — MCP sunucusu (@sk-mcp/core'a bağımlı değil, file-core'a bağımlı)
+│   ├── xml-mcp/              # @sk-mcp/xml-mcp — MCP sunucusu (file-core'a bağımlı; libxml2-wasm exact pin)
+│   ├── xml-lab/              # @sk-mcp/xml-lab — F0 kanıt harness'ı (private, build yok, import edilemez)
 │   ├── eslint-config/        # @sk-mcp/eslint-config
 │   └── typescript-config/    # @sk-mcp/typescript-config
 ├── sdks/                     # TÜM SDK'lar burada, dilden bağımsız (rol bazlı ayrım)
@@ -31,7 +33,7 @@ sk-mcp/
 
 ## Ürün paketleri (`excel-mcp` ve devamı)
 
-`packages/excel-mcp` (ve gelecekte `packages/pdf-mcp`) ne SDK ne de çekirdek: kendi başına `npx` ile kurulan, kendi semver'i olan, MCP sunucusu olan **ürün paketleri**. `packages/` altında durmalarının sebebi `sdks/`'in rolünün "mevcut bir backend'e gömülen dil SDK'sı" olması — bu paketlerin gömüleceği bir backend yok.
+`packages/excel-mcp`, `packages/xml-mcp` (ve gelecekte `packages/pdf-mcp`) ne SDK ne de çekirdek: kendi başına `npx` ile kurulan, kendi semver'i olan, MCP sunucusu olan **ürün paketleri**. `packages/` altında durmalarının sebebi `sdks/`'in rolünün "mevcut bir backend'e gömülen dil SDK'sı" olması — bu paketlerin gömüleceği bir backend yok.
 
 Çekirdekten üç farkı vardır ve üçü de bilinçlidir:
 
@@ -60,7 +62,7 @@ sk-mcp/
 | Minimal (prose/JSON) | `spec`, `conformance`            | `true`    | `0.0.0` | —     | —                   |
 | İç paket             | `core`, `sdk-nestjs`, config'ler | `true`    | `0.0.0` | —     | `./src/index.ts`    |
 | Yayınlanan kütüphane | `file-core`                      | yok       | gerçek  | —     | `./dist/index.d.ts` |
-| Ürün paketi          | `excel-mcp`                      | yok       | gerçek  | var   | `./dist/index.d.ts` |
+| Ürün paketi          | `excel-mcp`, `xml-mcp`           | yok       | gerçek  | var   | `./dist/index.d.ts` |
 
 Yayınlanan kütüphanede `exports.types → dist` ve `declarationMap: false` **zorunludur**, çünkü onu tüketen yayınlanan paketin `.d.ts`'i bu yolları geçişli olarak çözer. Bir yayınlanan paket `private: true` bir workspace paketine bağımlı olamaz: `pnpm publish` `workspace:^`'ı sessizce `"0.0.0"`'a yazar, publish başarılı olur ve hata tüketicinin `install`'unda çıkar. Detay [karar 015](kararlar/015-dosya-kaynagi-cekirdegi.md)'te; CI'daki kapı [.github/scripts/check-npm-tarballs.py](../.github/scripts/check-npm-tarballs.py).
 

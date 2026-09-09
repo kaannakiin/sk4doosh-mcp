@@ -6,7 +6,7 @@ Bu paket **ürün kodu değildir**. `libxml2-wasm` tercihini hedef dağıtımda 
 
 ## Neden kalıcı
 
-Çıkış kapısı: _"Başarısız tercih değişikliği aynı fixture matrisiyle sınanır."_ Motor reddedilirse `@xmldom/xmldom` + `xpath` aynı korpustan geçmek zorunda. Fixture üreteci, manifest ve assertion'lar bu yüzden motordan bağımsızdır; yalnız `src/engine-adapter.mts` `libxml2-wasm`'e özgüdür.
+Çıkış kapısı: _"Başarısız tercih değişikliği aynı fixture matrisiyle sınanır."_ Motor reddedilirse `@xmldom/xmldom` + `xpath` aynı korpustan geçmek zorunda. Fixture üreteci, manifest ve assertion'lar bu yüzden motordan büyük ölçüde bağımsızdır; motora özgü çağrılar probe dosyalarında toplanmıştır.
 
 ## Asla olmayacakları
 

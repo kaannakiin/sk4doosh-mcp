@@ -1,6 +1,6 @@
 # XML MCP kararları
 
-Durum: XML mimarisi için kabul kapılarına bağlı uygulama kararı; Excel/file-core altyapısı uygulanmış durumda. Güncelleme: 2026-09-08, kaynak tabanı `6b2bc89`. XML motorunun üretim kabulü F0'a bağlıdır; aşağıdaki XML davranışları henüz çalışan API değildir. Mevcut global ADR numaraları değiştirilmez.
+Durum: XML mimarisi kararları. Güncelleme: 2026-09-09. F0 kapısı geçti; **K1, K5, K6 ve K7 artık `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin dört tool'undan `list_documents` çalışıyor; K3/K4'ün düğüm modeli ile kalan üç tool F2-04–09'dadır ve o maddeler hâlâ hedef davranıştır. Bu değişikliğin global kaydı [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md); mevcut global ADR numaraları değiştirilmez.
 
 ## K1 — Birincil motor: libxml2-wasm
 
@@ -47,7 +47,7 @@ DOM'dan XML serileştirme byte-exact kaynak değildir. XML görünümü sunulurs
 
 F0-06 doğruladı: `fromBuffer` senkrondur, `Promise.race` tek başına işi durdurmaz (terminate edilmeyen işte CPU 1,0008), `worker.terminate()` senkron WASM çalışmasını keser (terminate sonrası CPU 0,0004) ve sonraki normal çağrı çalışır. [Kanıt](f0-kanit-kaydi.md).
 
-Parse dahil maliyetli işler worker içinde yürütülür. İlk uygulamada tek etkin worker, sınırlı bekleme kuyruğu ve istek başına süre bütçesi tercih edilir. `Promise.race` senkron parser'ı durdurmaz; timeout sonrasında worker sonlandırılır, çıkışı beklenir, ilgili snapshot'lar geçersizleşir. [Node worker yaşam döngüsü](https://nodejs.org/api/worker_threads.html#workerterminate).
+Parse dahil maliyetli işler worker içinde yürütülür. İlk uygulama tek etkin worker, en fazla 5 derinlikli bekleme kuyruğu ve istek başına 2 saniyelik süre bütçesiyle teslim edildi. Kuyruk kapısı **okumadan önce** alınır; böylece bekleyen istek snapshot byte'ı pinlemez. `Promise.race` senkron parser'ı durdurmaz; timeout sonrasında worker sonlandırılır, çıkışı beklenir, ilgili snapshot'lar geçersizleşir. [Node worker yaşam döngüsü](https://nodejs.org/api/worker_threads.html#workerterminate).
 
 `worker.resourceLimits` toplam RSS veya WASM bellek tavanı değildir; JS motoru sınırlarıdır ve dış bellek dahil edilmez. Bu nedenle “256 MiB worker limiti = süreç en fazla 256 MiB” iddiası kullanılmaz. Byte sınırı, eşzamanlılık, kuyruk ve ölçülmüş RSS birlikte izlenir. Kesin süreç bellek izolasyonu gerektiren dağıtımda OS/container sınırı veya ayrı süreç tasarımı ayrıca gerekir. F0 bunu karşılamıyorsa limitsiz üretim vaadiyle ilerlenmez. [Node Worker seçenekleri](https://nodejs.org/api/worker_threads.html#new-workerfilename-options).
 
@@ -57,21 +57,25 @@ F0-07 doğruladı: paket `diag` tanı namespace'i sunuyor ve dispose'ta girişi 
 
 Resmi README `dispose()` gerektiriyor. Mevcut `file-core` store'u Map girdisini siler; Loaded nesnesi için disposal hook'u yoktur. Dolayısıyla WASM DOM'u olduğu gibi bu store'a koymak uygun değil. [Resmi kaynak ömrü uyarısı](https://github.com/jameslan/libxml2-wasm#memory-management), [mevcut store](../../packages/file-core/src/documents.ts).
 
-F0/F1 worker'ın DOM ve derlenmiş XPath nesnelerini sahiplenmesini kanıtlar. Ana süreçte yalnız seri hale getirilebilir sonuçlar veya sınırlı yaşam süresi olan kimlikler taşınır; WASM pointer'ı geçirilmez. Normal bitiş, hata, LRU tahliyesi, seçenek değişimi, worker ölümü ve shutdown ayrı yaşam döngüsü olaylarıdır. Worker kendi kaynağını serbest bırakır. `file-core`'a generic disposal hook'u ancak XML entegrasyonu gerçekten store'da kaynak tutmayı gerektirirse eklenir; XML kavramları çekirdeğe taşınmaz.
+F0/F1 worker'ın DOM ve derlenmiş XPath nesnelerini sahiplenmesini kanıtlar. Ana süreçte yalnız seri hale getirilebilir sonuçlar veya sınırlı yaşam süresi olan kimlikler taşınır; WASM pointer'ı geçirilmez. Normal bitiş, hata, LRU tahliyesi, içerik/seçenek değişimi, worker ölümü ve shutdown ayrı yaşam döngüsü olaylarıdır. Worker kendi kaynağını serbest bırakır.
+
+**Ölçülen sonuç: `file-core`'a disposal hook'u eklenmedi ve gerekmedi.** `packages/xml-mcp` store'a yalnız serileştirilebilir bir handle koyuyor ve `createDocumentStore` bu değişiklikte hiç değişmedi; altı yaşam döngüsü olayının hepsinde canlı instance sayısı 0 ölçüldü. Handle'ın serileştirilebilirliği `JSON.parse(JSON.stringify(loaded))` eşitliğiyle mekanik olarak sınanıyor. Worker'ın belge haritası **stamp** ile anahtarlanır: aynı boyut ve restore edilmiş mtime ile içerik değiştiğinde yeni anahtar oluşur ve eski belge ekleme anında dispose edilir. Bu madde artık koşullu değildir; hook'u yeniden gündeme getirmek için store'da gerçekten WASM kaynağı tutan yeni bir tüketici gerekir ve XML kavramları hiçbir koşulda çekirdeğe taşınmaz. [Ölçüm](xml-f1-kapanis.md).
 
 ## K7 — Dosya sandbox'ı ile XML çözümleyicisi iki ayrı sınır
 
 F0-05 doğruladı: `xmlRegisterFsInputProviders` paket kökünde yok, yalnız `lib/nodejs.mjs` yan modülünde. Yan modülü **import etmek** sağlayıcı kaydetmiyor — K7'nin "modül adından erişim sonucu çıkarılmaz" uyarısı ampirik olarak cevaplandı. Sağlayıcı açıkça kaydedildiğinde canary ateşliyor, `xmlCleanupInputProvider()` ile geri alınıyor. [Kanıt](f0-kanit-kaydi.md).
 
-Kullanıcının seçtiği dosya için ortak erişim sınırı uygulanmıştır: `file-core-native` başlangıçta açılan kök handle'ına bağlı okur; `file-core` parser'a `ParseContext.bytes`, `stamp` ve göreli `displayPath` sağlar. Boyut sınırı, özel dosya reddi, symlink/ancestor yarışı ve içerik değişimi regresyonları beş hedef × Node 22/24 CI'ında geçti. XML worker bu snapshot'ı tüketmeli, `path` üzerinden yeniden dosya açmamalı. XML bağlantısı F1-06/F2'de açık; [kanıt ve kalan işler](fazlar/01-ortak-cekirdek-ve-excel.md).
+Kullanıcının seçtiği dosya için ortak erişim sınırı uygulanmıştır: `file-core-native` başlangıçta açılan kök handle'ına bağlı okur; `file-core` parser'a `ParseContext.bytes`, `stamp` ve göreli `displayPath` sağlar. Boyut sınırı, özel dosya reddi, symlink/ancestor yarışı ve içerik değişimi regresyonları beş hedef × Node 22/24 CI'ında geçti. XML worker bu snapshot'ı tüketiyor ve `path` üzerinden dosyayı yeniden açmıyor; worker girişi `file-core`'u hiç import etmez ve bunu bir lint sınırı zorlar. F1-06 bağlantı testleri bunu gerçek MCP yanıtına kadar sabitliyor. [Kanıt](xml-f1-kapanis.md).
 
 Parser'a dış entity, DTD, XInclude veya şema için genel dosya/ağ resolver'ı verilmez. `xmlRegisterFsInputProviders` ve eşdeğer geniş sağlayıcılar MVP'de kullanılmaz. Kaynak modülde bu kayıt açık bir fonksiyondur; yalnız modül adından “import tek başına erişim açar” sonucu çıkarılmaz. [Node sağlayıcı kaynağı](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/nodejs.mts).
 
-`NOENT`, `DTDLOAD`, `DTDATTR`, `DTDVALID`, `HUGE`, recovery ve XInclude işleme başlangıçta kapalıdır. F2 politika olarak DOCTYPE içeren belgeyi reddeder; yorum/CDATA içindeki aynı karakterler gerçek declaration sayılmaz. Bu politika güvenli parser ayarlarının yerine geçmez. DTD'siz XML yolu F0'da yerel dosya ve ağ canary'leriyle kanıtlanır; DTD kullanan belge aileleri başlangıçta desteklenmez.
+`NOENT`, `DTDLOAD`, `DTDATTR`, `DTDVALID`, `HUGE`, recovery ve XInclude işleme başlangıçta kapalıdır. Uygulama, DOCTYPE içeren belgeyi **parse etmeden önce**, ana süreçte çalışan prolog tarayıcısıyla reddeder; yorum/CDATA/PI içindeki aynı karakterler gerçek declaration sayılmaz. `doc.dtd` yalnız ikinci bir denetim katmanıdır ve birincil kapı olamaz: ölçüldü ki `XML_PARSE_NO_XXE` internal DTD subset'ini engellemiyor, yani `doc.dtd` okunabildiğinde internal entity zaten genişlemiş oluyor. Bu politika güvenli parser ayarlarının yerine geçmez. DTD'siz XML yolu F0'da yerel dosya ve ağ canary'leriyle kanıtlanır; DTD kullanan belge aileleri başlangıçta desteklenmez.
 
 ## K8 — Sınırlar sonuç semantiğini değiştirir
 
 Satır sayısı sınırı tek başına payload sınırı değildir. Bütün yanıt, hata ve snippet'ler byte bütçesine tabidir. `totalMatches` yalnız tarama bittiyse exact olabilir; kesilen taramada toplam gibi gösterilmez. Cursor sorgu, seçenekler, dosya snapshot'ı ve tool ile bağlıdır; aynı dosya değiştiğinde eski cursor yanlış veri üretmek yerine reddedilir.
+
+Bu bütçe artık `file-core`'da zorunlu yoldur: her tool yanıtı — başarı, hata ve recovery dahil — `coreLimits.maxPayloadBytes` kapısından geçer ve ürünlerin kendi sayaçlarına bırakılmaz. Ürün sayacı daha erken durdurabilir, kapıyı devre dışı bırakamaz.
 
 Snapshot hash'i okunan byte'ların kimliğidir; dosyanın bütün okuma boyunca değişmediğini tek başına garanti etmez. Ön/son metadata kontrolü değişiklik şüphesini yakalar; eşzamanlı dış yazara karşı atomik dosya snapshot'ı vaat edilmez.
 
@@ -81,4 +85,4 @@ F4 yalnız desteklediği streaming path/record işlemlerini sunar. Genel XPath e
 
 ## K10 — XML ve Excel görev paylaşımı
 
-Excel sheet, hücre, tablo, formül cache değeri ve grid metaverisi `excel-mcp` alanıdır. XML MCP, ileride ZIP içindeki XML parçasını okursa Excel grid yorumlamasını tekrarlamaz. Yazma API'si olmaması mevcut salt okunur paketlerde bug değildir. XML'e özgü encoding/namespace/DOM nesnesi generic util'e taşınmaz; ikinci somut tüketici olmadan ortaklaştırma yapılmaz.
+Excel sheet, hücre, tablo, formül cache değeri ve grid metaverisi `excel-mcp` alanıdır. XML MCP, ileride ZIP içindeki XML parçasını okursa Excel grid yorumlamasını tekrarlamaz. Yazma API'si olmaması mevcut salt okunur paketlerde bug değildir. XML'e özgü encoding/namespace/DOM nesnesi generic util'e taşınmaz. İkinci somut tüketici artık var ve ortaklaştırma **ölçülerek** yapıldı: çekirdeğe yalnız yanıt bütçesi kapısı ile BOM tablosu girdi. `EncodingName` birleşimi, `TextDecoder` kullanımı ve `undecodable_text` hâlâ tek tüketicili olduğu için taşınmadı. Gerekçe [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md).

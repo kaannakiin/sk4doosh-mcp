@@ -48,7 +48,7 @@ Kök içinde readable uzantı taşıyan bir **dizin** `resolveSourcePath`'ten ge
 
 ## Takip işleri
 
-- `text-encoding` çıkarımı (BOM tespiti, `EncodingName`, `TextDecoder`, `undecodable_text`): `xml-mcp` değişikliğinde, ikinci tüketici var olduğunda.
+- `text-encoding` çıkarımı: **kapandı — çıkarılmadı.** İkinci tüketici geldi ve ölçülen örtüşme yalnız BOM tablosuydu; o çekirdeğe alındı. `EncodingName`, `TextDecoder` ve `undecodable_text` tek tüketicili kaldı. Gerekçe [karar 016](../../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md).
 - Tablo katmanının çıkarılması: ancak ikinci bir sunucu verisinin dikdörtgen görünümünü isterse.
 - `packages/excel-mcp/src/index.ts` barrel'ının amaçlanan public yüzeye budanması: ilk publish'ten önce, ayrı bir karar olarak. Bilinen adaylar: `range.ts`'ten `advance` (dışa verilmiş, birim testli, production yolunda ölü).
 - `apps/docs`'a `@sk-mcp/excel-mcp` için bir `how-to` sayfası: ilk gerçek publish ile, çünkü [dokuman-kurallari](../../../apps/docs/dokuman-kurallari.md) her kod örneğinin koşmasını gerektiriyor ve `npx @sk-mcp/excel-mcp` o zaman okuyucunun koşabileceği bir komut olur. Site şu anda excel-mcp'den hiç bahsetmiyor; bu gerçek bir boşluk.

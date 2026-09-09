@@ -6,19 +6,19 @@ Bu ek yalnız **dağıtılan artifact** hakkındadır. Kaynak okumasından gelen
 
 ## Sabitleme
 
-| Alan               | Değer                                                                                             |
-| ------------------ | ------------------------------------------------------------------------------------------------- |
-| Specifier          | `0.7.2` — **exact**, caret yok                                                                    |
-| Bildirildiği yer   | `packages/xml-lab/package.json` `devDependencies`                                                 |
-| Çözülen sürüm      | `0.7.2`                                                                                           |
-| Lockfile integrity | `sha512-Ek8Fdb8fIl6mBCvrMGImkOP02aDpANwus0PV827v4gobV9jnoYEHNoPTwWokt71egUBl+sng53fjZ5y2PexLqQ==` |
-| Registry integrity | Aynı değer; lockfile ile registry metadata'sı birebir eşleşiyor                                   |
-| Registry shasum    | `d4884e107385a738568cc82902921b78e45a4c1e`                                                        |
-| Tarball sha256     | `64f668e9afd507692c441dc3e9607feb30a954409aaa087ce822cf53f3d708b8`                                |
-| fileCount          | 48                                                                                                |
-| unpackedSize       | 1.228.585 byte                                                                                    |
-| Yayın zamanı       | 2026-09-07T01:02:02.232Z                                                                          |
-| npm `engines.node` | `>=18` (bu projenin hedefi ayrıca 22/24)                                                          |
+| Alan               | Değer                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Specifier          | `0.7.2` — **exact**, caret yok                                                                                      |
+| Bildirildiği yer   | `packages/xml-lab/package.json` `devDependencies` ve `packages/xml-mcp/package.json` `dependencies`; ikisi de exact |
+| Çözülen sürüm      | `0.7.2`                                                                                                             |
+| Lockfile integrity | `sha512-Ek8Fdb8fIl6mBCvrMGImkOP02aDpANwus0PV827v4gobV9jnoYEHNoPTwWokt71egUBl+sng53fjZ5y2PexLqQ==`                   |
+| Registry integrity | Aynı değer; lockfile ile registry metadata'sı birebir eşleşiyor                                                     |
+| Registry shasum    | `d4884e107385a738568cc82902921b78e45a4c1e`                                                                          |
+| Tarball sha256     | `64f668e9afd507692c441dc3e9607feb30a954409aaa087ce822cf53f3d708b8`                                                  |
+| fileCount          | 48                                                                                                                  |
+| unpackedSize       | 1.228.585 byte                                                                                                      |
+| Yayın zamanı       | 2026-09-07T01:02:02.232Z                                                                                            |
+| npm `engines.node` | `>=18` (bu projenin hedefi ayrıca 22/24)                                                                            |
 
 K1 gereği caret kullanılmadı: `^0.7.2` bir sonraki `pnpm install`'da yukarıdaki bütünlük olgularının hepsini sessizce geçersiz kılardı.
 
@@ -26,7 +26,7 @@ K1 gereği caret kullanılmadı: `^0.7.2` bir sonraki `pnpm install`'da yukarıd
 
 `0.7.2` sabitleme tarihinden **bir gün önce** yayınlandı. `pnpm config get minimumReleaseAge` `undefined` döndürüyor ve `pnpm install` bloke etmedi; kurulum `Lockfile passes supply-chain policies` satırıyla geçti. Bu nedenle `pnpm-workspace.yaml` `minimumReleaseAgeExclude` listesine giriş **eklenmedi**. Politika ileride etkinleştirilirse bu sürüm pencerenin içinde kalacağı için giriş gerekebilir; o durumda ek yeniden düzenlenir.
 
-`allowBuilds` listesine de giriş eklenmedi: paket WASM dağıttığı için native build adımı gerektirmemesi bekleniyor ve bu F0-02'de ayrıca kanıtlanacak. Build script'i önden yetkilendirilmedi.
+`allowBuilds` listesine de giriş eklenmedi: paket WASM dağıttığı için native build adımı gerektirmiyor ve bu F0-02'de `--ignore-scripts` kurulumuyla on ayakta kanıtlandı. Build script'i önden yetkilendirilmedi.
 
 ## Artifact ile incelenen revision ilişkisi
 
