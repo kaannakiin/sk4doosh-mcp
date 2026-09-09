@@ -1,0 +1,279 @@
+import { once } from "node:events";
+import { Worker } from "node:worker_threads";
+import { limits } from "./limits.js";
+import type {
+  DiagProjection,
+  ParsedFacts,
+  WorkerReply,
+  WorkerRequest,
+  WorkerRequestBody,
+} from "./worker-protocol.js";
+
+const entry = new URL("../dist/xml-worker.js", import.meta.url);
+
+export type PoolOutcome<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly failure: string; readonly detail?: string };
+
+export interface XmlWorkerPool {
+  readonly generation: number;
+  parse(
+    stamp: string,
+    logical: string,
+    bytes: Uint8Array,
+    signal?: AbortSignal,
+  ): Promise<PoolOutcome<ParsedFacts>>;
+  diagnose(): Promise<PoolOutcome<DiagProjection>>;
+  release(): Promise<PoolOutcome<void>>;
+  onGenerationChange(listener: () => void): void;
+  slots(): Promise<() => void>;
+  close(): Promise<void>;
+  readonly stats: () => {
+    readonly generation: number;
+    readonly spawns: number;
+    readonly terminations: number;
+    readonly alive: boolean;
+  };
+}
+
+export interface XmlWorkerPoolOptions {
+  readonly diagnostics?: boolean;
+  readonly budgetMs?: number;
+  readonly queueDepth?: number;
+  readonly capacity?: number;
+}
+
+export function createXmlWorkerPool(
+  options: XmlWorkerPoolOptions = {},
+): XmlWorkerPool {
+  const budgetMs = options.budgetMs ?? limits.maxParseMs;
+  const queueDepth = options.queueDepth ?? limits.maxQueueDepth;
+  const capacity = options.capacity ?? limits.workerCacheEntries;
+  const diagnostics = options.diagnostics ?? false;
+
+  const listeners: (() => void)[] = [];
+  const waiting: (() => void)[] = [];
+  let worker: Worker | undefined;
+  let generation = 0;
+  let spawns = 0;
+  let terminations = 0;
+  let busy = false;
+  let closed = false;
+  let nextId = 0;
+
+  function announce(): void {
+    for (const listener of listeners) {
+      listener();
+    }
+  }
+
+  async function kill(): Promise<void> {
+    const dying = worker;
+    worker = undefined;
+    generation += 1;
+    if (dying === undefined) {
+      return;
+    }
+    terminations += 1;
+    announce();
+    const exited = once(dying, "exit").catch(() => undefined);
+    await dying.terminate();
+    await exited;
+  }
+
+  async function ensure(spawnAllowed: boolean): Promise<Worker> {
+    if (worker !== undefined) {
+      return worker;
+    }
+    if (!spawnAllowed) {
+      throw new Error("closed");
+    }
+    const spawned = new Worker(entry, {
+      workerData: { capacity, diagnostics },
+      stdout: true,
+      stderr: true,
+    });
+    spawned.stdout.resume();
+    spawned.stderr.pipe(process.stderr);
+    spawned.once("exit", () => {
+      if (worker === spawned) {
+        worker = undefined;
+        generation += 1;
+        announce();
+      }
+    });
+    spawned.once("error", () => {
+      if (worker === spawned) {
+        worker = undefined;
+        generation += 1;
+        announce();
+      }
+    });
+    worker = spawned;
+    spawns += 1;
+    await once(spawned, "message");
+    return spawned;
+  }
+
+  async function send<T>(
+    request: WorkerRequestBody,
+    read: (reply: WorkerReply) => T,
+    signal?: AbortSignal,
+    draining = false,
+  ): Promise<PoolOutcome<T>> {
+    if (closed && !draining) {
+      return { ok: false, failure: "resource_limit", detail: "closed" };
+    }
+    let active: Worker;
+    try {
+      active = await ensure(!closed);
+    } catch {
+      return { ok: false, failure: "resource_limit", detail: "closed" };
+    }
+    nextId += 1;
+    const id = nextId;
+    return await new Promise<PoolOutcome<T>>((resolve) => {
+      let settled = false;
+      const finish = (outcome: PoolOutcome<T>): void => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        active.off("message", onMessage);
+        clearTimeout(timer);
+        resolve(outcome);
+      };
+      const onMessage = (reply: WorkerReply): void => {
+        if (reply.id !== id) {
+          return;
+        }
+        finish(
+          reply.ok
+            ? { ok: true, value: read(reply) }
+            : {
+                ok: false,
+                failure: reply.failure,
+                ...(reply.detail === undefined ? {} : { detail: reply.detail }),
+              },
+        );
+      };
+      const timer = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        active.off("message", onMessage);
+        void kill().then(() => {
+          resolve({
+            ok: false,
+            failure: "resource_limit",
+            detail: "timeout",
+          });
+        });
+      }, budgetMs);
+      if (signal?.aborted === true) {
+        finish({ ok: false, failure: "resource_limit", detail: "aborted" });
+        return;
+      }
+      signal?.addEventListener(
+        "abort",
+        () => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          active.off("message", onMessage);
+          clearTimeout(timer);
+          void kill().then(() => {
+            resolve({
+              ok: false,
+              failure: "resource_limit",
+              detail: "aborted",
+            });
+          });
+        },
+        { once: true },
+      );
+      active.on("message", onMessage);
+      active.postMessage({ ...request, id } as WorkerRequest);
+    });
+  }
+
+  return {
+    get generation() {
+      return generation;
+    },
+    onGenerationChange(listener) {
+      listeners.push(listener);
+    },
+    async slots() {
+      if (closed) {
+        throw new Error("closed");
+      }
+      if (!busy) {
+        busy = true;
+        return () => {
+          const next = waiting.shift();
+          if (next === undefined) {
+            busy = false;
+          } else {
+            next();
+          }
+        };
+      }
+      if (waiting.length >= queueDepth) {
+        throw new Error("queue_full");
+      }
+      await new Promise<void>((resolve) => waiting.push(resolve));
+      return () => {
+        const next = waiting.shift();
+        if (next === undefined) {
+          busy = false;
+        } else {
+          next();
+        }
+      };
+    },
+    async parse(stamp, logical, bytes, signal) {
+      return send(
+        { kind: "parse", stamp, logical, bytes },
+        (reply) => ("facts" in reply ? reply.facts : undefined) as ParsedFacts,
+        signal,
+      );
+    },
+    async diagnose() {
+      return send({ kind: "diag" }, (reply) =>
+        "diag" in reply
+          ? reply.diag
+          : ({ live: 0, collected: 0, cached: 0 } as DiagProjection),
+      );
+    },
+    async release() {
+      return send({ kind: "release" }, () => undefined);
+    },
+    async close() {
+      closed = true;
+      for (const resume of waiting.splice(0)) {
+        resume();
+      }
+      if (worker !== undefined) {
+        await Promise.race([
+          send({ kind: "release" }, () => true, undefined, true),
+          new Promise<PoolOutcome<boolean>>((resolve) =>
+            setTimeout(
+              () => resolve({ ok: false, failure: "resource_limit" }),
+              250,
+            ),
+          ),
+        ]);
+      }
+      await kill();
+    },
+    stats: () => ({
+      generation,
+      spawns,
+      terminations,
+      alive: worker !== undefined,
+    }),
+  };
+}

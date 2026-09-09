@@ -1,0 +1,50 @@
+{
+  "name": "@sk-mcp/xml-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for XML documents.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "sk-mcp-xml": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint .",
+    "check-types": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@sk-mcp/file-core": "workspace:^",
+    "libxml2-wasm": "0.7.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "@vitest/coverage-v8": "3.2.7",
+    "eslint": "10.9.1",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}
