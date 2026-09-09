@@ -38,8 +38,8 @@ jobs:
           python-version: "3.12"
       - run: pnpm install --frozen-lockfile
       - run: node .github/scripts/prepare-native.mjs
-      - run: pnpm turbo run test check-types --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp
-      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --pack-destination ./local/native-tarballs
+      - run: pnpm turbo run test check-types --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp
+      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp --pack-destination ./local/native-tarballs
       - run: python3 .github/scripts/check-npm-tarballs.py local/native-tarballs
       - run: node .github/scripts/smoke-file-packages.mjs local/native-tarballs
       - uses: actions/upload-artifact@v4
@@ -117,13 +117,13 @@ jobs:
         with:
           name: SkMcp.AspNetCore-nupkg
           path: sdks/dotnet/local/nupkg-feed/*
-      - run: pnpm turbo run build --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp
+      - run: pnpm turbo run build --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp
       - uses: actions/download-artifact@v4
         with:
           pattern: native-*
           path: packages/file-core-native/prebuilds/
           merge-multiple: true
-      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --pack-destination ./local/npm-tarballs
+      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp --pack-destination ./local/npm-tarballs
       - run: python3 .github/scripts/check-npm-tarballs.py local/npm-tarballs
         env:
           SKMCP_REQUIRE_ALL_PREBUILDS: "1"

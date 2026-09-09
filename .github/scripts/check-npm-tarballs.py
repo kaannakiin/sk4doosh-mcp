@@ -5,6 +5,7 @@ from pathlib import Path
 
 RUNTIME_FIELDS = ("dependencies", "peerDependencies", "optionalDependencies")
 REQUIRED_ENTRY = "package/dist/index.js"
+EXACT_PINS = {"@sk-mcp/xml-mcp": {"libxml2-wasm": "0.7.2"}}
 
 
 def fail(message):
@@ -47,6 +48,15 @@ def check(path):
                     problems += fail(f"{path.name} is missing {target}")
     if manifest.get("name") == "@sk-mcp/excel-mcp" and "package/dist/regex-worker.js" not in names:
         problems += fail(f"{path.name} is missing the regex worker")
+    if manifest.get("name") == "@sk-mcp/xml-mcp" and "package/dist/xml-worker.js" not in names:
+        problems += fail(f"{path.name} is missing the XML parse worker")
+
+    for name, expected in (EXACT_PINS.get(manifest.get("name")) or {}).items():
+        actual = (manifest.get("dependencies") or {}).get(name)
+        if actual != expected:
+            problems += fail(
+                f"{path.name}: dependencies.{name} must be pinned to exactly {expected}, found {actual}"
+            )
 
     maps = [name for name in names if name.endswith(".d.ts.map")]
     if maps:
