@@ -1,8 +1,13 @@
-export interface RootFacts {
-  readonly localName: string;
-  readonly namespaceUri: string;
-  readonly prefixedName: string;
-}
+import type { DescribeFacts, RootFacts } from "./describe.js";
+import type { FindPage, FindProbe } from "./find-model.js";
+import type {
+  ContextRecord,
+  NodeAddress,
+  NodePath,
+  NodeRecord,
+} from "./node-model.js";
+
+export type { RootFacts };
 
 export interface ParsedFacts {
   readonly declaredEncoding: string | null;
@@ -16,37 +21,90 @@ export interface DiagProjection {
   readonly cached: number;
 }
 
-export type WorkerRequest =
-  | {
-      readonly kind: "parse";
-      readonly id: number;
-      readonly stamp: string;
-      readonly logical: string;
-      readonly bytes: Uint8Array;
-    }
-  | { readonly kind: "diag"; readonly id: number }
-  | { readonly kind: "release"; readonly id: number };
+export interface ReadView {
+  readonly address?: NodeAddress;
+  readonly scopePath?: NodePath;
+  readonly maxDepth: number;
+  readonly maxNodes: number;
+  readonly maxChars: number;
+  readonly resume?: NodePath;
+}
 
-export type WorkerRequestBody<T = WorkerRequest> = T extends { id: number }
-  ? Omit<T, "id">
-  : never;
+export interface ReadPage {
+  readonly records: readonly NodeRecord[];
+  readonly context?: readonly ContextRecord[];
+  readonly scopeAddress: NodeAddress;
+  readonly scopePath: NodePath;
+  readonly next?: NodePath;
+}
+
+interface Resident {
+  readonly stamp: string;
+}
+
+interface WorkerOps {
+  parse: {
+    req: Resident & { readonly logical: string; readonly bytes: Uint8Array };
+    res: ParsedFacts;
+  };
+  describe: {
+    req: Resident & {
+      readonly maxVisits: number;
+      readonly maxCandidates: number;
+    };
+    res: DescribeFacts;
+  };
+  read: { req: Resident & { readonly view: ReadView }; res: ReadPage };
+  find: { req: Resident & { readonly probe: FindProbe }; res: FindPage };
+  diag: { req: Record<never, never>; res: DiagProjection };
+  release: { req: Record<never, never>; res: null };
+}
+
+export type WorkerKind = keyof WorkerOps;
+
+export type WorkerResultOf<K extends WorkerKind> = WorkerOps[K]["res"];
+
+export type WorkerRequestBody = {
+  [P in WorkerKind]: { readonly kind: P } & WorkerOps[P]["req"];
+}[WorkerKind];
+
+export type WorkerBodyOf<K extends WorkerKind> = Extract<
+  WorkerRequestBody,
+  { readonly kind: K }
+>;
+
+export type WorkerRequest = {
+  [P in WorkerKind]: {
+    readonly kind: P;
+    readonly id: number;
+  } & WorkerOps[P]["req"];
+}[WorkerKind];
 
 export type WorkerFailure =
   | "malformed_xml"
   | "doctype_not_allowed"
   | "unknown_residency"
+  | "address_not_found"
   | "internal_error";
 
-export type WorkerReply =
-  | { readonly id: number; readonly ok: true; readonly facts: ParsedFacts }
-  | { readonly id: number; readonly ok: true; readonly diag: DiagProjection }
-  | { readonly id: number; readonly ok: true }
-  | {
-      readonly id: number;
-      readonly ok: false;
-      readonly failure: WorkerFailure;
-      readonly detail?: string;
-    };
+export type WorkerSuccess = {
+  [P in WorkerKind]: {
+    readonly kind: P;
+    readonly id: number;
+    readonly ok: true;
+    readonly value: WorkerOps[P]["res"];
+  };
+}[WorkerKind];
+
+export interface WorkerRejection {
+  readonly kind: WorkerKind | "boot";
+  readonly id: number;
+  readonly ok: false;
+  readonly failure: WorkerFailure;
+  readonly detail?: string;
+}
+
+export type WorkerReply = WorkerSuccess | WorkerRejection;
 
 interface DiagEntry {
   readonly totalInstances: number;

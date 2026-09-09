@@ -2,11 +2,10 @@ import { once } from "node:events";
 import { Worker } from "node:worker_threads";
 import { limits } from "./limits.js";
 import type {
-  DiagProjection,
-  ParsedFacts,
   WorkerReply,
   WorkerRequest,
   WorkerRequestBody,
+  WorkerResultOf,
 } from "./worker-protocol.js";
 
 const entry = new URL("../dist/xml-worker.js", import.meta.url);
@@ -17,14 +16,10 @@ export type PoolOutcome<T> =
 
 export interface XmlWorkerPool {
   readonly generation: number;
-  parse(
-    stamp: string,
-    logical: string,
-    bytes: Uint8Array,
+  ask<B extends WorkerRequestBody>(
+    body: B,
     signal?: AbortSignal,
-  ): Promise<PoolOutcome<ParsedFacts>>;
-  diagnose(): Promise<PoolOutcome<DiagProjection>>;
-  release(): Promise<PoolOutcome<void>>;
+  ): Promise<PoolOutcome<WorkerResultOf<B["kind"]>>>;
   onGenerationChange(listener: () => void): void;
   slots(): Promise<() => void>;
   close(): Promise<void>;
@@ -115,12 +110,12 @@ export function createXmlWorkerPool(
     return spawned;
   }
 
-  async function send<T>(
-    request: WorkerRequestBody,
-    read: (reply: WorkerReply) => T,
+  async function send<B extends WorkerRequestBody>(
+    request: B,
     signal?: AbortSignal,
     draining = false,
-  ): Promise<PoolOutcome<T>> {
+  ): Promise<PoolOutcome<WorkerResultOf<B["kind"]>>> {
+    type Outcome = PoolOutcome<WorkerResultOf<B["kind"]>>;
     if (closed && !draining) {
       return { ok: false, failure: "resource_limit", detail: "closed" };
     }
@@ -132,9 +127,9 @@ export function createXmlWorkerPool(
     }
     nextId += 1;
     const id = nextId;
-    return await new Promise<PoolOutcome<T>>((resolve) => {
+    return await new Promise<Outcome>((resolve) => {
       let settled = false;
-      const finish = (outcome: PoolOutcome<T>): void => {
+      const finish = (outcome: Outcome): void => {
         if (settled) {
           return;
         }
@@ -147,53 +142,39 @@ export function createXmlWorkerPool(
         if (reply.id !== id) {
           return;
         }
-        finish(
-          reply.ok
-            ? { ok: true, value: read(reply) }
-            : {
-                ok: false,
-                failure: reply.failure,
-                ...(reply.detail === undefined ? {} : { detail: reply.detail }),
-              },
-        );
+        if (!reply.ok) {
+          finish({
+            ok: false,
+            failure: reply.failure,
+            ...(reply.detail === undefined ? {} : { detail: reply.detail }),
+          });
+          return;
+        }
+        if (reply.kind !== request.kind) {
+          finish({ ok: false, failure: "internal_error", detail: "kind" });
+          return;
+        }
+        finish({ ok: true, value: reply.value as WorkerResultOf<B["kind"]> });
       };
-      const timer = setTimeout(() => {
+      const abandon = (detail: string): void => {
         if (settled) {
           return;
         }
         settled = true;
         active.off("message", onMessage);
+        clearTimeout(timer);
         void kill().then(() => {
-          resolve({
-            ok: false,
-            failure: "resource_limit",
-            detail: "timeout",
-          });
+          resolve({ ok: false, failure: "resource_limit", detail });
         });
-      }, budgetMs);
+      };
+      const timer = setTimeout(() => abandon("timeout"), budgetMs);
       if (signal?.aborted === true) {
         finish({ ok: false, failure: "resource_limit", detail: "aborted" });
         return;
       }
-      signal?.addEventListener(
-        "abort",
-        () => {
-          if (settled) {
-            return;
-          }
-          settled = true;
-          active.off("message", onMessage);
-          clearTimeout(timer);
-          void kill().then(() => {
-            resolve({
-              ok: false,
-              failure: "resource_limit",
-              detail: "aborted",
-            });
-          });
-        },
-        { once: true },
-      );
+      signal?.addEventListener("abort", () => abandon("aborted"), {
+        once: true,
+      });
       active.on("message", onMessage);
       active.postMessage({ ...request, id } as WorkerRequest);
     });
@@ -234,22 +215,8 @@ export function createXmlWorkerPool(
         }
       };
     },
-    async parse(stamp, logical, bytes, signal) {
-      return send(
-        { kind: "parse", stamp, logical, bytes },
-        (reply) => ("facts" in reply ? reply.facts : undefined) as ParsedFacts,
-        signal,
-      );
-    },
-    async diagnose() {
-      return send({ kind: "diag" }, (reply) =>
-        "diag" in reply
-          ? reply.diag
-          : ({ live: 0, collected: 0, cached: 0 } as DiagProjection),
-      );
-    },
-    async release() {
-      return send({ kind: "release" }, () => undefined);
+    async ask(body, signal) {
+      return send(body, signal);
     },
     async close() {
       closed = true;
@@ -258,8 +225,8 @@ export function createXmlWorkerPool(
       }
       if (worker !== undefined) {
         await Promise.race([
-          send({ kind: "release" }, () => true, undefined, true),
-          new Promise<PoolOutcome<boolean>>((resolve) =>
+          send({ kind: "release" }, undefined, true),
+          new Promise<PoolOutcome<null>>((resolve) =>
             setTimeout(
               () => resolve({ ok: false, failure: "resource_limit" }),
               250,

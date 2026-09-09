@@ -91,6 +91,17 @@ const probes = [
     command:
       "SKMCP_XML_BENCH=1 node --max-old-space-size=3072 packages/xml-lab/test/probes/budget.mjs",
   },
+  {
+    task: "F2-10",
+    probe: "residency",
+    file: "f2-10-residency.json",
+    options: {
+      execArgv: ["--expose-gc", "--max-old-space-size=3072"],
+      timeoutMs: 600_000,
+    },
+    command:
+      "SKMCP_XML_BENCH=1 node --expose-gc packages/xml-lab/test/probes/residency.mjs",
+  },
 ];
 
 mkdirSync(outputDirectory, { recursive: true });

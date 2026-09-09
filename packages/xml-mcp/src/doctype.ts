@@ -1,11 +1,53 @@
 import { detectByteOrderMark } from "@sk-mcp/file-core";
 
+export type UnsupportedPrologEncoding =
+  | "ucs-4be"
+  | "ucs-4le"
+  | "ucs-4-2143"
+  | "ucs-4-3412"
+  | "ebcdic";
+
 export interface PrologScan {
   readonly doctype: boolean;
   readonly limitReached: boolean;
+  readonly unsupportedEncoding?: UnsupportedPrologEncoding;
 }
 
 const whitespace = new Set([" ", "\t", "\r", "\n"]);
+
+function at(bytes: Buffer, index: number): number {
+  return bytes[index] ?? -1;
+}
+
+function matches(bytes: Buffer, pattern: readonly number[]): boolean {
+  if (bytes.length < pattern.length) return false;
+  return pattern.every((byte, index) => at(bytes, index) === byte);
+}
+
+/**
+ * XML 1.0 Appendix F. detectByteOrderMark names utf-32 correctly, but
+ * decodeProlog has no branch for it and none for EBCDIC, so those prologs used
+ * to fall through to the utf-8 reading, produce a first character that is not
+ * "<", and report no DOCTYPE. Measured on the DOCTYPE corpus: utf-32le with a
+ * mark, utf-32be and utf-32le without one, and an EBCDIC prolog were all missed
+ * while the utf-8 control was caught. Refusing the family up front is what keeps
+ * the prolog scanner, and not the doc.dtd backstop M11 measured as too late,
+ * the primary gate.
+ */
+export function unsupportedPrologEncoding(
+  bytes: Buffer,
+): UnsupportedPrologEncoding | undefined {
+  if (matches(bytes, [0x00, 0x00, 0xfe, 0xff])) return "ucs-4be";
+  if (matches(bytes, [0xff, 0xfe, 0x00, 0x00])) return "ucs-4le";
+  if (matches(bytes, [0x00, 0x00, 0xff, 0xfe])) return "ucs-4-2143";
+  if (matches(bytes, [0xfe, 0xff, 0x00, 0x00])) return "ucs-4-3412";
+  if (matches(bytes, [0x00, 0x00, 0x00, 0x3c])) return "ucs-4be";
+  if (matches(bytes, [0x3c, 0x00, 0x00, 0x00])) return "ucs-4le";
+  if (matches(bytes, [0x00, 0x00, 0x3c, 0x00])) return "ucs-4-2143";
+  if (matches(bytes, [0x00, 0x3c, 0x00, 0x00])) return "ucs-4-3412";
+  if (matches(bytes, [0x4c, 0x6f, 0xa7, 0x94])) return "ebcdic";
+  return undefined;
+}
 
 function swapPairs(source: Buffer): Buffer {
   const swapped = Buffer.from(source);
@@ -77,6 +119,14 @@ function scanWindow(bytes: Buffer, windowBytes: number): PrologScan {
 }
 
 export function scanProlog(bytes: Buffer, windowBytes: number): PrologScan {
+  const unsupported = unsupportedPrologEncoding(bytes);
+  if (unsupported !== undefined) {
+    return {
+      doctype: false,
+      limitReached: false,
+      unsupportedEncoding: unsupported,
+    };
+  }
   const first = scanWindow(bytes, windowBytes);
   if (!first.limitReached) {
     return first;

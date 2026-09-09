@@ -1,16 +1,15 @@
 import { parentPort, workerData } from "node:worker_threads";
-import { diag, ParseOption, XmlDocument } from "libxml2-wasm";
+import { diag, XmlDocument } from "libxml2-wasm";
+import { describeDocument, rootFactsOf } from "./describe.js";
+import { scan } from "./find.js";
+import { HARDENED } from "./parse-policy.js";
+import { resolveAddress, resolveScopePath, walk } from "./traverse.js";
 import {
   projectDiag,
   type ParsedFacts,
   type WorkerReply,
   type WorkerRequest,
 } from "./worker-protocol.js";
-
-const HARDENED =
-  ParseOption.XML_PARSE_NO_XXE |
-  ParseOption.XML_PARSE_NONET |
-  ParseOption.XML_PARSE_NO_SYS_CATALOG;
 
 const port = parentPort;
 if (port === null) {
@@ -61,15 +60,10 @@ function evict(): void {
 }
 
 function factsOf(document: XmlDocument): ParsedFacts {
-  const root = document.root;
   return {
     declaredEncoding: document.encoding ?? null,
     warningCount: document.warnings.length,
-    root: {
-      localName: root.name,
-      namespaceUri: root.namespaceUri ?? "",
-      prefixedName: root.name,
-    },
+    root: rootFactsOf(document),
   };
 }
 
@@ -121,24 +115,99 @@ function releaseAll(): void {
   byLogical.clear();
 }
 
+function missing(kind: WorkerRequest["kind"], id: number): WorkerReply {
+  return { kind, id, ok: false, failure: "unknown_residency" };
+}
+
+function unaddressed(kind: WorkerRequest["kind"], id: number): WorkerReply {
+  return { kind, id, ok: false, failure: "address_not_found" };
+}
+
+function handle(request: WorkerRequest): WorkerReply {
+  switch (request.kind) {
+    case "parse":
+      return { kind: "parse", id: request.id, ok: true, value: adopt(request) };
+    case "describe": {
+      const document = touch(request.stamp);
+      if (document === undefined) return missing(request.kind, request.id);
+      return {
+        kind: "describe",
+        id: request.id,
+        ok: true,
+        value: describeDocument(
+          document,
+          request.maxVisits,
+          request.maxCandidates,
+        ),
+      };
+    }
+    case "read": {
+      const document = touch(request.stamp);
+      if (document === undefined) return missing(request.kind, request.id);
+      const scope =
+        request.view.scopePath === undefined
+          ? resolveAddress(document.root, request.view.address ?? [])
+          : resolveScopePath(document.root, request.view.scopePath);
+      if (scope === undefined) return unaddressed(request.kind, request.id);
+      const page = walk(scope, request.view, request.view.resume);
+      return {
+        kind: "read",
+        id: request.id,
+        ok: true,
+        value: {
+          records: page.records,
+          scopeAddress: scope.address,
+          scopePath: scope.path,
+          ...(page.context === undefined ? {} : { context: page.context }),
+          ...(page.next === undefined ? {} : { next: page.next }),
+        },
+      };
+    }
+    case "find": {
+      const document = touch(request.stamp);
+      if (document === undefined) return missing(request.kind, request.id);
+      const scope =
+        request.probe.scopePath === undefined
+          ? resolveAddress(document.root, request.probe.scopeAddress ?? [])
+          : resolveScopePath(document.root, request.probe.scopePath);
+      if (scope === undefined) return unaddressed(request.kind, request.id);
+      return {
+        kind: "find",
+        id: request.id,
+        ok: true,
+        value: scan(scope, request.probe),
+      };
+    }
+    case "diag":
+      return {
+        kind: "diag",
+        id: request.id,
+        ok: true,
+        value: projectDiag(diag.report(), documents.size),
+      };
+    case "release":
+      releaseAll();
+      return { kind: "release", id: request.id, ok: true, value: null };
+    default: {
+      const unreachable: never = request;
+      return {
+        kind: "boot",
+        id: (unreachable as { readonly id: number }).id,
+        ok: false,
+        failure: "internal_error",
+      };
+    }
+  }
+}
+
 port.on("message", (request: WorkerRequest) => {
   let reply: WorkerReply;
   try {
-    if (request.kind === "parse") {
-      reply = { id: request.id, ok: true, facts: adopt(request) };
-    } else if (request.kind === "diag") {
-      reply = {
-        id: request.id,
-        ok: true,
-        diag: projectDiag(diag.report(), documents.size),
-      };
-    } else {
-      releaseAll();
-      reply = { id: request.id, ok: true };
-    }
+    reply = handle(request);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     reply = {
+      kind: request.kind,
       id: request.id,
       ok: false,
       failure:
@@ -151,4 +220,4 @@ port.on("message", (request: WorkerRequest) => {
   port.postMessage(reply);
 });
 
-port.postMessage({ id: 0, ok: true });
+port.postMessage({ kind: "boot", id: 0, ok: true, value: null });
