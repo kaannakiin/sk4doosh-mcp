@@ -4,7 +4,7 @@ Durum: XML mimarisi için kabul kapılarına bağlı uygulama kararı; Excel/fil
 
 ## K1 — Birincil motor: libxml2-wasm
 
-Küçük ve orta boyutlu belgeler için `libxml2-wasm` seçildi. F0-01 ile `0.7.2` tam sürüme sabitlendi; sürüm, bütünlük değeri, iki ayrı lisans katmanı, artifact'ı üreten commit ve gömülü libxml2 `2.15.1` sürümü [bağımlılık karar ekinde](bagimlilik-karar-eki.md) kayıtlıdır. Araştırmadaki `^0.7.2` ifadesi sabitleme değildi ve kullanılmadı.
+Küçük ve orta boyutlu belgeler için `libxml2-wasm` seçildi. F0-01 ile `0.7.2` tam sürüme sabitlendi ve [10/10 platform CI](f0-kanit-kaydi.md) ile kabul edildi; sürüm, bütünlük değeri, iki ayrı lisans katmanı, artifact'ı üreten commit ve gömülü libxml2 `2.15.1` sürümü [bağımlılık karar ekinde](bagimlilik-karar-eki.md) kayıtlıdır. Araştırmadaki `^0.7.2` ifadesi sabitleme değildi ve kullanılmadı.
 
 Önceki devirdeki kaynak incelemesi (`394487987eece208b5d02274fedc6c292f84ee6b`, `0.8.0-dev`) **dağıtılan artifact değildir**: doğrulanmış SLSA provenance, `0.7.2`'nin `6e4dc82a323b6d27f2b3aca6dbec868949be83b7` commit'inden üretildiğini gösteriyor. Kaynak okumasındaki API olguları bu nedenle kurulu artifact üzerinde ayrıca ölçüldü.
 

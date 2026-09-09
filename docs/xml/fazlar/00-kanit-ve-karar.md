@@ -1,6 +1,6 @@
 # F0 — Kanıt ve karar kapısı
 
-Durum: F0-01–09 için yerel kanıt üretildi; **platform CI bekliyor** (2026-09-08). Sonuçlar: [F0 kanıt kaydı](../f0-kanit-kaydi.md), makine kayıtları [docs/xml/f0/](../f0/). Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. XML öncesi Excel/file-core güvenlik kapısı tamamlandı. F0-01 için yerel kanıt üretildi ve [bağımlılık karar ekine](../bagimlilik-karar-eki.md) yazıldı; **platform CI kanıtı henüz yok, bu nedenle hiçbir görev `tamamlandı` değildir.** F0-02–09 deneyleri açık. Deney harness'ı `packages/xml-lab`; `packages/xml-mcp` hâlâ mevcut değil ve F0 onu oluşturmaz.
+Durum: **tamamlandı** (2026-09-09). Kanıt: [run 34289898377](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34289898377), commit `6bc8486`, beş hedef × Node 22/24 = 10/10 ayak, 80/80 kayıt pass. Sonuçlar [F0 kanıt kaydında](../f0-kanit-kaydi.md); deney harness'ı `packages/xml-lab`. Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. XML öncesi Excel/file-core güvenlik kapısı tamamlandı. F0-01 için yerel kanıt üretildi ve [bağımlılık karar ekine](../bagimlilik-karar-eki.md) yazıldı; **platform CI kanıtı henüz yok, bu nedenle hiçbir görev `tamamlandı` değildir.** F0-02–09 deneyleri açık. Deney harness'ı `packages/xml-lab`; `packages/xml-mcp` hâlâ mevcut değil ve F0 onu oluşturmaz.
 
 ## Güncel başlangıç noktası
 

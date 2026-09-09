@@ -1,6 +1,6 @@
 # XML MCP test ve agent değerlendirme planı
 
-Durum: XML'e özgü test tasarımı henüz uygulanmadı (2026-09-08). Ortak native/file-core/Excel testleri uygulanıp çalıştırıldı: 450 test ve beş hedef × Node 22/24 için [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 başarılı. XML runtime testi, XML benchmark'ı ve agent kabul kaydı henüz yok.
+Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F2 ve sonrasına ait T kimlikleri açık (2026-09-09). Ortak native/file-core/Excel testleri uygulanıp çalıştırıldı: 450 test ve beş hedef × Node 22/24 için [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 başarılı. XML runtime testi, XML benchmark'ı ve agent kabul kaydı henüz yok.
 
 T10/T11/T12/T15'in ortak dosya katmanı regresyonları mevcut; bu tablodaki XML uzantısı/handler/cursor bağlantısı ayrıca kanıtlanacak. Excel regex worker testleri T09 veya XML disposal testlerinin yerine geçmez. Bulgu bazlı sonuçlar [kapanış kaydında](excel-hardening-uygulama.md); aşağıdaki T kimlikleri XML kabul görevleri olarak açık kalır.
 

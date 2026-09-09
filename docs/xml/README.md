@@ -25,7 +25,7 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 
 | Faz                                                                  | Sonuç                                                  | Önkoşul                             | Durum                                           |
 | -------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------- | ----------------------------------------------- |
-| [F0 — Kanıt ve teknik karar kapısı](fazlar/00-kanit-ve-karar.md)     | XML motorunun gerçek paket üzerinde doğrulanması       | Excel/file-core kapısı geçti        | Yerel kanıt üretildi; platform CI bekliyor      |
+| [F0 — Kanıt ve teknik karar kapısı](fazlar/00-kanit-ve-karar.md)     | XML motorunun gerçek paket üzerinde doğrulanması       | Excel/file-core kapısı geçti        | Tamamlandı; 10/10 platform CI                   |
 | [F1 — Ortak çekirdek ve Excel](fazlar/01-ortak-cekirdek-ve-excel.md) | Dosya güvenliği, Excel düzeltmeleri ve XML kaynak ömrü | XML yaşam döngüsü için F0           | Kısmen tamamlandı; F1-03/05/06 XML kapsamı açık |
 | [F2 — Salt okunur MVP](fazlar/02-okuma-mvp.md)                       | Dört tool ile keşif, düğüm okuma ve metin arama        | F0 + F1-03/05/06 XML kapsamı        | Başlanmadı                                      |
 | [F3 — XPath ve kayıt analizi](fazlar/03-sorgu-ve-kayitlar.md)        | XPath 1.0, açık projeksiyon ve kontrollü aggregate     | F2                                  | Başlanmadı                                      |

@@ -1,8 +1,8 @@
 # F0 kanıt kaydı
 
-Durum: F0-01–09 için **yerel kanıt üretildi; platform CI kanıtı bekliyor.** Hiçbir görev henüz `tamamlandı` değildir — README yönetim kuralı: _"Durum yalnızca kanıt bağlantısıyla `tamamlandı` yapılır. Yerel başarı, platform CI başarısı yerine geçmez."_
+Durum: **F0-01–09 tamamlandı.** Platform CI kanıtı alındı: [run 34289898377](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34289898377), commit `6bc8486`, beş hedef × Node 22/24 = **10/10 ayak, 80/80 kayıt pass, hiçbiri inconclusive değil.**
 
-Deney harness'ı [`packages/xml-lab`](../../packages/xml-lab/). Makine okunur kayıtlar [`docs/xml/f0/`](f0/) altında. **Bu belgede JSON'da bulunmayan hiçbir sayı geçmez.**
+Deney harness'ı [`packages/xml-lab`](../../packages/xml-lab/). Repo'da duran [`docs/xml/f0/`](f0/) kayıtları yerel bir tekrar üretimdir; **kapının kanıtı yukarıdaki CI koşusunun artifact'larıdır.** Bu belgede JSON'da bulunmayan hiçbir sayı geçmez; platformlar arası değerler aralık olarak verilir.
 
 ## Ortam
 
@@ -14,21 +14,23 @@ Deney harness'ı [`packages/xml-lab`](../../packages/xml-lab/). Makine okunur ka
 | Sertleştirilmiş bayrak | `XML_PARSE_NO_XXE \| XML_PARSE_NONET \| XML_PARSE_NO_SYS_CATALOG` |
 | `maxRSS` birimi        | KiB (ölçümle çözüldü, devralınmadı)                               |
 
-**Node 22 ayağı yerelde koşulmadı.** F0-02'nin "Node 22/24" ölçütü ancak CI iki major'ı da kaydettiğinde kapanır.
+CI on ayağın tamamında `collect-evidence.mjs` koştu; gömülü libxml2 sürümü (`2.15.1`) ve provenance commit'i (`6e4dc82a`) on ayakta da aynı çıktı.
 
 ## Görev tablosu
 
-| Görev | Sonuç      | Kayıt                                                                             | Kritik gözlem                                                            |
-| ----- | ---------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| F0-01 | pass 49/49 | [f0-01-surface.json](f0/f0-01-surface.json), [karar eki](bagimlilik-karar-eki.md) | Artifact `6e4dc82a` commit'inden; incelenen `3944879` değil              |
-| F0-02 | pass 10/10 | [f0-02-consumer.json](f0/f0-02-consumer.json)                                     | fd 1 temiz; WASM pack içinden; cold import p95 14,101 ms                 |
-| F0-03 | pass 57/57 | [f0-03-semantics.json](f0/f0-03-semantics.json)                                   | Çarpım matrisinde sıfır URI sızıntısı; dört skaler tip kimliğini koruyor |
-| F0-04 | pass 31/31 | [f0-04-encoding-matrix.json](f0/f0-04-encoding-matrix.json)                       | Sıfır sessiz bozulma; 15 satır açık hatayla reddedildi                   |
-| F0-05 | pass 14/14 | [f0-05-security.json](f0/f0-05-security.json)                                     | arm3 pozitif kontrolü ateşledi; aday C ve D `fp=0 fn=0`                  |
-| F0-06 | pass 13/13 | [f0-06-worker.json](f0/f0-06-worker.json)                                         | terminate/edilmeyen CPU durma oranı 4934,6 (eşik 10)                     |
-| F0-07 | pass 15/15 | [f0-07-lifetime.json](f0/f0-07-lifetime.json)                                     | `diag` tier-1 ikili oracle; tier-2 bu host'ta ayırt edici **değil**      |
-| F0-08 | pass 5/5   | [f0-08-measurements.json](f0/f0-08-measurements.json)                             | 8 MiB üç şekilde de geçti; bütçeler türetildi                            |
-| F0-09 | bu belge   | —                                                                                 | Kabul; K1 korunuyor                                                      |
+Sonuçlar on CI ayağının tamamı içindir.
+
+| Görev | Sonuç    | Kritik gözlem (platformlar arası)                                                      |
+| ----- | -------- | -------------------------------------------------------------------------------------- |
+| F0-01 | pass     | Artifact `6e4dc82a`'dan; gömülü libxml2 `2.15.1`; [karar eki](bagimlilik-karar-eki.md) |
+| F0-02 | pass     | fd 1 temiz, bozuk belgede fd 2'ye de 0 byte; cold import p95 19,183–51,673 ms          |
+| F0-03 | pass     | Çarpım matrisinde sıfır URI sızıntısı; dört skaler tip kimliğini koruyor               |
+| F0-04 | pass     | **Sessiz bozulma sıfır**, on ayakta da                                                 |
+| F0-05 | pass     | Aday C `0fp/0fn`, aday A `3fp/1fn`; pozitif kontrol her ayakta ateşledi                |
+| F0-06 | pass     | Durma oranı 1314,8–4163,3 (iki ayakta sonsuz); negatif kontrol her ayakta kurdu        |
+| F0-07 | pass     | `diag` tier-1 her yolda 0 canlı; geri kazanım oranı −0,0032…0                          |
+| F0-08 | pass     | 8 MiB on ayakta da geçti; **10/10 kesin ölçüm**, inconclusive yok                      |
+| F0-09 | bu belge | Kabul; K1 korunuyor                                                                    |
 
 ## Tekrar üretme
 
@@ -41,43 +43,54 @@ SKMCP_XML_BENCH=1 node packages/xml-lab/collect-evidence.mjs
 
 ## Pozitif kontroller
 
-Ateşleyemeyen bir dedektör kanıt değildir. Üçü de ateşledi:
+Ateşleyemeyen bir dedektör kanıt değildir. Üçü de on ayağın tamamında ateşledi:
 
-| Kontrol                         | Beklenen           | Ölçülen                              |
-| ------------------------------- | ------------------ | ------------------------------------ |
-| F0-05 `arm3_register_providers` | Canary'ye ulaşmalı | `tokenSeen: true`, `fsExistsSync: 4` |
-| F0-06 `e06-05b` (terminate yok) | CPU meşgul kalmalı | `busyFraction 0,982`                 |
-| F0-07 `e07-00` (kasıtlı leak)   | Tier-1 görmeli     | 0 → 40 canlı instance                |
+| Kontrol                         | Beklenen           | On ayaktaki sonuç                |
+| ------------------------------- | ------------------ | -------------------------------- |
+| F0-05 `arm3_register_providers` | Canary'ye ulaşmalı | `providerConsulted: true`, 10/10 |
+| F0-06 `e06-05b` (terminate yok) | CPU meşgul kalmalı | `baseline: true`, 10/10          |
+| F0-07 `e07-00` (kasıtlı leak)   | Tier-1 görmeli     | canlı sayı 0 → 40, 10/10         |
 
-Dördüncü bir kontrol **negatif** sonuç verdi ve bu da kayda geçti: F0-07 tier-2 istatistiksel katmanı 220 belgelik kasıtlı bir leak'i **yakalayamadı** (`tier2DetectedIt: false`). Allocator gürültüsü (medyan kayma 6–22 MiB) sinyalin üstünde. Bu nedenle **bellek kapısı tier-1 `diag` oracle'ıdır; RSS istatistikleri bu host'ta kanıt ağırlığı taşımaz** ve yalnız kayıt amaçlı tutulur.
+**Windows'ta pozitif kontrol daha zayıf.** `arm3` iki seviyeye ayrıldı ve seviyeler platforma göre değişiyor:
+
+| Platform      | Sağlayıcıya danışıldı | Canary içeriği belgeye ulaştı |
+| ------------- | --------------------- | ----------------------------- |
+| linux, darwin | evet                  | **evet**                      |
+| win32         | evet                  | **hayır**                     |
+
+Windows'ta `fsExistsSync` ateşliyor ama dosya hiç açılmıyor. Dolayısıyla o platformda negatif kolların sıfır sonucu _"sağlayıcıya hiç danışılmadı"_ iddiasını destekler, _"içerik sızması tespit edilebilirdi"_ iddiasını **desteklemez**. İki Windows ayağı bunu kendi kayıtlarına limit satırı olarak yazıyor.
+
+Dördüncü bir kontrol **negatif** sonuç verdi ve bu da on ayakta tutarlı: F0-07 tier-2 istatistiksel katmanı 220 belgelik kasıtlı bir leak'i **hiçbir ayakta yakalayamadı** (`tier2DetectedIt: false`, 10/10). Allocator gürültüsü sinyalin üstünde. **Bellek kapısı tier-1 `diag` oracle'ıdır; RSS istatistikleri kanıt ağırlığı taşımaz** ve yalnız kayıt amaçlı tutulur.
 
 ## Çıkış kapısının dört bloğu
 
-| Blok                        | Sonuç          | Dayanak                                                                                               |
-| --------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- |
-| Dış I/O kapatılamıyorsa     | **Kapalı**     | arm1/2/4/5 bütün dedektörlerde sıfır; arm3 aynı canary'yi ateşliyor, yani sıfırlar anlamlı            |
-| Encoding sessiz bozuluyorsa | **Bozulmuyor** | 31 satırın hiçbirinde `silentCorruption`; `enc-lie-1254-says-utf8` reddedildi                         |
-| Disposal/iptal güvenilmezse | **Güvenilir**  | terminate senkron WASM'ı kesiyor (durma oranı 4934,6); `diag` her yolda 0 canlı, `garbageCollected` 0 |
-| WASM dağıtımı çalışmıyorsa  | **Çalışıyor**  | `--ignore-scripts` kurulumu çalışıyor; WASM pack içinde gömülü; fd 1 temiz                            |
+| Blok                        | Sonuç          | Dayanak (on ayak)                                                                        |
+| --------------------------- | -------------- | ---------------------------------------------------------------------------------------- |
+| Dış I/O kapatılamıyorsa     | **Kapalı**     | arm1/2/4/5 bütün dedektörlerde sıfır; arm3 aynı canary'yi her ayakta ateşliyor           |
+| Encoding sessiz bozuluyorsa | **Bozulmuyor** | `silentCorruptionRows` on ayakta da boş                                                  |
+| Disposal/iptal güvenilmezse | **Güvenilir**  | Durma oranı en düşük ayakta bile 1314,8 (eşik 10); `diag` her yolda 0 canlı, GC sayacı 0 |
+| WASM dağıtımı çalışmıyorsa  | **Çalışıyor**  | `--ignore-scripts` kurulumu on ayakta çalıştı; fd 1 ve fd 2 temiz                        |
 
 ## Türetilmiş bütçeler
 
-`tool-sozlesmesi.md`'deki başlangıç değerleri ölçüm hedefiydi. Ölçülen karşılıkları:
+`tool-sozlesmesi.md`'deki başlangıç değerleri ölçüm hedefiydi. Türetim kuralı **en yavaş kesin ölçüm veren ayaktır**; on ayağın onu da kesin ölçtü, en yavaşı `darwin-x64` Node 22 (toplam p95 523,311 ms).
 
-| Kaynak             | Başlangıç önerisi | Ölçülen sonuç                                | Not                                                                      |
-| ------------------ | ----------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| DOM'a alınan dosya | 8 MiB             | **8 MiB korunuyor**                          | En kötü şekil toplam p95 82,639 ms                                       |
-| Parse/sorgu süresi | 2 s               | **0,5 s**                                    | 3 × en kötü p95, 500 ms tabanına yuvarlandı                              |
-| Etkin worker       | 1                 | **1**                                        | Değişmedi                                                                |
-| Kuyruk             | en fazla 4        | **8**, sınırlayan: pinlenen snapshot belleği | İstemci sabri 20'ye izin veriyordu; 64 MiB ana süreç bütçesi 8'e indirdi |
-| DOM derinliği      | 128               | **128 korunuyor**                            | Motor 256'da parse ediyor, 1024'te reddediyor; 128 önce bağlıyor         |
-| Sayfa              | 50 / 200          | Ölçülmedi                                    | Yanıt zarfı F2-08'e ait                                                  |
+| Kaynak             | Başlangıç önerisi | Ölçülen sonuç       | Not                                                                                                            |
+| ------------------ | ----------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| DOM'a alınan dosya | 8 MiB             | **8 MiB korunuyor** | On ayakta da üç şekil geçti (`measuredUpToMiB: 8`)                                                             |
+| Parse/sorgu süresi | 2 s               | **2 s doğrulandı**  | 3 × 523,311 ms → 2000 ms; hızlı hostlarda 500 ms çıkıyordu                                                     |
+| Etkin worker       | 1                 | **1**               | Değişmedi                                                                                                      |
+| Kuyruk             | en fazla 4        | **5**               | En yavaş hostta istemci sabri (10 s / 2 s) bağlıyor; hızlı hostlarda 8 ve sınırlayan pinlenen snapshot belleği |
+| DOM derinliği      | 128               | **128 korunuyor**   | Motor on ayakta da 256'da parse ediyor, 1024'te reddediyor                                                     |
+| Sayfa              | 50 / 200          | Ölçülmedi           | Yanıt zarfı F2-08'e ait                                                                                        |
 
-Süre bütçesi hedeflenenin **dörtte biri** çıktı; bu bir gevşetme değil, ölçümün hedeften iyi olması. Kuyruk derinliği ise iki bağımsız kısıtın küçüğüdür ve bağlayıcı olan istemci sabri değil, ana süreçte pinlenen `B_q × B_f` byte'tır.
+**Yerel ölçüm yanıltıcıydı ve bu türetim kuralının neden var olduğunu gösteriyor.** Kendi makinemde süre bütçesi 500 ms çıkıyordu ve "hedeflenenin dörtte biri" diye kaydedilmişti. En yavaş desteklenen host 523 ms p95 verince bütçe 2000 ms'e çıktı — yani `tool-sozlesmesi.md`'nin başlangıçtaki 2 s önerisi doğruymuş. Tek host ölçümüyle yayınlansaydı bütçe dört kat dar olacaktı.
 
-Cold start: modül import p95 14,101 ms, ilk parse p95 1,595 ms. 300 ms eşiğinin çok altında olduğu için **ön ısıtma gerekmiyor** ve cold start süre bütçesine katlanabilir.
+Kuyruk derinliği iki bağımsız kısıtın küçüğü olduğu için host'a göre değişiyor: yavaş hostta süre bütçesi büyüdüğü için istemci sabri bağlıyor (5), hızlı hostta ana süreçte pinlenen `B_q × B_f` byte bağlıyor (8). Yayınlanacak değer **5**.
 
-Süreç tepe RSS'i tüm 9 hücrelik matris için 256.096 KiB. Hücre başına marjinal RSS ısınmadan sonra sıfıra yakındır; WASM heap high-water'ı ısınma sırasında kurulur, bu yüzden tek sayı olarak tepe RSS kullanılır.
+Cold start: modül import p95 on ayakta 19,183–51,673 ms. 300 ms eşiğinin altında olduğu için **ön ısıtma gerekmiyor**.
+
+Süreç tepe RSS'i 9 hücrelik matris için 239.568–275.024 KiB aralığında.
 
 ## DOCTYPE dedektörü
 
@@ -94,35 +107,43 @@ Nihai politika **C ∧ D ∧ sertleştirilmiş bayraklar**. C'nin anahtar özell
 
 ## Paylaşımlı runner'a karşı sertleştirme
 
+İlk CI koşusu 10/10 geçti; ikincisi `darwin-x64` Node 24'te kırmızıydı. Sebep motor değildi: o runner'da hiçbir boyut kademesi üç şekilde birden kararlı ölçülemedi. Harness bunu `fail` diye raporluyordu, yani "ölçemedik" ile "motor bütçeyi tutturamadı" aynı kovaya düşüyordu.
+
 Ölçüm kapıları mutlak eşiklerden sağlam istatistiklere çevrildi; hiçbirinde eşik gevşetilmedi, ölçütün şekli değişti.
 
-| Risk               | Eski ölçüt                   | Yeni ölçüt                                                              | Yerel pay                       |
-| ------------------ | ---------------------------- | ----------------------------------------------------------------------- | ------------------------------- |
-| F0-08 kararlılığı  | CV ≤ 0,30, her hücre geçmeli | Relative MAD ≤ 0,15; kararsız hücre isimlendirilip türetimden çıkarılır | En kötü hücre 0,02'de, 7,5× pay |
-| F0-06 CPU oracle   | Mutlak `busyFraction < 0,05` | İki kolun oranı ≥ 10; negatif kontrol baseline kuramazsa `inconclusive` | Oran 4934,6, 490× pay           |
-| F0-07 geri kazanım | Ortalama, 3 döngü            | Medyan, 8 serpiştirilmiş döngü; ayak izi ölçülemezse `inconclusive`     | Oran 0,000 (eşik 0,1)           |
+| Risk               | Eski ölçüt                   | Yeni ölçüt                                                  | On ayaktaki değer |
+| ------------------ | ---------------------------- | ----------------------------------------------------------- | ----------------- |
+| F0-08 kararlılığı  | CV ≤ 0,30, her hücre geçmeli | Relative MAD ≤ 0,15; kararsız hücre isimlendirilip dışlanır | 10/10 kesin ölçüm |
+| F0-06 CPU oracle   | Mutlak `busyFraction < 0,05` | İki kolun **oranı** ≥ 10                                    | 1314,8–4163,3     |
+| F0-07 geri kazanım | Ortalama, 3 döngü            | Medyan, 8 serpiştirilmiş döngü                              | −0,0032…0         |
 
-CV'den MAD'a geçişin gerekçesi tek bir yavaş iterasyonun ortalama tabanlı dağılımı sürüklemesiydi — aynı gerekçe zaten Theil–Sen'in OLS yerine seçilmesinde kullanılmıştı. CPU oracle'ının orana çevrilmesi ölçütü host hızından bağımsız kılar: yavaş bir runner'da mutlak kesir düşer, oran korunur.
+Ortalamadan medyana ve CV'den MAD'a geçişin gerekçesi aynı: tek bir aykırı örnek ortalama tabanlı istatistiği sürüklüyordu. CPU oracle'ının orana çevrilmesi ölçütü host hızından bağımsız kılar — yavaş bir runner'da mutlak kesir düşer, oran korunur.
 
-Bu koşuda mekanizma canlı çalıştı: `nodes-1mib` kararsız işaretlendi, adıyla kaydedildi ve türetimden çıkarıldı; bütçe 4 ve 8 MiB kademelerinden türetildi.
+**Ölçülemezlik artık ayrı bir sonuç.** F0-08 kararlı kademe bulamazsa `inconclusive` raporluyor ve bütçe türetimine girmiyor. Bunu yalnız F0-08 yapabilir; F0-05, F0-06 ve F0-07 hâlâ `pass` şart koşuyor, çünkü kendi dedektörünü kanıtlayamayan bir güvenlik kapısı yeşile geçmemeli.
 
-Kapanmayan risk: bu sertleştirmelerin CI runner'larında yeterli olduğu **ölçülmedi**. Yerel paylar geniş, ama gerçek kanıt ilk yeşil koşudur.
+Üçüncü koşuda `darwin-x64` Node 22 tek bir hücreyi (`text-4mib`) kararsız işaretleyip dışladı ve yine de kesin ölçüm verdi — mekanizma tasarlandığı gibi çalıştı.
+
+İkinci koşuda ayrıca düşen ayağın hiç artifact üretmediği görüldü: `collect-evidence` test adımından sonraydı ve test düşünce hiç koşmadı. Teşhise en çok ihtiyaç duyulan ayak geriye kanıt bırakmıyordu. Kanıt toplama ve yükleme artık `if: always()` ile çalışıyor.
 
 ## Kabul edilen sınırlar
 
-1. **Platform CI yok.** Bütün sayılar tek host, tek Node sürümü. Beş hedef × Node 22/24 çalıştırılmadan hiçbir görev `tamamlandı` olamaz.
-2. **Gömülü libxml2 sürümü yalnız `upstream-pin` ile belirlendi** ve kaynak upstream değil `jameslan/libxml2` fork'udur. Ayrıntı [karar ekinde](bagimlilik-karar-eki.md).
-3. **`XML_PARSE_NONET` no-op olabilir.** libxml2 2.15 nanohttp'yi kaldırdı; ağ canary'sinin sıfır hit'i aşırı-belirlenmiştir ve ek güvence sayılmaz.
-4. **Tier-2 bellek istatistiği bu host'ta ayırt edici değil** (yukarıda ölçüldü). Bellek kapısı `diag`'dır.
-5. **Dosya canary'si** okumanın denenip atıldığını kanıtlamaz; yalnız içeriğin belgeye/hataya sızmadığını gösterir.
-6. **`collect-evidence.mjs` Node'un tip sıyırmasına dayanır** (≥22.18). Node 22 ayağında doğrulanmadı.
-7. **Sayfa/yanıt bütçesi ölçülmedi**; F2-08'e ait.
-8. **F0-08 derinlik merdiveni parse sonucunu ölçer.** `read_node` görünüm limiti ayrı katmandır ve F2-06'da ölçülür.
+1. **Gömülü libxml2 sürümü yalnız `upstream-pin` ile belirlendi** ve kaynak upstream değil `jameslan/libxml2` fork'udur. Ayrıntı [karar ekinde](bagimlilik-karar-eki.md).
+2. **`XML_PARSE_NONET` no-op olabilir.** libxml2 2.15 nanohttp'yi kaldırdı; ağ canary'sinin sıfır hit'i aşırı-belirlenmiştir ve ek güvence sayılmaz.
+3. **Windows'ta pozitif kontrol yalnız sağlayıcı-danışma seviyesinde ateşliyor** (yukarıda ölçüldü). O platformda içerik sızması tespit edilebilirliği kanıtlanmadı.
+4. **Tier-2 bellek istatistiği hiçbir ayakta ayırt edici değil.** Bellek kapısı `diag`'dır.
+5. **Dosya canary'si** okumanın denenip atıldığını kanıtlamaz; yalnız içeriğin belgeye veya hataya sızmadığını gösterir.
+6. **Sayfa/yanıt zarfı bütçesi ölçülmedi**; F2-08'e aittir.
+7. **Derinlik merdiveni parse sonucunu ölçer.** `read_node` görünüm limiti ayrı katmandır ve F2-06'da ölçülür.
+8. **Bütçeler bu on runner'ın ölçümüdür.** Daha yavaş bir dağıtım hedefi eklenirse `B_t` yeniden türetilmelidir.
 
 ## Karar (F0-09)
 
-**K1 korunuyor: `libxml2-wasm@0.7.2` kabul edildi.** Çıkış kapısının dört bloğu da kapandı; hiçbir güvenlik bayrağı bir ölçümü geçirmek için gevşetilmedi ve hiçbir eşik bir hücreyi geçirmek için yükseltilmedi.
+**K1 korunuyor: `libxml2-wasm@0.7.2` kabul edildi.** Çıkış kapısının dört bloğu da beş hedef × Node 22/24 üzerinde kapandı; hiçbir güvenlik bayrağı bir ölçümü geçirmek için gevşetilmedi ve hiçbir eşik bir hücreyi geçirmek için yükseltilmedi.
 
 Stack değişikliği gerekmediği için yeni bir global ADR açılmadı; sürüm, bütünlük ve lisans kaydı [K1](kararlar.md) üzerinden [karar ekine](bagimlilik-karar-eki.md) bağlandı.
 
-Bu kabul **platform CI koşusuna kadar geçicidir.** CI beş hedef × Node 22/24'te aynı sonuçları vermezse karar yeniden açılır ve alternatif motorlar aynı fixture matrisiyle sınanır — harness bunun için kalıcıdır.
+Motor sürümü yükseldiğinde veya yeni bir dağıtım hedefi eklendiğinde bu matris yeniden koşulur; harness bunun için kalıcıdır ve alternatif motorlar aynı fixture'lardan geçirilebilir.
+
+## Sıradaki iş
+
+F0 kapandı. Açık kalan XML işleri: F1-03'ün uygulaması (worker sahipliği; tasarım kararı F0-07 ile verildi, `file-core` disposal hook'u gerekmiyor), F1-05'in XML yanıt bütçesi ve F1-06'nın XML tüketici entegrasyonu. Ardından [F2](fazlar/02-okuma-mvp.md).
