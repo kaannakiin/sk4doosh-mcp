@@ -142,7 +142,7 @@ try {
     ),
   );
   console.log(
-    `Installed native ${manifest.version}; snapshot read, regex worker and XML listing passed on ${process.platform}-${process.arch} (${basename(input)}).`,
+    `Installed native ${manifest.version}; snapshot read, regex worker, XML listing and packed-worker parse passed on ${process.platform}-${process.arch} (${basename(input)}).`,
   );
 } finally {
   await rm(directory, { recursive: true, force: true });

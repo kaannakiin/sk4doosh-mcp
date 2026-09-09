@@ -1,6 +1,7 @@
 # Karar 016 — İkinci dosya sunucusu ve yanıt bütçesi
 
-Tarih: 2026-09-09. Durum: **kabul edildi, kodla kanıtlandı**; platform CI bekleniyor.
+Tarih: 2026-09-09. Durum: **kabul edildi, kodla kanıtlandı**; platform CI geçti
+([koşu 34330278812](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34330278812), commit `71cb388`).
 Ölçümler [XML F1 kapanış kaydında](../xml/xml-f1-kapanis.md).
 
 Bu karar [karar 015](015-dosya-kaynagi-cekirdegi.md)'in parametrelediği maddelerin ölçülmüş

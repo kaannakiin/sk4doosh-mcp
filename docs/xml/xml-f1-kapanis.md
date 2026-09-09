@@ -1,9 +1,9 @@
 # XML F1 kapanış kaydı
 
-Durum: **uygulama tamamlandı, platform CI bekleniyor** (2026-09-09). F1-03, F1-05 ve F1-06'nın
-kodu, testi ve paket doğrulaması yerelde geçti; `tamamlandı` durumu [README](README.md)'nin
-yönetim kuralı gereği ancak beş hedef × Node 22/24 CI koşusunun run kimliğiyle yazılır.
-Bu belge o koşudan önceki bütün ölçümleri tutar ve run kimliği geldiğinde başlığı güncellenir.
+Durum: **tamamlandı** (2026-09-09). F1-03, F1-05 ve F1-06 kapandı; platform kanıtı
+[CI koşusu 34330278812](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34330278812),
+commit `71cb388`, 13/13 job yeşil — beş hedef × Node 22/24'ün tamamı dahil.
+[README](README.md)'nin yönetim kuralının istediği koşu budur.
 
 F1'i kapatan iş **F2-01/02/03 görev kimlikleriyle** yürütüldü; kimlikler değişmedi.
 Görev kimliklerinin sabitliği [README](README.md)'nin yönetim kuralıdır.
@@ -39,7 +39,7 @@ Sürümler: `@sk-mcp/file-core` `0.1.0 → 0.2.0`, `@sk-mcp/excel-mcp` `0.3.0 �
 | Alan          | Değer                                                                       |
 | ------------- | --------------------------------------------------------------------------- |
 | Görev kimliği | F1-05                                                                       |
-| Durum         | uygulandı; platform CI bekleniyor                                           |
+| Durum         | tamamlandı                                                                  |
 | Test komutu   | `pnpm turbo run test --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp` |
 | Ortam         | darwin arm64, Node v24.12.0                                                 |
 | Beklenen      | Başarı, hata ve recovery dahil hiçbir yanıt 512 KiB'ı aşmaz                 |
@@ -89,7 +89,7 @@ satırın note'ları, dönen `range` dışındaki adreslerle yanıtta kalıyordu
 | Alan          | Değer                                                               |
 | ------------- | ------------------------------------------------------------------- |
 | Görev kimliği | F1-03                                                               |
-| Durum         | uygulandı; platform CI bekleniyor                                   |
+| Durum         | tamamlandı                                                          |
 | Test komutu   | `pnpm turbo run test --filter=@sk-mcp/xml-mcp`                      |
 | Oracle        | worker içi `diag` projeksiyonu (tier-1); RSS kanıt ağırlığı taşımaz |
 | Beklenen      | Altı yaşam döngüsü olayında da kullanılmayan DOM tutulmuyor         |
@@ -121,7 +121,7 @@ bir regresyon testi ham raporun `_ptr` ve sorgu metnini sızdırmadığını sab
 | Alan          | Değer                                                                                                                                  |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Görev kimliği | F1-06                                                                                                                                  |
-| Durum         | uygulandı; platform CI bekleniyor                                                                                                      |
+| Durum         | tamamlandı                                                                                                                             |
 | Test komutu   | `pnpm turbo run test --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp` |
 | Gerçek        | 529 test, dört paket, hepsi geçti                                                                                                      |
 
@@ -149,6 +149,30 @@ belge parse ettiriyor. İkincisi F0-02'nin bıraktığı boşluğu kapatır: F0-
 çözümlemesini yalnız **ana thread'de** kanıtlamıştı. Assertion'ın gerçekten koştuğu
 negatif kontrolle doğrulandı.
 
+## Platform kanıtı
+
+| Alan          | Değer                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------- |
+| Koşu          | [34330278812](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34330278812)      |
+| Commit        | `71cb388`                                                                               |
+| Sonuç         | 13/13 job başarılı                                                                      |
+| Native matris | 10/10 ayak: linux-x64, linux-arm64, darwin-x64, darwin-arm64, win32-x64 × Node 22 ve 24 |
+
+Dört tarball denetleyiciden makine olarak geçti ve `libxml2-wasm`'ın exact sabitlenmesi
+CI çıktısında görünür durumda:
+
+```text
+sk-mcp-xml-mcp-0.1.0.tgz: ok (31 entries; dependencies: @modelcontextprotocol/sdk@^1.30.0,
+  @sk-mcp/file-core@^0.2.0, libxml2-wasm@0.7.2, zod@^4.5.4)
+sk-mcp-excel-mcp-0.4.0.tgz: ok (63 entries; dependencies: ..., @sk-mcp/file-core@^0.2.0, ...)
+sk-mcp-file-core-0.2.0.tgz: ok (35 entries; dependencies: @sk-mcp/file-core-native@^0.1.0)
+```
+
+`libxml2-wasm@0.7.2` caret'siz görünüyor; iki tüketicinin yayınlanan aralığı `^0.2.0`'a
+taşınmış durumda. Paketlenmiş worker beş hedefin hepsinde WASM'ı `node_modules` içinden
+çözdü ve `catalog` kök elemanını, `urn:smoke` namespace'ini ve `UTF-8` bildirimini
+doğru döndürdü.
+
 ## Ölçülen ve kararı değişen noktalar
 
 | Bulgu                                                                                                                                     | Sonuç                                                                                                                                                           |
@@ -169,7 +193,6 @@ negatif kontrolle doğrulandı.
 5. **Eşzamanlı listeleme sayısı sınırsız.** Bugün de öyle; F1-03'ün işi değil.
 6. **`text-encoding` çıkarılmadı.** Ölçülen örtüşme yalnız BOM tablosuydu; gerekçe [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md).
 7. **`file-core` 1.0 kararı verilmedi.** [Karar 015](../kararlar/015-dosya-kaynagi-cekirdegi.md) yalnız `0.x` kilidini kaldırır; karar **F6-08**'dedir.
-8. **Platform CI koşmadı.** Yerel ortam tek host; beş hedef × Node 22/24 kanıtı alınmadan hiçbir durum satırı `tamamlandı` yazılmaz.
 
 ## Sonraki faza devir
 

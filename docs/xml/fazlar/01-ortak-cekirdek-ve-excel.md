@@ -1,6 +1,6 @@
 # F1 — Ortak çekirdek ve Excel düzeltme paketleri
 
-Durum: **F1-01/02/04/07 tamamlandı; F1-03/05/06 uygulandı ve platform CI bekliyor** (2026-09-09). Excel/file-core güvenlik ve platform kapısı `6b2bc89` ile geçmişti; kalan XML kapıları `packages/xml-mcp`'nin ilk teslimiyle kapatıldı. Ölçümler [F1 kapanış kaydında](../xml-f1-kapanis.md). Sorumlu: file-core/Excel geliştiricisi ve XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi.
+Durum: **tamamlandı** (2026-09-09). Excel/file-core güvenlik ve platform kapısı `6b2bc89` ile geçmişti; kalan XML kapıları `packages/xml-mcp`'nin ilk teslimiyle kapatıldı ve `71cb388` için [CI #34330278812](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34330278812) 13/13 geçti. Ölçümler [F1 kapanış kaydında](../xml-f1-kapanis.md). Sorumlu: file-core/Excel geliştiricisi ve XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi.
 
 ## Hedef
 
