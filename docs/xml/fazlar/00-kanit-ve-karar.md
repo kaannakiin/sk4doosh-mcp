@@ -1,10 +1,10 @@
 # F0 — Kanıt ve karar kapısı
 
-Durum: **tamamlandı** (2026-09-09). Kanıt: [run 34289898377](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34289898377), commit `6bc8486`, beş hedef × Node 22/24 = 10/10 ayak, 80/80 kayıt pass. Sonuçlar [F0 kanıt kaydında](../f0-kanit-kaydi.md); deney harness'ı `packages/xml-lab`. Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. XML öncesi Excel/file-core güvenlik kapısı tamamlandı. F0-01 için yerel kanıt üretildi ve [bağımlılık karar ekine](../bagimlilik-karar-eki.md) yazıldı; **platform CI kanıtı henüz yok, bu nedenle hiçbir görev `tamamlandı` değildir.** F0-02–09 deneyleri açık. Deney harness'ı `packages/xml-lab`; `packages/xml-mcp` hâlâ mevcut değil ve F0 onu oluşturmaz.
+Durum: **tamamlandı** (2026-09-09). Kanıt: [run 34289898377](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34289898377), commit `6bc8486`, beş hedef × Node 22/24 = 10/10 ayak, 80/80 kayıt pass, hiçbiri inconclusive değil. F0-01–09 sonuçları [F0 kanıt kaydında](../f0-kanit-kaydi.md), bağımlılık olguları [karar ekinde](../bagimlilik-karar-eki.md). Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. Deney harness'ı `packages/xml-lab`; `packages/xml-mcp` hâlâ mevcut değil ve F0 onu oluşturmaz.
 
 ## Güncel başlangıç noktası
 
-[Ortak çekirdek ve Excel kapanışı](01-ortak-cekirdek-ve-excel.md), kök handle'ına bağlı erişim, byte snapshot'ı ve platform paketlerini sağlıyor. F0-01 paket/sürüm/lisans kaydı üretildi; sıradaki iş F0-02 izole tüketici kapısı ve F0-03–08 deneyleridir. Excel regex worker testleri XML parse/XPath, WASM disposal veya dış kaynak çözümlemesi için kabul kanıtı değildir. F0-02'deki native derleme gerektirmeme ölçütü son kullanıcı kurulumuna aittir; file-core hazır native paket kullanır.
+[Ortak çekirdek ve Excel kapanışı](01-ortak-cekirdek-ve-excel.md), kök handle'ına bağlı erişim, byte snapshot'ı ve platform paketlerini sağlıyor. Bu fazın dokuz görevi de kapandı; F0'ın kapıları artık regresyon olarak `packages/xml-lab` süitinde korunuyor. Excel regex worker testleri XML parse/XPath, WASM disposal veya dış kaynak çözümlemesi için kabul kanıtı değildir. F0-02'deki native derleme gerektirmeme ölçütü son kullanıcı kurulumuna aittir; file-core hazır native paket kullanır.
 
 ## Hedef
 

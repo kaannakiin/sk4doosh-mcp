@@ -33,13 +33,13 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 | [F5 — Ayrı genişletmeler](fazlar/05-genisletmeler.md)                | XSD, container, dönüşüm ve diff için bağımsız kapılar  | Görevde belirtilen F2/F3 kapısı     | Başlanmadı; isteğe bağlı                        |
 | [F6 — Yayın ve agent kabulü](fazlar/06-yayin-ve-kabul.md)            | XML paketinin kurulum, entegrasyon ve kabul kanıtları  | İlk yayın F2; ek özellik ilgili faz | XML için başlanmadı; ortak CI altyapısı hazır   |
 
-İlk yayın yolu **F0 → F1/XML bloklayıcıları → F2 → F6**. XPath isteyen sonraki sürüm F3'ü tamamlar ve F6'yı tekrar uygular. F4 ve F5, MVP'nin bitiş şartı değildir. Kullanıcının kabul ettiği Excel/file-core kapısı tamamlandı: 35 bulgu uygulama, test veya açık destek sınırlılığıyla ele alındı; platform CI ve hazır paket kanıtı alındı. F0 teknik deneyleri ve XML’e özgü F1 işleri henüz tamamlanmadı. #9/#10/#25 tam metadata desteği ayrı takip işleridir; kabul edilen sınırlılıklar belgelenmiştir.
+İlk yayın yolu **F0 → F1/XML bloklayıcıları → F2 → F6**. XPath isteyen sonraki sürüm F3'ü tamamlar ve F6'yı tekrar uygular. F4 ve F5, MVP'nin bitiş şartı değildir. Kullanıcının kabul ettiği Excel/file-core kapısı tamamlandı: 35 bulgu uygulama, test veya açık destek sınırlılığıyla ele alındı; platform CI ve hazır paket kanıtı alındı. F0 teknik deneyleri [10/10 platform CI ile tamamlandı](f0-kanit-kaydi.md); XML’e özgü F1 işleri açık. #9/#10/#25 tam metadata desteği ayrı takip işleridir; kabul edilen sınırlılıklar belgelenmiştir.
 
 ## Yönetim kuralları
 
 - Her görev kimliği sabittir. Durum yalnızca kanıt bağlantısıyla `tamamlandı` yapılır. Yerel başarı, platform CI başarısı yerine geçmez.
 - Geliştirici teknik çözümü, doğrulayıcı kabul kanıtını üretir. Test sayısı tek başına kapı değildir.
-- Kütüphane tercihi `libxml2-wasm` yönündedir; üretimde benimseme F0 deneylerine bağlıdır. Bu bir kararsız aday listesi değil, başarısızlık koşulları belli bir tercihtir.
+- Kütüphane tercihi `libxml2-wasm` idi ve F0 deneyleri sonucunda `0.7.2` sürümüyle [kabul edildi](f0-kanit-kaydi.md). Motor sürümü yükselirse veya yeni dağıtım hedefi eklenirse aynı fixture matrisi yeniden koşulur.
 - Araştırmadaki 35 bulgu otomatik olarak 35 doğrulanmış güvenlik açığı sayılmaz. Güncel durum ve koşullar bulgu raporundadır.
 - Performans sayıları ölçülmeden ürün garantisi yapılmaz. Planın önerdiği başlangıç bütçeleri ölçüm hedefidir.
 - Yazma, XSLT çalıştırma, imza doğrulama, genel HTML ayrıştırma ve otomatik dış kaynak takibi bu planın teslim kapsamı dışındadır.
@@ -48,4 +48,4 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 
 [Excel açık maddeleri karar kaydı](excel-acik-maddeler-karar-kaydi.md), #17/#33/#35 için çalıştırılan hedef testleri ve #26/#27/#28 için kabul edilip uygulanan kararları tutar. [Kapanış kaydı](excel-hardening-uygulama.md) bütün bulguların güncel kanıtıdır.
 
-Excel/file-core regresyonları, kaynak ölçümleri, native erişim ve regex watchdog testleri çalıştırıldı. XML prototipi/parser/tool geliştirmesi yapılmadı. Sıradaki iş F0-01 paket/sürüm/lisans kanıtı ve F0-02–08 motor deneyleridir; Excel güvenlik düzeltmelerini yeniden planlamak değildir.
+Excel/file-core regresyonları ve F0 motor deneyleri tamamlandı; ikincisinin kanıtı [F0 kanıt kaydında](f0-kanit-kaydi.md), harness `packages/xml-lab`. XML prototipi/parser/tool geliştirmesi hâlâ yapılmadı. Sıradaki iş F1-03/05/06'nın XML kapsamı, ardından F2'dir.

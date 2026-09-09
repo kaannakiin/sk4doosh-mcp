@@ -144,6 +144,12 @@ Stack değişikliği gerekmediği için yeni bir global ADR açılmadı; sürüm
 
 Motor sürümü yükseldiğinde veya yeni bir dağıtım hedefi eklendiğinde bu matris yeniden koşulur; harness bunun için kalıcıdır ve alternatif motorlar aynı fixture'lardan geçirilebilir.
 
-## Sıradaki iş
+## Bu fazın kapsamı dışı
 
-F0 kapandı. Açık kalan XML işleri: F1-03'ün uygulaması (worker sahipliği; tasarım kararı F0-07 ile verildi, `file-core` disposal hook'u gerekmiyor), F1-05'in XML yanıt bütçesi ve F1-06'nın XML tüketici entegrasyonu. Ardından [F2](fazlar/02-okuma-mvp.md).
+F0'ın işi F0-01–09'du ve bitti. Aşağıdakiler bu belgenin görevleri değildir, yalnız F0'ın hangi kararı hangi faza bıraktığını gösterir:
+
+| Nerede                                     | Ne                                                                                                                                                                                       |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [F1](fazlar/01-ortak-cekirdek-ve-excel.md) | F1-03 worker kaynak sahipliğinin uygulaması; tasarım kararı F0-07 ile verildi ve `file-core` disposal hook'u gerekmiyor. F1-05'in XML yanıt bütçesi, F1-06'nın XML tüketici entegrasyonu |
+| [F2](fazlar/02-okuma-mvp.md)               | Dört tool; sayfa ve yanıt zarfı bütçesi F2-08'de ölçülür                                                                                                                                 |
+| [tool sözleşmesi](tool-sozlesmesi.md)      | Türetilmiş bütçeler oraya işlendi                                                                                                                                                        |

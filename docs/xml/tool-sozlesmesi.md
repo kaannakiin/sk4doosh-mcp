@@ -1,6 +1,6 @@
 # Tool ve veri sözleşmesi
 
-Bu belge XML için hedef davranıştır; makine şeması veya uygulanmış API değildir. Güncelleme: 2026-09-08. `packages/xml-mcp` henüz yok; ortak file-core altyapısı ve Excel cursor v2 uygulanmış durumda. XML alan/tool adları F0/F2 sırasında şemaya dönüştürülürken bu belge birlikte güncellenecek.
+Bu belge XML için hedef davranıştır; makine şeması veya uygulanmış API değildir. Güncelleme: 2026-09-09. `packages/xml-mcp` henüz yok; ortak file-core altyapısı ve Excel cursor v2 uygulanmış durumda. Başlangıç bütçeleri F0-08 ile ölçülüp [türetildi](f0-kanit-kaydi.md); XML alan/tool adları F2 sırasında şemaya dönüştürülürken bu belge birlikte güncellenecek.
 
 ## Ortak kurallar
 
