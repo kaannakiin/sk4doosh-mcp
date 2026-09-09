@@ -91,7 +91,10 @@ export function assembleFindPage(input: AssembleFindInput): FindEnvelope {
    * duplicates them.
    */
   if (refusedId !== undefined) {
-    while (admitted.length > 0 && admitted[admitted.length - 1]?.nodeId === refusedId) {
+    while (
+      admitted.length > 0 &&
+      admitted[admitted.length - 1]?.nodeId === refusedId
+    ) {
       admitted.pop();
     }
   }

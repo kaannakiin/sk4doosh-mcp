@@ -250,7 +250,10 @@ export function advance(frame: Frame): void {
   frame.childIndex += 1;
 }
 
-export function descend(scope: WalkScope, resume: NodePath): Frame[] | undefined {
+export function descend(
+  scope: WalkScope,
+  resume: NodePath,
+): Frame[] | undefined {
   const stack = [frameFor(scope.element, scope.path, scope.address, 0)];
   for (let level = scope.path.length; level < resume.length; level += 1) {
     const frame = stack[stack.length - 1];

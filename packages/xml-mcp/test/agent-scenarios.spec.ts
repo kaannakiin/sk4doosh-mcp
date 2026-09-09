@@ -33,7 +33,10 @@ let current = "";
 async function call(
   name: string,
   args: Record<string, unknown>,
-): Promise<{ readonly isError: boolean; readonly body: Record<string, unknown> }> {
+): Promise<{
+  readonly isError: boolean;
+  readonly body: Record<string, unknown>;
+}> {
   const result = (await client.callTool({
     name,
     arguments: args,
@@ -79,7 +82,8 @@ async function digest(root: string): Promise<Record<string, string>> {
     const path = join(root, entry.name);
     const bytes = await readFile(path);
     const info = await stat(path);
-    result[entry.name] = `${createHash("sha256").update(bytes).digest("hex")}:${String(info.mtimeMs)}`;
+    result[entry.name] =
+      `${createHash("sha256").update(bytes).digest("hex")}:${String(info.mtimeMs)}`;
   }
   return result;
 }
@@ -117,7 +121,11 @@ describe("agent acceptance scenarios", () => {
       address: [
         { namespaceUri: namespaces.maven, localName: "project" },
         { namespaceUri: namespaces.maven, localName: "dependencies" },
-        { namespaceUri: namespaces.maven, localName: "dependency", occurrence: 2 },
+        {
+          namespaceUri: namespaces.maven,
+          localName: "dependency",
+          occurrence: 2,
+        },
       ],
       maxNodes: 50,
     });
@@ -189,7 +197,9 @@ describe("agent acceptance scenarios", () => {
     const shown = records
       .slice(1)
       .map((record) =>
-        record.kind === "element" ? `<${String(record.localName)}>` : record.value,
+        record.kind === "element"
+          ? `<${String(record.localName)}>`
+          : record.value,
       );
     expect(shown).toStrictEqual([
       "lead ",

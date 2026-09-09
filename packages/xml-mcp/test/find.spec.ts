@@ -3,7 +3,12 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { coreLimits } from "@sk-mcp/file-core";
 import { toolDefinitions } from "../src/tools.js";
 import type { Fixtures } from "./fixtures/build.js";
-import { bodyOf, bytesOf, createHarness, type Harness } from "./fixtures/harness.js";
+import {
+  bodyOf,
+  bytesOf,
+  createHarness,
+  type Harness,
+} from "./fixtures/harness.js";
 
 let fixtures: Fixtures;
 let harness: Harness;
@@ -127,7 +132,9 @@ describe("the search surface", () => {
 
   it("searches only text unless attributes are asked for", async () => {
     const text = await find({ filePath: basename(fixtures.wide), query: "7" });
-    expect(text.matches.every((match) => match.matchKind === "text")).toBe(true);
+    expect(text.matches.every((match) => match.matchKind === "text")).toBe(
+      true,
+    );
 
     const attributes = await find({
       filePath: basename(fixtures.wide),

@@ -2,7 +2,12 @@ import { basename } from "node:path";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { coreLimits } from "@sk-mcp/file-core";
 import type { Fixtures } from "./fixtures/build.js";
-import { bodyOf, bytesOf, createHarness, type Harness } from "./fixtures/harness.js";
+import {
+  bodyOf,
+  bytesOf,
+  createHarness,
+  type Harness,
+} from "./fixtures/harness.js";
 
 let fixtures: Fixtures;
 let harness: Harness;
@@ -98,7 +103,10 @@ describe("value fidelity", () => {
 
 describe("page merging", () => {
   it("rebuilds the single-page result exactly, with no repeat and no loss", async () => {
-    const whole = await read({ filePath: basename(fixtures.wide), maxNodes: 200 });
+    const whole = await read({
+      filePath: basename(fixtures.wide),
+      maxNodes: 200,
+    });
     expect(whole.complete).toBe(true);
 
     const merged: Record_[] = [];
@@ -121,7 +129,10 @@ describe("page merging", () => {
   });
 
   it("keeps ancestor context out of returnedCount and out of the merge", async () => {
-    const first = await read({ filePath: basename(fixtures.wide), maxNodes: 3 });
+    const first = await read({
+      filePath: basename(fixtures.wide),
+      maxNodes: 3,
+    });
     const second = await read({
       filePath: basename(fixtures.wide),
       maxNodes: 3,

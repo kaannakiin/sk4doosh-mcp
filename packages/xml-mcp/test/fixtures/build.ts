@@ -117,8 +117,8 @@ export async function buildFixtures(): Promise<Fixtures> {
   await writeFile(
     fixtures.mixed,
     '<?xml version="1.0"?>\n' +
-      "<note xml:space=\"preserve\">lead <b>bold</b> mid" +
-      "<?render mode=\"fast\"?>" +
+      '<note xml:space="preserve">lead <b>bold</b> mid' +
+      '<?render mode="fast"?>' +
       "<![CDATA[ raw <tag> ]]>" +
       "<!--remark-->" +
       " tail </note>\n",
@@ -177,7 +177,8 @@ export async function buildFixtures(): Promise<Fixtures> {
     "utf8",
   );
 
-  const doctypeSource = '<!DOCTYPE catalog [<!ENTITY x "expanded">]><catalog>&x;</catalog>';
+  const doctypeSource =
+    '<!DOCTYPE catalog [<!ENTITY x "expanded">]><catalog>&x;</catalog>';
   await writeFile(fixtures.utf32leDoctype, utf32(doctypeSource, true, true));
   await writeFile(fixtures.utf32beDoctype, utf32(doctypeSource, false, false));
   await writeFile(fixtures.utf32leClean, utf32("<catalog/>", true, false));

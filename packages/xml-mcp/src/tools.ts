@@ -35,7 +35,9 @@ import { createXmlWorkerPool, type XmlWorkerPool } from "./worker-pool.js";
 
 const filePath = z
   .string()
-  .describe("Document path relative to the root, as returned by list_documents.");
+  .describe(
+    "Document path relative to the root, as returned by list_documents.",
+  );
 
 const addressStep = z.object({
   namespaceUri: z
@@ -230,13 +232,11 @@ function stepsOf(
   raw: readonly z.infer<typeof addressStep>[] | undefined,
 ): NodeAddress | undefined {
   if (raw === undefined) return undefined;
-  return raw.map(
-    (step): ElementStep => ({
-      namespaceUri: step.namespaceUri,
-      localName: step.localName,
-      occurrence: step.occurrence ?? 1,
-    }),
-  );
+  return raw.map((step): ElementStep => ({
+    namespaceUri: step.namespaceUri,
+    localName: step.localName,
+    occurrence: step.occurrence ?? 1,
+  }));
 }
 
 function refuseCombination(field: string): never {
@@ -382,7 +382,9 @@ export function createHandlers(
                 maxDepth,
                 maxNodes,
                 maxChars: limits.maxStringChars,
-                ...(scope.address === undefined ? {} : { address: scope.address }),
+                ...(scope.address === undefined
+                  ? {}
+                  : { address: scope.address }),
                 ...(scope.scopePath === undefined
                   ? {}
                   : { scopePath: scope.scopePath, resume: scope.resume }),
@@ -419,7 +421,8 @@ export function createHandlers(
               ? undefined
               : decodeCursor(args.cursor, "find");
           if (cursor !== undefined) {
-            if (args.scopeAddress !== undefined) refuseCombination("scopeAddress");
+            if (args.scopeAddress !== undefined)
+              refuseCombination("scopeAddress");
             assertSameOptions(cursor, hash);
           }
           const path = await open(args.filePath);

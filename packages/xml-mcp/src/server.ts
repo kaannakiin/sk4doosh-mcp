@@ -27,7 +27,11 @@ export interface XmlMcpServerOptions {
 
 function requireCacheSize(value: number | undefined): number {
   if (value === undefined) return limits.documentCacheSize;
-  if (!Number.isSafeInteger(value) || value < 1 || value > maxDocumentCacheSize) {
+  if (
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > maxDocumentCacheSize
+  ) {
     throw new SkMcpXmlError(
       "invalid_argument",
       `documentCacheSize must be an integer between 1 and ${String(maxDocumentCacheSize)}.`,

@@ -44,7 +44,7 @@ describe("prolog autodetection", () => {
 
   it("leaves the encodings it can decode alone", () => {
     expect(
-      unsupportedPrologEncoding(Buffer.from("<?xml version=\"1.0\"?>", "utf8")),
+      unsupportedPrologEncoding(Buffer.from('<?xml version="1.0"?>', "utf8")),
     ).toBeUndefined();
     expect(
       unsupportedPrologEncoding(
@@ -57,16 +57,20 @@ describe("prolog autodetection", () => {
   });
 
   it("refuses a mark the prolog decoder has no branch for", () => {
-    const utf32le = Buffer.from([0xff, 0xfe, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00]);
+    const utf32le = Buffer.from([
+      0xff, 0xfe, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00,
+    ]);
     expect(detectByteOrderMark(utf32le)?.encoding).toBe("utf-32le");
     expect(unsupportedPrologEncoding(utf32le)).toBe("ucs-4le");
-    expect(scanProlog(utf32le, limits.prologScanBytes).unsupportedEncoding).toBe(
-      "ucs-4le",
-    );
+    expect(
+      scanProlog(utf32le, limits.prologScanBytes).unsupportedEncoding,
+    ).toBe("ucs-4le");
   });
 
   it("catches the signatures that carry no mark at all", () => {
-    const utf32beNoMark = Buffer.from([0x00, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00, 0x3f]);
+    const utf32beNoMark = Buffer.from([
+      0x00, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00, 0x3f,
+    ]);
     expect(detectByteOrderMark(utf32beNoMark)).toBeUndefined();
     expect(unsupportedPrologEncoding(utf32beNoMark)).toBe("ucs-4be");
   });

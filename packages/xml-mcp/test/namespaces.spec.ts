@@ -10,7 +10,11 @@ function parse(xml: string): XmlDocument {
   return XmlDocument.fromBuffer(Buffer.from(xml, "utf8"), { option: HARDENED });
 }
 
-function textUnder(document: XmlDocument, uri: string, localName: string): string {
+function textUnder(
+  document: XmlDocument,
+  uri: string,
+  localName: string,
+): string {
   const scope = resolveAddress(document.root, [
     {
       namespaceUri: document.root.namespaceUri,
@@ -35,9 +39,7 @@ const traps =
 
 describe("expanded names", () => {
   it("treats the same URI and local name as one identity", () => {
-    expect(clark({ namespaceUri: "urn:a", localName: "id" })).toBe(
-      "{urn:a}id",
-    );
+    expect(clark({ namespaceUri: "urn:a", localName: "id" })).toBe("{urn:a}id");
     expect(clark({ namespaceUri: "", localName: "id" })).toBe("id");
   });
 
@@ -61,11 +63,14 @@ describe("expanded names", () => {
         { namespaceUri: "urn:beta", localName: "id", occurrence: 1 },
       ]);
       expect(scope).toBeDefined();
-      const page = walk(scope ?? { element: document.root, path: [1], address: [] }, {
-        maxNodes: 4,
-        maxDepth: 1,
-        maxChars: 512,
-      });
+      const page = walk(
+        scope ?? { element: document.root, path: [1], address: [] },
+        {
+          maxNodes: 4,
+          maxDepth: 1,
+          maxChars: 512,
+        },
+      );
       const text = page.records.find((record) => record.kind === "text");
       expect(text !== undefined && "value" in text ? text.value : "").toBe(
         "beta-one",
@@ -76,12 +81,8 @@ describe("expanded names", () => {
   });
 
   it("gives selection the same answer when only the prefix spelling changes", () => {
-    const withA = parse(
-      '<r xmlns:a="urn:one"><a:leaf>value</a:leaf></r>',
-    );
-    const withZ = parse(
-      '<r xmlns:zz="urn:one"><zz:leaf>value</zz:leaf></r>',
-    );
+    const withA = parse('<r xmlns:a="urn:one"><a:leaf>value</a:leaf></r>');
+    const withZ = parse('<r xmlns:zz="urn:one"><zz:leaf>value</zz:leaf></r>');
     try {
       const address = [
         { namespaceUri: "", localName: "r", occurrence: 1 },

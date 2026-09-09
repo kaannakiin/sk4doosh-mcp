@@ -1,11 +1,7 @@
 import { detectByteOrderMark } from "@sk-mcp/file-core";
 
 export type UnsupportedPrologEncoding =
-  | "ucs-4be"
-  | "ucs-4le"
-  | "ucs-4-2143"
-  | "ucs-4-3412"
-  | "ebcdic";
+  "ucs-4be" | "ucs-4le" | "ucs-4-2143" | "ucs-4-3412" | "ebcdic";
 
 export interface PrologScan {
   readonly doctype: boolean;

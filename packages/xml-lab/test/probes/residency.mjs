@@ -72,7 +72,8 @@ for (const shape of SHAPES) {
   const deltas = arm.marginalDeltas;
   const centre = median(deltas);
   const spread = relativeMad(deltas);
-  const unstable = !Number.isFinite(spread) || spread > MAD_CEILING || centre <= 0;
+  const unstable =
+    !Number.isFinite(spread) || spread > MAD_CEILING || centre <= 0;
   const coefficient = unstable
     ? null
     : Number((centre / arm.sourceBytes).toFixed(2));
@@ -154,9 +155,7 @@ notes.push(
 );
 
 const failed = rows.filter((row) => !row.pass);
-const measurable = SHAPES.every(
-  (shape) => metrics[shape].coefficient !== null,
-);
+const measurable = SHAPES.every((shape) => metrics[shape].coefficient !== null);
 
 process.stdout.write(
   JSON.stringify({

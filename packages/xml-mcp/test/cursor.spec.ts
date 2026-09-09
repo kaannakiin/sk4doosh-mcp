@@ -42,7 +42,10 @@ describe("cursor validation", () => {
   });
 
   it("refuses a read cursor handed to the search tool", async () => {
-    const first = await read({ filePath: basename(fixtures.wide), maxNodes: 3 });
+    const first = await read({
+      filePath: basename(fixtures.wide),
+      maxNodes: 3,
+    });
     const outcome = await find({
       filePath: basename(fixtures.wide),
       query: "v1",
@@ -53,10 +56,13 @@ describe("cursor validation", () => {
   });
 
   it("refuses an expired cursor", async () => {
-    const stale = encodePosition(
-      "0".repeat(64) as never,
-      { t: "read", p: [1, 1], s: [1], o: "0".repeat(16), x: Date.now() - 1_000 },
-    );
+    const stale = encodePosition("0".repeat(64) as never, {
+      t: "read",
+      p: [1, 1],
+      s: [1],
+      o: "0".repeat(16),
+      x: Date.now() - 1_000,
+    });
     const outcome = await read({
       filePath: basename(fixtures.wide),
       cursor: stale,
@@ -66,7 +72,10 @@ describe("cursor validation", () => {
   });
 
   it("refuses a cursor combined with an address", async () => {
-    const first = await read({ filePath: basename(fixtures.wide), maxNodes: 3 });
+    const first = await read({
+      filePath: basename(fixtures.wide),
+      maxNodes: 3,
+    });
     const outcome = await read({
       filePath: basename(fixtures.wide),
       maxNodes: 3,
@@ -78,7 +87,10 @@ describe("cursor validation", () => {
   });
 
   it("refuses options that differ from the ones the cursor carries", async () => {
-    const first = await read({ filePath: basename(fixtures.wide), maxNodes: 3 });
+    const first = await read({
+      filePath: basename(fixtures.wide),
+      maxNodes: 3,
+    });
     const outcome = await read({
       filePath: basename(fixtures.wide),
       maxNodes: 9,
@@ -90,7 +102,10 @@ describe("cursor validation", () => {
   });
 
   it("never restores a changed option silently from the cursor", async () => {
-    const first = await read({ filePath: basename(fixtures.wide), maxNodes: 3 });
+    const first = await read({
+      filePath: basename(fixtures.wide),
+      maxNodes: 3,
+    });
     const same = await read({
       filePath: basename(fixtures.wide),
       maxNodes: 3,

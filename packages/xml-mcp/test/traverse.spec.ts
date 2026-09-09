@@ -231,9 +231,7 @@ describe("addressing", () => {
   });
 
   it("counts occurrence per expanded name, not per position", () => {
-    const document = parse(
-      '<r xmlns:a="urn:a"><x/><a:x/><x/></r>',
-    );
+    const document = parse('<r xmlns:a="urn:a"><x/><a:x/><x/></r>');
     try {
       const scope = resolveAddress(document.root, [
         { namespaceUri: "", localName: "r", occurrence: 1 },

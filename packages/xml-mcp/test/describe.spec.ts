@@ -7,11 +7,10 @@ let fixtures: Fixtures;
 let harness: Harness;
 
 async function describeDoc(filePath: string, maxPaths?: number) {
-  const result = await harness.handlers.describe_document(
-    { filePath, ...(maxPaths === undefined ? {} : { maxPaths }) } as Parameters<
-      Harness["handlers"]["describe_document"]
-    >[0],
-  );
+  const result = await harness.handlers.describe_document({
+    filePath,
+    ...(maxPaths === undefined ? {} : { maxPaths }),
+  } as Parameters<Harness["handlers"]["describe_document"]>[0]);
   return { isError: result.isError === true, body: bodyOf(result) };
 }
 
@@ -43,8 +42,18 @@ describe("structure discovery", () => {
         declaredPrefixes: [],
         synthetic: true,
       },
-      { uri: "urn:alpha", alias: "a", declaredPrefixes: ["a"], synthetic: false },
-      { uri: "urn:beta", alias: "ns2", declaredPrefixes: ["a"], synthetic: true },
+      {
+        uri: "urn:alpha",
+        alias: "a",
+        declaredPrefixes: ["a"],
+        synthetic: false,
+      },
+      {
+        uri: "urn:beta",
+        alias: "ns2",
+        declaredPrefixes: ["a"],
+        synthetic: true,
+      },
     ]);
   });
 
