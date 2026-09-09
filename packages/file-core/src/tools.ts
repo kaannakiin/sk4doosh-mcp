@@ -3,7 +3,15 @@ import type {
   ToolAnnotations,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
-import { FileSourceError, redactRoot, type ErrorContext } from "./errors.js";
+import {
+  FileSourceError,
+  redactRoot,
+  type CoreErrorCode,
+  type ErrorContext,
+  type ErrorFactory,
+} from "./errors.js";
+import { coreLimits } from "./limits.js";
+import { clampJsonField, measureJson } from "./payload.js";
 
 export interface ReadOnlyAnnotations extends ToolAnnotations {
   readonly readOnlyHint: true;
@@ -55,29 +63,71 @@ export function json(payload: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(payload) }] };
 }
 
-export function toToolError(
-  error: FileSourceError,
-  context: ErrorContext = {},
-): CallToolResult {
+interface ErrorEnvelope {
+  readonly error: string;
+  readonly message: string;
+  readonly recovery?: string;
+}
+
+function errorResult(envelope: ErrorEnvelope): CallToolResult {
   return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          error: error.code,
-          message: redactRoot(error.message, context.root),
-          ...(error.recovery === undefined
-            ? {}
-            : { recovery: redactRoot(error.recovery, context.root) }),
-        }),
-      },
-    ],
+    content: [{ type: "text", text: JSON.stringify(envelope) }],
     isError: true,
   };
 }
 
+export function toToolError(
+  error: FileSourceError,
+  context: ErrorContext = {},
+  maxBytes: number = coreLimits.maxPayloadBytes,
+): CallToolResult {
+  const message = redactRoot(error.message, context.root);
+  const recovery =
+    error.recovery === undefined
+      ? undefined
+      : redactRoot(error.recovery, context.root);
+  const shape = (text: string, tail: string | undefined): ErrorEnvelope => ({
+    error: error.code,
+    message: text,
+    ...(tail === undefined ? {} : { recovery: tail }),
+  });
+  const full = shape(message, recovery);
+  if (measureJson(full) <= maxBytes) {
+    return errorResult(full);
+  }
+  const kept = shape(
+    clampJsonField(message, maxBytes, (text) => shape(text, recovery)),
+    recovery,
+  );
+  if (measureJson(kept) <= maxBytes) {
+    return errorResult(kept);
+  }
+  return errorResult(
+    shape(
+      clampJsonField(message, maxBytes, (text) => shape(text, undefined)),
+      undefined,
+    ),
+  );
+}
+
+function payloadBytes(result: CallToolResult): number {
+  let total = 0;
+  for (const block of result.content) {
+    if (block.type === "text") {
+      total += Buffer.byteLength(block.text, "utf8");
+    }
+  }
+  return total;
+}
+
+export interface GuardContext<K extends string> extends ErrorContext {
+  readonly tool: K;
+  readonly fail: ErrorFactory<CoreErrorCode>;
+  readonly maxBytes?: number;
+}
+
 export function guard<D extends ToolDefinitions, K extends ToolNameOf<D>>(
-  context: ErrorContext & { readonly tool: K },
+  context: GuardContext<K>,
   handler: (
     args: ToolInputOf<D, K>,
     tool: K,
@@ -85,12 +135,14 @@ export function guard<D extends ToolDefinitions, K extends ToolNameOf<D>>(
   ) => Promise<CallToolResult>,
   normalize: ErrorNormalizer,
 ): GuardedHandler<D, K> {
+  const maxBytes = context.maxBytes ?? coreLimits.maxPayloadBytes;
   const guarded = async (
     args: ToolInputOf<D, K>,
     extra?: { readonly signal?: AbortSignal },
   ): Promise<CallToolResult> => {
+    let result: CallToolResult;
     try {
-      return await handler(args, context.tool, extra?.signal);
+      result = await handler(args, context.tool, extra?.signal);
     } catch (error) {
       if (!(error instanceof FileSourceError)) {
         const raw =
@@ -99,8 +151,20 @@ export function guard<D extends ToolDefinitions, K extends ToolNameOf<D>>(
             : String(error);
         process.stderr.write(`${context.tool}: ${raw}\n`);
       }
-      return toToolError(normalize(error, context), context);
+      return toToolError(normalize(error, context), context, maxBytes);
     }
+    const size = payloadBytes(result);
+    if (size <= maxBytes) {
+      return result;
+    }
+    return toToolError(
+      context.fail(
+        "resource_limit",
+        `${context.tool} produced a ${size} byte response; the limit is ${maxBytes} bytes.`,
+      ),
+      context,
+      maxBytes,
+    );
   };
   return Object.assign(guarded, { guardedTool: context.tool });
 }

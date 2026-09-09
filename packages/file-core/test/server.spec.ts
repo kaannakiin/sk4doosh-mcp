@@ -66,12 +66,12 @@ type Definitions = typeof definitions;
 
 const handlers: HandlersOf<Definitions> = {
   list_documents: guard<Definitions, "list_documents">(
-    { tool: "list_documents", root: "/data" },
+    { tool: "list_documents", root: "/data", fail },
     async (args) => json({ pattern: args.pattern ?? "*" }),
     normalize,
   ),
   read_document: guard<Definitions, "read_document">(
-    { tool: "read_document", root: "/data" },
+    { tool: "read_document", root: "/data", fail },
     async (args) => {
       if (args.filePath === "missing.probe") {
         throw fail(
@@ -85,7 +85,7 @@ const handlers: HandlersOf<Definitions> = {
     normalize,
   ),
   break_document: guard<Definitions, "break_document">(
-    { tool: "break_document", root: "/data" },
+    { tool: "break_document", root: "/data", fail },
     async () => {
       throw new TypeError("x is not a function");
     },

@@ -43,3 +43,18 @@ export function truncateWellFormed(text: string, limit: number): string {
   const cut = code >= 0xd800 && code <= 0xdbff ? limit - 1 : limit;
   return text.slice(0, cut);
 }
+
+export function truncateUtf8(text: string, maxBytes: number): string {
+  if (maxBytes <= 0) {
+    return "";
+  }
+  const encoded = Buffer.from(text, "utf8");
+  if (encoded.length <= maxBytes) {
+    return text;
+  }
+  let end = maxBytes;
+  while (end > 0 && ((encoded[end] ?? 0) & 0xc0) === 0x80) {
+    end -= 1;
+  }
+  return encoded.toString("utf8", 0, end);
+}

@@ -1,4 +1,9 @@
-import { canonical, fold } from "@sk-mcp/file-core";
+import {
+  canonical,
+  createPageBudget,
+  fold,
+  measureJson,
+} from "@sk-mcp/file-core";
 import {
   normalizeCell,
   type CellNote,
@@ -52,6 +57,7 @@ export interface ReadSheetOptions {
   readonly headerRow?: number;
   readonly headerRowSource: HeaderRowSource;
   readonly includeHyperlinks?: boolean;
+  readonly extraEnvelopeBytes?: number;
   readonly headerScan?: boolean;
   readonly delimiter?: CursorOptions["delimiter"];
   readonly encoding?: CursorOptions["encoding"];
@@ -163,6 +169,10 @@ function overlaps(merge: string, bounds: GridBounds): boolean {
   );
 }
 
+function uncachedFormulaWarning(count: number): string {
+  return `${count} formula cells have no cached value; this workbook has not been recalculated by Excel.`;
+}
+
 export function readSheet(
   source: SheetSource,
   input: ReadSheetOptions,
@@ -194,10 +204,88 @@ export function readSheet(
   const cellNotes: Record<string, CellNote> = {};
 
   let returnedCells = 0;
-  let payloadBytes = 0;
   let uncachedFormulas = 0;
   let truncationReason: "maxCells" | "maxPayloadBytes" | undefined;
   let nextRow = window.startRow;
+
+  const merges = window.sheet.merges.filter((merge) =>
+    overlaps(merge, window.bounds),
+  );
+  const headerNotices =
+    options.cursor === undefined
+      ? headerWarnings(
+          window.sheet,
+          window.bounds,
+          window.headerRow,
+          headers,
+          options.range !== undefined,
+          window.mergedCells,
+        )
+      : [];
+  const columnsFrom = (formats: readonly (string | null)[]): ColumnInfo[] => {
+    const built: ColumnInfo[] = [];
+    for (let offset = 0; offset < width; offset += 1) {
+      const index = window.bounds.left + offset;
+      built.push({
+        letter: columnToLetters(index),
+        index,
+        header: headers[offset] ?? null,
+        numberFormat: formats[offset] ?? null,
+      });
+    }
+    return built;
+  };
+  const cursorAt = (row: number): string =>
+    encodeCursor({
+      v: 2,
+      f: source.stamp,
+      s: window.sheet.name,
+      r: row,
+      c: window.bounds.left,
+      e: formatCellRef(window.bounds.bottom, window.bounds.right),
+      m: window.valueMode,
+      g: window.mergedCells,
+      h: window.headerRow,
+      o: {
+        valueMode: window.valueMode,
+        mergedCells: window.mergedCells,
+        headerRow: window.headerRow,
+        headerScan: options.headerScan,
+        includeHyperlinks: options.includeHyperlinks,
+        ...(options.delimiter === undefined
+          ? {}
+          : { delimiter: options.delimiter }),
+        ...(options.encoding === undefined
+          ? {}
+          : { encoding: options.encoding }),
+      },
+    });
+  const hintFor = (rows: number): string =>
+    `${rows} rows remain. Prefer aggregate_sheet for totals, find_in_sheet to locate a value, or a narrower range over paging.`;
+
+  const reserveBytes =
+    measureJson({
+      sheet: window.sheet.name,
+      range: formatRange({ ...window.bounds, top: window.startRow }),
+      usedRange: formatRange(window.used),
+      headerRow: window.headerRow,
+      headerRowSource: window.headerRowSource,
+      columns: columnsFrom(new Array<string | null>(width).fill(null)),
+      values: [],
+      cellNotes: {},
+      merges,
+      returnedRows: options.maxCells,
+      returnedCells: options.maxCells,
+      truncated: true,
+      truncationReason: "maxPayloadBytes",
+      nextCursor: cursorAt(window.bounds.bottom + 1),
+      hint: hintFor(Math.max(0, window.bounds.bottom - window.startRow + 1)),
+      warnings: [...headerNotices, uncachedFormulaWarning(options.maxCells)],
+    }) + (options.extraEnvelopeBytes ?? 0);
+  const budget = createPageBudget({
+    maxBytes: limits.maxPayloadBytes,
+    reserveBytes,
+  });
 
   for (
     let rowNumber = window.startRow;
@@ -210,6 +298,9 @@ export function readSheet(
     }
     const row = window.sheet.rowAt(rowNumber);
     const line: CellScalar[] = [];
+    const rowNotes: Record<string, CellNote> = {};
+    const discovered: { readonly offset: number; readonly format: string }[] =
+      [];
     for (
       let column = window.bounds.left;
       column <= window.bounds.right;
@@ -225,66 +316,51 @@ export function readSheet(
         numberFormats[offset] === null &&
         typeof snapshot.numberFormat === "string"
       ) {
-        numberFormats[offset] = snapshot.numberFormat;
+        discovered.push({ offset, format: snapshot.numberFormat });
       }
       const normalized = normalizeCell(snapshot, normalizeOptions);
       line.push(normalized.value);
       if (normalized.note !== undefined) {
-        cellNotes[formatCellRef(rowNumber, column)] = normalized.note;
-        if (normalized.note.kind === "formula" && !normalized.note.cached) {
-          uncachedFormulas += 1;
-        }
+        rowNotes[formatCellRef(rowNumber, column)] = normalized.note;
       }
     }
-    const lineBytes = JSON.stringify(line).length;
-    if (
-      values.length > 0 &&
-      payloadBytes + lineBytes > limits.maxPayloadBytes
-    ) {
+    const notes = Object.keys(rowNotes).length > 0 ? [rowNotes] : [];
+    const formats = discovered.map((found) => found.format);
+    if (!budget.admit(line, ...notes, ...formats)) {
       truncationReason = "maxPayloadBytes";
       break;
     }
+    for (const found of discovered) {
+      numberFormats[found.offset] = found.format;
+    }
+    for (const [reference, note] of Object.entries(rowNotes)) {
+      cellNotes[reference] = note;
+      if (note.kind === "formula" && !note.cached) {
+        uncachedFormulas += 1;
+      }
+    }
     values.push(line);
-    payloadBytes += lineBytes;
     returnedCells += width;
     nextRow = rowNumber + 1;
   }
 
-  const columns: ColumnInfo[] = [];
-  for (let offset = 0; offset < width; offset += 1) {
-    const index = window.bounds.left + offset;
-    columns.push({
-      letter: columnToLetters(index),
-      index,
-      header: headers[offset] ?? null,
-      numberFormat: numberFormats[offset] ?? null,
-    });
+  if (budget.refused && budget.admitted === 0) {
+    throw new SkMcpExcelError(
+      "resource_limit",
+      `The first row of the requested range does not fit in the ${limits.maxPayloadBytes} byte response budget.`,
+      "Read a narrower range with the range argument, or use aggregate_sheet for totals.",
+    );
   }
 
+  const columns = columnsFrom(numberFormats);
   const truncated = truncationReason !== undefined;
-  const merges = window.sheet.merges.filter((merge) =>
-    overlaps(merge, window.bounds),
-  );
   const remaining = window.bounds.bottom - nextRow + 1;
 
   const warnings: string[] = [];
   if (uncachedFormulas > 0) {
-    warnings.push(
-      `${uncachedFormulas} formula cells have no cached value; this workbook has not been recalculated by Excel.`,
-    );
+    warnings.push(uncachedFormulaWarning(uncachedFormulas));
   }
-  if (options.cursor === undefined) {
-    warnings.push(
-      ...headerWarnings(
-        window.sheet,
-        window.bounds,
-        window.headerRow,
-        headers,
-        options.range !== undefined,
-        window.mergedCells,
-      ),
-    );
-  }
+  warnings.push(...headerNotices);
 
   return {
     sheet: window.sheet.name,
@@ -306,33 +382,7 @@ export function readSheet(
     truncated,
     ...(truncationReason === undefined ? {} : { truncationReason }),
     ...(truncated
-      ? {
-          nextCursor: encodeCursor({
-            v: 2,
-            f: source.stamp,
-            s: window.sheet.name,
-            r: nextRow,
-            c: window.bounds.left,
-            e: formatCellRef(window.bounds.bottom, window.bounds.right),
-            m: window.valueMode,
-            g: window.mergedCells,
-            h: window.headerRow,
-            o: {
-              valueMode: window.valueMode,
-              mergedCells: window.mergedCells,
-              headerRow: window.headerRow,
-              headerScan: options.headerScan,
-              includeHyperlinks: options.includeHyperlinks,
-              ...(options.delimiter === undefined
-                ? {}
-                : { delimiter: options.delimiter }),
-              ...(options.encoding === undefined
-                ? {}
-                : { encoding: options.encoding }),
-            },
-          }),
-          hint: `${remaining} rows remain. Prefer aggregate_sheet for totals, find_in_sheet to locate a value, or a narrower range over paging.`,
-        }
+      ? { nextCursor: cursorAt(nextRow), hint: hintFor(remaining) }
       : {}),
     ...(warnings.length > 0 ? { warnings } : {}),
   };

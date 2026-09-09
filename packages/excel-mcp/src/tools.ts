@@ -2,6 +2,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
   guard as coreGuard,
   json,
+  measureJson,
   readOnly,
   toolNamesOf,
   type ErrorContext,
@@ -12,7 +13,7 @@ import {
   type ToolNameOf,
 } from "@sk-mcp/file-core";
 import { z } from "zod";
-import { asExcelError, SkMcpExcelError } from "./errors.js";
+import { asExcelError, fail, SkMcpExcelError } from "./errors.js";
 import { formats } from "./formats.js";
 import { limits } from "./limits.js";
 import {
@@ -440,7 +441,7 @@ export function guard<K extends ToolName>(
     signal?: AbortSignal,
   ) => Promise<CallToolResult>,
 ): GuardedHandler<Definitions, K> {
-  return coreGuard<Definitions, K>(context, handler, asExcelError);
+  return coreGuard<Definitions, K>({ ...context, fail }, handler, asExcelError);
 }
 
 export function createHandlers(root: WorkbookRoot): ToolHandlers {
@@ -613,6 +614,8 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
 
     read_sheet: guard({ root: root.real, tool: "read_sheet" }, async (raw) => {
       const args = inheritCursorOptions(raw);
+      const csvEnvelope = (report: CsvReport | undefined): number =>
+        report === undefined ? 0 : measureJson({ csv: report });
       if (args.cursor === undefined) assertHeaderScan(args, args.filePath);
       const loaded = await openFor(args.filePath, {
         ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
@@ -626,9 +629,11 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         args.includeHyperlinks === true ? true : undefined,
         args.filePath,
       );
+      const report = csvReportOf(loaded);
       return json(
         withCsv(
           readSheet(sheetSource(loaded), {
+            extraEnvelopeBytes: csvEnvelope(report),
             ...(args.sheetName === undefined
               ? {}
               : { sheetName: args.sheetName }),
@@ -650,7 +655,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
             ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
             includeHyperlinks: args.includeHyperlinks ?? false,
           }),
-          csvReportOf(loaded),
+          report,
         ),
       );
     }),

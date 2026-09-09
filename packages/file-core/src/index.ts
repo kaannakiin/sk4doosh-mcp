@@ -29,6 +29,7 @@ export {
   readOnly,
   toToolError,
   type ErrorNormalizer,
+  type GuardContext,
   type GuardedHandler,
   type HandlersOf,
   type ReadOnlyAnnotations,
@@ -52,6 +53,18 @@ export {
 } from "./formats.js";
 export { coreLimits, type CoreLimits } from "./limits.js";
 export {
+  clampJsonField,
+  createPageBudget,
+  measureJson,
+  type PageBudget,
+  type PageBudgetSpec,
+} from "./payload.js";
+export {
+  detectByteOrderMark,
+  type BomMark,
+  type ByteOrderMark,
+} from "./bom.js";
+export {
   listSources,
   type ListOptions,
   type SourceEntry,
@@ -70,6 +83,7 @@ export {
   asciiUpper,
   canonical,
   fold,
+  truncateUtf8,
   truncateWellFormed,
 } from "./unicode.js";
 export type { Vocabulary } from "./vocabulary.js";

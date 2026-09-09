@@ -1,6 +1,6 @@
 {
   "name": "@sk-mcp/file-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared machinery for read-only, sandboxed, file-backed MCP servers.",
   "license": "MIT",
   "type": "module",

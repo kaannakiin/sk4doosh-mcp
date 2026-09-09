@@ -4,6 +4,7 @@ import {
   asciiUpper,
   canonical,
   fold,
+  truncateUtf8,
   truncateWellFormed,
 } from "../src/unicode.js";
 
@@ -104,5 +105,47 @@ describe("truncateWellFormed", () => {
 
   it("cuts plain text at the limit", () => {
     expect(truncateWellFormed("x".repeat(600), 512)).toHaveLength(512);
+  });
+});
+
+describe("truncateUtf8", () => {
+  const turkish = "İstanbul Şişli Öğrenci Ağırlığı";
+
+  it("cuts where truncateWellFormed cannot, because the budget is bytes", () => {
+    const text = "ğ".repeat(400);
+    expect(truncateWellFormed(text, 512)).toHaveLength(400);
+    expect(Buffer.byteLength(truncateWellFormed(text, 512), "utf8")).toBe(800);
+    expect(
+      Buffer.byteLength(truncateUtf8(text, 512), "utf8"),
+    ).toBeLessThanOrEqual(512);
+  });
+
+  it("never splits a multi-byte sequence", () => {
+    expect(truncateUtf8("Ş".repeat(10), 5)).toBe("ŞŞ");
+  });
+
+  it("never leaves a lone surrogate", () => {
+    expect(truncateUtf8("xxx😀", 5)).toBe("xxx");
+    expect(truncateUtf8("xxx😀", 7)).toBe("xxx😀");
+  });
+
+  it("keeps the longest well-formed prefix at every budget", () => {
+    for (const text of [turkish, "😀a😀b", "plain ascii"]) {
+      for (let limit = 0; limit <= 40; limit += 1) {
+        const cut = truncateUtf8(text, limit);
+        expect(Buffer.byteLength(cut, "utf8")).toBeLessThanOrEqual(limit);
+        expect(text.startsWith(cut)).toBe(true);
+        if (cut !== text) {
+          const points = [...text];
+          const next = points.slice(0, [...cut].length + 1).join("");
+          expect(Buffer.byteLength(next, "utf8")).toBeGreaterThan(limit);
+        }
+      }
+    }
+  });
+
+  it("returns nothing for a degenerate budget", () => {
+    expect(truncateUtf8(turkish, 0)).toBe("");
+    expect(truncateUtf8(turkish, -5)).toBe("");
   });
 });
