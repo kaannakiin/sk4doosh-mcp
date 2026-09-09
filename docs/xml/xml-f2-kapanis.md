@@ -1,10 +1,10 @@
 # XML F2 kapanış kaydı
 
-Durum: **tamamlandı** (2026-09-09), platform CI kanıtı beklemede. F2-04–12 kapandı;
-F2-01/02/03 F1 kapanışında kapanmıştı. Yerel doğrulama dört paketin ortak kabul komutuyla alındı; **platform
-kanıtı beş hedef × Node 22/24 CI koşusuyla tamamlanacak ve koşu numarası ile commit
-SHA'sı bu bölüme yazılmadan hiçbir görev `tamamlandı` sayılmaz** —
-[README](README.md)'nin yönetim kuralı budur.
+Durum: **tamamlandı** (2026-09-09). F2-04–12 kapandı; F2-01/02/03 F1 kapanışında
+kapanmıştı. Platform kanıtı alındı: [CI koşusu 34349535283](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34349535283)
+**13/13 job yeşil** ve [XML F0 koşusu 34349535299](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34349535299)
+**10/10 ayak yeşil**, commit `a088abd`. [README](README.md)'nin yönetim kuralının
+istediği koşu budur; yerel geçiş kapı değildir.
 
 ## Kabul edilen kapsam
 
@@ -362,18 +362,23 @@ sessizce kaybolurdu.
 
 ## Platform kanıtı
 
-| Alan        | Değer                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Yerel koşu  | `pnpm turbo run test --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp` |
-| Yerel sonuç | 613 test, dört paket: `file-core-native` 2, `file-core` 133, `excel-mcp` 354, `xml-mcp` 124                                            |
-| Ortam       | darwin arm64, Node v24.12.0                                                                                                            |
-| Koşu        | **beklemede** — beş hedef × Node 22/24 CI koşusu                                                                                       |
-| Commit      | **beklemede**                                                                                                                          |
+| Alan          | Değer                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| CI koşusu     | [34349535283](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34349535283) — **13/13 job**                                     |
+| XML F0 koşusu | [34349535299](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34349535299) — **10/10 ayak**                                    |
+| Commit        | `a088abd`                                                                                                                              |
+| Native matris | 10/10 ayak: linux-x64, linux-arm64, darwin-x64, darwin-arm64, win32-x64 × Node 22 ve 24                                                |
+| Yerel koşu    | `pnpm turbo run test --filter=@sk-mcp/file-core-native --filter=@sk-mcp/file-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp` |
+| Yerel sonuç   | 613 test: `file-core-native` 2, `file-core` 133, `excel-mcp` 354, `xml-mcp` 124                                                        |
 
-**Yerel geçiş kapı değildir.** README'nin yönetim kuralı gereği bu bölüm CI koşu
-numarası ve commit SHA'sı ile doldurulmadan F2 `tamamlandı` sayılmaz. `pack` job'ı
-ve tarball denetleyicisi de aynı koşuda çalışmalı: `dist/xml-worker.js` hâlâ
-pakette ve `libxml2-wasm` hâlâ caret'siz `0.7.2` olmalı.
+`pack` job'ı aynı koşuda geçti: dört tarball denetleyiciden geçti,
+`dist/xml-worker.js` pakette ve `libxml2-wasm` caret'siz `0.7.2`. Temiz tüketici
+kurulumu (`smoke-file-packages.mjs`) beş hedefin hepsinde koştu.
+
+İlk koşu (`6e2cd7b`) **kırmızıydı ve sebebi ürün değildi**: native matris 10/10,
+dotnet ve XML F0 yeşilken `format:check` düştü — kaynaklar prettier'dan
+geçirilmemişti. Düzeltme ayrı bir `style:` commit'i olarak ayrıldı, böylece ürün
+değişikliğinin diff'i biçim gürültüsü taşımıyor.
 
 ## Ölçülen ve kararı değişen noktalar
 
@@ -382,7 +387,7 @@ pakette ve `libxml2-wasm` hâlâ caret'siz `0.7.2` olmalı.
 | **M12** — Düz `next` yürüyüşü ilk PI'da hatasız duruyor; 7 çocuktan 5'i kayıp                                     | Tek `nextSibling()` yardımcısı `XmlTreeNode.prototype`'ın getter'ını ödünç alıyor; `find("node()")` testte oracle     |
 | **M13** — PI target'ı public yüzeyde yok, `content` target'tan sonrasını veriyor                                  | `canonicalizeToString()` target'ı üretiyor; private `_nodePtr` okumasına gerek kalmadı                                |
 | **M14** — Eski prolog tarayıcısı UTF-32'nin üç varyantını ve EBCDIC'i kaçırıyor, UTF-8 kontrolünü yakalıyor       | Appendix F dört-byte autodetection'ı **BOM'dan önce**; `unsupported_encoding` yalnız buradan üretiliyor               |
-| **M15** — Toplu before/after RSS eşzamanlı DOM maliyetini ölçemiyor (her şekilde 0)                               | Marjinal maliyet **ve** şekil başına izole süreç; katsayı 9,25–10,08× MAD ≤ 0,0047 ile ölçüldü                        |
+| **M15** — Toplu before/after RSS eşzamanlı DOM maliyetini ölçemiyor (her şekilde 0)                               | Marjinal maliyet **ve** şekil başına izole süreç; katsayı on ayakta 8,62–10,06× ve MAD ≤ 0,1007 ile ölçüldü           |
 | **M16** — Kayıt byte'ı derinlikle doğrusal büyüyor (120 seviyede 2.940 B/kayıt)                                   | Byte kapısı derin belgelerde `maxNodes`'tan önce bağlıyor; `50 / 200` sayfa değerleri korunuyor, maliyet belgelendi   |
 | **M17** — `diag` dispose'ta girdiyi siliyor, yani dispose sonrası sayım tek başına hiçbir şey ölçmüyor            | Disposal oracle'ı iki taraflı: tutulurken 5, dispose'tan sonra 0                                                      |
 | **M18** — `xml-lab` `namespace.mjs`'te `Object.entries(root.attrs)` dizi indeksi üretiyordu, satır boşa geçiyordu | `attrs` `XmlAttribute[]` olarak okunuyor; satır artık üç gerçek attribute ölçüyor. Sonuç değişmedi, **ölçüm** değişti |
@@ -393,29 +398,23 @@ tanımlanmadığı için bu teslimde açıkça etiketlendi.
 
 ## Kalan sınırlar
 
-1. **Platform CI kanıtı henüz alınmadı.** Yerel dört paket yeşil; beş hedef ×
-   Node 22/24 koşusu ve `pack` denetimi gerekiyor. **Bu kaydın "Platform kanıtı"
-   bölümü doldurulana kadar F2 kapalı sayılmaz.**
-2. **Prolog'daki comment ve PI'lar adreslenemiyor.** `node.parent` kök elementte
+1. **Prolog'daki comment ve PI'lar adreslenemiyor.** `node.parent` kök elementte
    `null` döndüğü için DOM gezintisiyle erişilemiyorlar; sıralı görünüm belge
    elementinde köklenir. Sözleşme bu sınırı öngörüyor. Adreslenebilir hâle
    getirmek kök-üstü düğümleri `childIndex` numaralandırmasına sokar ve `nodeId`
    tekilliğini yeniden tanımlamayı gerektirir. Sahibi **F5**.
-3. **Kayıt byte'ı derinlikle doğrusal.** Element kaydı canonical adresini taşıyor;
+2. **Kayıt byte'ı derinlikle doğrusal.** Element kaydı canonical adresini taşıyor;
    120 seviyede kayıt başına 2.940 byte. Sözleşme adresi şart koştuğu için kabul
    edildi. Adres paylaşımı (ata adresini bir kez gönderip kayıtlarda referans
    vermek) ölçülmüş bir iyileştirme olarak **F4**'e aittir.
-4. **`entityReference` F2 corpus'unda üretilemiyor.** DOCTYPE reddedildiği için
+3. **`entityReference` F2 corpus'unda üretilemiyor.** DOCTYPE reddedildiği için
    yalnız önceden tanımlı entity'ler kalıyor ve `&amp;` tek bir `XmlText`'e
    eriyor. `kindOf` onu savunma amaçlı tanıyor. Sözleşmenin "entity yazımı
    normalize olabilir" cümlesi böylece ölçüldü.
-5. **`unsupported_encoding` yalnız prolog tarayıcısından üretiliyor.** Motorun
+4. **`unsupported_encoding` yalnız prolog tarayıcısından üretiliyor.** Motorun
    encoding ve well-formedness hatalarını aynı istisnayla bildirmesi değişmedi;
    motor-mesajı eşlemesi hâlâ kapsam dışı. Sahibi **F5**.
-6. **F2-10 katsayısı tek hostta ölçüldü.** Kararlılık kapısı geçti ama F0-08'in
-   kuralı gereği bütçe türetimi en yavaş desteklenen ayağa aittir; katsayı CI
-   matrisinde tekrarlanmalı. Sahibi **F6**.
-7. **`file-core` 1.0 kararı verilmedi.** Değişmedi; karar **F6-08**'dedir.
+5. **`file-core` 1.0 kararı verilmedi.** Değişmedi; karar **F6-08**'dedir.
 
 ## Sonraki faza devir
 

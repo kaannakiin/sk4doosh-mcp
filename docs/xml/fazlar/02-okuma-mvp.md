@@ -1,6 +1,6 @@
 # F2 — Salt okunur XML MVP
 
-Durum: **tamamlandı** (2026-09-09), platform CI kanıtı beklemede. F2-01/02/03 F1 kapanışında, F2-04–12 bu teslimde kapandı; kanıt [F2 kapanış kaydında](../xml-f2-kapanis.md). Sorumlu: XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi. Önkoşul karşılandı: F0 geçti, F1'in XML kapıları uygulandı.
+Durum: **tamamlandı** (2026-09-09). F2-01/02/03 F1 kapanışında, F2-04–12 bu teslimde kapandı; platform kanıtı CI 34349535283 (13/13) ve XML F0 34349535299 (10/10), commit `a088abd`. Ayrıntı [F2 kapanış kaydında](../xml-f2-kapanis.md). Sorumlu: XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi. Önkoşul karşılandı: F0 geçti, F1'in XML kapıları uygulandı.
 
 ## Hazır altyapı ve kalan entegrasyon
 
@@ -50,4 +50,4 @@ XPath, regex, streaming, otomatik type inference, schema validation, ZIP/gzip, X
 
 F2-01–12 kapandı. [Test matrisinin](../test-stratejisi.md) F2 zorunlu aileleri geçti; sayfa bütçesi ve eşzamanlı DOM şişme katsayısı **ölçüldü** ve [kapanış kaydına](../xml-f2-kapanis.md) girdi; benchmark ve güvenlik testi "sonra"ya bırakılmadı.
 
-Geriye tek kapı kaldı: **platform CI kanıtı**. Beş hedef × Node 22/24 koşusu ve `pack` denetimi alınmadan hiçbir görev `tamamlandı` sayılmaz — yerel geçiş kapı değildir. O koşudan sonra F6 kurulum/yayın kapısına hazır olunur.
+**Platform kanıtı alındı**: beş hedef × Node 22/24 native matrisi, `pack` denetimi ve temiz tüketici kurulumu geçti; XML F0 on ayakta F2-10 katsayısını `pass` ile ölçtü. F6 kurulum/yayın kapısına hazır.
