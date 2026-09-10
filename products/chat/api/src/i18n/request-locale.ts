@@ -1,4 +1,4 @@
-import type { Locale } from "@chat/contracts";
+import type { Locale } from "@chat/contracts/common/locale";
 import type { Request } from "express";
 
 export interface RequestWithLocale extends Request {

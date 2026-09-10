@@ -1,4 +1,8 @@
-import { SUPPORTED_LOCALES, isLocale, type Locale } from "@chat/contracts";
+import {
+  SUPPORTED_LOCALES,
+  isLocale,
+  type Locale,
+} from "@chat/contracts/common/locale";
 import Negotiator from "negotiator";
 
 export interface LocaleCandidates {

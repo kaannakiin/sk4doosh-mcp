@@ -2,7 +2,7 @@ import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
   type Locale,
-} from "@chat/contracts";
+} from "@chat/contracts/common/locale";
 import i18next, { type i18n } from "i18next";
 
 import en from "./locales/en/common.json";

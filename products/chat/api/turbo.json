@@ -9,13 +9,21 @@
     },
     "dev": {
       "dependsOn": ["^build"],
-      "passThroughEnv": ["CHAT_API_PORT", "CHAT_DEFAULT_LOCALE", "CHAT_CORS_ORIGIN"]
+      "passThroughEnv": [
+        "CHAT_API_PORT",
+        "CHAT_DEFAULT_LOCALE",
+        "CHAT_CORS_ORIGIN"
+      ]
     },
     "start": {
       "dependsOn": ["build"],
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["CHAT_API_PORT", "CHAT_DEFAULT_LOCALE", "CHAT_CORS_ORIGIN"]
+      "passThroughEnv": [
+        "CHAT_API_PORT",
+        "CHAT_DEFAULT_LOCALE",
+        "CHAT_CORS_ORIGIN"
+      ]
     }
   }
 }

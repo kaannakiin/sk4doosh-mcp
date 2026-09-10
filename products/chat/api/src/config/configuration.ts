@@ -1,11 +1,5 @@
-import { DEFAULT_LOCALE, localeSchema, type Locale } from "@chat/contracts";
-import { z } from "zod";
-
-const envSchema = z.object({
-  CHAT_API_PORT: z.coerce.number().int().positive().default(5191),
-  CHAT_DEFAULT_LOCALE: localeSchema.default(DEFAULT_LOCALE),
-  CHAT_CORS_ORIGIN: z.url().default("http://localhost:5190"),
-});
+import { apiEnvSchema } from "@chat/contracts/config/api-env";
+import type { Locale } from "@chat/contracts/common/locale";
 
 export interface AppConfig {
   port: number;
@@ -14,7 +8,7 @@ export interface AppConfig {
 }
 
 export function loadConfig(): AppConfig {
-  const env = envSchema.parse(process.env);
+  const env = apiEnvSchema.parse(process.env);
 
   return {
     port: env.CHAT_API_PORT,

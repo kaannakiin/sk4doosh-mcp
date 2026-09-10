@@ -1,4 +1,5 @@
-import type { ChatMessage, Locale } from "@chat/contracts";
+import type { ChatMessage } from "@chat/contracts/chat/message";
+import type { Locale } from "@chat/contracts/common/locale";
 import {
   Alert,
   Button,

@@ -2,7 +2,7 @@ import {
   sendMessageRequestSchema,
   type SendMessageRequest,
   type SendMessageResponse,
-} from "@chat/contracts";
+} from "@chat/contracts/chat/send-message";
 import { Body, Controller, Post } from "@nestjs/common";
 
 import { ChatService } from "./chat.service.ts";

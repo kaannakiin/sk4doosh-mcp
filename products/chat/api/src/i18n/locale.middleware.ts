@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE } from "@chat/contracts";
+import { DEFAULT_LOCALE } from "@chat/contracts/common/locale";
 import { Injectable, type NestMiddleware } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { NextFunction, Response } from "express";

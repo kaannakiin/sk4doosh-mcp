@@ -1,4 +1,5 @@
-import { DEFAULT_LOCALE, type HealthResponse } from "@chat/contracts";
+import { DEFAULT_LOCALE } from "@chat/contracts/common/locale";
+import type { HealthResponse } from "@chat/contracts/http/health";
 import { Controller, Get, Req } from "@nestjs/common";
 import type { RequestWithLocale } from "../i18n/request-locale.ts";
 

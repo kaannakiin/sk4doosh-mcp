@@ -1,4 +1,4 @@
-import { SUPPORTED_LOCALES, type Locale } from "@chat/contracts";
+import { SUPPORTED_LOCALES, type Locale } from "@chat/contracts/common/locale";
 import { Group, Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";

@@ -1,4 +1,4 @@
-import { isLocale } from "@chat/contracts";
+import { isLocale } from "@chat/contracts/common/locale";
 import { Outlet, createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { I18nextProvider } from "react-i18next";

@@ -1,8 +1,8 @@
-import {
-  type ChatMessage,
-  type SendMessageRequest,
-  type SendMessageResponse,
-} from "@chat/contracts";
+import type { ChatMessage } from "@chat/contracts/chat/message";
+import type {
+  SendMessageRequest,
+  SendMessageResponse,
+} from "@chat/contracts/chat/send-message";
 import { Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 

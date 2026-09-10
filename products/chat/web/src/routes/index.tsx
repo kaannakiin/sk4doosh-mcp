@@ -1,4 +1,7 @@
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@chat/contracts";
+import {
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+} from "@chat/contracts/common/locale";
 import { match } from "@formatjs/intl-localematcher";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";

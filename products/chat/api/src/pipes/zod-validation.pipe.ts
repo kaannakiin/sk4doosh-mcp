@@ -1,4 +1,4 @@
-import type { ApiError, ValidationIssue } from "@chat/contracts";
+import type { ApiError, ValidationIssue } from "@chat/contracts/http/error";
 import {
   HttpException,
   HttpStatus,

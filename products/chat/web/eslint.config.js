@@ -1,8 +1,8 @@
 import { config } from "@sk-mcp/eslint-config/react-internal";
-import { chat } from "@sk-mcp/eslint-config/chat";
+import { chatApp } from "@sk-mcp/eslint-config/chat";
 
 export default [
   ...config,
-  ...chat,
+  ...chatApp,
   { ignores: [".tanstack/**", "dist/**", "src/routeTree.gen.ts"] },
 ];

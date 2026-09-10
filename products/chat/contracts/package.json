@@ -3,10 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
     }
   },
   "scripts": {

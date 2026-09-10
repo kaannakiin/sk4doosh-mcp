@@ -1,11 +1,11 @@
+import type { ApiError } from "@chat/contracts/http/error";
+import type { Locale } from "@chat/contracts/common/locale";
 import {
   sendMessageResponseSchema,
-  type ApiError,
-  type Locale,
   type SendMessageResponse,
-} from "@chat/contracts";
+} from "@chat/contracts/chat/send-message";
 
-const baseUrl = import.meta.env["VITE_CHAT_API_URL"] ?? "http://127.0.0.1:5191";
+import { env } from "./env";
 
 export class ApiRequestError extends Error {
   constructor(readonly payload: ApiError) {
@@ -18,7 +18,7 @@ export async function sendMessage(
   content: string,
   locale: Locale,
 ): Promise<SendMessageResponse> {
-  const response = await fetch(`${baseUrl}/chat`, {
+  const response = await fetch(`${env.VITE_CHAT_API_URL}/chat`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-locale": locale },
     body: JSON.stringify({ content }),

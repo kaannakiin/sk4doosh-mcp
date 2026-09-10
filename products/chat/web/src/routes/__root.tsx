@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { DEFAULT_LOCALE, isLocale } from "@chat/contracts";
+import { DEFAULT_LOCALE, isLocale } from "@chat/contracts/common/locale";
 import {
   ColorSchemeScript,
   MantineProvider,

@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import type { Locale } from "@chat/contracts";
+import type { Locale } from "@chat/contracts/common/locale";
 
 const storage = new AsyncLocalStorage<Locale>();
 
