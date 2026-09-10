@@ -2,6 +2,7 @@ import {
   createPageBudget,
   measureJson,
   type Fingerprint,
+  type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
 import { SkMcpXmlError } from "./errors.js";
@@ -16,6 +17,7 @@ export type RecordTruncation = "maxRows" | "maxPayloadBytes" | "scanBudget";
 export interface RecordEnvelope {
   readonly filePath: string;
   readonly snapshotId: string;
+  readonly mode: SourceMode;
   readonly itemParentAddress: NodeAddress;
   readonly itemName: ExpandedName;
   readonly columns: readonly ColumnReport[];
@@ -35,9 +37,11 @@ export interface RecordEnvelope {
 export interface AssembleRecordInput {
   readonly filePath: string;
   readonly snapshotId: Fingerprint;
+  readonly mode: SourceMode;
   readonly optionsHash: string;
   readonly offset: number;
   readonly page: RecordPage;
+  readonly resumeBytes?: ReadonlyMap<number, number>;
 }
 
 const hint =
@@ -45,18 +49,22 @@ const hint =
 
 export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
   const { page, snapshotId } = input;
-  const cursorAt = (position: number): string =>
-    encodePosition(snapshotId, {
+  const cursorAt = (position: number): string => {
+    const byte = input.resumeBytes?.get(position);
+    return encodePosition(snapshotId, {
       t: "records",
       i: position,
+      ...(byte === undefined ? {} : { b: byte }),
       o: input.optionsHash,
       x: Date.now() + cursorTtlMs,
     });
+  };
 
   const reserveBytes =
     measureJson({
       filePath: input.filePath,
       snapshotId,
+      mode: input.mode,
       itemParentAddress: page.itemParentAddress,
       itemName: page.itemName,
       columns: page.columns,
@@ -110,6 +118,7 @@ export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
   return {
     filePath: input.filePath,
     snapshotId,
+    mode: input.mode,
     itemParentAddress: page.itemParentAddress,
     itemName: page.itemName,
     columns: page.columns,

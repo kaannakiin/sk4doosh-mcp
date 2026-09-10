@@ -159,9 +159,22 @@ export interface RecordProbe extends ScanLimits {
 }
 
 export interface Row {
-  readonly nodeId: string;
+  readonly nodeId?: string;
   readonly occurrence: number;
   readonly cells: readonly Cell[];
+}
+
+export interface ChunkProbe extends ScanLimits {
+  readonly columns: readonly ColumnSpec[];
+  readonly where: readonly Condition[];
+  readonly match: MatchMode;
+  readonly caseSensitive: boolean;
+}
+
+export interface ChunkPage {
+  readonly rows: readonly Row[];
+  readonly scanned: number;
+  readonly matched: number;
 }
 
 export interface ColumnReport {

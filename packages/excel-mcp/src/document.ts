@@ -18,7 +18,7 @@ import {
 } from "./csv.js";
 import { SkMcpExcelError, fail } from "./errors.js";
 import { formats, type DocumentFormat } from "./formats.js";
-import { limits } from "./limits.js";
+import { limits, modePolicy } from "./limits.js";
 import { assertReadableFormat } from "./paths.js";
 import type { SheetSource, SheetView } from "./sheet.js";
 import { vocabulary } from "./vocabulary.js";
@@ -52,17 +52,24 @@ async function parseDocument(
   options: CsvOptions,
 ): Promise<DocumentBody> {
   const format = formats.formatFor(context.path);
+  const bytes =
+    context.mode === "resident"
+      ? context.bytes
+      : await context.source.read({
+          offset: 0,
+          length: context.source.sizeBytes,
+        });
   if (format === "csv") {
     const table = await parseCsv(
-      context.bytes,
+      bytes,
       context.sizeBytes,
       options,
       context.displayPath,
     );
     return { format, table };
   }
-  assertReadableFormat(context.bytes.subarray(0, 8), context.displayPath);
-  const workbook = await parseXlsx(context.bytes, context.displayPath);
+  assertReadableFormat(bytes.subarray(0, 8), context.displayPath);
+  const workbook = await parseXlsx(bytes, context.displayPath);
   return { format, workbook };
 }
 
@@ -84,6 +91,7 @@ export function createDocumentCache(root?: string): DocumentCache {
       formats.formatFor(path) === "csv"
         ? limits.maxCsvBytes
         : limits.maxFileBytes,
+    mode: modePolicy,
     ...(root === undefined ? {} : { root }),
     vocabulary,
     fail,

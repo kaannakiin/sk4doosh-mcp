@@ -23,7 +23,16 @@ import { createGate, type Gate } from "./gate.js";
 import { asXmlError, fail, SkMcpXmlError } from "./errors.js";
 import { assembleAggregate } from "./aggregate-envelope.js";
 import { assembleFindPage } from "./find-page.js";
-import { limits } from "./limits.js";
+import { capabilitiesFor } from "./capabilities.js";
+import {
+  createSpanCache,
+  describeChunked,
+  isRefusal,
+  projectRecordsChunked,
+  refusalError,
+  type ChunkAsk,
+} from "./chunked.js";
+import { limits, modePolicy } from "./limits.js";
 import type {
   ElementStep,
   NamespaceBinding,
@@ -634,21 +643,11 @@ function refuseCombination(field: string): never {
   );
 }
 
-const capabilities = {
-  namespaceAwareAddressing: true,
-  orderedMixedContent: true,
-  literalSearch: true,
-  xpath: true,
-  recordProjection: true,
-  aggregation: true,
-  schemaValidation: false,
-  streaming: false,
-  typeInference: false,
-  write: false,
-} as const;
-
 const surfaceLimits = {
   maxDocumentBytes: limits.maxXmlBytes,
+  residentMaxBytes: limits.residentMaxBytes,
+  maxChunkBytes: limits.maxChunkBytes,
+  maxLiveChunkDoms: limits.maxLiveChunkDoms,
   maxDepth: limits.maxDomDepth,
   maxNodesPerPage: limits.maxReadNodes,
   maxPayloadBytes: limits.maxPayloadBytes,
@@ -663,6 +662,40 @@ export function createHandlers(
 ): ToolHandlers {
   const pool = deps?.pool ?? createXmlWorkerPool();
   const cache = deps?.cache ?? createXmlDocumentCache(pool, root.real);
+  const spans = createSpanCache(limits.documentCacheSize);
+  pool.onGenerationChange(() => {
+    spans.clear();
+  });
+  const askChunks: ChunkAsk = async (fragments, firstOccurrence, probe) => {
+    const outcome = await pool.ask({
+      kind: "projectChunks",
+      fragments,
+      firstOccurrence,
+      probe,
+    });
+    if (!outcome.ok)
+      throw outcome.failure === "doctype_not_allowed"
+        ? new SkMcpXmlError(
+            "doctype_not_allowed",
+            "A record chunk declares a DOCTYPE.",
+            "Remove the DOCTYPE declaration, or read a document that does not use one.",
+          )
+        : new SkMcpXmlError(
+            "malformed_xml",
+            "A record chunk is not well-formed XML.",
+            "Fix the markup and read the file again.",
+          );
+    return outcome.value;
+  };
+
+  const refuseChunked = (tool: string, instead: string): never => {
+    throw new SkMcpXmlError(
+      "unsupported_for_format",
+      `${tool} is not available for a document read in chunked mode: it needs the whole document resident, and this file is above the ${String(limits.residentMaxBytes)} byte resident budget.`,
+      instead,
+    );
+  };
+
   const listings: Gate = createGate(
     deps?.maxConcurrentListings ?? limits.maxConcurrentListings,
     () => {
@@ -689,6 +722,7 @@ export function createHandlers(
               : { subdirectory: args.subdirectory }),
             ...(args.pattern === undefined ? {} : { pattern: args.pattern }),
             maxResults: args.maxResults ?? limits.defaultListResults,
+            mode: modePolicy,
           });
           return json({ root: root.real, ...listing });
         } finally {
@@ -703,17 +737,25 @@ export function createHandlers(
           const maxCandidates = args.maxPaths ?? limits.defaultDescribePaths;
           const path = await open(args.filePath);
           const loaded = await cache.load(path);
-          const facts = await cache.ask(
-            path,
-            loaded.stamp,
-            (stamp) => ({
-              kind: "describe" as const,
-              stamp,
-              maxVisits: limits.maxDescribeVisits,
-              maxCandidates,
-            }),
-            signal,
-          );
+          const facts =
+            loaded.mode === "chunked"
+              ? describeChunked(
+                  loaded.survey,
+                  loaded.root,
+                  loaded.declaredEncoding,
+                  maxCandidates,
+                )
+              : await cache.ask(
+                  path,
+                  loaded.stamp,
+                  (stamp) => ({
+                    kind: "describe" as const,
+                    stamp,
+                    maxVisits: limits.maxDescribeVisits,
+                    maxCandidates,
+                  }),
+                  signal,
+                );
           return json({
             filePath: args.filePath,
             snapshotId: loaded.stamp,
@@ -729,7 +771,8 @@ export function createHandlers(
             repetitionCandidates: facts.repetitionCandidates,
             mixedContent: facts.mixedContent,
             exampleAddress: facts.exampleAddress,
-            capabilities,
+            mode: loaded.mode,
+            capabilities: capabilitiesFor("xml", loaded.mode),
             limits: surfaceLimits,
             notes: [prologNote],
           });
@@ -752,6 +795,11 @@ export function createHandlers(
           }
           const path = await open(args.filePath);
           const loaded = await cache.load(path);
+          if (loaded.mode === "chunked")
+            refuseChunked(
+              "read_node",
+              "Use project_records with an itemAddress: in chunked mode a record carries occurrence instead of a node address.",
+            );
           if (cursor !== undefined) assertFresh(cursor, loaded.stamp);
 
           const scope =
@@ -784,6 +832,7 @@ export function createHandlers(
             assemblePage({
               filePath: args.filePath,
               snapshotId: loaded.stamp,
+              mode: loaded.mode,
               optionsHash: hash,
               page,
             }),
@@ -814,6 +863,11 @@ export function createHandlers(
           }
           const path = await open(args.filePath);
           const loaded = await cache.load(path);
+          if (loaded.mode === "chunked")
+            refuseChunked(
+              "find_in_document",
+              "Use project_records with an itemAddress and a where condition to filter records by value.",
+            );
           if (cursor !== undefined) assertFresh(cursor, loaded.stamp);
 
           const scopeAddress =
@@ -845,6 +899,7 @@ export function createHandlers(
             assembleFindPage({
               filePath: args.filePath,
               snapshotId: loaded.stamp,
+              mode: loaded.mode,
               optionsHash: hash,
               page,
               maxResults,
@@ -872,6 +927,11 @@ export function createHandlers(
           if (cursor !== undefined) assertSameOptions(cursor, hash);
           const path = await open(args.filePath);
           const loaded = await cache.load(path);
+          if (loaded.mode === "chunked")
+            refuseChunked(
+              "select_xpath",
+              "Use project_records with an itemAddress; XPath needs the whole document and is not carried into a chunk.",
+            );
           if (cursor !== undefined) assertFresh(cursor, loaded.stamp);
 
           const outcome = await cache.ask(
@@ -899,6 +959,7 @@ export function createHandlers(
             assembleXPath({
               filePath: args.filePath,
               snapshotId: loaded.stamp,
+              mode: loaded.mode,
               optionsHash: hash,
               expression: args.xpath,
               rootNamespaceUri: loaded.root.namespaceUri,
@@ -934,36 +995,61 @@ export function createHandlers(
           const loaded = await cache.load(path);
           if (cursor !== undefined) assertFresh(cursor, loaded.stamp);
           const offset = cursor?.i ?? 0;
+          const probe = {
+            item,
+            columns: specs,
+            where: conditions,
+            match,
+            caseSensitive,
+            offset,
+            maxRows,
+            maxChars: limits.maxStringChars,
+            maxCellValues: limits.maxCellValues,
+            maxItemVisits: limits.maxItemVisits,
+          };
 
-          const page = await cache.ask(
-            path,
-            loaded.stamp,
-            (stamp) => ({
-              kind: "records" as const,
-              stamp,
-              probe: {
-                item,
-                columns: specs,
-                where: conditions,
-                match,
-                caseSensitive,
-                offset,
-                maxRows,
-                maxChars: limits.maxStringChars,
-                maxCellValues: limits.maxCellValues,
-                maxItemVisits: limits.maxItemVisits,
-              },
-            }),
-            signal,
-          );
+          const chunkedPage =
+            loaded.mode === "chunked"
+              ? await (async () => {
+                  const resume =
+                    cursor?.b === undefined
+                      ? undefined
+                      : { byte: cursor.b, ordinal: offset + 1 };
+                  const scan = spans.scan(
+                    loaded.stamp,
+                    loaded.bytes,
+                    item,
+                    resume,
+                  );
+                  if (isRefusal(scan)) throw refusalError(scan);
+                  return projectRecordsChunked(
+                    loaded.bytes,
+                    scan,
+                    probe,
+                    askChunks,
+                  );
+                })()
+              : undefined;
+          const page =
+            chunkedPage?.page ??
+            (await cache.ask(
+              path,
+              loaded.stamp,
+              (stamp) => ({ kind: "records" as const, stamp, probe }),
+              signal,
+            ));
 
           return json(
             assembleRecordPage({
               filePath: args.filePath,
               snapshotId: loaded.stamp,
+              mode: loaded.mode,
               optionsHash: hash,
               offset,
               page,
+              ...(chunkedPage === undefined
+                ? {}
+                : { resumeBytes: chunkedPage.resumeBytes }),
             }),
           );
         }),
@@ -986,6 +1072,11 @@ export function createHandlers(
           }
           const path = await open(args.filePath);
           const loaded = await cache.load(path);
+          if (loaded.mode === "chunked")
+            refuseChunked(
+              "aggregate_document",
+              "Use project_records and total the rows outside this server; a whole-document aggregate is not produced from chunks.",
+            );
 
           const outcome = await cache.ask(
             path,
@@ -1020,6 +1111,7 @@ export function createHandlers(
             assembleAggregate({
               filePath: args.filePath,
               snapshotId: loaded.stamp,
+              mode: loaded.mode,
               numericMode,
               metrics: args.metrics.map((metric) => ({
                 fn: metric.fn,

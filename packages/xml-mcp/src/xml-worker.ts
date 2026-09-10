@@ -5,7 +5,7 @@ import { describeDocument, rootFactsOf } from "./describe.js";
 import { scan } from "./find.js";
 import { NumericPrecisionError } from "./numeric.js";
 import { HARDENED } from "./parse-policy.js";
-import { projectRecords } from "./records.js";
+import { projectChunks, projectRecords } from "./records.js";
 import { resolveAddress, resolveScopePath, walk } from "./traverse.js";
 import {
   projectDiag,
@@ -207,6 +207,17 @@ function handle(request: WorkerRequest): WorkerReply {
       if (outcome === undefined) return unaddressed(request.kind, request.id);
       return { kind: "aggregate", id: request.id, ok: true, value: outcome };
     }
+    case "projectChunks":
+      return {
+        kind: "projectChunks",
+        id: request.id,
+        ok: true,
+        value: projectChunks(
+          request.fragments,
+          request.firstOccurrence,
+          request.probe,
+        ),
+      };
     case "diag":
       return {
         kind: "diag",

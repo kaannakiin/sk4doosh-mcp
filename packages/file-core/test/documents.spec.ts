@@ -49,14 +49,21 @@ function createProbe(
   const store = createDocumentStore<Body, Options>({
     maxEntries,
     maxBytes,
+    mode: { residentMaxBytes: maxBytes },
     root: root ?? dir,
     vocabulary,
     fail,
     variantKey: (options) => options.mode ?? "",
     parse: async (context: ParseContext, options: Options) => {
       parses += 1;
-      const text = context.bytes.toString("utf8");
-      return { text: `${options.mode ?? "plain"}:${text}` };
+      const bytes =
+        context.mode === "resident"
+          ? context.bytes
+          : await context.source.read({
+              offset: 0,
+              length: context.source.sizeBytes,
+            });
+      return { text: `${options.mode ?? "plain"}:${bytes.toString("utf8")}` };
     },
   });
   return { store, parses: () => parses };

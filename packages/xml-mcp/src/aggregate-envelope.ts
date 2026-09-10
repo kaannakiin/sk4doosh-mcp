@@ -2,6 +2,7 @@ import {
   createPageBudget,
   measureJson,
   type Fingerprint,
+  type SourceMode,
 } from "@sk-mcp/file-core";
 import { SkMcpXmlError } from "./errors.js";
 import { limits } from "./limits.js";
@@ -25,6 +26,7 @@ export type AggregateTruncation =
 export interface AggregateEnvelope {
   readonly filePath: string;
   readonly snapshotId: string;
+  readonly mode: SourceMode;
   readonly itemParentAddress: NodeAddress;
   readonly itemName: ExpandedName;
   readonly numericMode: NumericMode;
@@ -47,6 +49,7 @@ export interface AggregateEnvelope {
 export interface AssembleAggregateInput {
   readonly filePath: string;
   readonly snapshotId: Fingerprint;
+  readonly mode: SourceMode;
   readonly numericMode: NumericMode;
   readonly metrics: readonly MetricEcho[];
   readonly outcome: AggregateOutcome;
@@ -62,6 +65,7 @@ export function assembleAggregate(
   const head = {
     filePath: input.filePath,
     snapshotId,
+    mode: input.mode,
     itemParentAddress: outcome.itemParentAddress,
     itemName: outcome.itemName,
     numericMode: input.numericMode,

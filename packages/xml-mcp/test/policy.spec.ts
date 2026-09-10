@@ -11,10 +11,17 @@ const workerEntry = resolve(here, "../dist/xml-worker.js");
 
 const hostOnly = ["@sk-mcp/", "zod", "@modelcontextprotocol"];
 const neverInWorker = ["libxml2-wasm/lib/nodejs"];
+const providerSymbols = [
+  "xmlRegisterInputProvider",
+  "xmlRegisterFsInputProviders",
+  "XmlInputProvider",
+];
 
-function moduleGraph(entry: string): readonly string[] {
+function walkWorker(
+  entry: string,
+  inspect: (file: string, source: string) => void,
+): void {
   const seen = new Set<string>();
-  const external: string[] = [];
   const visit = (file: string): void => {
     if (seen.has(file)) return;
     seen.add(file);
@@ -24,13 +31,22 @@ function moduleGraph(entry: string): readonly string[] {
     } catch {
       return;
     }
+    inspect(file, source);
     for (const match of source.matchAll(/from\s+"([^"]+)"/gu)) {
       const specifier = match[1];
-      if (specifier === undefined) continue;
-      if (specifier.startsWith(".")) {
+      if (specifier !== undefined && specifier.startsWith("."))
         visit(resolve(dirname(file), specifier));
-        continue;
-      }
+    }
+  };
+  visit(entry);
+}
+
+function moduleGraph(entry: string): readonly string[] {
+  const external: string[] = [];
+  walkWorker(entry, (file, source) => {
+    for (const match of source.matchAll(/from\s+"([^"]+)"/gu)) {
+      const specifier = match[1];
+      if (specifier === undefined || specifier.startsWith(".")) continue;
       if (
         hostOnly.some((name) => specifier.startsWith(name)) ||
         neverInWorker.some((name) => specifier.startsWith(name))
@@ -38,9 +54,18 @@ function moduleGraph(entry: string): readonly string[] {
         external.push(`${file} -> ${specifier}`);
       }
     }
-  };
-  visit(entry);
+  });
   return external;
+}
+
+function providerMentions(entry: string): readonly string[] {
+  const found: string[] = [];
+  walkWorker(entry, (file, source) => {
+    for (const symbol of providerSymbols) {
+      if (source.includes(symbol)) found.push(`${file} -> ${symbol}`);
+    }
+  });
+  return found;
 }
 
 describe("the parse policy", () => {
@@ -81,8 +106,33 @@ describe("the cache size knob", () => {
   });
 });
 
+describe("the tier knob", () => {
+  it("never lets a chunk outgrow a resident document", () => {
+    expect(limits.maxChunkBytes).toBeLessThanOrEqual(limits.residentMaxBytes);
+  });
+
+  it("keeps chunked peak DOM at or below the resident peak", () => {
+    expect(limits.maxLiveChunkDoms * limits.maxChunkBytes).toBeLessThanOrEqual(
+      limits.residentMaxBytes,
+    );
+  });
+
+  it("budgets a chunk no longer than a whole document", () => {
+    expect(limits.maxChunkParseMs).toBeLessThanOrEqual(limits.maxParseMs);
+  });
+
+  it("derives the accepted ceiling from the knob", () => {
+    expect(limits.maxXmlBytes).toBeGreaterThanOrEqual(limits.residentMaxBytes);
+    expect(limits.maxXmlBytes).toBeLessThanOrEqual(limits.maxFileBytes);
+  });
+});
+
 describe("the worker boundary", () => {
   it("builds a worker graph that reaches no host dependency", () => {
     expect(moduleGraph(workerEntry)).toStrictEqual([]);
+  });
+
+  it("registers no libxml2 input provider anywhere it can reach", () => {
+    expect(providerMentions(workerEntry)).toStrictEqual([]);
   });
 });

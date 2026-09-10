@@ -28,11 +28,21 @@ interface Ordinal extends Bound {
   readonly i: number;
 }
 
+/**
+ * `b` is advisory. Every page re-verifies it against the record it claims to
+ * start and falls back to scanning from zero when it does not hold, so a forged
+ * `b` can only cost a pass, never yield a row the hint-free path would not.
+ * chunked-cursor.spec.ts fuzzes it.
+ */
+interface Scanned extends Ordinal {
+  readonly b?: number;
+}
+
 export type XmlPosition =
   | (Walked & { readonly t: "read" })
   | (Walked & { readonly t: "find" })
   | (Ordinal & { readonly t: "xpath" })
-  | (Ordinal & { readonly t: "records" });
+  | (Scanned & { readonly t: "records" });
 
 export type XmlPositionOf<K extends CursorTool> = Extract<
   XmlPosition,
@@ -77,7 +87,12 @@ const shapes: {
   read: isWalked,
   find: isWalked,
   xpath: (value) => isOrdinal(value["i"]),
-  records: (value) => isOrdinal(value["i"]),
+  records: (value) =>
+    isOrdinal(value["i"]) &&
+    (value["b"] === undefined ||
+      (typeof value["b"] === "number" &&
+        Number.isSafeInteger(value["b"]) &&
+        value["b"] >= 0)),
 };
 
 function isXmlCursor<K extends CursorTool>(

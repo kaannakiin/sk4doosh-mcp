@@ -2,6 +2,7 @@ import { relative } from "node:path";
 import { accessError, assertSnapshot, knownRoot, pinRoot } from "./access.js";
 import { contentFingerprint, type Fingerprint } from "./cursor.js";
 import { type CoreErrorCode, type ErrorFactory } from "./errors.js";
+import { modeFor, type ModePolicy, type SourceMode } from "./mode.js";
 import type { SandboxedPath } from "./paths.js";
 import type { Vocabulary } from "./vocabulary.js";
 
@@ -11,18 +12,46 @@ export interface OpenedFile {
   readonly stamp: Fingerprint;
   readonly sizeBytes: number;
   readonly modifiedAt: string;
+  readonly mode: SourceMode;
 }
 
-export interface ParseContext extends OpenedFile {
-  readonly bytes: Buffer;
+export interface ByteRange {
+  readonly offset: number;
+  readonly length: number;
+}
+
+/** Reads a byte range of the opened file. */
+export interface SourceReader {
+  readonly sizeBytes: number;
+  read(range: ByteRange): Promise<Buffer>;
+}
+
+interface ParseContextBase extends OpenedFile {
   readonly path: SandboxedPath;
   readonly displayPath: string;
+  readonly source: SourceReader;
+}
+
+/** Carries `bytes` in the resident tier only; a chunked parse reads `source`. */
+export type ParseContext =
+  | (ParseContextBase & { readonly mode: "resident"; readonly bytes: Buffer })
+  | (ParseContextBase & { readonly mode: "chunked" });
+
+export function bufferSource(bytes: Buffer): SourceReader {
+  return {
+    sizeBytes: bytes.length,
+    read: (range) =>
+      Promise.resolve(
+        bytes.subarray(range.offset, range.offset + range.length),
+      ),
+  };
 }
 
 export interface DocumentStoreSpec<Loaded, Options> {
   readonly maxEntries: number;
   readonly maxBytes: number;
   readonly maxBytesFor?: (path: SandboxedPath, options: Options) => number;
+  readonly mode: ModePolicy;
   readonly root?: string;
   readonly vocabulary: Vocabulary<string>;
   readonly fail: ErrorFactory<CoreErrorCode>;
@@ -113,9 +142,18 @@ export function createDocumentStore<Loaded, Options>(
         stamp,
         sizeBytes: snapshot.size,
         modifiedAt,
+        mode: modeFor(snapshot.size, spec.mode),
+      };
+      const base = {
+        ...opened,
+        path,
+        displayPath,
+        source: bufferSource(snapshot.bytes),
       };
       const parsed = await spec.parse(
-        { ...opened, bytes: snapshot.bytes, path, displayPath },
+        opened.mode === "resident"
+          ? { ...base, mode: "resident", bytes: snapshot.bytes }
+          : { ...base, mode: "chunked" },
         options,
       );
       return remember(key, { ...parsed, ...opened });

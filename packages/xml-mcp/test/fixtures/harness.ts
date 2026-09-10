@@ -16,10 +16,16 @@ export interface Harness {
 export async function createHarness(
   rootPath: string,
   poolOptions?: Parameters<typeof createXmlWorkerPool>[0],
+  residentMaxBytes?: number,
 ): Promise<Harness> {
   const root = await createDocumentRoot(rootPath);
   const pool = createXmlWorkerPool(poolOptions);
-  const cache = createXmlDocumentCache(pool, root.real);
+  const cache = createXmlDocumentCache(
+    pool,
+    root.real,
+    undefined,
+    residentMaxBytes,
+  );
   const handlers = createHandlers(root, { pool, cache });
   return {
     handlers,

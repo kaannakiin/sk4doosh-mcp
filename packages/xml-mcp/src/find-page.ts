@@ -2,6 +2,7 @@ import {
   createPageBudget,
   measureJson,
   type Fingerprint,
+  type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
 import { SkMcpXmlError } from "./errors.js";
@@ -16,6 +17,7 @@ export type FindTruncation = "maxResults" | "maxPayloadBytes" | "scanBudget";
 export interface FindEnvelope {
   readonly filePath: string;
   readonly snapshotId: string;
+  readonly mode: SourceMode;
   readonly scopeAddress: NodeAddress;
   readonly matches: readonly FindMatch[];
   readonly returnedCount: number;
@@ -32,6 +34,7 @@ export interface FindEnvelope {
 export interface AssembleFindInput {
   readonly filePath: string;
   readonly snapshotId: Fingerprint;
+  readonly mode: SourceMode;
   readonly optionsHash: string;
   readonly page: FindPage;
   readonly maxResults: number;
@@ -57,6 +60,7 @@ export function assembleFindPage(input: AssembleFindInput): FindEnvelope {
     measureJson({
       filePath: input.filePath,
       snapshotId,
+      mode: input.mode,
       scopeAddress: page.scopeAddress,
       matches: [],
       returnedCount: page.matches.length,
@@ -124,6 +128,7 @@ export function assembleFindPage(input: AssembleFindInput): FindEnvelope {
   return {
     filePath: input.filePath,
     snapshotId,
+    mode: input.mode,
     scopeAddress: page.scopeAddress,
     matches: admitted,
     returnedCount: admitted.length,

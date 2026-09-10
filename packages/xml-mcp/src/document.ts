@@ -4,7 +4,15 @@ import {
   type OpenedFile,
   type ParseContext,
   type SandboxedPath,
+  type SourceReader,
 } from "@sk-mcp/file-core";
+import {
+  declaredEncodingOf,
+  isRefusal,
+  surveyShape,
+  type ShapeSurvey,
+} from "./boundary.js";
+import { refusalError } from "./chunked.js";
 import { scanProlog } from "./doctype.js";
 import { SkMcpXmlError, fail } from "./errors.js";
 import { limits } from "./limits.js";
@@ -17,14 +25,28 @@ import type {
   WorkerResultOf,
 } from "./worker-protocol.js";
 
-export interface XmlDocumentBody {
+export interface ResidentXmlDocument {
   readonly format: "xml";
+  readonly mode: "resident";
   readonly residency: string;
   readonly generation: number;
   readonly declaredEncoding: string | null;
   readonly warningCount: number;
   readonly root: RootFacts;
 }
+
+export interface ChunkedXmlDocument {
+  readonly format: "xml";
+  readonly mode: "chunked";
+  readonly declaredEncoding: string | null;
+  readonly warningCount: 0;
+  readonly root: RootFacts;
+  readonly survey: ShapeSurvey;
+  readonly source: SourceReader;
+  readonly bytes: Buffer;
+}
+
+export type XmlDocumentBody = ResidentXmlDocument | ChunkedXmlDocument;
 
 export type LoadedXmlDocument = XmlDocumentBody & OpenedFile;
 
@@ -100,13 +122,51 @@ function translate(
   );
 }
 
+function surveyChunked(
+  context: ParseContext,
+  bytes: Buffer,
+): ChunkedXmlDocument {
+  const survey = surveyShape(bytes, {
+    maxCandidates: limits.maxDescribePaths,
+  });
+  if (isRefusal(survey)) throw refusalError(survey);
+  if (survey.root === undefined)
+    throw new SkMcpXmlError(
+      "malformed_xml",
+      "The document is not well-formed XML.",
+      "Fix the markup and read the file again.",
+    );
+  return {
+    format: "xml",
+    mode: "chunked",
+    declaredEncoding: declaredEncodingOf(bytes),
+    warningCount: 0,
+    root: {
+      localName: survey.root.localName,
+      namespaceUri: survey.root.namespaceUri,
+      prefixedName: survey.root.prefixedName,
+    },
+    survey,
+    source: context.source,
+    bytes,
+  };
+}
+
 export function createXmlDocumentCache(
   pool: XmlWorkerPool,
   root?: string,
   maxEntries: number = limits.documentCacheSize,
+  residentMaxBytes: number = limits.residentMaxBytes,
 ): XmlDocumentCache {
   async function parse(context: ParseContext): Promise<XmlDocumentBody> {
-    const prolog = scanProlog(context.bytes, limits.prologScanBytes);
+    const bytes =
+      context.mode === "resident"
+        ? context.bytes
+        : await context.source.read({
+            offset: 0,
+            length: context.source.sizeBytes,
+          });
+    const prolog = scanProlog(bytes, limits.prologScanBytes);
     if (prolog.unsupportedEncoding !== undefined) {
       throw new SkMcpXmlError(
         "unsupported_encoding",
@@ -121,18 +181,20 @@ export function createXmlDocumentCache(
         "Remove the DOCTYPE declaration, or read a document that does not use one.",
       );
     }
+    if (context.mode === "chunked") return surveyChunked(context, bytes);
     const logical = context.path as string;
     const outcome = await pool.ask({
       kind: "parse",
       stamp: context.stamp,
       logical,
-      bytes: Uint8Array.from(context.bytes),
+      bytes: Uint8Array.from(bytes),
     });
     if (!outcome.ok) {
       translate(outcome.failure, outcome.detail);
     }
     return {
       format: "xml",
+      mode: "resident",
       residency: `${pool.generation}:${context.stamp}`,
       generation: pool.generation,
       declaredEncoding: outcome.value.declaredEncoding,
@@ -147,6 +209,7 @@ export function createXmlDocumentCache(
   > = createDocumentStore({
     maxEntries,
     maxBytes: limits.maxXmlBytes,
+    mode: { residentMaxBytes },
     ...(root === undefined ? {} : { root }),
     vocabulary,
     fail,
@@ -160,12 +223,12 @@ export function createXmlDocumentCache(
 
   async function load(path: SandboxedPath): Promise<LoadedXmlDocument> {
     const first = await store.load(path, {});
-    if (first.generation === pool.generation) {
+    if (first.mode === "chunked" || first.generation === pool.generation) {
       return first;
     }
     store.clear();
     const second = await store.load(path, {});
-    if (second.generation !== pool.generation) {
+    if (second.mode === "resident" && second.generation !== pool.generation) {
       throw new SkMcpXmlError(
         "internal_error",
         "The parse worker restarted twice while reading one document.",

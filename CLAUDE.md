@@ -25,7 +25,12 @@
 
 - If a schema change breaks fixtures, update the fixtures in the same change.
 
-- **No comments**: No comment lines in code or JSON. Put explanations in the spec prose or documentation.
+- **Comments**: No `//` line comments, no TODOs, no progress notes, no JSON comments — explanations go in the spec prose or documentation. Two exceptions, both `/** */` JSDoc/TSDoc:
+
+  1. **Contract** on exported functions, classes, types and interfaces: purpose, `@param`, `@returns`. Factual only. A well-named item needs none.
+  2. **Guard**, anywhere it is needed: a comment may state WHY when it protects an invariant, a security property, or a measured trap. It names what the guard is and what breaks without it, and may cite the decision, measurement or test that pins it. Precedents: [limits.ts](packages/xml-mcp/src/limits.ts) (`W >= 2S-1`), [doctype.ts](packages/xml-mcp/src/doctype.ts) (the refused encoding families), [text.ts](packages/xml-mcp/src/text.ts) (the Turkish dotted I), [listing.ts](packages/file-core/src/listing.ts) (RegExp backtracking).
+
+  Design narration is still forbidden: no restating the code, no explaining what a tier "is for", no history.
 
 - **Language**: `docs/` (internal design records and ADRs) is in Turkish. `packages/spec/` and `apps/docs/` are in English — the spec is the documentation site's normative source and has to be readable by the same audience. Everything machine-readable (JSON fields, tool names, code identifiers) is in English everywhere.
 

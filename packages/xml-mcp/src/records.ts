@@ -1,4 +1,5 @@
-import { XmlCData, XmlElement, XmlText } from "libxml2-wasm";
+import { XmlCData, XmlDocument, XmlElement, XmlText } from "libxml2-wasm";
+import { HARDENED } from "./parse-policy.js";
 import { asciiLower } from "./text.js";
 import {
   formatNodeId,
@@ -9,6 +10,8 @@ import {
 } from "./node-model.js";
 import type {
   Cell,
+  ChunkPage,
+  ChunkProbe,
   ColumnReport,
   ColumnSpec,
   Condition,
@@ -438,4 +441,42 @@ export function groupKeyOf(cells: readonly Cell[]): string {
       return `l${String(cell.count)}:${parts.join("")}`;
     })
     .join("");
+}
+
+/**
+ * Parses and disposes one fragment before starting the next. Holding two would
+ * break the `maxLiveChunkDoms * maxChunkBytes <= residentMaxBytes` bound that
+ * policy.spec.ts pins.
+ */
+export function projectChunks(
+  fragments: readonly Uint8Array[],
+  firstOccurrence: number,
+  probe: ChunkProbe,
+): ChunkPage {
+  const rows: Row[] = [];
+  let matched = 0;
+  for (const [index, fragment] of fragments.entries()) {
+    const document = XmlDocument.fromBuffer(Buffer.from(fragment), {
+      option: HARDENED,
+    });
+    try {
+      if (document.dtd !== null) throw new Error("doctype_not_allowed");
+      let child = firstChildOf(document.root);
+      while (child !== undefined && !(child instanceof XmlElement))
+        child = nextSibling(child);
+      if (!(child instanceof XmlElement))
+        throw new Error("the fragment carried no record element");
+      const cells = cellsOf(child, probe.columns, probe);
+      if (
+        probe.where.length > 0 &&
+        !matchesWhere(cells, probe.where, probe.match, probe.caseSensitive)
+      )
+        continue;
+      matched += 1;
+      rows.push({ occurrence: firstOccurrence + index, cells });
+    } finally {
+      document.dispose();
+    }
+  }
+  return { rows, scanned: fragments.length, matched };
 }

@@ -9,6 +9,9 @@ import {
 } from "../src/errors.js";
 import { createFormatRegistry } from "../src/formats.js";
 import { listSources } from "../src/listing.js";
+import { coreLimits } from "../src/limits.js";
+
+const listMode = { residentMaxBytes: coreLimits.maxFileBytes };
 import {
   createSandboxRoot,
   isContained,
@@ -200,14 +203,20 @@ describe("the sandbox", () => {
 
   describe("listSources", () => {
     it("lists only the extensions the registry carries", async () => {
-      const listing = await listSources(root, { maxResults: 50 });
+      const listing = await listSources(root, {
+        maxResults: 50,
+        mode: listMode,
+      });
       const names = listing.files.map((file) => file.filePath);
       expect(names).toContain("a.probe");
       expect(names).not.toContain("notes.txt");
     });
 
     it("lists an inward symlink and skips an escaping or broken one", async () => {
-      const listing = await listSources(root, { maxResults: 50 });
+      const listing = await listSources(root, {
+        maxResults: 50,
+        mode: listMode,
+      });
       const names = listing.files.map((file) => file.filePath);
       expect(names).toContain("inward.probe");
       expect(names).not.toContain("escape.probe");
@@ -215,7 +224,10 @@ describe("the sandbox", () => {
     });
 
     it("does not leak the names of files outside the root", async () => {
-      const listing = await listSources(root, { maxResults: 50 });
+      const listing = await listSources(root, {
+        maxResults: 50,
+        mode: listMode,
+      });
       expect(JSON.stringify(listing)).not.toContain("secret");
     });
 
@@ -223,6 +235,7 @@ describe("the sandbox", () => {
       const listing = await listSources(root, {
         pattern: "nested/*",
         maxResults: 50,
+        mode: listMode,
       });
       expect(listing.files.map((file) => file.filePath)).toEqual([
         "nested/b.probe",
@@ -230,7 +243,10 @@ describe("the sandbox", () => {
     });
 
     it("truncates at maxResults and reports the true total", async () => {
-      const listing = await listSources(root, { maxResults: 1 });
+      const listing = await listSources(root, {
+        maxResults: 1,
+        mode: listMode,
+      });
       expect(listing.files).toHaveLength(1);
       expect(listing.total).toBeGreaterThan(1);
       expect(listing.truncated).toBe(true);
@@ -239,7 +255,11 @@ describe("the sandbox", () => {
     it("maps a missing subdirectory to file_not_found", async () => {
       expect(
         await codeOf(() =>
-          listSources(root, { subdirectory: "nope", maxResults: 50 }),
+          listSources(root, {
+            subdirectory: "nope",
+            maxResults: 50,
+            mode: listMode,
+          }),
         ),
       ).toBe("file_not_found");
     });
@@ -247,7 +267,11 @@ describe("the sandbox", () => {
     it("maps a file used as a subdirectory to not_a_file", async () => {
       expect(
         await codeOf(() =>
-          listSources(root, { subdirectory: "a.probe", maxResults: 50 }),
+          listSources(root, {
+            subdirectory: "a.probe",
+            maxResults: 50,
+            mode: listMode,
+          }),
         ),
       ).toBe("not_a_file");
     });
@@ -255,14 +279,24 @@ describe("the sandbox", () => {
     it("rejects a subdirectory that resolves outside the root", async () => {
       expect(
         await codeOf(() =>
-          listSources(root, { subdirectory: "../outside", maxResults: 50 }),
+          listSources(root, {
+            subdirectory: "../outside",
+            maxResults: 50,
+            mode: listMode,
+          }),
         ),
       ).toBe("path_outside_root");
     });
 
     it("keeps working when the root is itself a symlink", async () => {
-      const direct = await listSources(root, { maxResults: 50 });
-      const linked = await listSources(linkedRoot, { maxResults: 50 });
+      const direct = await listSources(root, {
+        maxResults: 50,
+        mode: listMode,
+      });
+      const linked = await listSources(linkedRoot, {
+        maxResults: 50,
+        mode: listMode,
+      });
       expect(linked.files.map((file) => file.filePath)).toEqual(
         direct.files.map((file) => file.filePath),
       );
@@ -270,7 +304,10 @@ describe("the sandbox", () => {
     });
 
     it("does not descend into a symlinked directory during a plain scan", async () => {
-      const listing = await listSources(root, { maxResults: 50 });
+      const listing = await listSources(root, {
+        maxResults: 50,
+        mode: listMode,
+      });
       const names = listing.files.map((file) => file.filePath);
       expect(names).toContain("a.probe");
       expect(names.some((path) => path.includes("secret"))).toBe(false);
@@ -278,13 +315,19 @@ describe("the sandbox", () => {
     });
 
     it("marks totals inexact when unsafe or unreadable entries were skipped", async () => {
-      const listing = await listSources(root, { maxResults: 200 });
+      const listing = await listSources(root, {
+        maxResults: 200,
+        mode: listMode,
+      });
       expect(listing.unreadable).toBeGreaterThan(0);
       expect(listing.totalExact).toBe(false);
     });
 
     it("returns a listed symlink path the resolver accepts", async () => {
-      const listing = await listSources(root, { maxResults: 50 });
+      const listing = await listSources(root, {
+        maxResults: 50,
+        mode: listMode,
+      });
       const linked = listing.files.find(
         (file) => file.filePath === "inward.probe",
       );
@@ -297,7 +340,11 @@ describe("the sandbox", () => {
     it("rejects a symlinked subdirectory that points outside the root", async () => {
       expect(
         await codeOf(() =>
-          listSources(root, { subdirectory: "escape-dir", maxResults: 50 }),
+          listSources(root, {
+            subdirectory: "escape-dir",
+            maxResults: 50,
+            mode: listMode,
+          }),
         ),
       ).toBe("path_outside_root");
     });

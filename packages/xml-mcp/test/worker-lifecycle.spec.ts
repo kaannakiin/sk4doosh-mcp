@@ -58,6 +58,8 @@ describe("the parse worker lifecycle", () => {
       await pool.close();
       expect(pool.generation).toBeGreaterThan(generationBefore);
       expect(cache.size).toBe(0);
+      if (first.mode !== "resident")
+        throw new Error("expected the resident tier");
       expect(first.generation).toBe(generationBefore);
     } finally {
       await pool.close();

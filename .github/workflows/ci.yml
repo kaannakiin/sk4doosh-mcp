@@ -13,11 +13,16 @@ concurrency:
 jobs:
   native:
     name: secure files (${{ matrix.target.id }}, Node ${{ matrix.node }})
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[ci]')
     runs-on: ${{ matrix.target.os }}
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        # Only Node 24 uploads a prebuild, so the Node 22 legs are pure
+        # compatibility checks and double the bill for no artifact. They run on
+        # a dispatched round — which is what a native release is — or when a
+        # commit asks for them with [node22].
+        node: ${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[node22]')) && fromJSON('[22, 24]') || fromJSON('[24]') }}
         target:
           - { id: linux-x64, os: ubuntu-24.04 }
           - { id: linux-arm64, os: ubuntu-24.04-arm }
@@ -51,6 +56,7 @@ jobs:
 
   node:
     name: build, lint, types, fixtures
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[ci]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +78,7 @@ jobs:
 
   dotnet:
     name: dotnet test (net8.0 + net10.0)
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[ci]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

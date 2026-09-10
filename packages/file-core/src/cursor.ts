@@ -26,17 +26,34 @@ export function fingerprint(
     .slice(0, 16) as Fingerprint;
 }
 
-/** Content identity includes parser variant and path, not just filesystem metadata. */
-export function contentFingerprint(
+/**
+ * Content identity includes parser variant and path, not just filesystem
+ * metadata. The digest covers every byte, which is what makes a content change
+ * under a restored mtime and an unchanged size detectable; documents.spec.ts
+ * pins that property, and it must survive the digest moving into C++.
+ */
+export function fingerprintFromDigest(
   path: string,
-  bytes: Uint8Array,
+  digest: Uint8Array,
   variant = "",
 ): Fingerprint {
   return createHash("sha256")
     .update(JSON.stringify([path, variant]))
     .update("\0")
-    .update(bytes)
+    .update(digest)
     .digest("hex") as Fingerprint;
+}
+
+export function contentFingerprint(
+  path: string,
+  bytes: Uint8Array,
+  variant = "",
+): Fingerprint {
+  return fingerprintFromDigest(
+    path,
+    createHash("sha256").update(bytes).digest(),
+    variant,
+  );
 }
 
 export function encodeCursor<TCursor extends CursorEnvelope<1 | 2>>(

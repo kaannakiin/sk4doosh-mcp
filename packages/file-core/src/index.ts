@@ -12,6 +12,7 @@ export {
   encodeCursor,
   fingerprint,
   contentFingerprint,
+  fingerprintFromDigest,
   isFresh,
   type Cursor,
   type CursorEnvelope,
@@ -39,11 +40,14 @@ export {
   type ToolNameOf,
 } from "./tools.js";
 export {
+  bufferSource,
   createDocumentStore,
+  type ByteRange,
   type DocumentStore,
   type DocumentStoreSpec,
   type OpenedFile,
   type ParseContext,
+  type SourceReader,
 } from "./documents.js";
 export {
   createFormatRegistry,
@@ -52,6 +56,7 @@ export {
   type SourceExtension,
 } from "./formats.js";
 export { coreLimits, type CoreLimits } from "./limits.js";
+export { modeFor, type ModePolicy, type SourceMode } from "./mode.js";
 export {
   clampJsonField,
   createPageBudget,

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import { SkMcpExcelError } from "../src/errors.js";
+import { modePolicy } from "../src/limits.js";
 import {
   createWorkbookRoot,
   listWorkbooks,
@@ -75,7 +76,11 @@ describe("the excel sandbox wiring", () => {
 
   it("reports a missing subdirectory without leaking the root", async () => {
     const failure = await failureOf(() =>
-      listWorkbooks(root, { subdirectory: "nope", maxResults: 50 }),
+      listWorkbooks(root, {
+        subdirectory: "nope",
+        maxResults: 50,
+        mode: modePolicy,
+      }),
     );
     expect(failure.code).toBe("file_not_found");
     expect(failure.message).toContain("nope");
@@ -96,6 +101,7 @@ describe("the excel sandbox wiring", () => {
       await createWorkbookRoot(fixtures.root),
       {
         maxResults: 200,
+        mode: modePolicy,
       },
     );
     const names = listing.files.map((file) => file.filePath);

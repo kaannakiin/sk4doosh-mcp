@@ -31,6 +31,14 @@ export interface Fixtures {
   readonly amounts: string;
   readonly wideQuery: string;
   readonly heavyQuery: string;
+  readonly cdataFalseBoundary: string;
+  readonly commentFalseBoundary: string;
+  readonly attrFalseBoundary: string;
+  readonly piFalseBoundary: string;
+  readonly nestedSameName: string;
+  readonly recordsUtf16: string;
+  readonly recordsLatin: string;
+  readonly recordsNamespaced: string;
 }
 
 const utf16le = (text: string): Buffer =>
@@ -88,6 +96,14 @@ export async function buildFixtures(): Promise<Fixtures> {
     amounts: join(root, "amounts.xml"),
     wideQuery: join(root, "wide-query.xml"),
     heavyQuery: join(root, "heavy-query.xml"),
+    cdataFalseBoundary: join(root, "cdata-boundary.xml"),
+    commentFalseBoundary: join(root, "comment-boundary.xml"),
+    attrFalseBoundary: join(root, "attr-boundary.xml"),
+    piFalseBoundary: join(root, "pi-boundary.xml"),
+    nestedSameName: join(root, "nested-same-name.xml"),
+    recordsUtf16: join(root, "records-utf16.xml"),
+    recordsLatin: join(root, "records-latin.xml"),
+    recordsNamespaced: join(root, "records-namespaced.xml"),
   };
 
   await writeFile(
@@ -297,6 +313,91 @@ export async function buildFixtures(): Promise<Fixtures> {
       { length: 250 },
       () => `<cell>${cellText}</cell>`,
     ).join("")}${"</wrapper>".repeat(wrappers)}\n`,
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.cdataFalseBoundary,
+    '<?xml version="1.0"?>\n' +
+      "<catalogue>" +
+      '<entry code="a"><name><![CDATA[</entry><entry code="ghost">]]></name></entry>' +
+      '<entry code="b"><name>beta</name></entry>' +
+      "</catalogue>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.commentFalseBoundary,
+    '<?xml version="1.0"?>\n' +
+      "<catalogue>" +
+      '<entry code="a"><!-- </entry><entry code="ghost"> --><name>alpha</name></entry>' +
+      '<entry code="b"><name>beta</name></entry>' +
+      "</catalogue>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.attrFalseBoundary,
+    '<?xml version="1.0"?>\n' +
+      "<catalogue>" +
+      '<entry code="a" note="x &gt; y /&gt; z" tail=\'a > b /> c\'>' +
+      "<name>alpha</name></entry>" +
+      '<entry code="b" note=\'say "hi" &gt;\' tail="it\'s > fine"><name>beta</name></entry>' +
+      "</catalogue>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.piFalseBoundary,
+    '<?xml version="1.0"?>\n' +
+      "<catalogue>" +
+      '<entry code="a"><?ghost </entry><entry code="ghost"> ?><name>alpha</name></entry>' +
+      '<entry code="b"><name>beta</name></entry>' +
+      "</catalogue>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.nestedSameName,
+    '<?xml version="1.0"?>\n' +
+      "<catalogue>" +
+      '<entry code="a"/>' +
+      '<entry code="b"><entry code="inner"><name>deep</name></entry><name>beta</name></entry>' +
+      '<entry code="c"><name>gamma</name></entry>' +
+      "</catalogue>\n",
+    "utf8",
+  );
+
+  await writeFile(
+    fixtures.recordsUtf16,
+    utf16le(
+      '<?xml version="1.0" encoding="UTF-16"?>\n' +
+        "<catalogue>" +
+        '<entry code="a"><name>alpha</name></entry>' +
+        '<entry code="b"><name>beta</name></entry>' +
+        "</catalogue>\n",
+    ),
+  );
+
+  await writeFile(
+    fixtures.recordsLatin,
+    Buffer.from(
+      '<?xml version="1.0" encoding="windows-1254"?>\n' +
+        "<catalogue>" +
+        '<entry code="a"><name>alpha</name></entry>' +
+        '<entry code="b"><name>beta</name></entry>' +
+        "</catalogue>\n",
+      "latin1",
+    ),
+  );
+
+  await writeFile(
+    fixtures.recordsNamespaced,
+    '<?xml version="1.0"?>\n' +
+      '<catalogue xmlns="urn:cat" xmlns:m="urn:meta" xml:lang="tr" xml:space="preserve">' +
+      '<entry code="a" m:rank="1"><name>alpha</name></entry>' +
+      '<entry code="b" m:rank="2"><name>beta</name></entry>' +
+      "</catalogue>\n",
     "utf8",
   );
 

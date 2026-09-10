@@ -7,6 +7,9 @@ import { FileSourceError, redactRoot } from "../src/errors.js";
 import { toToolError } from "../src/tools.js";
 import { createSandboxRoot, type SandboxRoot } from "../src/paths.js";
 import { listSources } from "../src/listing.js";
+import { coreLimits } from "../src/limits.js";
+
+const listMode = { residentMaxBytes: coreLimits.maxFileBytes };
 
 const vocabulary = {
   serverName: "probe",
@@ -91,7 +94,7 @@ describe("listing budgets and exactness (#19 #34)", () => {
     await rm(directory, { recursive: true, force: true });
   });
   it("distinguishes traversal truncation from a result page", async () => {
-    const scan = await listSources(root, { maxResults: 10 });
+    const scan = await listSources(root, { maxResults: 10, mode: listMode });
     expect(scan).toMatchObject({
       total: 5,
       totalExact: false,
@@ -101,7 +104,7 @@ describe("listing budgets and exactness (#19 #34)", () => {
     });
     const page = await listSources(
       { ...root, maxListScan: 10 },
-      { maxResults: 1 },
+      { maxResults: 1, mode: listMode },
     );
     expect(page).toMatchObject({
       total: 6,
@@ -115,7 +118,7 @@ describe("listing budgets and exactness (#19 #34)", () => {
     async (maxListScan) => {
       const result = await listSources(
         { ...root, maxListScan },
-        { maxResults: 10 },
+        { maxResults: 10, mode: listMode },
       );
       expect(result.total).toBe(Math.min(6, maxListScan));
       expect(result.totalExact).toBe(maxListScan > 6);

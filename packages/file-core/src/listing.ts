@@ -3,6 +3,7 @@ import { performance } from "node:perf_hooks";
 import { setImmediate as yieldTurn } from "node:timers/promises";
 import type { NativeEntry } from "@sk-mcp/file-core-native";
 import { accessError } from "./access.js";
+import { modeFor, type ModePolicy, type SourceMode } from "./mode.js";
 import { isContained, type SandboxRoot } from "./paths.js";
 import { asciiLower, fold } from "./unicode.js";
 
@@ -41,11 +42,13 @@ export interface SourceEntry {
   readonly filePath: string;
   readonly sizeBytes: number;
   readonly modifiedAt: string;
+  readonly mode: SourceMode;
 }
 export interface ListOptions {
   readonly subdirectory?: string;
   readonly pattern?: string;
   readonly maxResults: number;
+  readonly mode: ModePolicy;
 }
 export interface SourceListing {
   readonly files: readonly SourceEntry[];
@@ -118,6 +121,7 @@ export async function listSources(
     filePath: entry.path,
     sizeBytes: entry.size,
     modifiedAt: new Date(entry.modifiedMs).toISOString(),
+    mode: modeFor(entry.size, options.mode),
   }));
   return {
     files,

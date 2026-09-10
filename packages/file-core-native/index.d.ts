@@ -15,9 +15,27 @@ export interface NativeScan {
   readonly unreadable: number;
   readonly reason: "entries" | "depth" | "time" | null;
 }
+export interface NativeRange {
+  readonly bytes: Buffer;
+  readonly size: number;
+  readonly modifiedMs: number;
+  readonly offset: number;
+}
+export interface NativeDigest {
+  readonly digest: Buffer;
+  readonly size: number;
+  readonly modifiedMs: number;
+}
 export interface NativeRoot {
   resolve(path: string): Promise<string>;
   read(path: string, maxBytes: number): Promise<NativeSnapshot>;
+  readRange(
+    path: string,
+    offset: number,
+    length: number,
+    maxBytes: number,
+  ): Promise<NativeRange>;
+  digest(path: string, maxBytes: number): Promise<NativeDigest>;
   scan(
     path: string,
     maxEntries: number,

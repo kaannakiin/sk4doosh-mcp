@@ -10,12 +10,13 @@ import {
   type HandlersOf,
   type ToolDefinitions,
   type ToolInputOf,
+  type SourceMode,
   type ToolNameOf,
 } from "@sk-mcp/file-core";
 import { z } from "zod";
 import { asExcelError, fail, SkMcpExcelError } from "./errors.js";
 import { formats } from "./formats.js";
-import { limits } from "./limits.js";
+import { limits, modePolicy } from "./limits.js";
 import {
   listWorkbooks,
   resolveWorkbookPath,
@@ -46,6 +47,8 @@ import type { CsvReport, DelimiterName, EncodingName } from "./csv.js";
 import { requireSheetBounds } from "./sheet.js";
 import { selectWorksheet } from "./workbook.js";
 import { inheritCursorOptions, decodeCursor } from "./cursor.js";
+
+const modeEnvelopeBytes = measureJson({ mode: "resident" });
 
 const filePath = z
   .string()
@@ -572,7 +575,16 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
   const withCsv = <T extends object>(
     payload: T,
     report: CsvReport | undefined,
-  ) => (report === undefined ? payload : { ...payload, csv: report });
+    mode: SourceMode,
+  ) =>
+    report === undefined
+      ? { ...payload, mode }
+      : { ...payload, csv: report, mode };
+
+  const withMode = <T extends object>(payload: T, mode: SourceMode) => ({
+    ...payload,
+    mode,
+  });
 
   return {
     list_workbooks: guard(
@@ -584,6 +596,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
             : { subdirectory: args.subdirectory }),
           ...(args.pattern === undefined ? {} : { pattern: args.pattern }),
           maxResults: args.maxResults ?? limits.defaultListResults,
+          mode: modePolicy,
         });
         return json({ root: root.real, ...listing });
       },
@@ -599,14 +612,17 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
           ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
         });
         return json(
-          describeDocument(
-            loaded,
-            {
-              filePath: args.filePath,
-              sizeBytes: loaded.sizeBytes,
-              modifiedAt: loaded.modifiedAt,
-            },
-            args.includeDefinedNames ?? true,
+          withMode(
+            describeDocument(
+              loaded,
+              {
+                filePath: args.filePath,
+                sizeBytes: loaded.sizeBytes,
+                modifiedAt: loaded.modifiedAt,
+              },
+              args.includeDefinedNames ?? true,
+            ),
+            loaded.mode,
           ),
         );
       },
@@ -633,7 +649,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       return json(
         withCsv(
           readSheet(sheetSource(loaded), {
-            extraEnvelopeBytes: csvEnvelope(report),
+            extraEnvelopeBytes: csvEnvelope(report) + modeEnvelopeBytes,
             ...(args.sheetName === undefined
               ? {}
               : { sheetName: args.sheetName }),
@@ -656,6 +672,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
             includeHyperlinks: args.includeHyperlinks ?? false,
           }),
           report,
+          loaded.mode,
         ),
       );
     }),
@@ -666,7 +683,12 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
         const merges = worksheet.model.merges;
-        return json({ sheet: worksheet.name, merges, count: merges.length });
+        return json(
+          withMode(
+            { sheet: worksheet.name, merges, count: merges.length },
+            loaded.mode,
+          ),
+        );
       },
     ),
 
@@ -675,7 +697,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        return json(collectValidations(worksheet));
+        return json(withMode(collectValidations(worksheet), loaded.mode));
       },
     ),
 
@@ -684,7 +706,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        return json(collectTables(worksheet));
+        return json(withMode(collectTables(worksheet), loaded.mode));
       },
     ),
 
@@ -693,7 +715,9 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        return json(collectConditionalFormats(worksheet));
+        return json(
+          withMode(collectConditionalFormats(worksheet), loaded.mode),
+        );
       },
     ),
 
@@ -703,7 +727,9 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
         assertPictureKind(args.kind);
         const loaded = await openXlsx(args.filePath, tool);
         const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        return json(collectImages(loaded.workbook, worksheet));
+        return json(
+          withMode(collectImages(loaded.workbook, worksheet), loaded.mode),
+        );
       },
     ),
 
@@ -736,6 +762,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
               maxGroups: args.maxGroups ?? limits.maxGroupsDefault,
             }),
             csvReportOf(loaded),
+            loaded.mode,
           ),
         );
       },
@@ -771,6 +798,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
               maxResults: args.maxResults ?? limits.defaultFindResults,
             }),
             csvReportOf(loaded),
+            loaded.mode,
           ),
         );
       },

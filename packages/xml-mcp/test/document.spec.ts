@@ -49,6 +49,9 @@ describe("the document store adapter", () => {
     expect(JSON.parse(JSON.stringify(loaded))).toEqual(loaded);
     expect(loaded.root.localName).toBe("catalog");
     expect(loaded.format).toBe("xml");
+    expect(loaded.mode).toBe("resident");
+    if (loaded.mode !== "resident")
+      throw new Error("expected the resident tier");
     expect(typeof loaded.residency).toBe("string");
   });
 
@@ -81,14 +84,20 @@ describe("the document store adapter", () => {
     ).toBe("malformed_xml");
   });
 
-  it("applies the XML byte ceiling, not the shared file ceiling", async () => {
-    const oversized = `${fixtures.root}/huge.xml`;
+  it("reads a document above the resident budget in the chunked tier", async () => {
+    const large = `${fixtures.root}/huge.xml`;
     const filler = "<i>x</i>".repeat(1_200_000);
-    await writeFile(oversized, `<r>${filler}</r>`, "utf8");
-    expect(await codeOf(async () => cache.load(await at(oversized)))).toBe(
-      "file_too_large",
-    );
-    expect(limits.maxXmlBytes).toBeLessThan(limits.maxFileBytes);
+    await writeFile(large, `<r>${filler}</r>`, "utf8");
+    const loaded = await cache.load(await at(large));
+    expect(loaded.sizeBytes).toBeGreaterThan(limits.residentMaxBytes);
+    expect(loaded.mode).toBe("chunked");
+    expect(loaded.root.localName).toBe("r");
+  });
+
+  it("takes the shared file ceiling as its own, and the native gate holds it", () => {
+    expect(limits.maxXmlBytes).toBe(limits.maxFileBytes);
+    expect(limits.maxXmlBytes).toBe(50 * 1024 * 1024);
+    expect(limits.residentMaxBytes).toBeLessThan(limits.maxXmlBytes);
   });
 });
 

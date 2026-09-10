@@ -3,6 +3,8 @@ import type { FindPage, FindProbe } from "./find-model.js";
 import type {
   AggregateOutcome,
   AggregateProbe,
+  ChunkPage,
+  ChunkProbe,
   RecordPage,
   RecordProbe,
   XPathOutcome,
@@ -72,6 +74,14 @@ interface WorkerOps {
   aggregate: {
     req: Resident & { readonly probe: AggregateProbe };
     res: AggregateOutcome;
+  };
+  projectChunks: {
+    req: {
+      readonly fragments: readonly Uint8Array[];
+      readonly firstOccurrence: number;
+      readonly probe: ChunkProbe;
+    };
+    res: ChunkPage;
   };
   diag: { req: Record<never, never>; res: DiagProjection };
   release: { req: Record<never, never>; res: null };

@@ -1,4 +1,4 @@
-import { coreLimits } from "@sk-mcp/file-core";
+import { coreLimits, type ModePolicy } from "@sk-mcp/file-core";
 
 /**
  * The worker keeps a document alive while the store still holds it, so its map
@@ -10,10 +10,20 @@ export function workerCapacityFor(documentCacheSize: number): number {
   return documentCacheSize * 2;
 }
 
+export const residentMaxBytes = 8 * 1024 * 1024; // 8 MB
+
+export const modePolicy: ModePolicy = { residentMaxBytes };
+
+const parseMs = 2_000;
+
 export const limits = {
   ...coreLimits,
-  maxXmlBytes: 8 * 1024 * 1024,
-  maxParseMs: 2_000,
+  residentMaxBytes,
+  maxXmlBytes: coreLimits.maxFileBytes,
+  maxChunkBytes: residentMaxBytes,
+  maxLiveChunkDoms: 1,
+  maxParseMs: parseMs,
+  maxChunkParseMs: parseMs,
   maxQueueDepth: 5,
   maxDomDepth: 128,
   workerCacheEntries: workerCapacityFor(coreLimits.documentCacheSize),

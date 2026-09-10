@@ -2,6 +2,7 @@ import {
   createPageBudget,
   measureJson,
   type Fingerprint,
+  type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
 import { SkMcpXmlError } from "./errors.js";
@@ -22,6 +23,7 @@ export type ReadTruncation = "maxNodes" | "maxPayloadBytes";
 export interface ReadEnvelope {
   readonly filePath: string;
   readonly snapshotId: string;
+  readonly mode: SourceMode;
   readonly scopeAddress: NodeAddress;
   readonly records: readonly NodeRecord[];
   readonly context?: readonly ContextRecord[];
@@ -36,6 +38,7 @@ export interface ReadEnvelope {
 export interface AssembleInput {
   readonly filePath: string;
   readonly snapshotId: Fingerprint;
+  readonly mode: SourceMode;
   readonly optionsHash: string;
   readonly page: ReadPage;
 }
@@ -68,6 +71,7 @@ export function assemblePage(input: AssembleInput): ReadEnvelope {
     measureJson({
       filePath: input.filePath,
       snapshotId,
+      mode: input.mode,
       scopeAddress: page.scopeAddress,
       records: [],
       ...(context.length === 0 ? {} : { context }),
@@ -115,6 +119,7 @@ export function assemblePage(input: AssembleInput): ReadEnvelope {
   return {
     filePath: input.filePath,
     snapshotId,
+    mode: input.mode,
     scopeAddress: page.scopeAddress,
     records: admitted,
     ...(context.length === 0 ? {} : { context }),

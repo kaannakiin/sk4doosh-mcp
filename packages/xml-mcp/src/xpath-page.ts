@@ -2,6 +2,7 @@ import {
   createPageBudget,
   measureJson,
   type Fingerprint,
+  type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
 import { SkMcpXmlError } from "./errors.js";
@@ -19,6 +20,7 @@ export type XPathTruncation = "maxResults" | "maxPayloadBytes";
 interface EnvelopeHead {
   readonly filePath: string;
   readonly snapshotId: string;
+  readonly mode: SourceMode;
 }
 
 export interface NodeSetEnvelope extends EnvelopeHead {
@@ -62,6 +64,7 @@ export type XPathEnvelope =
 export interface AssembleXPathInput {
   readonly filePath: string;
   readonly snapshotId: Fingerprint;
+  readonly mode: SourceMode;
   readonly optionsHash: string;
   readonly expression: string;
   readonly rootNamespaceUri: string;
@@ -73,7 +76,11 @@ const hint =
 
 export function assembleXPath(input: AssembleXPathInput): XPathEnvelope {
   const { outcome, snapshotId } = input;
-  const head: EnvelopeHead = { filePath: input.filePath, snapshotId };
+  const head: EnvelopeHead = {
+    filePath: input.filePath,
+    snapshotId,
+    mode: input.mode,
+  };
 
   if (outcome.resultType === "boolean") {
     return {
