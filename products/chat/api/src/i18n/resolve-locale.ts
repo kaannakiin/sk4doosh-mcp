@@ -1,9 +1,5 @@
-import {
-  SUPPORTED_LOCALES,
-  isLocale,
-  type Locale,
-} from "@chat/contracts/common/locale";
-import Negotiator from "negotiator";
+import { isLocale, type Locale } from "@chat/contracts/common/locale";
+import { negotiateLocale } from "@chat/contracts/common/negotiate-locale";
 
 export interface LocaleCandidates {
   query?: string | undefined;
@@ -16,19 +12,6 @@ export function resolveLocale(
   fallback: Locale,
 ): Locale {
   const explicit = [candidates.query, candidates.header].find(isLocale);
-  if (explicit) {
-    return explicit;
-  }
 
-  if (candidates.acceptLanguage) {
-    const negotiated = new Negotiator({
-      headers: { "accept-language": candidates.acceptLanguage },
-    }).languages([...SUPPORTED_LOCALES]);
-    const matched = negotiated.find(isLocale);
-    if (matched) {
-      return matched;
-    }
-  }
-
-  return fallback;
+  return explicit ?? negotiateLocale(candidates.acceptLanguage, fallback);
 }
