@@ -1,0 +1,14 @@
+{
+  "failed": "İstek gövdesi geçersiz",
+  "fields": {
+    "content": "Mesaj",
+    "root": "İstek gövdesi"
+  },
+  "issues": {
+    "fallback": "{{field}} geçersiz",
+    "invalid_type": "{{field}} tipi geçersiz",
+    "invalid_value": "{{field}} değeri geçersiz",
+    "too_big": "{{field}} en fazla {{limit}} karakter olabilir",
+    "too_small": "{{field}} en az {{limit}} karakter olmalı"
+  }
+}

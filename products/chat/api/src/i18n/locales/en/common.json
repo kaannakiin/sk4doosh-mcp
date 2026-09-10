@@ -1,0 +1,5 @@
+{
+  "chat": {
+    "echo_reply": "Received: {{content}}"
+  }
+}

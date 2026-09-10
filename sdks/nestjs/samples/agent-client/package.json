@@ -1,0 +1,23 @@
+{
+  "name": "@sk-mcp/agent-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  },
+  "devDependencies": {
+    "@sk-mcp/core": "workspace:*",
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "10.9.1",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,11 @@
+@layer theme, base, components, mantine, utilities;
+@import "tailwindcss" source("../");
+@import "@mantine/core/styles.layer.css";
+
+/* Mantine 9.6.0 Typography emits `:where(pre) :where(code) { padding: 0 }` before
+   `:where(code) { padding: 1px 5px }`. Both are specificity (0,1,0) because of :where(),
+   so the later generic rule wins and re-applies 5px to code inside pre — which renders as
+   an indent on a block's first line. Unlayered, so it beats the whole mantine layer. */
+pre code {
+  padding: 0;
+}

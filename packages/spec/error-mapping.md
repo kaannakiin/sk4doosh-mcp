@@ -20,7 +20,7 @@ An `invoke_tool` result stays JSON inside a single text content block. Success a
 
 `load_tool`'s `unknown_tool` answer — for a tool hidden by visibility or one that genuinely does not exist ([visibility.md](visibility.md)) — uses the same `isError: true` plus `MappedError` shape; the two meta-tools speak one error language.
 
-A JSON-RPC level error is used **only** for a protocol violation (a malformed `arguments` type, an invalid catalog state). A request the backend rejected MUST NEVER become a JSON-RPC error — it is always a normal result carrying `isError: true`. The rationale: that is the parsing agents and [apps/example-agent-client](../../apps/example-agent-client) already implement, and two separate error channels would require two branches in agent code.
+A JSON-RPC level error is used **only** for a protocol violation (a malformed `arguments` type, an invalid catalog state). A request the backend rejected MUST NEVER become a JSON-RPC error — it is always a normal result carrying `isError: true`. The rationale: that is the parsing agents and [sdks/nestjs/samples/agent-client](../../sdks/nestjs/samples/agent-client) already implement, and two separate error channels would require two branches in agent code.
 
 SDK-side codes (`unknown_argument`, `invalid_path_type`, `missing_path_parameter`, `header_injection`, `null_not_allowed`, `invalid_type` — see [argument-mapping.md](argument-mapping.md); plus `unknown_tool`, `not_invocable`) are preserved verbatim, are fixture-pinned, and are independent of any backend status code: `{ error, message, retryable: false }` (no `status`, because the backend was never reached).
 

@@ -48,7 +48,7 @@ Run a search as each caller and compare. With the demo backend:
 
 ```bash
 SKMCP_AUTH=token SKMCP_USER=alice \
-  node apps/example-agent-client/dist/main.js --scenario smoke --query orders
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders
 ```
 
 Change `SKMCP_USER` to see a different slice. The demo users differ only in their claims, and the

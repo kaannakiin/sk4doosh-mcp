@@ -13,7 +13,7 @@ From the repository root:
 
 ```bash
 pnpm install
-pnpm turbo run build --filter=@sk-mcp/example-agent-client
+pnpm turbo run build --filter=@sk-mcp/agent-client
 ```
 
 ## 2. Start the demo backend
@@ -36,7 +36,7 @@ Back in the first terminal:
 
 ```bash
 SKMCP_AUTH=token SKMCP_USER=alice \
-  node apps/example-agent-client/dist/main.js --scenario smoke --query orders
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders
 ```
 
 alice carries the `orders.read` claim. Read the `search_tools` row:
@@ -55,7 +55,7 @@ Run the same command, changing one word:
 
 ```bash
 SKMCP_AUTH=token SKMCP_USER=bob \
-  node apps/example-agent-client/dist/main.js --scenario smoke --query orders
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders
 ```
 
 ```text
@@ -72,7 +72,7 @@ You know `get_order` exists, because alice saw it. Point bob straight at it:
 
 ```bash
 SKMCP_AUTH=token SKMCP_USER=bob \
-  node apps/example-agent-client/dist/main.js --scenario smoke --query orders --tool get_order
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders --tool get_order
 ```
 
 ```text
@@ -88,7 +88,7 @@ The filter hid the tool. It did not lock it. Call it directly:
 
 ```bash
 SKMCP_AUTH=token SKMCP_USER=bob \
-  node apps/example-agent-client/dist/main.js --scenario error-envelope --tool get_order \
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario error-envelope --tool get_order \
   --arguments '{"id":1}'
 ```
 

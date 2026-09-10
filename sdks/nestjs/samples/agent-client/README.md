@@ -1,4 +1,4 @@
-# example-agent-client
+# agent-client
 
 `search_tools` → `load_tool` → `invoke_tool` akışını gerçek bir MCP client (`@modelcontextprotocol/sdk`) ile koşturan, "bitti kriteri"ni otomatikleştiren küçük bir CLI. `sdks/dotnet/samples/DemoApi` ve Nest demo'suna karşı çalışır; `SKMCP_AUTH=bearer` ile herhangi bir sk-mcp backend'ine karşı da kullanılabilir.
 
@@ -8,7 +8,7 @@ Kökten:
 
 ```sh
 pnpm install
-pnpm turbo run build --filter=@sk-mcp/example-agent-client
+pnpm turbo run build --filter=@sk-mcp/agent-client
 ```
 
 ## Ortam değişkenleri
@@ -55,18 +55,18 @@ DemoApi'ye karşı (varsayılan OAuth akışı):
 
 ```sh
 cd sdks/dotnet/samples/DemoApi && dotnet run &
-SKMCP_AUTH=oauth SKMCP_USER=alice node apps/example-agent-client/dist/main.js --scenario smoke
+SKMCP_AUTH=oauth SKMCP_USER=alice node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke
 ```
 
 Bugünkü demo token kısayoluyla:
 
 ```sh
-SKMCP_AUTH=token SKMCP_USER=alice node apps/example-agent-client/dist/main.js --scenario validation-retry
+SKMCP_AUTH=token SKMCP_USER=alice node sdks/nestjs/samples/agent-client/dist/main.js --scenario validation-retry
 ```
 
 Gerçek bir backend'e (elinizde zaten geçerli bir access token varsa) karşı:
 
 ```sh
 SKMCP_AUTH=bearer SKMCP_TOKEN=eyJ... SKMCP_BASE_URL=https://example.internal \
-  node apps/example-agent-client/dist/main.js --scenario error-envelope --tool create_order --arguments '{"item":"","quantity":0}'
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario error-envelope --tool create_order --arguments '{"item":"","quantity":0}'
 ```

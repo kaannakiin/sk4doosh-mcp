@@ -83,7 +83,7 @@ Leave it running.
 In a second terminal, run the repository's example client:
 
 ```bash
-node apps/example-agent-client/dist/main.js --scenario smoke --query "get order"
+node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query "get order"
 ```
 
 ```text

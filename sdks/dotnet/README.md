@@ -111,10 +111,10 @@ To protect `/mcp`, attach your own authorization:
 app.MapSkMcp("/mcp").RequireAuthorization();
 ```
 
-This repository's `apps/example-agent-client` is a ready-made client:
+This repository's `sdks/nestjs/samples/agent-client` is a ready-made client:
 
 ```bash
-node apps/example-agent-client/dist/main.js --scenario smoke --query "get order"
+node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query "get order"
 ```
 
 Pass `--query`; the scenario's built-in default query is a non-ASCII term used to exercise

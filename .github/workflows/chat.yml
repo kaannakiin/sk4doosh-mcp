@@ -1,0 +1,44 @@
+name: chat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "products/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".github/workflows/chat.yml"
+  pull_request:
+    paths:
+      - "products/**"
+      - "packages/eslint-config/**"
+      - "packages/typescript-config/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".github/workflows/chat.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: chat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chat:
+    name: chat (build, types, lint, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.23.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build check-types lint --filter='@chat/*'
+      - run: pnpm turbo run test --filter='@chat/*'

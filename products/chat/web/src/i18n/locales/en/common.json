@@ -1,0 +1,24 @@
+{
+  "app": {
+    "title": "Chat",
+    "subtitle": "A blank chat shell wired to @chat/api"
+  },
+  "composer": {
+    "placeholder": "Write a message",
+    "send": "Send",
+    "sending": "Sending"
+  },
+  "conversation": {
+    "empty": "No messages yet",
+    "you": "You",
+    "assistant": "Assistant"
+  },
+  "errors": {
+    "network": "The API could not be reached"
+  },
+  "locale": {
+    "label": "Language",
+    "en": "English",
+    "tr": "Türkçe"
+  }
+}

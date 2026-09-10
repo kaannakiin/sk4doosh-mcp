@@ -3,6 +3,7 @@ packages:
   - "packages/*"
   - "sdks/*"
   - "sdks/*/samples/*"
+  - "products/*/*"
 allowBuilds:
   "@swc/core": true
   esbuild: true
