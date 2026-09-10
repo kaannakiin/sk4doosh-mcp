@@ -1,49 +1,87 @@
+import registry from "../content/products.json";
+
 const modules = import.meta.glob("../content/**/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-export type SectionKey = "tutorial" | "how-to" | "reference" | "explanation";
+export type ModeKey = "tutorial" | "how-to" | "reference" | "explanation";
 
-export interface DocEntry {
-  slug: string;
-  title: string;
-  body: string;
-  section: SectionKey | null;
-}
-
-export interface DocSection {
-  key: SectionKey | null;
-  label: string;
-  docs: DocEntry[];
-}
-
-const SECTION_ORDER: SectionKey[] = [
+const MODE_ORDER = [
   "tutorial",
   "how-to",
   "reference",
   "explanation",
-];
+] as const satisfies readonly ModeKey[];
 
-const SECTION_LABELS: Record<SectionKey, string> = {
+const MODE_LABELS: Record<ModeKey, string> = {
   tutorial: "Tutorial",
   "how-to": "How-to guides",
   reference: "Reference",
   explanation: "Explanation",
 };
 
-function isSectionKey(value: string): value is SectionKey {
-  return (SECTION_ORDER as string[]).includes(value);
+export interface ProductMeta {
+  id: string;
+  label: string;
+  tagline: string;
 }
 
-function parsePath(path: string): { slug: string; section: SectionKey | null } {
-  const segments = path.replace("../content/", "").split("/");
-  const file = segments.pop() ?? path;
-  const dir = segments[0];
+const PRODUCT_META = registry satisfies ProductMeta[];
+
+export interface DocEntry {
+  product: string;
+  mode: ModeKey | null;
+  slug: string;
+  title: string;
+  body: string;
+}
+
+export interface DocGroup {
+  key: ModeKey | null;
+  label: string;
+  docs: DocEntry[];
+}
+
+export interface Product extends ProductMeta {
+  docs: DocEntry[];
+  groups: DocGroup[];
+  firstSlug: string;
+}
+
+function isModeKey(value: string): value is ModeKey {
+  return (MODE_ORDER as readonly string[]).includes(value);
+}
+
+function fail(message: string): never {
+  throw new Error(`apps/docs src/content: ${message}`);
+}
+
+function parsePath(path: string): Omit<DocEntry, "title" | "body"> {
+  const rel = path.replace("../content/", "");
+  const segments = rel.split("/");
+  const file = segments.pop();
+  const [product, mode, ...rest] = segments;
+
+  if (file === undefined || product === undefined) {
+    fail(`${rel} is not inside a product folder; expected <product>/...`);
+  }
+  if (rest.length > 0) {
+    fail(
+      `${rel} is nested too deep; expected <product>/<file>.md or <product>/<mode>/<file>.md`,
+    );
+  }
+  if (mode !== undefined && !isModeKey(mode)) {
+    fail(
+      `${rel} sits in "${mode}", which is not a Diataxis mode (${MODE_ORDER.join(", ")})`,
+    );
+  }
+
   return {
+    product,
+    mode: mode ?? null,
     slug: file.replace(/\.md$/, "").replace(/^\d+-/, ""),
-    section: dir !== undefined && isSectionKey(dir) ? dir : null,
   };
 }
 
@@ -52,32 +90,82 @@ function titleFromBody(body: string, fallback: string): string {
   return match?.[1]?.trim() ?? fallback;
 }
 
-function rank(section: SectionKey | null): number {
-  return section === null ? -1 : SECTION_ORDER.indexOf(section);
+function modeRank(mode: ModeKey | null): number {
+  return mode === null ? -1 : MODE_ORDER.indexOf(mode);
 }
 
-export const docs: DocEntry[] = Object.entries(modules)
+const parsed = Object.entries(modules)
   .map(([path, body]) => {
-    const { slug, section } = parsePath(path);
-    return { path, slug, section, title: titleFromBody(body, slug), body };
+    const base = parsePath(path);
+    return { ...base, path, body, title: titleFromBody(body, base.slug) };
   })
   .sort(
-    (a, b) => rank(a.section) - rank(b.section) || a.path.localeCompare(b.path),
-  )
-  .map(({ slug, section, title, body }) => ({ slug, section, title, body }));
+    (a, b) =>
+      modeRank(a.mode) - modeRank(b.mode) || a.path.localeCompare(b.path),
+  );
 
-export const sections: DocSection[] = [null, ...SECTION_ORDER]
-  .map((key) => ({
-    key,
-    label: key === null ? "" : SECTION_LABELS[key],
-    docs: docs.filter((doc) => doc.section === key),
-  }))
-  .filter((section) => section.docs.length > 0);
+const registered = new Set(PRODUCT_META.map((meta) => meta.id));
 
-const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
-
-export function getDoc(slug: string): DocEntry | undefined {
-  return bySlug.get(slug);
+for (const doc of parsed) {
+  if (!registered.has(doc.product)) {
+    fail(`${doc.product}/ has no entry in src/content/products.json`);
+  }
 }
 
-export const firstDocSlug = docs[0]?.slug;
+function buildProduct(meta: ProductMeta): Product {
+  const docs = parsed
+    .filter((doc) => doc.product === meta.id)
+    .map(({ product, mode, slug, title, body }) => ({
+      product,
+      mode,
+      slug,
+      title,
+      body,
+    }));
+
+  const first = docs[0];
+  if (first === undefined) {
+    fail(`products.json lists "${meta.id}" but ${meta.id}/ has no pages`);
+  }
+
+  const seen = new Set<string>();
+  for (const doc of docs) {
+    if (seen.has(doc.slug)) {
+      fail(`${meta.id}/ has two pages with the slug "${doc.slug}"`);
+    }
+    seen.add(doc.slug);
+  }
+
+  return {
+    ...meta,
+    docs,
+    firstSlug: first.slug,
+    groups: [null, ...MODE_ORDER]
+      .map((key) => ({
+        key,
+        label: key === null ? "" : MODE_LABELS[key],
+        docs: docs.filter((doc) => doc.mode === key),
+      }))
+      .filter((group) => group.docs.length > 0),
+  };
+}
+
+export const products: Product[] = PRODUCT_META.map(buildProduct);
+
+const byProductId = new Map(products.map((product) => [product.id, product]));
+
+const byProductSlug = new Map(
+  products.flatMap((product) =>
+    product.docs.map((doc) => [`${product.id}/${doc.slug}`, doc] as const),
+  ),
+);
+
+export function getProduct(id: string): Product | undefined {
+  return byProductId.get(id);
+}
+
+export function getDoc(product: string, slug: string): DocEntry | undefined {
+  return byProductSlug.get(`${product}/${slug}`);
+}
+
+export const defaultProduct: Product | undefined = products[0];

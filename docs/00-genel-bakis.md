@@ -44,7 +44,7 @@ Swagger şeması makine içindir, LLM için değil. Dönüşüm kuralları (spec
 
 Kurallar iki katmandır: **bağlama** (dile özgü reflection → `TypeShape`) ve **kural**
 (`TypeShape` → JSON Schema, fixture'lı ve dil bağımsız). Ayrıntı:
-[sema-donusum-kurallari.md](../packages/spec/sema-donusum-kurallari.md),
+[schema-conversion-rules.md](../packages/spec/schema-conversion-rules.md),
 [karar 012](kararlar/012-tip-sekli-ve-sema-kural-katmani.md).
 
 ### 4. Spec + dil başına SDK
@@ -59,7 +59,7 @@ C# / ASP.NET Core önce (mevcut bir C# server test yatağı olarak elde). Resmi 
 
 ### 6. Transport ve kapsam dışı
 
-- Transport: Streamable HTTP; MCP OAuth 2.1 akışı desteklenir. Backend'ler client'larının nasıl bağlanacağını kendileri belirler — kısıt yok. SDK kendi authentication'ını kurmaz; yalnız RFC 9728 korunan kaynak üstverisini servis eder ve 401'i `resource_metadata` ile dekore eder ([tasima.md](../packages/spec/tasima.md)). Scope'lar tamamen backend'in authorization server'ına delege edilir.
+- Transport: Streamable HTTP; MCP OAuth 2.1 akışı desteklenir. Backend'ler client'larının nasıl bağlanacağını kendileri belirler — kısıt yok. SDK kendi authentication'ını kurmaz; yalnız RFC 9728 korunan kaynak üstverisini servis eder ve 401'i `resource_metadata` ile dekore eder ([transport.md](../packages/spec/transport.md)). Scope'lar tamamen backend'in authorization server'ına delege edilir.
 - Bilinçli ertelenenler: web UI (son faz, şimdilik detaysız), response boyutu/truncation stratejisi (ayrı çalışılacak), SSE/file-upload endpoint'leri, rate limiting (backend'in mevcut middleware'ine bırakılır — embedded olduğumuz için zaten pipeline'da çalışır).
 
 ## Sıralama stratejisi: dikey slice önce, hemen ardından zorunlu spec çıkarma

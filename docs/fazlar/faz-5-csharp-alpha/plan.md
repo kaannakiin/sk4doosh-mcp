@@ -39,7 +39,7 @@ Bu dört soru, faz planı repo neredeyse boşken yazıldığında açıktı. Dö
 - nuget.org / npm yayını, prefix ve scope rezervasyonu.
 - `dotnet new` template'i.
 - Spec v1.0 tag'i.
-- `schema-simplification/` fixture korpusu ve generic wrapper soyma / derinlik-inline / `$ref` recursion kuralları. Bunlar [sema-donusum-kurallari.md](../../../packages/spec/sema-donusum-kurallari.md)'nin kendi "Pinlenmemiş alanlar" bölümünde açıkça tanımsız bırakılmıştır; alpha bunları çözmez, dürüstçe işaretli tutar.
+- `schema-simplification/` fixture korpusu ve generic wrapper soyma / derinlik-inline / `$ref` recursion kuralları. Bunlar [schema-conversion-rules.md](../../../packages/spec/schema-conversion-rules.md)'nin kendi "Pinlenmemiş alanlar" bölümünde açıkça tanımsız bırakılmıştır; alpha bunları çözmez, dürüstçe işaretli tutar.
 - İkinci örnek proje. Eski planın gerekçesi "farklı auth kurulumuyla sözleşmenin genelliğini göstermek"ti; `OrdersController` zaten policy, rol, imperatif sahiplik kontrolü ve anonim endpoint'i bir arada gösteriyor. Asıl genellik sınavı motokurye: `AddAuthentication` hiç yok, kimlik elle yazılmış middleware'de.
 - Dağıtık `ISkMcpCache` adaptörü (Faz 4'te ertelendi, hâlâ geçerli).
 - `MotokuryeCallerScopeResolver` ve `PermissionService` → `InvalidateTagAsync` köprüsü — host kodu, bu deponun kapsamı değil. Nasıl yazılacağı [gercek-backend-entegrasyonu.md](../../gercek-backend-entegrasyonu.md)'de anlatılır.

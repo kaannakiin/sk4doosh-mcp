@@ -1,35 +1,43 @@
 # SkMcp.AspNetCore
 
-Mevcut ASP.NET Core backend'inize gömülen bir MCP katmanı. Endpoint'lerinizi ajanlara arama-öncelikli bir tool kataloğu olarak açar; çağrıyı **kendi pipeline'ınızdan** geçirir, böylece kimlik doğrulama ve yetkilendirmeniz hiç değişmeden çalışmaya devam eder. Gateway değil, kopya iş mantığı değil.
+An MCP layer that embeds into your existing ASP.NET Core backend. It exposes your endpoints to
+agents as a search-first tool catalog and replays each call through **your own** pipeline, so your
+authentication and authorization keep working exactly as they do today. Not a gateway, not
+duplicated business logic.
 
-Mimari ve tasarım gerekçeleri: [docs/00-genel-bakis.md](../../docs/00-genel-bakis.md), [docs/nasil-calisiyor.md](../../docs/nasil-calisiyor.md).
+Architecture and rationale: [docs/00-genel-bakis.md](../../docs/00-genel-bakis.md),
+[docs/nasil-calisiyor.md](../../docs/nasil-calisiyor.md) (Turkish design documents).
 
-> Statü: `0.1.0-alpha.1`. Public API bu sürümde sabitlendi ama alpha; kırıcı değişiklik olabilir.
+> Status: `0.1.0-alpha.1`. The public API is frozen in this release but it is alpha; breaking
+> changes are possible.
 
-## Gereksinimler
+## Requirements
 
-- `net8.0` veya `net10.0` hedefleyen bir ASP.NET Core Web API proje
-- Controller ya da minimal API endpoint'leri (keşif ApiExplorer üzerinden yapılır)
+- An ASP.NET Core Web API project targeting `net8.0` or `net10.0`
+- Controller or minimal-API endpoints (discovery goes through ApiExplorer)
 
-## 1. Kurulum
+## 1. Install
 
-Alpha yerel bir nupkg beslemesinden dağıtılıyor; nuget.org'da yok.
+The alpha ships from a local nupkg feed; it is not on nuget.org.
 
 ```bash
-# sk-mcp deposunda
+# in the sk-mcp repository
 pnpm turbo run pack --filter=@sk-mcp/sdk-dotnet
 # → sdks/dotnet/local/nupkg-feed/SkMcp.AspNetCore.0.1.0-alpha.1.nupkg
 ```
 
 ```bash
-# kendi projenizde
-dotnet nuget add source /mutlak/yol/sk-mcp/sdks/dotnet/local/nupkg-feed --name sk-mcp-local
+# in your own project
+dotnet nuget add source /absolute/path/to/sk-mcp/sdks/dotnet/local/nupkg-feed --name sk-mcp-local
 dotnet add package SkMcp.AspNetCore --version 0.1.0-alpha.1
 ```
 
-`ProjectReference` ile bağlamayın: SkMcp çok hedefli (`net8.0;net10.0`) ve `ProjectReference` restore sırasında tüm hedefleri değerlendirir. `global.json` ile eski bir SDK pinleyen host'ta bu `NETSDK1045` verir. Paket yolu bu sorunu yaşamaz, host'un SDK'sı hangi hedefi kurabiliyorsa onu seçer.
+Do not wire it with a `ProjectReference`. SkMcp multi-targets (`net8.0;net10.0`) and a
+`ProjectReference` evaluates every target during restore, which produces `NETSDK1045` on a host
+that pins an older SDK through `global.json`. The package path does not have this problem: the
+host's SDK picks whichever target it can build.
 
-## 2. Bağlama — üç çağrı
+## 2. Wiring — three calls
 
 ```csharp
 using SkMcp.AspNetCore;
@@ -53,13 +61,17 @@ app.MapSkMcp("/mcp");
 app.Run();
 ```
 
-Mevcut `AddAuthentication`/`AddAuthorization` kurulumunuza dokunmayın — SkMcp kendi kimlik şeması kurmaz, sizinkini kullanır.
+Leave your existing `AddAuthentication`/`AddAuthorization` setup alone — SkMcp installs no identity
+scheme of its own and uses yours.
 
-> **Sıra kritik.** `UseSkMcpCapture()` pipeline'ın **o noktadan sonrasını** yakalar ve ajan çağrılarını oraya sokar. `UseRouting`/`UseAuthentication`/`UseAuthorization`'dan **önce**, mümkün olan en erken yere koyun. Sonrasına koyarsanız ajan istekleri kimlik doğrulama katmanınızı hiç görmez. `UseSkMcpCapture()`'ı tamamen unutursanız `MapSkMcp()` startup'ta hata fırlatır.
+> **Order is critical.** `UseSkMcpCapture()` captures the pipeline **from that point onward** and
+> injects agent calls into it. Put it **before** `UseRouting`/`UseAuthentication`/`UseAuthorization`,
+> as early as you can. Placed after them, agent requests never see your authentication layer. Omit
+> it entirely and `MapSkMcp()` throws at startup.
 
-## 3. Hangi endpoint'ler görünür olur?
+## 3. Which endpoints become visible?
 
-Varsayılan **opt-in**: hiçbir endpoint açılmaz, `[McpTool]` ile işaretlediğiniz açılır.
+The default is **opt-in**: nothing is exposed, and what you mark with `[McpTool]` is.
 
 ```csharp
 using SkMcp.AspNetCore.Discovery;
@@ -70,7 +82,8 @@ using SkMcp.AspNetCore.Discovery;
 public sealed class OrdersController : ControllerBase { }
 ```
 
-Yüzlerce endpoint'i olan bir backend'de attribute yolu pratik değil; opt-out'a geçin ve tekil istisnaları `[McpIgnore]` ile kapatın:
+On a backend with hundreds of endpoints the attribute path is impractical; switch to opt-out and
+close individual exceptions with `[McpIgnore]`:
 
 ```csharp
 builder.Services.AddSkMcp(options =>
@@ -79,41 +92,54 @@ builder.Services.AddSkMcp(options =>
 });
 ```
 
-Görünürlük bir güvenlik mekanizması **değildir**. Katalogdan gizlenen bir tool yine de yalnız backend'iniz izin verirse çalışır; yaptırım her zaman invoke anında sizin pipeline'ınızdadır.
+Visibility is **not** a security mechanism. A tool hidden from the catalog still runs only if your
+backend permits it; enforcement is always in your pipeline at invoke time.
 
-## 4. Bir MCP client'ı bağlamak
+## 4. Connecting an MCP client
 
-Endpoint Streamable HTTP konuşur. `tools/list` yalnız üç meta-tool döndürür:
+The endpoint speaks Streamable HTTP. `tools/list` returns only three meta-tools:
 
-| Tool           | İş                                 |
-| -------------- | ---------------------------------- |
-| `search_tools` | Doğal dil sorgusuyla endpoint arar |
-| `load_tool`    | Tek bir tool'un tam şemasını verir |
-| `invoke_tool`  | Tool'u çağırır                     |
+| Tool           | Job                                             |
+| -------------- | ----------------------------------------------- |
+| `search_tools` | Searches endpoints with a natural-language query |
+| `load_tool`    | Returns one tool's full schema                   |
+| `invoke_tool`  | Calls the tool                                   |
 
-Katalog `tools/list`'e dökülmez: 700 endpoint'lik bir backend'de bu ajanın context'ini boğar. Ajan önce arar, sonra yükler, sonra çağırır.
+The catalog is not dumped into `tools/list`: on a 700-endpoint backend that drowns the agent's
+context. The agent searches first, then loads, then calls.
 
-`/mcp`'yi korumak isterseniz kendi authorization'ınızı takın:
+To protect `/mcp`, attach your own authorization:
 
 ```csharp
 app.MapSkMcp("/mcp").RequireAuthorization();
 ```
 
-Depodaki `apps/example-agent-client` hazır bir istemci: `node apps/example-agent-client/dist/main.js --scenario smoke`.
+This repository's `apps/example-agent-client` is a ready-made client:
 
-## 5. Sorun giderme
+```bash
+node apps/example-agent-client/dist/main.js --scenario smoke --query "get order"
+```
 
-| Belirti                                                    | Sebep                                                                       | Çözüm                                                                                                   |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Startup'ta `MapSkMcp() requires app.UseSkMcpCapture()...`  | Capture hiç çağrılmadı                                                      | `app.UseSkMcpCapture()` ekleyin, routing'den önce                                                       |
-| `sk-mcp pipeline is not captured` (ilk tool çağrısında)    | Capture kayıtlı ama host henüz istek görmedi                                | Host'u başlatın; kalıcıysa capture'ın konumunu kontrol edin                                             |
-| Tool'lar çalışıyor ama yetki kontrolü hiç devreye girmiyor | Capture, `UseAuthentication`/`UseAuthorization`'dan **sonra**               | Capture'ı pipeline'ın başına taşıyın                                                                    |
-| `search_tools` her zaman boş                               | `Selection.Default` varsayılanı `Exclude`, hiçbir yere `[McpTool]` konmamış | `[McpTool]` ekleyin ya da `Selection.Default = Include` yapın                                           |
-| `/mcp`'ye her istek 401                                    | `.RequireAuthorization()` var, client token göndermiyor                     | Bearer token gönderin ya da geliştirme sırasında `.RequireAuthorization()`'ı kaldırın                   |
-| Startup'ta fatal tanı ile host açılmıyor                   | Katalog kurulumunda `name_collision` / `invalid_name` gibi hata             | Log'daki kod listesini okuyun; gerekirse `options.Diagnostics.Downgrade` ile tekil kodu uyarıya indirin |
+Pass `--query`; the scenario's built-in default query is a non-ASCII term used to exercise
+tokenization.
 
-## 6. Sırada ne var
+## 5. Troubleshooting
 
-- Büyük, mevcut bir backend'e ekleme: [docs/gercek-backend-entegrasyonu.md](../../docs/gercek-backend-entegrasyonu.md)
-- Genişletme noktaları (cache, görünürlük, hata eşlemesi): [docs/kararlar/006-genisletme-noktalari.md](../../docs/kararlar/006-genisletme-noktalari.md)
-- Örnek: [samples/DemoApi](samples/DemoApi) — policy, rol, imperatif sahiplik kontrolü ve anonim endpoint'ler tek controller'da
+| Symptom                                                       | Cause                                                                       | Fix                                                                                     |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `MapSkMcp() requires app.UseSkMcpCapture()...` at startup     | Capture was never called                                                     | Add `app.UseSkMcpCapture()`, before routing                                             |
+| `sk-mcp pipeline is not captured` on the first tool call      | Capture is registered but the host has not served a request yet              | Start the host; if it persists, check where capture sits                                 |
+| Tools work but authorization never runs                       | Capture is **after** `UseAuthentication`/`UseAuthorization`                  | Move capture to the top of the pipeline                                                  |
+| `search_tools` always empty                                   | `Selection.Default` defaults to `Exclude` and no `[McpTool]` was applied     | Add `[McpTool]`, or set `Selection.Default = Include`                                    |
+| Every request to `/mcp` returns 401                           | `.RequireAuthorization()` is on and the client sends no token                | Send a bearer token, or drop `.RequireAuthorization()` during development                |
+| Host will not start, fatal diagnostic                         | A catalog error such as `name_collision` / `invalid_name`                   | Read the code list in the log; downgrade a single code with `options.Diagnostics.Downgrade` |
+
+## 6. What's next
+
+- The docs site: `pnpm --filter @sk-mcp/docs dev` → `http://localhost:5180`
+- Adding sk-mcp to a large existing backend:
+  [docs/gercek-backend-entegrasyonu.md](../../docs/gercek-backend-entegrasyonu.md) (Turkish)
+- Extension points (cache, visibility, error mapping):
+  [docs/kararlar/006-genisletme-noktalari.md](../../docs/kararlar/006-genisletme-noktalari.md) (Turkish)
+- Sample: [samples/DemoApi](samples/DemoApi) — policy, role, imperative ownership checks and
+  anonymous endpoints in a single controller

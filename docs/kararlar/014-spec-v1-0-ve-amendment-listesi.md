@@ -7,7 +7,7 @@ Tarih: 2026-09-07. Durum: **kabul edildi** — [karar 010](010-versiyonlama-poli
 
 Karar 010 v1.0 için iki koşul saymıştı:
 
-1. `sema-donusum-kurallari.md`'nin "Pinlenmemiş alanlar" bölümünün üç alanı (generic wrapper soyma,
+1. `schema-conversion-rules.md`'nin "Pinlenmemiş alanlar" bölümünün üç alanı (generic wrapper soyma,
    derinlik sınırında inline'lama, `$ref` ile recursion) tanımlı hale gelmeli.
    → [Karar 012](012-tip-sekli-ve-sema-kural-katmani.md): derinlik sınırı **kaldırıldı**, döngü
    `$defs` + `$ref` ile ifade ediliyor, wrapper soyma uygulandı ve fixture'landı. Dördüncü alan
@@ -29,10 +29,10 @@ kalırdı (ölçüldü: yamadan önce cache hit, sonra cache miss).
 
 İki dokümanda damga **kapsamlandı**, kaldırılmadı:
 
-- `sema-donusum-kurallari.md` — kural katmanı normatif; ama tabloların "kaynak" sütunları yalnız C#
+- `schema-conversion-rules.md` — kural katmanı normatif; ama tabloların "kaynak" sütunları yalnız C#
   tarafını listeliyor. Nest bağlaması var ve çalışıyor, karşılıkları karar 012'de yazılı, ama
   tabloya taşınmadı. Bağlama tanım gereği fixture'lanamaz.
-- `onbellek.md` — anahtar türetimi, ad alanı, TTL/jitter, LRU, `_disabled` ve uçuş kuralı n=2; ama
+- `caching.md` — anahtar türetimi, ad alanı, TTL/jitter, LRU, `_disabled` ve uçuş kuralı n=2; ama
   "Dağıtık kurulum" bölümünün paylaşılan depo garantileri hiçbir SDK'da uygulanmadı. O bölüm bir
   adaptör yazacak host için sözleşme taslağıdır.
 
@@ -42,16 +42,16 @@ Faz 6'nın kuralı: Nest bir fixture'ı geçemiyorsa bu spec bug'ıdır; spec d�
 geriye uygulanır. Sekiz sapma işlendi. Üçü Nest'in ortaya çıkardığı **gerçek spec hatası**, ikisi
 implementasyon defekti, biri iki spec dokümanı arasındaki çelişki, ikisi kapsam genişletmesi.
 
-| #   | Sapma                                                     | Sınıf                              | Sonuç                                                                                                                                                                                                                |
-| --- | --------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `PrefixMode.OnCollision` fiilen ölüydü                    | implementasyon defekti (iki dilde) | Çözülmüş ad artık **girdi**: `createToolDefinition(endpoint, name?)` / `ToolDefinitionFactory.Create(…, name)`. Katalog iddia ettiği adı geçirir. Host testi `C14`.                                                  |
-| 2   | İki spec dokümanı `total` hakkında çelişiyordu            | spec çelişkisi                     | `gorunurluk.md` doğruydu (`total` deklaratiftir, probe onu değiştirmez); `arama-semantigi.md`'nin iki cümlesi düzeltildi. Kod değişmedi.                                                                             |
-| 3   | Probe uygunluk kuralı ASP.NET aromalıydı                  | **spec hatası**                    | Çerçeve-nötr yeniden yazıldı: "kesme katmanının o endpoint için kurulu olduğu kanıtlanmış olmalı", artı platform başına tablo ve garantinin dürüst ifadesi.                                                          |
-| 4   | Katalog reload'u görünürlük epoch'unu artırmıyordu        | implementasyon defekti             | `ReloadAsync` artık değişiklik token'ını **temizlemeden önce** sinyalliyor; `CallerVisibilityProvider` token'a abone olup epoch'u artırıyor. `onbellek.md` sırayı normatif yazdı.                                    |
-| 5   | Spec var olmayan bir Nest roles decorator'ı varsayıyordu  | **spec hatası**                    | `metadata-sozlesmesi.md` ve `gorunurluk.md`'deki üç cümle düzeltildi; Nest'in auth asimetrisi normatif olarak yazıldı. Faz 6 planının "hangi kurallar farkında olmadan ASP.NET aromalı kalmış" sorusunun ilk cevabı. |
-| 6   | "Kesme noktası olmayan endpoint" sınırı ASP.NET'e özgüydü | **spec hatası**                    | Cümle çerçeveye göre kapsamlandı: Nest'te keşfedilen her endpoint bir controller route'u olduğu için kesme katmanı her zaman kurulu, yedek dal hiç kullanılmaz.                                                      |
-| 7   | Kart parametre sırası JS'te güvenli değildi               | kapsam genişletmesi                | Sıra kuralı normatif yazıldı (tamsayı-benzeri anahtarlar önce, sayısal artan; sonra bildirim sırası) ve 9. fixture türü `card` ile pinlendi.                                                                         |
-| 8   | `validation-retry` senaryosu Nest'e karşı geçemiyordu     | kapsam genişletmesi                | `knownFields` verildiğinde mesajın baş token'ı kapalı kümeye karşı eşlenip `fields[].name` yazılıyor. C#'a geriye uygulandı. `hata-eslemesi.md` "Faz 6'da yeniden değerlendirilir" dediği yerde kapandı.             |
+| #   | Sapma                                                     | Sınıf                              | Sonuç                                                                                                                                                                                                              |
+| --- | --------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `PrefixMode.OnCollision` fiilen ölüydü                    | implementasyon defekti (iki dilde) | Çözülmüş ad artık **girdi**: `createToolDefinition(endpoint, name?)` / `ToolDefinitionFactory.Create(…, name)`. Katalog iddia ettiği adı geçirir. Host testi `C14`.                                                |
+| 2   | İki spec dokümanı `total` hakkında çelişiyordu            | spec çelişkisi                     | `visibility.md` doğruydu (`total` deklaratiftir, probe onu değiştirmez); `search-semantics.md`'nin iki cümlesi düzeltildi. Kod değişmedi.                                                                          |
+| 3   | Probe uygunluk kuralı ASP.NET aromalıydı                  | **spec hatası**                    | Çerçeve-nötr yeniden yazıldı: "kesme katmanının o endpoint için kurulu olduğu kanıtlanmış olmalı", artı platform başına tablo ve garantinin dürüst ifadesi.                                                        |
+| 4   | Katalog reload'u görünürlük epoch'unu artırmıyordu        | implementasyon defekti             | `ReloadAsync` artık değişiklik token'ını **temizlemeden önce** sinyalliyor; `CallerVisibilityProvider` token'a abone olup epoch'u artırıyor. `caching.md` sırayı normatif yazdı.                                   |
+| 5   | Spec var olmayan bir Nest roles decorator'ı varsayıyordu  | **spec hatası**                    | `metadata-contract.md` ve `visibility.md`'deki üç cümle düzeltildi; Nest'in auth asimetrisi normatif olarak yazıldı. Faz 6 planının "hangi kurallar farkında olmadan ASP.NET aromalı kalmış" sorusunun ilk cevabı. |
+| 6   | "Kesme noktası olmayan endpoint" sınırı ASP.NET'e özgüydü | **spec hatası**                    | Cümle çerçeveye göre kapsamlandı: Nest'te keşfedilen her endpoint bir controller route'u olduğu için kesme katmanı her zaman kurulu, yedek dal hiç kullanılmaz.                                                    |
+| 7   | Kart parametre sırası JS'te güvenli değildi               | kapsam genişletmesi                | Sıra kuralı normatif yazıldı (tamsayı-benzeri anahtarlar önce, sayısal artan; sonra bildirim sırası) ve 9. fixture türü `card` ile pinlendi.                                                                       |
+| 8   | `validation-retry` senaryosu Nest'e karşı geçemiyordu     | kapsam genişletmesi                | `knownFields` verildiğinde mesajın baş token'ı kapalı kümeye karşı eşlenip `fields[].name` yazılıyor. C#'a geriye uygulandı. `error-mapping.md` "Faz 6'da yeniden değerlendirilir" dediği yerde kapandı.           |
 
 Sessiz Nest istisnası yok: her sapma spec metnine ve — implementasyon defektlerinde — C# koduna
 işlendi.
@@ -84,8 +84,8 @@ tag'in gerekçesidir, işaret ettiği commit'i adlandırmaz.
 - **v1.0'ı Nest'in şema bağlaması olgunlaşana kadar beklemek.** Karar 010 eşiği açıkça iki koşulla
   tanımlamıştı ve ikisi de karşılandı. Bağlama katmanının tablo sütunlarının doldurulmamış olması
   bir kural boşluğu değil, doküman işidir; v1.0 kural setinin geri uyumluluk taahhüdüdür.
-- **Damgayı tüm dokümanlardan kaldırmak.** `onbellek.md`'nin dağıtık bölümü ve
-  `sema-donusum-kurallari.md`'nin kaynak sütunları gerçekten tek taraflıdır; blanket kaldırma o
+- **Damgayı tüm dokümanlardan kaldırmak.** `caching.md`'nin dağıtık bölümü ve
+  `schema-conversion-rules.md`'nin kaynak sütunları gerçekten tek taraflıdır; blanket kaldırma o
   boşlukları görünmez yapardı.
 - **Amendment'ları tek bir "değişiklik günlüğü"ne yazıp spec metnine dokunmamak.** Faz 6 planının
   kuralı spec'in **kendisinin** düzeltilmesiydi; ayrı bir günlük, okuyucunun iki yerden okuması

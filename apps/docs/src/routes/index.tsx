@@ -1,15 +1,17 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Badge,
-  Button,
+  Card,
   Container,
   Group,
+  SimpleGrid,
   Stack,
   Text,
   Title,
 } from "@mantine/core";
 import { IconArrowRight } from "@tabler/icons-react";
 import { ColorSchemeToggle } from "../components/ColorSchemeToggle";
+import { products } from "../lib/content";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -37,16 +39,28 @@ function Landing() {
           means writing another service.
         </Text>
 
-        <Group>
-          <Button
-            component={Link}
-            to="/docs"
-            size="md"
-            rightSection={<IconArrowRight size={18} />}
-          >
-            Documentation
-          </Button>
-        </Group>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" className="mt-4">
+          {products.map((product) => (
+            <Link
+              key={product.id}
+              to="/docs/$product/$slug"
+              params={{ product: product.id, slug: product.firstSlug }}
+              className="no-underline text-inherit"
+            >
+              <Card withBorder radius="md" padding="lg" h="100%">
+                <Group justify="space-between" wrap="nowrap">
+                  <Title order={3} size="h4">
+                    {product.label}
+                  </Title>
+                  <IconArrowRight size={18} />
+                </Group>
+                <Text size="sm" c="dimmed" mt="xs">
+                  {product.tagline}
+                </Text>
+              </Card>
+            </Link>
+          ))}
+        </SimpleGrid>
       </Stack>
     </Container>
   );

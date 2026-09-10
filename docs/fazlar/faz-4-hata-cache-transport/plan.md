@@ -8,7 +8,7 @@ SDK'yı "demo çalışıyor"dan "gerçek bir backend'e gömülebilir"e taşımak
 
 ## Somut çıktılar
 
-- `hata-eslemesi.md` finalize + `error-mapping/` fixture'ları: validation (400/ProblemDetails), 404, 403, 500 → agent'ın **eyleme dönüştürebileceği** MCP error'ları. Ölçüt: "quantity alanı pozitif olmalı" gibi, agent'ın input'unu düzeltip retry edebileceği mesajlar; iç detay/stack sızdırmadan.
+- `error-mapping.md` finalize + `error-mapping/` fixture'ları: validation (400/ProblemDetails), 404, 403, 500 → agent'ın **eyleme dönüştürebileceği** MCP error'ları. Ölçüt: "quantity alanı pozitif olmalı" gibi, agent'ın input'unu düzeltip retry edebileceği mesajlar; iç detay/stack sızdırmadan.
 - Per-caller cache: anahtar = kimlik/scope hash'i; kapsam = filtrelenmiş arama index'i ve tool tanımları. Manuel invalidation hook'u (backend "yetkiler değişti" diyebilsin).
 - `listChanged` notification desteği (meta-tool listesi nadiren değişir ama spec uyumu için).
 - Streamable HTTP + MCP OAuth 2.1 akışı uçtan uca: dış bir client gerçek token alıp DemoApi'ye bağlanıyor.

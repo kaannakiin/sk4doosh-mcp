@@ -1,6 +1,6 @@
 {
   "kind": "schema-simplification",
-  "description": "Ic ice semada required yalniz bos degilken yazilir; kok inputSchema kurali metadata-sozlesmesi.md'de",
+  "description": "Ic ice semada required yalniz bos degilken yazilir; kok inputSchema kurali metadata-contract.md'de",
   "input": {
     "shape": {
       "root": {

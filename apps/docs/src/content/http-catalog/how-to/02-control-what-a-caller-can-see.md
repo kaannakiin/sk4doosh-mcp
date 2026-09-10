@@ -67,4 +67,8 @@ The five tools everyone sees are the anonymous ones and the ones that need ident
 Hiding a tool does not protect it. `invoke_tool` never consults the visibility filter — a caller
 who guesses a tool name reaches the real pipeline and is rejected there, by your backend, exactly
 as an HTTP client would be. If you are using visibility as a security control, read
-[why visibility is not enforcement](/docs/why-visibility-is-not-enforcement) before going further.
+[why visibility is not enforcement](/docs/http-catalog/why-visibility-is-not-enforcement) before going further.
+
+This page assumes the framework can read your authorization declaratively, which is the ASP.NET
+Core case. On NestJS a guard has to declare itself before any of this applies — see
+[how to declare visibility for a NestJS guard](/docs/http-catalog/declare-visibility-for-a-nestjs-guard).

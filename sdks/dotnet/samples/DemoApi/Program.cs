@@ -64,7 +64,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
     .AllowAnonymous()
-    .WithMetadata(new McpToolAttribute(), new EndpointDescriptionAttribute("Servis sağlık durumu; kimlik gerektirmez."));
+    .WithMetadata(new McpToolAttribute(), new EndpointDescriptionAttribute("Service health status; requires no identity."));
 app.MapDemoAuthorizationServer(authServer);
 app.MapSkMcp("/mcp").RequireAuthorization();
 

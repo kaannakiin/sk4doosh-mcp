@@ -15,11 +15,11 @@ bir feature-flag ya da bir tenant çözücü de olabilir.
 Bu yüzden Nest'te:
 
 - **T0**: `auth.anonymous` her endpoint için `"unknown"`. Bu bir gerileme değil,
-  [gorunurluk.md](../../packages/spec/gorunurluk.md)'nin T0 tablosunun üçüncü satırının
+  [visibility.md](../../packages/spec/visibility.md)'nin T0 tablosunun üçüncü satırının
   ("Hiçbiri yok → `unknown`; **Bilgi yok**") tam olarak yazıldığı vaka. Aynı vaka motokurye'de
   ASP.NET tarafında da yaşanıyor.
 - **T1**: guard bağlıysa `imperative: true`, `policies: []`.
-  [metadata-sozlesmesi.md](../../packages/spec/metadata-sozlesmesi.md) bunu zaten normatif olarak
+  [metadata-contract.md](../../packages/spec/metadata-contract.md) bunu zaten normatif olarak
   söylüyordu ("Nest'te guard'lar tanım gereği imperatiftir").
 - Sonuç: beyan yoksa her Nest endpoint'i deklaratif katmanda `unknown` kalır ve **görünürlüğü T2
   probe taşır**.
@@ -41,7 +41,7 @@ interceptor tüm guard'lardan sonra, model binding ve handler'dan öncedir — A
 filter'ının birebir yapısal aynası.
 
 Middleware'de yaşayan bir 401 (motokurye deseni) routing'e hiç ulaşmadığı için interceptor koşmaz
-ve işaret konmaz; karar kuralı `gorunurluk.md`'de zaten "401/403 → deny, işaret olsun olmasın"
+ve işaret konmaz; karar kuralı `visibility.md`'de zaten "401/403 → deny, işaret olsun olmasın"
 olduğu için doğru okunur.
 
 **SDK `APP_GUARD` kaydetmez.** Kendi kesmesi interceptor olduğu için `imperative`'i her endpoint'te
@@ -51,7 +51,7 @@ kirletmez.
 
 `nasil-calisiyor.md`'nin birinci yolu. Niyeti doğru, mekanizması bozuk:
 
-1. **Middleware'i atlar, dolayısıyla değişmez 2'yi ihlal eder.** `gorunurluk.md` değişmez 2
+1. **Middleware'i atlar, dolayısıyla değişmez 2'yi ihlal eder.** `visibility.md` değişmez 2
    görünürlüğün invoke ile **aynı** kimlik kompozisyonunu kullanmasını şart koşuyor. `req.user`'ı
    middleware'de kuran bir kurulumda, elle kurulmuş bir bağlamda çağrılan guard `req.user`'ı
    `undefined` görür, 401 atar ve gerçekte yetkili bir çağıran için **yanlış `deny`** üretir. Bu,
@@ -83,7 +83,7 @@ gerekiyordu.
 ## Kaçış kapısı: yapısal `describeVisibility()`
 
 Yukarıdaki kurallarla bir Nest host'u **hiçbir şekilde** `anonymous: "no"` ya da dolu `policies`
-üretemez; yani `metadata-sozlesmesi.md`'nin üç alanlı auth modelinin iki alanı Nest'te ölü kalırdı
+üretemez; yani `metadata-contract.md`'nin üç alanlı auth modelinin iki alanı Nest'te ölü kalırdı
 ve "deklaratif yazan backend probe bedeli ödemez" vaadinin Nest karşılığı olmazdı.
 
 Çözüm, host'un zaten yazdığı guard'a **opsiyonel bir metot**:
@@ -137,7 +137,7 @@ demo `probe` kullanır (dotnet demo'su da öyle).
   yüzden düzeltildi (amendment 5).
 - **Guard yokluğunu `anonymous: "yes"` saymak.** Nest'te auth'un idiomatik yeri `app.use()`
   middleware'idir ve middleware endpoint metadata'sına yazmaz. Guard yokluğu hiçbir şey kanıtlamaz;
-  `unknown` doğru cevaptır. Bu, `gorunurluk.md`'nin ASP.NET tarafında zaten verdiği kararın aynısı.
+  `unknown` doğru cevaptır. Bu, `visibility.md`'nin ASP.NET tarafında zaten verdiği kararın aynısı.
 - **`probeEvaluator`'ı eklememek ve probe'u sealed tutmak.** Karar 006 bu noktayı adıyla
   yetkilendirmişti; ayrıca farklı bir probe stratejisi (ör. yalnız GET'leri probe etmek) meşru bir
   host politikasıdır.

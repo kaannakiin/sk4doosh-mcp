@@ -13,7 +13,7 @@ eklendi. Adapter Express olarak sabitlendi — `httpAdapter.getInstance()`'ın �
 `(req,res)` handler'ı olduğu varsayımı Fastify'da tutmaz; sınır yazıldı, Fastify çözülmedi.
 
 **Hangi spec kuralları farkında olmadan ASP.NET aromalı kalmış?** Üç tanesi:
-Nest'in var olmayan roles decorator'ı (`metadata-sozlesmesi.md` + `gorunurluk.md`, üç cümle), probe
+Nest'in var olmayan roles decorator'ı (`metadata-contract.md` + `visibility.md`, üç cümle), probe
 uygunluk kuralının "MVC action" ifadesi, ve "kesme noktası olmayan endpoint" sınırının ASP.NET'e
 özgü olması. Üçü de düzeltildi; tam liste [karar 014](../../kararlar/014-spec-v1-0-ve-amendment-listesi.md).
 
@@ -100,7 +100,7 @@ her şey 401 aldı. Test gerçek `app.listen(0)` + `StreamableHTTPClientTranspor
 V21'in aynı sebeple yaptığı şey.
 
 **`validation-retry` senaryosu ilk koşuda düştü ve spec'in kendi öngördüğü yerde düştü.**
-`hata-eslemesi.md` "Faz 6'da NestJS SDK'sının kendi metadata katmanı geldiğinde yeniden
+`error-mapping.md` "Faz 6'da NestJS SDK'sının kendi metadata katmanı geldiğinde yeniden
 değerlendirilir" diyordu; katalog gelince `knownFields` elde oldu ve mesajın baş token'ını kapalı
 kümeye karşı eşlemek tahmin değil arama haline geldi.
 
@@ -110,7 +110,7 @@ single-flight'a dokunulmadı); kayda geçsin diye yazıldı, düzeltilmedi.
 
 ## Kapanış turu (ilk raporda ertelenmiş olarak yazılan dört madde)
 
-**`listChanged` + jenerasyon damgası — birlikte kapandı.** `tasima.md` bildirimin dürüst olmasını
+**`listChanged` + jenerasyon damgası — birlikte kapandı.** `transport.md` bildirimin dürüst olmasını
 `_meta["sk-mcp/catalogGeneration"]` damgasına dayandırıyor: üç meta-tool'un listesi hiç değişmediği
 için damga olmadan `tools/list` payload'u bayt-aynı kalır ve bildirim boş bir sinyale döner.
 `registerSkMcpTools` artık kayıtta damgalıyor, katalog değişikliğine abone oluyor, değişimde üç
@@ -120,7 +120,7 @@ kendi bildirimini attığı için üç tool üç bildirim üretirdi. Abonelik su
 Bu maddenin ilk gerekçesi **yanlış ölçümdü** — "MCP TS SDK'sı `_meta` yüzeyi vermiyor" yazmıştım.
 `@modelcontextprotocol/sdk@1.30.0`'da `registerTool` config'i `_meta` alıyor
 (`mcp.d.ts:150-157`) ve `RegisteredTool.update({_meta})` var (`:311-320`). Çerçeve sınırı yoktu.
-Sonucu ciddiydi: `tasima.md`'nin damgası "iki implementasyonla doğrulandı" diye kaldırılmıştı, oysa
+Sonucu ciddiydi: `transport.md`'nin damgası "iki implementasyonla doğrulandı" diye kaldırılmıştı, oysa
 dokümanın kendi normatif iki maddesi Nest'te karşılanmıyordu. Şimdi karşılanıyor; matris N1-N6'ya
 G1-G2 eklendi.
 
@@ -190,9 +190,9 @@ Kapı sayısı 23 → 24.
 
 - **Fastify adapter.** Dispatcher `httpAdapter.getInstance()`'ın çağrılabilir olduğunu varsayıyor;
   Express doğru, Fastify değil. Kapsam Express olarak sabitlendi.
-- **`sema-donusum-kurallari.md` tablolarının Nest kaynak sütunu.** Nest bağlaması var ve çalışıyor,
+- **`schema-conversion-rules.md` tablolarının Nest kaynak sütunu.** Nest bağlaması var ve çalışıyor,
   karşılıkları karar 012'de yazılı, ama tablolara taşınmadı. Doküman işi.
-- **`onbellek.md`'nin dağıtık depo garantileri** — hiçbir SDK'da uygulanmadı; damga bu yüzden
+- **`caching.md`'nin dağıtık depo garantileri** — hiçbir SDK'da uygulanmadı; damga bu yüzden
   kapsamlandı.
 - **CI'da net8.0 ayağı ve TS test job'ı** — TS testleri CI'a eklendi, net8.0 tam suite koşusu
   yerelde yapıldı.

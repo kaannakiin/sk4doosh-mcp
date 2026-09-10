@@ -9,11 +9,11 @@ Faz 1'in kanıtladığı davranışı, kapsam genişletmeden **önce**, dil bağ
 ## Somut çıktılar
 
 - `packages/spec/` ilk normatif dokümanlar (Türkçe):
-  - `isimlendirme.md` — stabil tool adı kuralı (operationId benzeri; yoksa üretim kuralı).
-  - `metadata-sozlesmesi.md` — her SDK'nın endpoint'ten çıkarmak zorunda olduğu alanlar: ad, description, input/output şema kaynağı, auth policy metadata'sının dil bağımsız temsili, HTTP metodu → `readOnlyHint`/`destructiveHint` eşlemesi.
-  - `hata-eslemesi.md` — taslak (Faz 4'te finalize edilir).
+  - `naming.md` — stabil tool adı kuralı (operationId benzeri; yoksa üretim kuralı).
+  - `metadata-contract.md` — her SDK'nın endpoint'ten çıkarmak zorunda olduğu alanlar: ad, description, input/output şema kaynağı, auth policy metadata'sının dil bağımsız temsili, HTTP metodu → `readOnlyHint`/`destructiveHint` eşlemesi.
+  - `error-mapping.md` — taslak (Faz 4'te finalize edilir).
 - `packages/conformance/` ilk fixture'lar: `naming/` ve `metadata-extraction/` — en az 3 örnek endpoint'in JSON girdi (endpoint metadata'sı) / çıktı (beklenen tool tanımı) çiftleri.
-- Fixture formatının kendisinin tanımı: `packages/spec/fixture-formati.md`.
+- Fixture formatının kendisinin tanımı: `packages/spec/fixture-format.md`.
 
 ## Bitti kriteri
 

@@ -5,8 +5,8 @@ Tarih: 2026-08-28. Faz 2 çekirdeği tamam: spec v0 + ilk 6 fixture + tip üreti
 ## Alınan kararlar
 
 - **Şema dili JSON Schema (draft 2020-12), Zod sözleşmede yok.** Zod ancak TS paketlerinin iç mutfağında kullanılabilir; dışa sızan artifact her zaman JSON Schema.
-- **Nötr model = OpenAPI'nin katı alt kümesi** — [packages/spec/metadata-sozlesmesi.md](../../../packages/spec/metadata-sozlesmesi.md).
-- **İsimlendirme + çakışma=hata** — [packages/spec/isimlendirme.md](../../../packages/spec/isimlendirme.md).
+- **Nötr model = OpenAPI'nin katı alt kümesi** — [packages/spec/metadata-contract.md](../../../packages/spec/metadata-contract.md).
+- **İsimlendirme + çakışma=hata** — [packages/spec/naming.md](../../../packages/spec/naming.md).
 - **POST `destructiveHint: false`** (kullanıcı seçimi; override kaçış kapısı spec'te).
 - **Auth v0 = ad + anonim biti**; Nest guard'ları için `"guard:X"` opak referansı yer tutucu.
 - **Dil**: prose Türkçe, makine-okur İngilizce (kullanıcı seçimi).
@@ -17,7 +17,7 @@ Tarih: 2026-08-28. Faz 2 çekirdeği tamam: spec v0 + ilk 6 fixture + tip üreti
 
 - Fallback isimlendirme: `{metod}_{statik parçalar}_by_{path parametreleri}`; çakışma ve desen ihlali hata.
 - Auth derinliği: v0'da yalnız ad + anonim biti; derinleşme ihtiyacı Faz 3 arama filtrelemesinden gelirse eklenir.
-- PATCH/PUT hint'leri: tablo [metadata-sozlesmesi.md](../../../packages/spec/metadata-sozlesmesi.md)'de; `—` = alan yazılmaz.
+- PATCH/PUT hint'leri: tablo [metadata-contract.md](../../../packages/spec/metadata-contract.md)'de; `—` = alan yazılmaz.
 - Fixture girdi soyutluğu: tamamen nötr model (ApiExplorer'a benzemez); naming fixture'ları küme alır (çakışma kümenin özelliği).
 
 ## Sürprizler / teknik notlar

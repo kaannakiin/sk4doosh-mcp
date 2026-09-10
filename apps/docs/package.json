@@ -8,7 +8,8 @@
     "build": "vite build",
     "start": "node dist/server/server.js",
     "lint": "eslint .",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "validate": "node scripts/check-content.mjs"
   },
   "dependencies": {
     "@mantine/core": "9.6.0",
