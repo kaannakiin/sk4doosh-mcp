@@ -12,6 +12,7 @@
   "scripts": {
     "gen": "node scripts/generate-types.mjs",
     "build": "tsc",
+    "bench:search": "pnpm run build && node --expose-gc bench/search.mjs",
     "dev": "tsc --watch",
     "lint": "eslint .",
     "check-types": "tsc -p tsconfig.test.json",

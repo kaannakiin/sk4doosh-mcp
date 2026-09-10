@@ -68,14 +68,23 @@ export function openRoot(path) {
   return Object.freeze({
     async resolve(relative) {
       pathArgument(relative);
-      const result = await api.run(root, "resolve", relative, 0, 0, 0);
+      const result = await api.run(root, "resolve", relative, 0, 0, 0, 0, 0);
       if (typeof result !== "string" || result.includes("\0")) invalidResult();
       return result;
     },
     async read(relative, maxBytes) {
       pathArgument(relative);
       budget(maxBytes, 50 * 1024 * 1024);
-      const result = await api.run(root, "read", relative, maxBytes, 0, 0);
+      const result = await api.run(
+        root,
+        "read",
+        relative,
+        maxBytes,
+        0,
+        0,
+        0,
+        0,
+      );
       if (
         !object(result) ||
         !Buffer.isBuffer(result.bytes) ||
@@ -86,41 +95,63 @@ export function openRoot(path) {
         invalidResult();
       return result;
     },
-    /**
-     * Ranged read. The body still goes through the whole-file op, so the
-     * snapshot's TOCTOU discipline is the one in force; the native range op
-     * replaces the body without moving this signature or its validation.
-     */
     async readRange(relative, offset, length, maxBytes) {
       pathArgument(relative);
       budget(offset, 50 * 1024 * 1024);
       budget(length, 50 * 1024 * 1024);
       budget(maxBytes, 50 * 1024 * 1024);
-      const snapshot = await this.read(relative, maxBytes);
-      const start = Math.min(offset, snapshot.size);
-      const end = Math.min(start + length, snapshot.size);
-      return Object.freeze({
-        bytes: snapshot.bytes.subarray(start, end),
-        size: snapshot.size,
-        modifiedMs: snapshot.modifiedMs,
-        offset: start,
-      });
+      const result = await api.run(
+        root,
+        "readRange",
+        relative,
+        maxBytes,
+        0,
+        0,
+        offset,
+        length,
+      );
+      if (
+        !object(result) ||
+        !Buffer.isBuffer(result.bytes) ||
+        !Number.isSafeInteger(result.size) ||
+        result.size > maxBytes ||
+        !Number.isSafeInteger(result.offset) ||
+        result.offset !== Math.min(offset, result.size) ||
+        result.bytes.length !==
+          Math.min(result.offset + length, result.size) - result.offset ||
+        !Number.isFinite(result.modifiedMs)
+      )
+        invalidResult();
+      return Object.freeze(result);
     },
     /**
-     * Whole-file SHA-256. The body still materialises the bytes in JS; the
-     * native op streams them in C++ and returns only the 32 bytes, which is
-     * the point of moving it down. The value is identical either way.
+     * The digest must equal Node's createHash("sha256") over the same bytes:
+     * every cursor fingerprint is derived from it, so a divergent native hash
+     * invalidates issued cursors instead of failing loudly.
      */
     async digest(relative, maxBytes) {
       pathArgument(relative);
       budget(maxBytes, 50 * 1024 * 1024);
-      const snapshot = await this.read(relative, maxBytes);
-      const { createHash } = await import("node:crypto");
-      return Object.freeze({
-        digest: createHash("sha256").update(snapshot.bytes).digest(),
-        size: snapshot.size,
-        modifiedMs: snapshot.modifiedMs,
-      });
+      const result = await api.run(
+        root,
+        "digest",
+        relative,
+        maxBytes,
+        0,
+        0,
+        0,
+        0,
+      );
+      if (
+        !object(result) ||
+        !Buffer.isBuffer(result.digest) ||
+        result.digest.length !== 32 ||
+        !Number.isSafeInteger(result.size) ||
+        result.size > maxBytes ||
+        !Number.isFinite(result.modifiedMs)
+      )
+        invalidResult();
+      return Object.freeze(result);
     },
     async scan(relative, maxEntries, maxDepth, maxMs) {
       pathArgument(relative);
@@ -134,6 +165,8 @@ export function openRoot(path) {
         maxEntries,
         maxDepth,
         maxMs,
+        0,
+        0,
       );
       if (
         !object(result) ||

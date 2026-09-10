@@ -57,6 +57,18 @@ parity a test result instead of an assertion.
 
 A rule change that does not move a fixture has not been made.
 
+## Search benchmark
+
+```bash
+pnpm --filter @sk-mcp/core bench:search
+pnpm --filter @sk-mcp/core bench:search -- --quick
+```
+
+The deterministic benchmark compares the original linear scan, a byte-trigram candidate index,
+and the production posting index. Each algorithm runs in an isolated Node process with explicit
+GC. Output includes build time, retained heap plus array-buffer memory, query p50/p95, and a JSON
+report. A digest mismatch between algorithms fails the run before results are reported.
+
 ## Relationship to the SDKs
 
 `@sk-mcp/sdk-nestjs` depends on this package and re-exports the parts its users need, so NestJS

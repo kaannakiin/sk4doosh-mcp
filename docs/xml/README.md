@@ -4,7 +4,7 @@ Tarih: 2026-09-09. Durum: **F0, F1 ve F2 kapandı; F3 uygulandı ve platform kan
 
 Excel/file-core platform kapısı ve bulgu bazlı kanıtlar [kapanış kaydındadır](excel-hardening-uygulama.md). `@sk-mcp/xml-mcp` yedi tool'u sunuyor: dört okuma tool'u F2'de platform kanıtıyla kapandı ([F2 kapanış kaydı](xml-f2-kapanis.md)), `select_xpath`, `project_records` ve `aggregate_document` F3'te uygulandı ve kararları [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md)'dedir. **F3'ün platform kanıtı henüz alınmadı**; o koşu gelene kadar F3 `tamamlandı` sayılmaz ([F3 kapanış kaydı](xml-f3-kapanis.md)). Koşu kimlikleri ve test sayıları kapanış kayıtlarında durur, burada tekrar edilmez.
 
-Büyük dosya işi F4'te planlandı ve isteğe bağlı olmaktan çıktı: [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md) ve [F4 kapıları](fazlar/04-buyuk-dosya.md). Sıradaki işler F3'ün CI koşusu, F4-L0/L1 ve F6'dır.
+Büyük dosya işi F4'te planlandı, isteğe bağlı olmaktan çıktı ve **kısmen indi**: L1–L6 ile L7'nin JS ayağı uygulandı, `xml-mcp` artık kalıcı (≤ 8 MiB) ve parçalı (8–50 MiB) iki kademe sunuyor ([F4 kapanış kaydı](xml-f4-kapanis.md)). Kararlar [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md)'da, uygulamada çıkan tüketiciye görünen yedi karar [karar 020](../kararlar/020-parcali-kademe-yuzeyi.md)'dedir. L7'nin native ayağı da indi; bekleyen beş platformluk prebuild turudur. Sıradaki işler F3 ve F4'ün CI koşuları, F4-L0'ın korpus anketi, F4-L8 ve F6'dır.
 
 ## Hedef
 
@@ -25,6 +25,7 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 9. [XML F1 kapanış kaydı](xml-f1-kapanis.md): F1-03/05/06 ve F2-01/02/03'ün ölçüm ve kanıt tablosu.
 10. [XML F2 kapanış kaydı](xml-f2-kapanis.md): F2-04–12'nin ölçüm ve kanıt tablosu; sayfa bütçesi, DOM şişme katsayısı ve encoding matrisi.
 11. [XML F3 kapanış kaydı](xml-f3-kapanis.md): F3-01–07'nin ölçüm ve kanıt tablosu; XPath sızıntısı, adresleme maliyeti, sayısal politika ve kalan sınırlar.
+12. [XML F4 kapanış kaydı](xml-f4-kapanis.md): F4-L1–L6 ve L7-A'nın ölçüm ve kanıt tablosu; kademe yüzeyi, sınır tarayıcısı, diferansiyel oracle, tarama bütçesi sınırı ve M30–M35.
 
 ## Faz sırası ve kapsam
 
@@ -34,7 +35,7 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 | [F1 — Ortak çekirdek ve Excel](fazlar/01-ortak-cekirdek-ve-excel.md) | Dosya güvenliği, Excel düzeltmeleri ve XML kaynak ömrü | XML yaşam döngüsü için F0           | Tamamlandı; 13/13 platform CI                         |
 | [F2 — Salt okunur MVP](fazlar/02-okuma-mvp.md)                       | Dört tool ile keşif, düğüm okuma ve metin arama        | F0 + F1 (karşılandı)                | Tamamlandı; 13/13 CI + 10/10 XML F0                   |
 | [F3 — XPath ve kayıt analizi](fazlar/03-sorgu-ve-kayitlar.md)        | XPath 1.0, açık projeksiyon ve kontrollü aggregate     | F2 (karşılandı)                     | Uygulandı; platform kanıtı bekliyor                   |
-| [F4 — Büyük dosya ve çoklu arama](fazlar/04-buyuk-dosya.md)          | DOM sınırının üstünde dar streaming yetenekleri        | F3; ölçülmüş ihtiyaç                | Başlanmadı; isteğe bağlı                              |
+| [F4 — Büyük dosya ve çoklu arama](fazlar/04-buyuk-dosya.md)          | Bütçe üstünde kayıt sınırından parçalama; 50 MiB tavan | F3 (karşılandı); isteğe bağlı değil | L1–L6 + L7-A indi; L0 anketi, L7-B, L8 ve F4-06 açık  |
 | [F5 — Ayrı genişletmeler](fazlar/05-genisletmeler.md)                | XSD, container, dönüşüm ve diff için bağımsız kapılar  | Görevde belirtilen F2/F3 kapısı     | Başlanmadı; isteğe bağlı                              |
 | [F6 — Yayın ve agent kabulü](fazlar/06-yayin-ve-kabul.md)            | XML paketinin kurulum, entegrasyon ve kabul kanıtları  | İlk yayın F2; ek özellik ilgili faz | XML için başlanmadı; CI altyapısı xml-mcp'yi kapsıyor |
 

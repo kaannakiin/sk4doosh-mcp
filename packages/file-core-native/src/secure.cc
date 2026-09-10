@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <deque>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -392,44 +393,166 @@ public:
   }
 };
 
+constexpr uint32_t sha256Constants[64] = {
+  0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
+  0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
+  0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
+  0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
+  0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
+  0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
+  0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+  0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
+constexpr uint32_t rotate(uint32_t value, unsigned bits) { return (value >> bits) | (value << (32 - bits)); }
+
+/**
+ * The value must stay bit-identical to Node's createHash("sha256"): every
+ * cursor fingerprint is derived from it (packages/file-core/src/cursor.ts),
+ * so a "faster" variant silently invalidates every issued cursor instead of
+ * failing loudly.
+ */
+class Sha256 {
+  uint32_t state[8] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au, 0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
+  uint64_t bits = 0;
+  unsigned char pending[64] = {};
+  size_t held = 0;
+  void compress(const unsigned char* input) {
+    uint32_t w[64];
+    for (unsigned i = 0; i < 16; ++i)
+      w[i] = uint32_t(input[i * 4]) << 24 | uint32_t(input[i * 4 + 1]) << 16 | uint32_t(input[i * 4 + 2]) << 8 | uint32_t(input[i * 4 + 3]);
+    for (unsigned i = 16; i < 64; ++i) {
+      const uint32_t a = rotate(w[i - 15], 7) ^ rotate(w[i - 15], 18) ^ (w[i - 15] >> 3);
+      const uint32_t b = rotate(w[i - 2], 17) ^ rotate(w[i - 2], 19) ^ (w[i - 2] >> 10);
+      w[i] = w[i - 16] + a + w[i - 7] + b;
+    }
+    uint32_t a = state[0], b = state[1], c = state[2], d = state[3], e = state[4], f = state[5], g = state[6], h = state[7];
+    for (unsigned i = 0; i < 64; ++i) {
+      const uint32_t s1 = rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25);
+      const uint32_t choice = (e & f) ^ (~e & g);
+      const uint32_t t1 = h + s1 + choice + sha256Constants[i] + w[i];
+      const uint32_t s0 = rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22);
+      const uint32_t majority = (a & b) ^ (a & c) ^ (b & c);
+      h = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + s0 + majority;
+    }
+    state[0] += a; state[1] += b; state[2] += c; state[3] += d;
+    state[4] += e; state[5] += f; state[6] += g; state[7] += h;
+  }
+public:
+  void update(const unsigned char* data, size_t amount) {
+    bits += uint64_t(amount) * 8;
+    while (amount > 0) {
+      if (held == 0 && amount >= 64) { compress(data); data += 64; amount -= 64; continue; }
+      const size_t take = std::min<size_t>(64 - held, amount);
+      std::memcpy(pending + held, data, take);
+      held += take; data += take; amount -= take;
+      if (held == 64) { compress(pending); held = 0; }
+    }
+  }
+  void finish(unsigned char out[32]) {
+    const uint64_t total = bits;
+    pending[held++] = 0x80;
+    if (held > 56) { std::memset(pending + held, 0, 64 - held); compress(pending); held = 0; }
+    std::memset(pending + held, 0, 56 - held);
+    for (unsigned i = 0; i < 8; ++i) pending[56 + i] = static_cast<unsigned char>(total >> (56 - 8 * i));
+    compress(pending);
+    for (unsigned i = 0; i < 8; ++i) {
+      out[i * 4] = static_cast<unsigned char>(state[i] >> 24);
+      out[i * 4 + 1] = static_cast<unsigned char>(state[i] >> 16);
+      out[i * 4 + 2] = static_cast<unsigned char>(state[i] >> 8);
+      out[i * 4 + 3] = static_cast<unsigned char>(state[i]);
+    }
+  }
+};
+
 struct Entry { std::string path; Info info; };
 struct Job {
   napi_env env{}; napi_async_work work{}; napi_deferred deferred{};
   std::shared_ptr<Root> root;
   std::string operation, path, error, reason;
   int nativeError = 0;
-  uint32_t budget = 0, depth = 0, ms = 0, visited = 0, unreadable = 0;
+  uint32_t budget = 0, depth = 0, ms = 0, visited = 0, unreadable = 0, offset = 0, length = 0;
   std::vector<unsigned char> bytes;
   std::vector<Entry> entries;
   Info info;
+  unsigned char hash[32] = {};
 };
-void readSnapshot(Job& job, Raw h) {
+constexpr uint64_t maxBudgetBytes = 50ull * 1024 * 1024;
+/**
+ * The budget field is narrower than the sizes it gates. `Info::size` is
+ * uint64_t and every ceiling check compares against `Job::budget`, so the
+ * comparison is only free of truncation while the accepted ceiling fits the
+ * field. Widening maxBudgetBytes past the field breaks the check silently.
+ */
+static_assert(maxBudgetBytes <= std::numeric_limits<decltype(Job::budget)>::max(),
+              "The byte budget ceiling must fit the budget field width.");
+Info openWindow(const Job& job, Raw h) {
   auto before = infoOf(h);
   if (!before.regular) throw Failure("not_a_file");
   if (before.size > job.budget) throw Failure("file_too_large");
-  job.bytes.resize(static_cast<size_t>(before.size));
-  size_t offset = 0;
-  while (offset < job.bytes.size()) {
-    size_t amount = std::min<size_t>(65536, job.bytes.size() - offset);
+  return before;
+}
+size_t readAt(Raw h, unsigned char* out, size_t amount, uint64_t at) {
+  size_t done = 0;
+  while (done < amount) {
+    const size_t want = std::min<size_t>(65536, amount - done);
 #ifdef _WIN32
-    DWORD n;
-    if (!ReadFile(h, job.bytes.data() + offset, static_cast<DWORD>(amount), &n, nullptr)) osFailure();
+    const uint64_t here = at + done;
+    OVERLAPPED position{};
+    position.Offset = static_cast<DWORD>(here & 0xFFFFFFFFull);
+    position.OffsetHigh = static_cast<DWORD>(here >> 32);
+    DWORD n = 0;
+    if (!ReadFile(h, out + done, static_cast<DWORD>(want), &n, &position)) {
+      if (GetLastError() == ERROR_HANDLE_EOF) return done;
+      osFailure();
+    }
 #else
-    auto n = pread(h, job.bytes.data() + offset, amount, static_cast<off_t>(offset));
+    auto n = pread(h, out + done, want, static_cast<off_t>(at + done));
     if (n < 0) { if (errno == EINTR) continue; osFailure(); }
 #endif
-    if (n == 0) throw Failure("file_changed");
-    offset += static_cast<size_t>(n);
+    if (n == 0) return done;
+    done += static_cast<size_t>(n);
   }
+  return done;
+}
+/**
+ * Closes the read window the same way for every op: nothing may exist past the
+ * size that was measured before the read, and the file must still be the same
+ * inode with the same timestamps afterwards. A ranged read repeats this per
+ * range instead of trusting the range it was handed.
+ */
+void closeWindow(Raw h, const Info& before) {
   unsigned char extra;
-#ifdef _WIN32
-  DWORD n;
-  if (!ReadFile(h, &extra, 1, &n, nullptr)) osFailure();
-#else
-  auto n = pread(h, &extra, 1, static_cast<off_t>(offset));
-  if (n < 0) osFailure();
-#endif
-  if (n != 0 || !same(before, infoOf(h))) throw Failure("file_changed");
+  if (readAt(h, &extra, 1, before.size) != 0 || !same(before, infoOf(h))) throw Failure("file_changed");
+}
+void readSnapshot(Job& job, Raw h) {
+  const auto before = openWindow(job, h);
+  job.bytes.resize(static_cast<size_t>(before.size));
+  if (readAt(h, job.bytes.data(), job.bytes.size(), 0) != job.bytes.size()) throw Failure("file_changed");
+  closeWindow(h, before);
+  job.info = before;
+}
+void readWindow(Job& job, Raw h) {
+  const auto before = openWindow(job, h);
+  const uint64_t start = std::min<uint64_t>(job.offset, before.size);
+  const uint64_t end = std::min<uint64_t>(start + job.length, before.size);
+  job.bytes.resize(static_cast<size_t>(end - start));
+  if (readAt(h, job.bytes.data(), job.bytes.size(), start) != job.bytes.size()) throw Failure("file_changed");
+  closeWindow(h, before);
+  job.offset = static_cast<uint32_t>(start);
+  job.info = before;
+}
+void digestFile(Job& job, Raw h) {
+  const auto before = openWindow(job, h);
+  Sha256 hash;
+  std::vector<unsigned char> window(65536);
+  uint64_t at = 0;
+  while (at < before.size) {
+    const size_t amount = static_cast<size_t>(std::min<uint64_t>(window.size(), before.size - at));
+    if (readAt(h, window.data(), amount, at) != amount) throw Failure("file_changed");
+    hash.update(window.data(), amount);
+    at += amount;
+  }
+  hash.finish(job.hash);
+  closeWindow(h, before);
   job.info = before;
 }
 void scan(Job& job, Resolved base) {
@@ -468,6 +591,8 @@ void execute(napi_env, void* data) {
   try {
     auto opened = resolve(*job.root, job.path);
     if (job.operation == "read") readSnapshot(job, opened.handle.value);
+    else if (job.operation == "readRange") readWindow(job, opened.handle.value);
+    else if (job.operation == "digest") digestFile(job, opened.handle.value);
     else if (job.operation == "scan") scan(job, std::move(opened));
     else if (job.operation == "resolve") job.path = opened.path;
     else throw Failure("invalid_argument");
@@ -495,10 +620,15 @@ void complete(napi_env env, napi_status status, void* data) {
     if (job->operation == "resolve") result = string(env, job->path);
     else {
       napi_create_object(env, &result);
-      if (job->operation == "read") {
+      if (job->operation == "read" || job->operation == "readRange") {
         napi_value buffer;
         napi_create_buffer_copy(env, job->bytes.size(), job->bytes.data(), nullptr, &buffer);
         prop(env, result, "bytes", buffer); number(env, result, "size", static_cast<double>(job->info.size)); number(env, result, "modifiedMs", job->info.modifiedMs);
+        if (job->operation == "readRange") number(env, result, "offset", static_cast<double>(job->offset));
+      } else if (job->operation == "digest") {
+        napi_value buffer;
+        napi_create_buffer_copy(env, sizeof(job->hash), job->hash, nullptr, &buffer);
+        prop(env, result, "digest", buffer); number(env, result, "size", static_cast<double>(job->info.size)); number(env, result, "modifiedMs", job->info.modifiedMs);
       } else {
         napi_value array; napi_create_array_with_length(env, job->entries.size(), &array);
         for (size_t i = 0; i < job->entries.size(); ++i) {
@@ -539,15 +669,17 @@ napi_value openRoot(napi_env env, napi_callback_info info) {
 }
 napi_value run(napi_env env, napi_callback_info info) {
   try {
-    size_t argc = 6; napi_value argv[6]; napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    if (argc != 6) throw Failure("invalid_argument");
+    size_t argc = 8; napi_value argv[8]; napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    if (argc != 8) throw Failure("invalid_argument");
     void* ptr;
     if (napi_get_value_external(env, argv[0], &ptr) != napi_ok || !ptr) throw Failure("invalid_argument");
     auto job = std::make_unique<Job>();
     job->env = env; job->root = *static_cast<std::shared_ptr<Root>*>(ptr);
     job->operation = argument(env, argv[1]); job->path = argument(env, argv[2]);
-    if (napi_get_value_uint32(env, argv[3], &job->budget) != napi_ok || napi_get_value_uint32(env, argv[4], &job->depth) != napi_ok || napi_get_value_uint32(env, argv[5], &job->ms) != napi_ok) throw Failure("invalid_argument");
-    if (job->budget > 50 * 1024 * 1024 || job->depth > 64 || job->ms > 1000 || (job->operation == "scan" && job->budget > 5000)) throw Failure("invalid_argument");
+    if (napi_get_value_uint32(env, argv[3], &job->budget) != napi_ok || napi_get_value_uint32(env, argv[4], &job->depth) != napi_ok || napi_get_value_uint32(env, argv[5], &job->ms) != napi_ok
+        || napi_get_value_uint32(env, argv[6], &job->offset) != napi_ok || napi_get_value_uint32(env, argv[7], &job->length) != napi_ok) throw Failure("invalid_argument");
+    if (job->budget > maxBudgetBytes || job->depth > 64 || job->ms > 1000 || job->offset > maxBudgetBytes || job->length > maxBudgetBytes
+        || (job->operation == "scan" && job->budget > 5000)) throw Failure("invalid_argument");
     napi_value promise; napi_create_promise(env, &job->deferred, &promise);
     napi_create_async_work(env, nullptr, string(env, "secure-filesystem"), execute, complete, job.get(), &job->work);
     napi_queue_async_work(env, job->work); job.release(); return promise;

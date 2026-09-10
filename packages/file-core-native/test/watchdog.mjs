@@ -12,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createServer } from "node:net";
 import { Worker } from "node:worker_threads";
 import { openRoot } from "../index.js";
@@ -42,12 +43,16 @@ try {
   await symlink("cycle-b", join(inside, "cycle-a"), "file");
   await symlink("cycle-a", join(inside, "cycle-b"), "file");
   assert.equal((await root.read("inward.txt", 4)).bytes.toString(), "SAFE");
-  await assert.rejects(root.read("outward.txt", 100), {
-    code: "path_outside_root",
-  });
-  await assert.rejects(root.read("cycle-a", 100), {
-    code: "path_outside_root",
-  });
+  for (const read of [
+    (target, max) => root.read(target, max),
+    (target, max) => root.readRange(target, 0, 10, max),
+    (target, max) => root.digest(target, max),
+  ]) {
+    await assert.rejects(read("outward.txt", 100), {
+      code: "path_outside_root",
+    });
+    await assert.rejects(read("cycle-a", 100), { code: "path_outside_root" });
+  }
 
   if (process.platform === "win32") {
     await symlink(
@@ -63,6 +68,10 @@ try {
   if (process.platform !== "win32") {
     assert.equal(spawnSync("mkfifo", [join(inside, "pipe.txt")]).status, 0);
     await assert.rejects(root.read("pipe.txt", 100), { code: "not_a_file" });
+    await assert.rejects(root.readRange("pipe.txt", 0, 10, 100), {
+      code: "not_a_file",
+    });
+    await assert.rejects(root.digest("pipe.txt", 100), { code: "not_a_file" });
     socket = createServer();
     await new Promise((resolve, reject) => {
       socket.once("error", reject);
@@ -96,10 +105,24 @@ try {
   });
   let allowed = 0,
     refused = 0;
+  const safeDigest = createHash("sha256").update("SAFE").digest("hex");
+  const readers = [
+    async (target) => (await root.read(target, 100)).bytes.toString(),
+    async (target) =>
+      (await root.readRange(target, 0, 100, 100)).bytes.toString(),
+    async (target) => {
+      const range = await root.readRange(target, 1, 2, 100);
+      return range.bytes.toString() === "AF" ? "SAFE" : range.bytes.toString();
+    },
+    async (target) =>
+      (await root.digest(target, 100)).digest.toString("hex") === safeDigest
+        ? "SAFE"
+        : "LEAKED",
+  ];
   for (let i = 0; i < 400; i += 1) {
     for (const path of ["leaf.txt", "ancestor/safe.txt"]) {
       try {
-        assert.equal((await root.read(path, 100)).bytes.toString(), "SAFE");
+        assert.equal(await readers[i % readers.length](path), "SAFE");
         allowed += 1;
       } catch (error) {
         assert.ok(
@@ -132,7 +155,10 @@ try {
     const before = (await readdir(fdPath)).length;
     for (let i = 0; i < 100; i += 1) {
       await root.read("safe.txt", 4);
+      await root.readRange("safe.txt", 1, 2, 4);
+      await root.digest("safe.txt", 4);
       await assert.rejects(root.read("cycle-a", 100));
+      await assert.rejects(root.digest("cycle-a", 100));
     }
     assert.ok(
       (await readdir(fdPath)).length <= before + 1,

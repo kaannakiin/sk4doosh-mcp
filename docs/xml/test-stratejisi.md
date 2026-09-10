@@ -1,6 +1,12 @@
 # XML MCP test ve agent değerlendirme planı
 
-Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F1 kapanışıyla **T08, T15, T16 ve T17'nin ürün kodu ayakları** uygulandı. **F2 kapanışıyla T01, T02, T03, T04, T12'nin cursor ayağı, T13'ün sayfa ayağı ve T14 kapandı**; kanıt [F2 kapanış kaydında](xml-f2-kapanis.md). **F3 kapanışıyla T18 ve T19 kapandı ve T01/T02/T04/T14/T16'nın F3 ayakları koştu**; kanıt [F3 kapanış kaydında](xml-f3-kapanis.md). Dört paketli toplam **712 test** (F2: 613, F1: 529), `xml-mcp` 40 → 124 → **223**. T21–T23 F5'e, T20 ve T24–T27 F4'e aittir ve açıktır (2026-09-10). T20 [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md) ile yeniden tanımlandı: parçalamada karşılaştırılacak ikinci motor yok, DOM/streaming parity yerine kalıcı/parçalı diferansiyel oracle geçti. Agent kabul kaydı F2-09 ile alındı; XML benchmark'ı hâlâ yok.
+Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F1 kapanışıyla **T08, T15, T16 ve T17'nin ürün kodu ayakları** uygulandı. **F2 kapanışıyla T01, T02, T03, T04, T12'nin cursor ayağı, T13'ün sayfa ayağı ve T14 kapandı**; kanıt [F2 kapanış kaydında](xml-f2-kapanis.md). **F3 kapanışıyla T18 ve T19 kapandı ve T01/T02/T04/T14/T16'nın F3 ayakları koştu**; kanıt [F3 kapanış kaydında](xml-f3-kapanis.md). **F4 kapanışıyla T20, T24, T25 ve T26 kapandı**; kanıt [F4 kapanış kaydında](xml-f4-kapanis.md). Dört paketli toplam **783 test** (F3: 712, F2: 613, F1: 529), `xml-mcp` 40 → 124 → 223 → **283**. T21–T23 F5'e aittir ve açıktır. **T27 açıktır ve bu planın en büyük açık riskidir** (2026-09-10).
+
+T20 [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md) ile yeniden tanımlandı: parçalamada karşılaştırılacak ikinci motor yok, DOM/streaming parity yerine kalıcı/parçalı diferansiyel oracle geçti. Uygulandığı yer [chunked-oracle.spec.ts](../../packages/xml-mcp/test/chunked-oracle.spec.ts); T24'ün beş düşmanca fixture'ı da orada. T24'ün attribute ayağı **`>` ve `/>` ile** kuruldu, `<` ile değil: çıplak `<` iyi-biçimli XML'de attribute değerinde bulunamaz, o fixture iki kademede birden parse hatası verir (M34).
+
+T27 kendi ürettiğimiz korpusla kapatılamaz: dönüştürücüyü biz yazarsak çıkan XML tam da tarayıcımızın çözdüğü şekle sahip olur, yani test kendini doğrular. Ölçüm dışarıdan gelen, dokunulmamış dosyalarla ve **gerçek agent labıyla** yapılır; F6-05 o labın yeridir.
+
+Agent kabul kaydı F2-09 ile alındı; XML benchmark'ı hâlâ yok.
 
 T10/T11/T15'in XML uzantı ve handler ayakları `packages/xml-mcp/test` içinde uygulandı ve ortak dosya katmanı regresyonlarıyla birlikte koşuyor. T12'nin içerik değişimi ayağı worker tarafında F1'de, cursor ayağı F2-06'da kapandı; T13'ün sayfa ayağı F2-08'in ölçümüyle kapandı. Excel regex worker testleri T09 veya XML disposal testlerinin yerine geçmez. Bulgu bazlı sonuçlar [kapanış kaydında](excel-hardening-uygulama.md); aşağıdaki T kimlikleri XML kabul görevleri olarak açık kalır.
 
@@ -41,13 +47,13 @@ XML fixture'ları format ürününde tutulur; HTTP spec/conformance paketine for
 | T17          | Tekrarlanan aç/kapat/eviction/error/compiled query                 | Disposal ve bellek trendi beklenen; stale pointer veya double-free yok                      | F0-07               |
 | T18 ✅       | XPath empty/node-set/scalar/NaN/Infinity, yanlış sürüm             | Tür kaybı ve sessiz null yok; 2.0+ istek açık unsupported                                   | F3-02/04            |
 | T19 ✅       | Mixed numeric/text, hassasiyet, eksik/çoklu sütun, grup kesme      | Crash yok; dönüşüm/atlama/yuvarlama sayıları ve toplam kapsamı doğru                        | F3-05/06            |
-| T20          | Aynı fixture'ın kalıcı ve parçalı kademe sonucu                    | Değer ve `occurrence` dizisi eşit; parça sınırı sonucu değiştirmez                          | F4-L2/L3            |
+| T20 ✅       | Aynı fixture'ın kalıcı ve parçalı kademe sonucu                    | Değer ve `occurrence` dizisi eşit; parça sınırı sonucu değiştirmez                          | F4-L2/L3            |
 | T21          | XSD cycle/include dış yol, unresolved type, invalid schema         | Outline belirsizliği görünür; resolver dışarı çıkmaz; invalid belge ile engine failure ayrı | F5-S1–S4            |
 | T22          | ZIP bomb, duplicate/path traversal/encrypted entry                 | Sınırdan önce tam açılım yok; host yoluna extract yok                                       | F5-C1–C3            |
 | T23          | Mixed content format/JSON dönüşümü/önden kardeş ekleme diff        | Anlam değişimi saklanmaz; loss/matching politikası testli                                   | F5-D1–D4            |
-| T24          | CDATA/comment/PI içinde sahte kayıt etiketi, attribute içinde `>`  | Sınır tarayıcısı yanlış kesmez; `<![CDATA[</e><e>]]>` iyi-biçimli yanlış parça üretmez      | F4-L2               |
-| T25          | UTF-16 belge parçalı kademede                                      | Açık kodla reddedilir; byte tarayıcısı iki byte'lı `<` üzerinde sessizce kesmez             | F4-L2               |
-| T26          | Parça sınırına denk gelen sayfalama                                | Aralıklar ikişerli ayrık ve birleşimleri tüm kardeş dizisi; exactly-once bozulmaz           | F4-L3/L5            |
+| T24 ✅       | CDATA/comment/PI içinde sahte kayıt etiketi, attribute içinde `>`  | Sınır tarayıcısı yanlış kesmez; `<![CDATA[</e><e>]]>` iyi-biçimli yanlış parça üretmez      | F4-L2               |
+| T25 ✅       | UTF-16 belge parçalı kademede                                      | Açık kodla reddedilir; byte tarayıcısı iki byte'lı `<` üzerinde sessizce kesmez             | F4-L2               |
+| T26 ✅       | Parça sınırına denk gelen sayfalama                                | Aralıklar ikişerli ayrık ve birleşimleri tüm kardeş dizisi; exactly-once bozulmaz           | F4-L3/L5            |
 | T27          | Kullanıcı korpusunda belge şekli anketi                            | Bütçe üstü dosyaların kayıt-şekilli oranı ölçülür; K19-3'ün varsayımı sınanır               | F4-L0               |
 
 ## Fixture önceliği

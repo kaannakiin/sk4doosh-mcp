@@ -1,10 +1,15 @@
 # F4 — Büyük dosya ve kayıt parçalama
 
-Durum: **planlandı** (2026-09-10); isteğe bağlı değil. Sorumlu: XML performans
-geliştiricisi. Kararlar [karar 019](../../kararlar/019-buyuk-dosya-ve-kademe.md)'dadır
-ve bu belgenin ilk sürümündeki iki varsayımını değiştirir. Ölçüm dayanağı
-[F2 kapanışı](../xml-f2-kapanis.md) (M15, M16) ve [F3 kapanışı](../xml-f3-kapanis.md)
-(M23b).
+Durum: **kısmen tamamlandı** (2026-09-10). L1–L6 ve L7'nin iki ayağı da indi,
+784 test yeşil; kapanış [XML F4 kapanış kaydındadır](../xml-f4-kapanis.md). Açık
+kalanlar: L0'ın korpus anketi, L7'nin beş platformluk prebuild turu, L8 ve
+F4-06. Sorumlu: XML
+performans geliştiricisi. Kararlar
+[karar 019](../../kararlar/019-buyuk-dosya-ve-kademe.md)'da ve uygulama sırasında
+çıkan tüketiciye görünen yedi karar
+[karar 020](../../kararlar/020-parcali-kademe-yuzeyi.md)'dedir. Ölçüm dayanağı
+[F2 kapanışı](../xml-f2-kapanis.md) (M15, M16), [F3 kapanışı](../xml-f3-kapanis.md)
+(M23b) ve [F4 kapanışı](../xml-f4-kapanis.md) (M30–M35).
 
 Bu fazın ilk sürümü işi "isteğe bağlı" sayıyor ve önkoşul olarak "DOM sınırının gerçek
 kullanımda yetersiz kaldığını gösteren kayıt" istiyordu. İki sebeple değişti. Birincisi,
@@ -27,18 +32,38 @@ taşımak hedef değildir. Global işlemler açık `unsupported` döner
 
 Her kapı bağımsız teslim edilebilir ve hiçbiri ölçülmemiş bir varsayıma bağlı değildir.
 
-| Görev | İş                                                                                                                                        | Kabul ölçütü                                                                                                                                                                                                              |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F4-L0 | Ölçüm: hash throughput (8/50/256/1024 MiB), parça DOM residency katsayısı, sınır taraması hızı, **kullanıcı korpusu şekil anketi**        | Dört kayıt mevcut JSON şemasıyla `docs/xml/f0/`'a girer; relative MAD mevcut 0,15 tavanının altında. Korpus anketi olmadan F4-L4'ün değeri hipotezdir                                                                     |
-| F4-L1 | `mode` her yanıt zarfında ve `list_documents`'ın her girdisinde; tek knob, türetilmiş kapasiteler; worker import sınırının genişletilmesi | Her yanıt `mode` taşır; `describe_document.limits` knob'u ve türetilenleri bildirir; `modeFor` toplam ve monoton; hiçbir input provider kaydedilmiyor testle sabit. Davranış değişmez, saf ek                             |
-| F4-L2 | Sınır tarayıcısı saf fonksiyon olarak; üretime bağlanmaz                                                                                  | **Diferansiyel oracle**: her kayıt-şekilli fixture'da tarayıcının aralıkları tek tek parse edilince tam DOM'un sonucuyla aynı değer ve aynı `occurrence` dizisi. Beş düşmanca fixture geçer. UTF-16 açık kodla reddedilir |
-| F4-L3 | Worker'da parça parse; tavan değişmez                                                                                                     | Zorlamalı parçalı anahtarla 8 MiB fixture, kalıcı yolun zarfıyla `mode`, `totalItemsExact` ve `nodeId` dışında derin eşit. Kayıt `occurrence` taşır, adres taşımaz                                                        |
-| F4-L4 | 8 MiB → 50 MiB; C++ değişmez                                                                                                              | 40 MiB kayıt-şekilli fixture doğru cevaplanır; 40 MiB düzensiz ağaç `unsupported` + düzeltme önerisi; bütçeyi tek başına aşan kayıt açık hata; global işlemler `unsupported`, yaklaşık sonuç yok                          |
-| F4-L5 | Byte ipuçlu cursor                                                                                                                        | Sayfa gecikmesi sayfa numarasından bağımsız; exactly-once korunur; sahte `b` fuzz'ı hiçbir zaman ipuçsuz yolun üretmeyeceği bir satır vermez                                                                              |
-| F4-L6 | `file-core` kaynak sözleşmesi — **F6-08 öncesi son tarih**                                                                                | Public API aralık destekli kaynağı ifade edebiliyor; iki sunucu da derleniyor; dört paket yeşil; `bytes` bir minor boyunca uyumluluk yolu olarak duruyor                                                                  |
-| F4-L7 | Tek native release: bütçe tavanı + `readRange` + `digest`                                                                                 | Beş platform × Node 22/24 yeşil; `readRange` değişen dosyada `read` ile aynı `file_changed` davranışını verir; `digest` tam dosya SHA-256'sına eşit; bütçe alanının genişliği assert edilir                               |
-| F4-L8 | 1 GB                                                                                                                                      | 1 GB kayıt-şekilli fixture'da `describe_document` ve tam sayfalama yürüyüşü exactly-once ile tamamlanır, peak RSS ilan edilen bütçenin altında; 1 GB düzensiz ağaç `unsupported`                                          |
-| F4-06 | Çoklu belge araması (`search_documents`)                                                                                                  | **Korundu, kapsamı değişmedi.** Bu kapı dizisinden bağımsızdır; sırası L8 sonrasıdır. Artımlı dosya keşfi + dosya başı ve toplam bütçe; unreadable/unsupported/değişen dosyalar ayrı sayaç                                |
+| Görev | Durum | İş                                                                                                                                        | Kabul ölçütü                                                                                                                                                                                                                 |
+| ----- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F4-L0 | ⏳    | Ölçüm: hash throughput (8/50/256/1024 MiB), parça DOM residency katsayısı, sınır taraması hızı, **kullanıcı korpusu şekil anketi**        | Dört kayıt mevcut JSON şemasıyla `docs/xml/f0/`'a girer; relative MAD mevcut 0,15 tavanının altında. Korpus anketi olmadan F4-L4'ün değeri hipotezdir                                                                        |
+| F4-L1 | ✅    | `mode` her yanıt zarfında ve `list_documents`'ın her girdisinde; tek knob, türetilmiş kapasiteler; worker import sınırının genişletilmesi | Her yanıt `mode` taşır; `describe_document.limits` knob'u ve türetilenleri bildirir; `modeFor` toplam ve monoton; hiçbir input provider kaydedilmiyor testle sabit. Davranış değişmez, saf ek                                |
+| F4-L2 | ✅    | Sınır tarayıcısı saf fonksiyon olarak; üretime bağlanmaz                                                                                  | **Diferansiyel oracle**: her kayıt-şekilli fixture'da tarayıcının aralıkları tek tek parse edilince tam DOM'un sonucuyla aynı değer ve aynı `occurrence` dizisi. Beş düşmanca fixture geçer. UTF-16 açık kodla reddedilir    |
+| F4-L3 | ✅    | Worker'da parça parse; tavan değişmez                                                                                                     | Zorlamalı parçalı anahtarla 8 MiB fixture, kalıcı yolun zarfıyla `mode`, `totalItemsExact` ve `nodeId` dışında derin eşit. Kayıt `occurrence` taşır, adres taşımaz                                                           |
+| F4-L4 | ✅    | 8 MiB → 50 MiB; C++ değişmez                                                                                                              | 40 MiB kayıt-şekilli fixture doğru cevaplanır; 40 MiB düzensiz ağaç `unsupported` + düzeltme önerisi; bütçeyi tek başına aşan kayıt açık hata; global işlemler `unsupported`, yaklaşık sonuç yok                             |
+| F4-L5 | ✅    | Byte ipuçlu cursor                                                                                                                        | Sayfa gecikmesi sayfa numarasından bağımsız; exactly-once korunur; sahte `b` fuzz'ı hiçbir zaman ipuçsuz yolun üretmeyeceği bir satır vermez                                                                                 |
+| F4-L6 | ✅    | `file-core` kaynak sözleşmesi — **F6-08 öncesi son tarih**                                                                                | Public API aralık destekli kaynağı ifade edebiliyor; iki sunucu da derleniyor; dört paket yeşil; `bytes` bir minor boyunca uyumluluk yolu olarak duruyor                                                                     |
+| F4-L7 | ◐     | Tek native release: bütçe tavanı + `readRange` + `digest`                                                                                 | Kod indi ve yerelde yeşil: `readRange` `read` ile aynı `file_changed` davranışını veriyor, `digest` tam dosya SHA-256'sına eşit, bütçe alanının genişliği `static_assert` ile bağlı. **Beş platform × Node 22/24 koşulmadı** |
+| F4-L8 | ⏳    | 1 GB                                                                                                                                      | 1 GB kayıt-şekilli fixture'da `describe_document` ve tam sayfalama yürüyüşü exactly-once ile tamamlanır, peak RSS ilan edilen bütçenin altında; 1 GB düzensiz ağaç `unsupported`                                             |
+| F4-06 | ⏳    | Çoklu belge araması (`search_documents`)                                                                                                  | **Korundu, kapsamı değişmedi.** Bu kapı dizisinden bağımsızdır; sırası L8 sonrasıdır. Artımlı dosya keşfi + dosya başı ve toplam bütçe; unreadable/unsupported/değişen dosyalar ayrı sayaç                                   |
+
+## Uygulamada kapı sırasından sapılan yerler
+
+Üç sapma oldu ve üçü de [F4 kapanışında](../xml-f4-kapanis.md) ölçümle kayıtlı.
+
+**F4-L7 ikiye bölündü.** JS ayağı (L7-A) — native op yüzeyi, `digest` dikişi ve
+damga formülü — CI istemediği için önden indi. L7-B'de `secure.cc` de indi:
+`readRange`, `digest`, ABI'nin iki açık slotu ve bütçe genişliği assert'i.
+Bekleyen tek şey beş platformluk prebuild turudur. K19-10'un "tek release" kuralı
+bozulmadı: hâlâ tek bir native release olacak, yalnız kodu ondan önce yazıldı.
+
+**F4-L5'in kapsamı büyüdü.** M30 ölçtü: span tablosu `maxItemVisits` bütçesinde
+kesiliyor, yani belgenin 50 bininci kaydından sonrası erişilemiyor. Byte ipucu
+bu yüzden bir gecikme optimizasyonu değil, pencereyi ilerleten **doğruluk
+mekanizması** oldu. F4-L8'in tam sayfalama yürüyüşü doğrudan buna bağlı.
+
+**F4-L2 bir ret daha kazandı.** M31: sentetik parça XML bildirimini kaybediyor,
+yani UTF-8 dışı **bildirilmiş** encoding sessizce yanlış metin üretirdi. K19-7
+yalnız UTF-16'yı reddediyordu; [K20-3](../../kararlar/020-parcali-kademe-yuzeyi.md)
+listeyi genişletti.
 
 ## Eski görev kimliklerinin devri
 

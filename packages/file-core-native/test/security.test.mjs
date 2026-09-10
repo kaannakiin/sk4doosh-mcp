@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { mkdtemp, mkdir, writeFile, rm, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -70,6 +71,75 @@ test("traversal budgets count unsupported entries and bound depth/time", async (
         scanReason: large.reason,
         peakRssKiB: process.resourceUsage().maxRSS,
       }),
+    );
+  } finally {
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
+test("ranged reads and digests agree with the whole-file reference", async () => {
+  const path = await realpath(await mkdtemp(join(tmpdir(), "native-range-")));
+  try {
+    const root = openRoot(path);
+    const budget = 1024 * 1024;
+    /**
+     * The sizes straddle the SHA-256 padding edges (55/56/63/64) and the
+     * 64 KiB read window: a hand-written hash or a short pread passes every
+     * other size and fails only here.
+     */
+    for (const size of [
+      0, 1, 54, 55, 56, 57, 63, 64, 65, 119, 120, 127, 128, 1000, 65535, 65536,
+      65537, 131072, 200000,
+    ]) {
+      const bytes = randomBytes(size);
+      const name = `f${size}`;
+      await writeFile(join(path, name), bytes);
+      const whole = await root.read(name, budget);
+      assert.deepEqual(whole.bytes, bytes);
+      const hashed = await root.digest(name, budget);
+      assert.deepEqual(
+        hashed.digest,
+        createHash("sha256").update(bytes).digest(),
+      );
+      assert.equal(hashed.size, size);
+      assert.equal(hashed.modifiedMs, whole.modifiedMs);
+      for (const [offset, length] of [
+        [0, size],
+        [0, 0],
+        [0, 1],
+        [Math.floor(size / 2), 7],
+        [size, 10],
+        [size + 100, 10],
+        [0, size + 50],
+        [1, size],
+      ]) {
+        const start = Math.min(offset, size);
+        const range = await root.readRange(name, offset, length, budget);
+        assert.deepEqual(
+          range.bytes,
+          bytes.subarray(start, Math.min(start + length, size)),
+        );
+        assert.equal(range.offset, start);
+        assert.equal(range.size, size);
+        assert.equal(range.modifiedMs, whole.modifiedMs);
+      }
+    }
+    await mkdir(join(path, "directory"));
+    for (const read of [
+      (target, max) => root.read(target, max),
+      (target, max) => root.readRange(target, 0, 10, max),
+      (target, max) => root.digest(target, max),
+    ]) {
+      await assert.rejects(read("f1000", 100), { code: "file_too_large" });
+      await assert.rejects(read("absent", 100), { code: "file_not_found" });
+      await assert.rejects(read("directory", 100), { code: "not_a_file" });
+      await assert.rejects(read("../escape", 100), {
+        code: "path_outside_root",
+      });
+    }
+    await assert.rejects(
+      root.readRange("f0", 50 * 1024 * 1024 + 1, 1, 100),
+      TypeError,
     );
   } finally {
     await rm(path, { recursive: true, force: true });

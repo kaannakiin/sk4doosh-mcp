@@ -1,6 +1,6 @@
 {
   "name": "@sk-mcp/file-core-native",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Handle-relative filesystem access for file-core (Node-API).",
   "type": "module",
   "license": "MIT",

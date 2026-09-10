@@ -72,6 +72,7 @@ düzenlenmez. 015'in kuralı: **tüketiciye görünen sözleşme değişikliği 
 | [017](kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md)      | XML düğüm modeli, cursor bağı, yanıt sayfası                   |
 | [018](kararlar/018-xpath-ve-kayit-projeksiyonu.md)            | XPath sözleşmesi, kayıt projeksiyonu, sayısal politika         |
 | [019](kararlar/019-buyuk-dosya-ve-kademe.md)                  | Büyük dosya, kademe ve kayıt parçalama                         |
+| [020](kararlar/020-parcali-kademe-yuzeyi.md)                  | Parçalı kademenin tüketiciye görünen yüzeyi                    |
 
 ## fazlar/ — HTTP kataloğu ürün hattı
 

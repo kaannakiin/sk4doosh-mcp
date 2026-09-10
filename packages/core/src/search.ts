@@ -21,8 +21,12 @@ const lower = /\p{Ll}/u;
 
 interface IndexedDocument {
   readonly name: string;
-  readonly terms: Map<string, number>;
   readonly length: number;
+}
+
+interface MutablePostingList {
+  readonly documentIds: number[];
+  readonly frequencies: number[];
 }
 
 export function foldToken(text: string): string {
@@ -83,27 +87,54 @@ function accumulate(
   }
 }
 
-function frequency(document: IndexedDocument, queryTerm: string): number {
-  if (queryTerm.length < prefixMinimumLength) {
-    return document.terms.get(queryTerm) ?? 0;
-  }
-  let total = 0;
-  for (const [term, value] of document.terms) {
-    if (term.startsWith(queryTerm)) {
-      total += value;
-    }
-  }
-  return total;
-}
-
 const ordinal = (a: string, bb: string): number =>
   a < bb ? -1 : a > bb ? 1 : 0;
+
+function lowerBound(values: readonly string[], target: string): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    const value = values[middle] as string;
+    if (value < target) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
+}
+
+function addPostingFrequencies(
+  totals: Float64Array,
+  touchedDocumentIds: number[],
+  postingDocumentIds: Uint32Array,
+  postingFrequencies: Float64Array,
+  start: number,
+  end: number,
+): void {
+  for (let index = start; index < end; index++) {
+    const documentId = postingDocumentIds[index] as number;
+    const frequency = postingFrequencies[index] as number;
+    if (totals[documentId] === 0) {
+      touchedDocumentIds.push(documentId);
+    }
+    totals[documentId] = (totals[documentId] as number) + frequency;
+  }
+}
 
 export class ToolIndex {
   private readonly documents: IndexedDocument[] = [];
   private readonly averageLength: number;
+  private readonly ordinalDocumentIds: Uint32Array;
+  private readonly ordinalRanks: Uint32Array;
+  private readonly postingDocumentIds: Uint32Array;
+  private readonly postingFrequencies: Float64Array;
+  private readonly postingOffsets: Uint32Array;
+  private readonly vocabulary: readonly string[];
 
   constructor(documents: Iterable<SearchDocument>) {
+    const mutablePostings = new Map<string, MutablePostingList>();
     for (const document of documents) {
       const terms = new Map<string, number>();
       accumulate(terms, document.name, nameWeight);
@@ -116,13 +147,61 @@ export class ToolIndex {
       for (const value of terms.values()) {
         length += value;
       }
-      this.documents.push({ name: document.name, terms, length });
+      const documentId = this.documents.length;
+      this.documents.push({ name: document.name, length });
+      for (const [term, frequency] of terms) {
+        let posting = mutablePostings.get(term);
+        if (posting === undefined) {
+          posting = { documentIds: [], frequencies: [] };
+          mutablePostings.set(term, posting);
+        }
+        posting.documentIds.push(documentId);
+        posting.frequencies.push(frequency);
+      }
     }
     this.averageLength =
       this.documents.length === 0
         ? 0
         : this.documents.reduce((sum, d) => sum + d.length, 0) /
           this.documents.length;
+    const ordinalDocumentIds = this.documents.map(
+      (_, documentId) => documentId,
+    );
+    ordinalDocumentIds.sort((left, right) =>
+      ordinal(
+        (this.documents[left] as IndexedDocument).name,
+        (this.documents[right] as IndexedDocument).name,
+      ),
+    );
+    this.ordinalDocumentIds = Uint32Array.from(ordinalDocumentIds);
+    this.ordinalRanks = new Uint32Array(this.documents.length);
+    for (const [rank, documentId] of ordinalDocumentIds.entries()) {
+      this.ordinalRanks[documentId] = rank;
+    }
+    this.vocabulary = [...mutablePostings.keys()].sort(ordinal);
+    let postingCount = 0;
+    for (const term of this.vocabulary) {
+      const posting = mutablePostings.get(term) as MutablePostingList;
+      postingCount += posting.documentIds.length;
+    }
+    this.postingDocumentIds = new Uint32Array(postingCount);
+    this.postingFrequencies = new Float64Array(postingCount);
+    this.postingOffsets = new Uint32Array(this.vocabulary.length + 1);
+    let postingIndex = 0;
+    for (const [vocabularyIndex, term] of this.vocabulary.entries()) {
+      this.postingOffsets[vocabularyIndex] = postingIndex;
+      const posting = mutablePostings.get(term) as MutablePostingList;
+      for (let index = 0; index < posting.documentIds.length; index++) {
+        this.postingDocumentIds[postingIndex] = posting.documentIds[
+          index
+        ] as number;
+        this.postingFrequencies[postingIndex] = posting.frequencies[
+          index
+        ] as number;
+        postingIndex++;
+      }
+    }
+    this.postingOffsets[this.vocabulary.length] = postingIndex;
   }
 
   get count(): number {
@@ -135,45 +214,90 @@ export class ToolIndex {
     }
     const queryTerms = tokenize(query);
     if (queryTerms.length === 0) {
-      return this.documents
-        .map((d) => d.name)
-        .sort(ordinal)
-        .slice(0, limit);
+      const names: string[] = [];
+      const count = Math.min(limit, this.ordinalDocumentIds.length);
+      for (let index = 0; index < count; index++) {
+        const documentId = this.ordinalDocumentIds[index] as number;
+        names.push((this.documents[documentId] as IndexedDocument).name);
+      }
+      return names;
     }
 
-    const matchingDocuments = new Map<string, number>();
+    const frequencies = new Float64Array(this.documents.length);
+    const scores = new Float64Array(this.documents.length);
+    const scoredDocumentIds: number[] = [];
     for (const term of queryTerms) {
-      matchingDocuments.set(
-        term,
-        this.documents.filter((d) => frequency(d, term) > 0).length,
-      );
-    }
-
-    const scored: Array<{ name: string; score: number }> = [];
-    for (const document of this.documents) {
-      let score = 0;
-      for (const term of queryTerms) {
-        const tf = frequency(document, term);
-        if (tf <= 0) {
-          continue;
+      const matchingDocumentIds: number[] = [];
+      if (term.length < prefixMinimumLength) {
+        const vocabularyIndex = lowerBound(this.vocabulary, term);
+        if (this.vocabulary[vocabularyIndex] === term) {
+          addPostingFrequencies(
+            frequencies,
+            matchingDocumentIds,
+            this.postingDocumentIds,
+            this.postingFrequencies,
+            this.postingOffsets[vocabularyIndex] as number,
+            this.postingOffsets[vocabularyIndex + 1] as number,
+          );
         }
-        const df = matchingDocuments.get(term) ?? 0;
-        const idf = Math.log(
-          1 + (this.documents.length - df + 0.5) / (df + 0.5),
-        );
+      } else {
+        for (
+          let index = lowerBound(this.vocabulary, term);
+          index < this.vocabulary.length;
+          index++
+        ) {
+          const candidate = this.vocabulary[index] as string;
+          if (!candidate.startsWith(term)) {
+            break;
+          }
+          addPostingFrequencies(
+            frequencies,
+            matchingDocumentIds,
+            this.postingDocumentIds,
+            this.postingFrequencies,
+            this.postingOffsets[index] as number,
+            this.postingOffsets[index + 1] as number,
+          );
+        }
+      }
+      const documentFrequency = matchingDocumentIds.length;
+      if (documentFrequency === 0) {
+        continue;
+      }
+      const idf = Math.log(
+        1 +
+          (this.documents.length - documentFrequency + 0.5) /
+            (documentFrequency + 0.5),
+      );
+      for (const documentId of matchingDocumentIds) {
+        const tf = frequencies[documentId] as number;
+        const document = this.documents[documentId] as IndexedDocument;
         const normalized =
           (tf * (k1 + 1)) /
           (tf + k1 * (1 - b + (b * document.length) / this.averageLength));
-        score += idf * normalized;
-      }
-      if (score > 0) {
-        scored.push({ name: document.name, score });
+        if (scores[documentId] === 0) {
+          scoredDocumentIds.push(documentId);
+        }
+        scores[documentId] = (scores[documentId] as number) + idf * normalized;
+        frequencies[documentId] = 0;
       }
     }
 
-    return scored
-      .sort((x, y) => y.score - x.score || ordinal(x.name, y.name))
+    return scoredDocumentIds
+      .sort((left, right) => {
+        const scoreDifference =
+          (scores[right] as number) - (scores[left] as number);
+        if (scoreDifference !== 0) {
+          return scoreDifference;
+        }
+        return (
+          (this.ordinalRanks[left] as number) -
+          (this.ordinalRanks[right] as number)
+        );
+      })
       .slice(0, limit)
-      .map((s) => s.name);
+      .map(
+        (documentId) => (this.documents[documentId] as IndexedDocument).name,
+      );
   }
 }
