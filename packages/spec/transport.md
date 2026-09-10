@@ -1,6 +1,6 @@
 # Transport and OAuth 2.1
 
-> Status: **normative** — validated by two independent implementations (the ASP.NET T1-T15 and Nest N1-N6 / G1-G2 matrices, plus `apps/example-agent-client` against both demos).
+> Status: **normative** — validated by two independent implementations (the ASP.NET T1-T15 and Nest N1-N6 / G1-G2 matrices, plus `sdks/nestjs/samples/agent-client` against both demos).
 
 Defines what sk-mcp adds on top of the Streamable HTTP transport: a `tools/list_changed` notification when the catalog changes, and RFC 9728 Protected Resource Metadata (PRM) with 401 decoration. Session management, Origin/CORS/TLS, and authorization itself (whether auth is required) are the **host's** design — ASP.NET and Express already offer first-class idioms for those; sk-mcp does not wrap them and only adds the two things that have no idiom.
 
@@ -78,25 +78,25 @@ Scope is fully **delegated** to the host: `ScopesSupported` is passed through in
 
 ## SDK parity
 
-| Topic                                                                                  | .NET test | Nest test                                                        |
-| -------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------- |
-| PRM anonymous, RFC 9728 shape                                                          | T1        | `transport.spec.ts` (N1–N6)                                      |
-| No bearer → 401 plus `resource_metadata`                                               | T2        | `transport.spec.ts` (N1–N6)                                      |
-| Invalid token → 401, merged into the existing challenge                                | T3        | `transport.spec.ts` (N1–N6)                                      |
-| A wrong audience is rejected                                                           | T4        | `transport.spec.ts` (N1–N6)                                      |
-| The issued token's `aud` equals the MCP resource URL                                   | T6        | `transport.spec.ts` (N1–N6)                                      |
-| The full OAuth flow (DCR → PKCE → token → `search_tools`)                              | T5        | End to end with `apps/example-agent-client` (against both demos) |
-| On a custom-middleware host, the body is preserved and a challenge is added            | T7        | — (the simulated host is .NET-specific)                          |
-| With `ResourceServer` unconfigured, no PRM and no decoration at all                    | T8        | `transport.spec.ts` (N1–N6)                                      |
-| A stateful session receives `tools/list_changed` after `ReloadAsync`                   | T9        | `transport.spec.ts` (N1–N6)                                      |
-| In stateless mode, no notification and no error                                        | T10       | `transport.spec.ts` (N1–N6)                                      |
-| `initialize` declares `tools.listChanged`                                              | T11       | `transport.spec.ts` (N1–N6)                                      |
-| `tools/list` carries the `_meta` generation and it increments after a change           | T12       | `transport.spec.ts` (N1–N6)                                      |
-| With the host's own `AddMcp`/`mcpAuthMetadataRouter`, no duplicate `resource_metadata` | T13       | `transport.spec.ts` (N1–N6)                                      |
-| `.RequireAuthorization()` blocks an anonymous `initialize`                             | T14       | `transport.spec.ts` (N1–N6)                                      |
-| Without `ResourceServer.Metadata.Resource`, validation fails                           | T15       | `transport.spec.ts` (N1–N6)                                      |
+| Topic                                                                                  | .NET test | Nest test                                                               |
+| -------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------- |
+| PRM anonymous, RFC 9728 shape                                                          | T1        | `transport.spec.ts` (N1–N6)                                             |
+| No bearer → 401 plus `resource_metadata`                                               | T2        | `transport.spec.ts` (N1–N6)                                             |
+| Invalid token → 401, merged into the existing challenge                                | T3        | `transport.spec.ts` (N1–N6)                                             |
+| A wrong audience is rejected                                                           | T4        | `transport.spec.ts` (N1–N6)                                             |
+| The issued token's `aud` equals the MCP resource URL                                   | T6        | `transport.spec.ts` (N1–N6)                                             |
+| The full OAuth flow (DCR → PKCE → token → `search_tools`)                              | T5        | End to end with `sdks/nestjs/samples/agent-client` (against both demos) |
+| On a custom-middleware host, the body is preserved and a challenge is added            | T7        | — (the simulated host is .NET-specific)                                 |
+| With `ResourceServer` unconfigured, no PRM and no decoration at all                    | T8        | `transport.spec.ts` (N1–N6)                                             |
+| A stateful session receives `tools/list_changed` after `ReloadAsync`                   | T9        | `transport.spec.ts` (N1–N6)                                             |
+| In stateless mode, no notification and no error                                        | T10       | `transport.spec.ts` (N1–N6)                                             |
+| `initialize` declares `tools.listChanged`                                              | T11       | `transport.spec.ts` (N1–N6)                                             |
+| `tools/list` carries the `_meta` generation and it increments after a change           | T12       | `transport.spec.ts` (N1–N6)                                             |
+| With the host's own `AddMcp`/`mcpAuthMetadataRouter`, no duplicate `resource_metadata` | T13       | `transport.spec.ts` (N1–N6)                                             |
+| `.RequireAuthorization()` blocks an anonymous `initialize`                             | T14       | `transport.spec.ts` (N1–N6)                                             |
+| Without `ResourceServer.Metadata.Resource`, validation fails                           | T15       | `transport.spec.ts` (N1–N6)                                             |
 
-On the Nest side the granular test-to-concept mapping lives in `transport.spec.ts` itself (an implementation detail); in both SDKs the full OAuth round trip is validated not inside the SDK's own test suite but against the running demo with [apps/example-agent-client](../../apps/example-agent-client) — which on the dotnet side holds **in addition to** T5's TestServer run inside xunit, not instead of it.
+On the Nest side the granular test-to-concept mapping lives in `transport.spec.ts` itself (an implementation detail); in both SDKs the full OAuth round trip is validated not inside the SDK's own test suite but against the running demo with [sdks/nestjs/samples/agent-client](../../sdks/nestjs/samples/agent-client) — which on the dotnet side holds **in addition to** T5's TestServer run inside xunit, not instead of it.
 
 ## The demo authorization server
 

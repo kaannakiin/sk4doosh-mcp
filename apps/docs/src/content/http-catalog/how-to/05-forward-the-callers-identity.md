@@ -68,7 +68,7 @@ model.
 Call an endpoint that echoes the caller. The samples in this repository have one:
 
 ```bash
-SKMCP_USER=alice node apps/example-agent-client/dist/main.js \
+SKMCP_USER=alice node sdks/nestjs/samples/agent-client/dist/main.js \
   --scenario smoke --query identity --tool orders_me --arguments '{}'
 ```
 

@@ -95,7 +95,7 @@ The example client ships this exact loop as a scenario. It generates deliberatel
 from the loaded schema, asserts the envelope, repairs using only `fields`, and calls again:
 
 ```bash
-node apps/example-agent-client/dist/main.js --scenario validation-retry
+node sdks/nestjs/samples/agent-client/dist/main.js --scenario validation-retry
 ```
 
 It exits `0` when the repaired call returns a `2xx`, and `1` if any assertion fails — including its

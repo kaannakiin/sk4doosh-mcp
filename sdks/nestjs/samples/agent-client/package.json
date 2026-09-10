@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/example-agent-client",
+  "name": "@sk-mcp/agent-client",
   "version": "0.0.0",
   "private": true,
   "type": "module",

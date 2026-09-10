@@ -94,31 +94,6 @@ importers:
         specifier: ^8.2.2
         version: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(sugarss@5.0.1(postcss@8.5.26))
 
-  apps/example-agent-client:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.30.0
-        version: 1.30.0(supports-color@7.2.0)(zod@4.5.4)
-    devDependencies:
-      '@sk-mcp/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@sk-mcp/eslint-config':
-        specifier: workspace:*
-        version: link:../../packages/eslint-config
-      '@sk-mcp/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
-      '@types/node':
-        specifier: ^24.3.0
-        version: 24.13.3
-      eslint:
-        specifier: 10.9.1
-        version: 10.9.1(jiti@2.7.0)(supports-color@7.2.0)
-      typescript:
-        specifier: 7.0.2
-        version: 7.0.2
-
   packages/conformance:
     devDependencies:
       '@sk-mcp/spec':
@@ -418,6 +393,31 @@ importers:
       zod:
         specifier: ^3.25.76
         version: 3.25.76
+
+  sdks/nestjs/samples/agent-client:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.0
+        version: 1.30.0(supports-color@7.2.0)(zod@4.5.4)
+    devDependencies:
+      '@sk-mcp/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@sk-mcp/eslint-config':
+        specifier: workspace:*
+        version: link:../../../../packages/eslint-config
+      '@sk-mcp/typescript-config':
+        specifier: workspace:*
+        version: link:../../../../packages/typescript-config
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.3
+      eslint:
+        specifier: 10.9.1
+        version: 10.9.1(jiti@2.7.0)(supports-color@7.2.0)
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
 
   sdks/nestjs/samples/demo-api:
     dependencies:

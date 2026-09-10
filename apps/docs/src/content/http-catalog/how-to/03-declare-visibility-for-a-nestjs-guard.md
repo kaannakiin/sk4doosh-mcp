@@ -101,7 +101,7 @@ sample, whose four guards are all undeclared:
 
 ```bash
 SKMCP_BASE_URL=http://127.0.0.1:3000 SKMCP_AUTH=token SKMCP_USER=alice \
-  node apps/example-agent-client/dist/main.js --scenario smoke --query "create order"
+  node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query "create order"
 ```
 
 ```text

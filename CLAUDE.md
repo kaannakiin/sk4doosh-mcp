@@ -56,7 +56,7 @@
 
 - DemoApi: `dotnet run` — located in `sdks/dotnet/samples/DemoApi`, listens on `http://127.0.0.1:5178`; MCP endpoint `/mcp` (requires a bearer token); demo shortcut `POST /auth/token {"user":"alice"|"bob"|"carol"}`; full OAuth 2.1 flow via the in-repo `samples/DemoAuthServer` mounted at `/oauth` (PRM at `/.well-known/oauth-protected-resource/mcp`)
 
-- example-agent-client: `node apps/example-agent-client/dist/main.js --scenario smoke|validation-retry|error-envelope`; `SKMCP_AUTH=oauth|token|bearer` (`bearer` reads `SKMCP_TOKEN`, for a real backend), `SKMCP_USER`, `SKMCP_BASE_URL`
+- example-agent-client: `node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke|validation-retry|error-envelope`; `SKMCP_AUTH=oauth|token|bearer` (`bearer` reads `SKMCP_TOKEN`, for a real backend), `SKMCP_USER`, `SKMCP_BASE_URL`
 
 - Nest demo: located in `sdks/nestjs/samples/demo-api`; run with `node dist/main.js` (first run `pnpm turbo run build --filter=@sk-mcp/demo-nestjs`); same `/mcp` + `/auth/token` contract
 

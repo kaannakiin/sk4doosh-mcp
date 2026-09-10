@@ -17,18 +17,18 @@ so parity is a test result rather than a claim.
 
 ## Repository map
 
-| Path                                                   | Role                                                                                                             |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| [packages/spec](packages/spec)                         | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages               |
-| [packages/conformance](packages/conformance)           | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                |
-| [packages/core](packages/core)                         | TS reference implementation; spec types are generated, never hand-written. Internal                              |
-| [sdks/dotnet](sdks/dotnet)                             | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                                      |
-| [sdks/nestjs](sdks/nestjs)                             | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md)) |
-| [packages/file-core](packages/file-core)               | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                     |
-| [packages/excel-mcp](packages/excel-mcp)               | Standalone published product: an MCP server that reads local Excel workbooks                                     |
-| [packages/xml-mcp](packages/xml-mcp)                   | Standalone published product: an MCP server that reads local XML documents                                       |
-| [apps/docs](apps/docs)                                 | The documentation site. English, and the project's public face                                                   |
-| [apps/example-agent-client](apps/example-agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                             |
+| Path                                                                 | Role                                                                                                             |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [packages/spec](packages/spec)                                       | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages               |
+| [packages/conformance](packages/conformance)                         | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                |
+| [packages/core](packages/core)                                       | TS reference implementation; spec types are generated, never hand-written. Internal                              |
+| [sdks/dotnet](sdks/dotnet)                                           | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                                      |
+| [sdks/nestjs](sdks/nestjs)                                           | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md)) |
+| [sdks/nestjs/samples/agent-client](sdks/nestjs/samples/agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                             |
+| [packages/file-core](packages/file-core)                             | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                     |
+| [packages/excel-mcp](packages/excel-mcp)                             | Standalone published product: an MCP server that reads local Excel workbooks                                     |
+| [packages/xml-mcp](packages/xml-mcp)                                 | Standalone published product: an MCP server that reads local XML documents                                       |
+| [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                   |
 
 `packages/eslint-config` and `packages/typescript-config` are internal configuration packages.
 `packages/xml-lab` is an evidence harness with no shipping surface.
