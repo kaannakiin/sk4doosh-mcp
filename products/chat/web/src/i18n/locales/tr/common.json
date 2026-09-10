@@ -1,0 +1,24 @@
+{
+  "app": {
+    "title": "Sohbet",
+    "subtitle": "@chat/api'ye bağlı boş bir sohbet kabuğu"
+  },
+  "composer": {
+    "placeholder": "Bir mesaj yaz",
+    "send": "Gönder",
+    "sending": "Gönderiliyor"
+  },
+  "conversation": {
+    "empty": "Henüz mesaj yok",
+    "you": "Sen",
+    "assistant": "Asistan"
+  },
+  "errors": {
+    "network": "API'ye ulaşılamadı"
+  },
+  "locale": {
+    "label": "Dil",
+    "en": "English",
+    "tr": "Türkçe"
+  }
+}

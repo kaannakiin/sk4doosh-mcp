@@ -29,5 +29,12 @@
     "//#format:check": {
       "cache": false
     }
+  },
+  "boundaries": {
+    "tags": {
+      "chat": {
+        "dependents": { "allow": ["chat"] }
+      }
+    }
   }
 }

@@ -1,0 +1,28 @@
+import { isLocale } from "@chat/contracts";
+import { Outlet, createFileRoute, notFound } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { I18nextProvider } from "react-i18next";
+
+import { createI18n } from "../i18n/create-instance";
+
+export const Route = createFileRoute("/$locale")({
+  beforeLoad: ({ params }) => {
+    if (!isLocale(params.locale)) {
+      throw notFound();
+    }
+
+    return { locale: params.locale };
+  },
+  component: LocaleLayout,
+});
+
+function LocaleLayout() {
+  const { locale } = Route.useRouteContext();
+  const i18n = useMemo(() => createI18n(locale), [locale]);
+
+  return (
+    <I18nextProvider i18n={i18n}>
+      <Outlet />
+    </I18nextProvider>
+  );
+}

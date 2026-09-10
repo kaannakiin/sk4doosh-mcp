@@ -1,0 +1,14 @@
+{
+  "failed": "The request body is invalid",
+  "fields": {
+    "content": "Message",
+    "root": "Request body"
+  },
+  "issues": {
+    "fallback": "{{field}} is invalid",
+    "invalid_type": "{{field}} has an invalid type",
+    "invalid_value": "{{field}} has an invalid value",
+    "too_big": "{{field}} must be at most {{limit}} characters",
+    "too_small": "{{field}} must be at least {{limit}} characters"
+  }
+}

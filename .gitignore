@@ -43,3 +43,5 @@ yarn-error.log*
 
 # Local-only, non-workspace projects
 local/
+
+.playwright-mcp
