@@ -18,7 +18,7 @@ Faz 5 planının ilk hali "bu fazın sonunda spec v1.0 olarak tag'lenir" diyordu
 
 v1.0 semver'de geri uyumluluk taahhüdüdür. Şu an iki gerekçeyle erken:
 
-- [sema-donusum-kurallari.md](../../packages/spec/sema-donusum-kurallari.md)'nin kendi "Pinlenmemiş alanlar" bölümü üç alanı açıkça tanımsız bırakıyor: generic wrapper soyma, derinlik sınırında inline'lama, `$ref` ile recursion kırma.
+- [schema-conversion-rules.md](../../packages/spec/schema-conversion-rules.md)'nin kendi "Pinlenmemiş alanlar" bölümü üç alanı açıkça tanımsız bırakıyor: generic wrapper soyma, derinlik sınırında inline'lama, `$ref` ile recursion kırma.
 - Spec'in taşınabilirliği henüz **tek** implementasyonla sınandı. Faz 6'da NestJS keşif/arama/görünürlük aynı fixture korpusuna karşı geçtiğinde spec gerçekten iki bağımsız implementasyon tarafından doğrulanmış olur — v1.0'ın anlamlı olduğu eşik budur.
 
 Karar: `spec-v1.0` tag'i **Faz 6 sonunda** kesilir. Alpha döneminde spec 0.x olarak kalır.

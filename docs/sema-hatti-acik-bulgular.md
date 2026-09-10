@@ -8,7 +8,7 @@
 > [karar 013](kararlar/013-govde-koku-tel-bicimi.md)) ve çalışan kuralların tamamı artık
 > `packages/conformance/schema-simplification/` korpusuyla iki implementasyonda pinli. Bu belge
 > tarihsel kayıt olarak durur; güncel kural metni
-> [sema-donusum-kurallari.md](../packages/spec/sema-donusum-kurallari.md).
+> [schema-conversion-rules.md](../packages/spec/schema-conversion-rules.md).
 
 Tarih: 2026-09-03. Kapsam: endpoint → `ToolDefinition.inputSchema` hattı. Kaynak: Faz 4 sonrası yapılan denetim; her bulgu gerçek `JsonSchemaMapper` derlenip koşturularak ya da canlı MCP oturumuyla kanıtlandı. Bu döküman yalnız **sorunu** kaydeder; çözüm ve sıralama açık bırakılmıştır.
 
@@ -50,7 +50,7 @@ Tool `search_tools`'ta normal görünüyor, argümansız bir tool gibi duruyor, 
 
 ### 3. Gövde alanı ile parametre adı çakışması sessizce bozuk şema üretiyor
 
-Route/query/header parametresi ile gövde alanı aynı ada sahipse `ToolDefinitionFactory.BuildInputSchema` gövdeden geleni üzerine yazıyor: parametrenin tipi ve açıklaması kayboluyor. [arguman-eslemesi.md](../packages/spec/arguman-eslemesi.md) bunun tool üretim anında **fail-fast hata** olmasını söylüyor; kod bunu tespit etmiyor ve bozuk tool listelenmeye devam ediyor.
+Route/query/header parametresi ile gövde alanı aynı ada sahipse `ToolDefinitionFactory.BuildInputSchema` gövdeden geleni üzerine yazıyor: parametrenin tipi ve açıklaması kayboluyor. [argument-mapping.md](../packages/spec/argument-mapping.md) bunun tool üretim anında **fail-fast hata** olmasını söylüyor; kod bunu tespit etmiyor ve bozuk tool listelenmeye devam ediyor.
 
 ### 4. Enum tel biçimi yanlış olabiliyor
 
@@ -69,11 +69,11 @@ Route/query/header parametresi ile gövde alanı aynı ada sahipse `ToolDefiniti
 
 ## Spec boşluğu (kusur değil, yazılmamış özellik)
 
-> 2026-09-07: `sema-donusum-kurallari.md` **yazıldı**; listedeki son madde (readonly alan düşme)
+> 2026-09-07: `schema-conversion-rules.md` **yazıldı**; listedeki son madde (readonly alan düşme)
 > hem orada Tablo 4 olarak normatif hem kodda uygulanmış durumda — ölçüldü. `schema-simplification/`
 > fixture dizini ve kalan üç madde Faz 6'nın konusu.
 
-Faz 3 planı ([plan.md](fazlar/faz-3-sema-ve-arama/plan.md)) `sema-donusum-kurallari.md` adlı normatif dosyayı ve `schema-simplification/` fixture dizinini vaat ediyordu. İkisi de repo'da yok. Dolayısıyla şu kurallar ne tanımlı ne pinlenmiş durumda ve NestJS SDK'sının uygulaması gereken bir sözleşme de mevcut değil:
+Faz 3 planı ([plan.md](fazlar/faz-3-sema-ve-arama/plan.md)) `schema-conversion-rules.md` adlı normatif dosyayı ve `schema-simplification/` fixture dizinini vaat ediyordu. İkisi de repo'da yok. Dolayısıyla şu kurallar ne tanımlı ne pinlenmiş durumda ve NestJS SDK'sının uygulaması gereken bir sözleşme de mevcut değil:
 
 - Generic wrapper soyma (`ApiResponse<T>` → `T`).
 - Derinlik sınırı ve inline etme (bugün `MaxDepth` sabiti içerikleri sessizce `{"type":"object"}`'e indiriyor).
@@ -165,7 +165,7 @@ bulunmadığı için nesne dalına düşüyor ve **üyesi olmayan bir nesne** ü
 }
 ```
 
-`sema-donusum-kurallari.md:31`'e göre `properties: {}` _bildirilmiş boş nesne_ demektir ve sınır
+`schema-conversion-rules.md:31`'e göre `properties: {}` _bildirilmiş boş nesne_ demektir ve sınır
 çıktısından (`additionalProperties: true`) ayırt edilebilir olması bilinçlidir. Sonucu:
 `allowsAdditional` `false` döner, `RequestComposer`'ın izin listesi kapanır ve o alana gönderilen
 her anahtar `unknown_argument` ile reddedilir. Yani `Dictionary<string, object>` ve `Hashtable`

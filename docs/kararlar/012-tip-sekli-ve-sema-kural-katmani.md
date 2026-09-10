@@ -7,7 +7,7 @@ n=2.
 ## Sorun: çalışan kurallar pinlenemiyordu
 
 2026-09-07 ölçümü ([sema-hatti-acik-bulgular.md](../sema-hatti-acik-bulgular.md))
-`sema-donusum-kurallari.md`'nin Tablo 2-5'inin **tamamının kodda uygulandığını** gösterdi. Gerçek
+`schema-conversion-rules.md`'nin Tablo 2-5'inin **tamamının kodda uygulandığını** gösterdi. Gerçek
 boşluk başkaydı: bu kuralların hiçbiri conformance fixture'ıyla pinli değildi, yalnız
 `SchemaMapperTests.cs` (C# reflection testleri) tutuyordu. Yani doküman "her SDK kod değil kural
 yorumlar" diyordu ama kuralın kendisi tek bir dilde yaşıyordu.
@@ -16,7 +16,7 @@ Nedeni yapısal: dönüşümün girdisi bir CLR `Type`'dır ve saf JSON fixture'
 
 ## Karar: ayrımı taşımak, kaldırmak değil
 
-`sema-donusum-kurallari.md` zaten iki katman tanımlıyordu — **bağlama** (dile özgü reflection) ve
+`schema-conversion-rules.md` zaten iki katman tanımlıyordu — **bağlama** (dile özgü reflection) ve
 **kural** (dilden bağımsız çıktı şekli). Yapılan iş bu ayrımın **sınırını** değiştirmek oldu: araya
 `packages/spec/schemas/type-shape.schema.json` girdi.
 
@@ -104,7 +104,7 @@ ekler.
 ## Yan bulgu: `object` tipli üye "hiçbir şey kabul etmiyor" diyordu
 
 Ölçümde çıktı. `object` tipli bir üye nesne dalına düşüp `{"type":"object","properties":{}}`
-üretiyordu — `sema-donusum-kurallari.md`'ye göre bu _bildirilmiş boş nesne_ demektir ve
+üretiyordu — `schema-conversion-rules.md`'ye göre bu _bildirilmiş boş nesne_ demektir ve
 `allowsAdditional` `false` döner, yani `RequestComposer`'ın izin listesi kapanır. Sonuç:
 `Dictionary<string, object>` ve `Hashtable` değerleri "hiçbir şey kabul etmiyor" olarak tarif
 ediliyordu, oysa her şeyi kabul ediyorlar. Bağlama artık `object` için `unknown` düğümü üretiyor,

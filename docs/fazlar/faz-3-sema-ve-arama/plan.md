@@ -11,7 +11,7 @@ Durum: **tamamlandı** — keşif, isimlendirme, görünürlük ve arama bu fazd
 
 ## Somut çıktılar
 
-- Spec: `sema-donusum-kurallari.md` (kurallar mümkün olduğunca **veri tablosu** olarak — her SDK kod değil kural yorumlar) + `arama-semantigi.md` (BM25 seviyesi skorlama, alan ağırlıkları, kompakt kart formatı).
+- Spec: `schema-conversion-rules.md` (kurallar mümkün olduğunca **veri tablosu** olarak — her SDK kod değil kural yorumlar) + `search-semantics.md` (BM25 seviyesi skorlama, alan ağırlıkları, kompakt kart formatı).
 - Conformance fixture'ları:
   - `schema-simplification/`: wrapper soyma, derinlik sınırı + inline, recursion `$ref`+not, readonly alan düşme — her kural için ayrı çift.
   - `search/`: alaka sıralaması + **auth filtreleme** (aynı sorgu, iki farklı kimlik → farklı sonuç listesi).

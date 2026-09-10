@@ -62,21 +62,21 @@ export class OrdersController {
   private nextId = 1;
 
   @Get("ping")
-  @McpTool({ description: "Sağlık kontrolü; kimlik gerektirmez." })
+  @McpTool({ description: "Health check; requires no identity." })
   ping(): { pong: boolean } {
     return { pong: true };
   }
 
   @Get("me")
   @UseGuards(JwtGuard)
-  @McpTool({ description: "Çağıranın kimliğini döner." })
+  @McpTool({ description: "Returns the caller's identity." })
   me(@Req() request: AuthedRequest): { name: unknown } {
     return { name: request.user?.sub };
   }
 
   @Get("orders/:id")
   @UseGuards(JwtGuard, OrdersReadGuard)
-  @McpTool({ description: "Bir siparişi id ile getirir." })
+  @McpTool({ description: "Fetches one order by id." })
   getOrder(@Param("id", ParseIntPipe) id: number): Order {
     return this.require(id);
   }
@@ -84,7 +84,8 @@ export class OrdersController {
   @Get("orders/:id/receipt")
   @UseGuards(JwtGuard)
   @McpTool({
-    description: "Siparişin fişini döner; yalnız sipariş sahibi görebilir.",
+    description:
+      "Returns an order's receipt; only the order's owner may see it.",
   })
   getReceipt(
     @Param("id", ParseIntPipe) id: number,
@@ -99,21 +100,21 @@ export class OrdersController {
 
   @Get("admin/audit")
   @UseGuards(JwtGuard, AdminRoleGuard)
-  @McpTool({ description: "Denetim kaydı; yalnız admin rolü." })
+  @McpTool({ description: "Audit log; admin role only." })
   audit(): { entries: number } {
     return { entries: this.orders.size };
   }
 
   @Get("reports/summary")
   @UseGuards(JwtGuard, BusinessHoursGuard)
-  @McpTool({ description: "Günlük özet; mesai saatleri dışında kapalı." })
+  @McpTool({ description: "Daily summary; closed outside business hours." })
   summary(): { orders: number } {
     return { orders: this.orders.size };
   }
 
   @Post("orders/:id/notes")
   @UseGuards(JwtGuard, OrdersReadGuard)
-  @McpTool({ description: "Bir siparişe not ekler." })
+  @McpTool({ description: "Adds a note to an order." })
   addOrderNote(
     @Param("id", ParseIntPipe) id: number,
     @Query("notify", new ParseBoolPipe({ optional: true }))
@@ -127,7 +128,7 @@ export class OrdersController {
 
   @Post("orders")
   @UseGuards(JwtGuard, OrdersReadGuard)
-  @McpTool({ description: "Yeni bir sipariş oluşturur." })
+  @McpTool({ description: "Creates a new order." })
   createOrder(
     @Body() body: CreateOrderDto,
     @Req() request: AuthedRequest,

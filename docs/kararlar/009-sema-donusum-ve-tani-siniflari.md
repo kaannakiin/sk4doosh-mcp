@@ -8,7 +8,7 @@ Tarih: 2026-09-03. Durum: **kabul edildi** — [sema-hatti-acik-bulgular.md](../
 
 ## Argüman çakışması neden `Fatal` değil
 
-[arguman-eslemesi.md](../../packages/spec/arguman-eslemesi.md) parametre adı ile gövde alanı adının çakışmasını "tool üretim anında fail-fast" hata sayar. Denetim, kuralın _tespit edildiğini_ ama yanlış katmanda ve yanlış şiddette olduğunu gösterdi: şablon kurulumunda fırlatılıyor, uyarıya çevriliyor, `Template` null kalıyor, **tool yine listeleniyor** ve ancak invoke anında `not_invocable` dönüyordu. Agent bozuk bir tool görüyor, çağırıyor, tur kaybediyordu.
+[argument-mapping.md](../../packages/spec/argument-mapping.md) parametre adı ile gövde alanı adının çakışmasını "tool üretim anında fail-fast" hata sayar. Denetim, kuralın _tespit edildiğini_ ama yanlış katmanda ve yanlış şiddette olduğunu gösterdi: şablon kurulumunda fırlatılıyor, uyarıya çevriliyor, `Template` null kalıyor, **tool yine listeleniyor** ve ancak invoke anında `not_invocable` dönüyordu. Agent bozuk bir tool görüyor, çağırıyor, tur kaybediyordu.
 
 Doğru şiddet `EndpointDropped`, `Fatal` değil. `Fatal` kodlar (`name_collision`, `ambiguous_selection`, `invalid_name`) her invoke'ta `EnsureValid()` üzerinden kataloğun tamamını çağrılamaz yapar. Bunlar _global_ sorunlardır: iki endpoint tek kimliğe talip olduğunda doğru yönlendirme diye bir şey yoktur. Argüman çakışması ise _lokaldir_ ve kapsanmıştır — tam olarak bir endpoint kullanılamaz, diğer her tool doğrudur.
 

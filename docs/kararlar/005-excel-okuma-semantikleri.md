@@ -209,7 +209,7 @@ Bu tur noktasız `ı`'yı (`ı`→`I`→`i`) ve `ß`'yi (`SS`) de kapsar. `Intl.
 
 Sonuç ve bilinçli tercih: `caseSensitive: false` artık **aksan-duyarsız da**; `sık` ile `sik` eşleşir. Üçüncü mod yoktur. `regex` modu **katlanmaz** — pattern bir programdır, sunucu kullanıcının programını yeniden yazmaz; `\p{`/`\P{` içeren pattern `invalid_pattern` ile reddedilir (`u` flag'i eklemek ajanların alışkanlıkla yazdığı `\-`'yi kırardı, eklememek `\p{L}`'yi sessizce literal yapardı — ikisi de ölçüldü). `find_in_sheet` hangi eşleştirmenin uygulandığını `matching` alanıyla echo'lar.
 
-**`packages/core` aynı bug'ı taşıyordu ve C# ikiziyle sessizce ayrışıyordu.** Ölçüm: `tokenize("İSTANBUL")` TS'te `["i̇stanbul"]`, C#'ta `["istanbul"]`. `arama-semantigi.md:44` hangi küçültmenin kullanılacağını söylemediği için **ikisi de spec'e uygundu** — bu bir spec boşluğuydu. Kapatıldı: kural 3 normatif fold tanımıyla değiştirildi, üç conformance fixture eklendi (50 → 53) ve iki SDK aynı commit'te düzeltildi.
+**`packages/core` aynı bug'ı taşıyordu ve C# ikiziyle sessizce ayrışıyordu.** Ölçüm: `tokenize("İSTANBUL")` TS'te `["i̇stanbul"]`, C#'ta `["istanbul"]`. `search-semantics.md:44` hangi küçültmenin kullanılacağını söylemediği için **ikisi de spec'e uygundu** — bu bir spec boşluğuydu. Kapatıldı: kural 3 normatif fold tanımıyla değiştirildi, üç conformance fixture eklendi (50 → 53) ve iki SDK aynı commit'te düzeltildi.
 
 Ama oradaki fold **excel-mcp'ninkinden farklıdır** ve olmak zorundadır: .NET `ToUpperInvariant('ı')` → `'ı'`, `"ß".ToUpperInvariant()` → `"ß"` (ölçüldü, ICU modunda). Yani `toUpperCase()` turu portable değil. Spec'teki fold turu içermez:
 

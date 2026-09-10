@@ -4,7 +4,7 @@ Tarih: 2026-08-28. Durum: **kabul edildi, kodla kanıtlandı** ([RequestTemplate
 
 ## Karar
 
-Agent'ın düz JSON argümanları deterministik algoritmayla HTTP isteğine dönüşür — normatif anlatım: [packages/spec/arguman-eslemesi.md](../../packages/spec/arguman-eslemesi.md). Dört ana kural:
+Agent'ın düz JSON argümanları deterministik algoritmayla HTTP isteğine dönüşür — normatif anlatım: [packages/spec/argument-mapping.md](../../packages/spec/argument-mapping.md). Dört ana kural:
 
 1. **Encoding pazarlıksız.** Ham yapıştırma yok: path/query percent-encode, header değerinde CR/LF/NUL reddi. `"5/../admin"` tek encode'lu segment olur (A1: sentinel `/admin` endpoint'ine asla girilmedi); `"a&admin=true"` tek parametre değeri kalır (A2); header injection dispatch'e ulaşamadan ölür (A3).
 2. **Validation backend'in; tek istisna path tip kapısı.** Semantik doğrulama backend'de çalışır. Path parametresinde tip uyuşmazlığı bizde hataya döner (A4) — aksi halde route kısıtı hatayı opak 404'e çevirirdi. Bilinmeyen argüman = hata, mesaj izinli adları listeler (A5) — agent halüsinasyonu erken yakalanır.

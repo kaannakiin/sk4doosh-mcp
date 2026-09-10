@@ -1,8 +1,14 @@
 # Schema conversion
 
 An agent knows a tool only from its `inputSchema`. This page describes how a backend type becomes
-that schema. The normative text is `packages/spec/sema-donusum-kurallari.md`; where the two differ,
-the spec wins.
+that schema.
+
+> **Source of truth.** The normative text is
+> [`packages/spec/schema-conversion-rules.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/schema-conversion-rules.md)
+> and the shape it consumes is
+> [`type-shape.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/schemas/type-shape.schema.json);
+> where the two differ, the spec wins. Its "Unpinned areas" section lists binding-layer details
+> that are not yet pinned — this page does not present those as settled.
 
 ## Two layers
 
@@ -58,10 +64,10 @@ Measured on a DemoApi endpoint:
 {
   "type": "object",
   "properties": {
-    "item": { "type": "string", "description": "Ürün adı", "minLength": 1 },
+    "item": { "type": "string", "description": "Item name", "minLength": 1 },
     "quantity": {
       "type": "integer",
-      "description": "Adet",
+      "description": "Quantity",
       "minimum": 1,
       "maximum": 100
     }

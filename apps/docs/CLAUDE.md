@@ -23,20 +23,34 @@ are no tests in this app.
 binding convention: Diátaxis four-mode taxonomy, one page = one mode, reference is generated not
 written, RFC 2119 keywords stay in `packages/spec`, every code example must have been run.
 
-Pages are markdown under `src/content/`. The directory is the Diátaxis mode:
-`tutorial/`, `how-to/`, `reference/`, `explanation/`, plus ungrouped top-level orientation pages.
-Order comes from the numeric filename prefix, the title from the first `#` line, the slug from the
-filename with that prefix stripped. Slugs must be unique across all directories — the route is a
-flat `/docs/$slug`.
+Pages are markdown under `src/content/<product>/`. The tree has two axes: the first directory is
+the **product line** (`http-catalog/`, later `excel-mcp/`, `xml-mcp/`), the second is the
+**Diátaxis mode** (`tutorial/`, `how-to/`, `reference/`, `explanation/`), plus ungrouped
+orientation pages directly under the product. Order comes from the numeric filename prefix, the
+title from the first `#` line, the slug from the filename with that prefix stripped. Slugs must be
+unique **within a product** — the route is `/docs/$product/$slug`, so two products may both have an
+`introduction`. Renumbering never changes a slug.
 
-Nothing registers a page. `src/lib/content.ts` globs the tree at build time and derives the
-sidebar; adding a file is the whole operation.
+Nothing registers a page: `src/lib/content.ts` globs the tree at build time and derives the
+sidebar. Adding a **product** is two steps — create `src/content/<id>/` with at least one page, and
+add one `{ id, label, tagline }` entry to `src/content/products.json`. No route file changes;
+`$product` is a route param, so `routeTree.gen.ts` is untouched.
+
+`pnpm --filter @sk-mcp/docs validate` (`scripts/check-content.mjs`) enforces the structural half of
+`dokuman-kurallari.md`: folder/registry agreement, mode directory names, numeric prefixes, unique
+slugs, a `# Title` on every page, the how-to/reference title patterns, and that every internal
+`/docs/...` link points at a page that exists. It runs inside `pnpm lint` and in CI's node job.
+
+**ESLint cannot enforce anything here** — the shared config includes `eslint-plugin-only-warn`, so
+every rule is a warning. Neither can `vite build`: `content.ts` runs at request time, not build
+time, so a `throw` in it fails `dev` but not `build`. The `validate` script is the only gate.
 
 ## Language
 
-Site content and UI strings are **English** — this site is sk-mcp's public face. This overrides the
-root CLAUDE.md's Turkish-prose rule, which governs `docs/` and `packages/spec/`. `dokuman-kurallari.md`
-is internal and stays Turkish. There is no i18n layer, by design.
+Site content and UI strings are **English** — this site is sk-mcp's public face, and so is
+`packages/spec`, which these pages link to as normative. The root CLAUDE.md's Turkish-prose rule
+governs `docs/` only. `dokuman-kurallari.md` is internal and stays Turkish. There is no i18n layer,
+by design.
 
 ## Style layers — the one thing that breaks silently
 

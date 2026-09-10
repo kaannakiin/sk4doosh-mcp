@@ -5,6 +5,10 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".tanstack/**"]
+    },
+    "validate": {
+      "inputs": ["scripts/check-content.mjs", "src/content/**"],
+      "outputs": []
     }
   }
 }

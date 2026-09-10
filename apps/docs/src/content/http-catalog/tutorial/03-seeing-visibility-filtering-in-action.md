@@ -117,6 +117,9 @@ Two things are worth separating in your head, because the rest of the documentat
 - Step 6 was **enforcement**. It is about what the backend permits, and it happened in your
   pipeline, not in sk-mcp.
 
-The rules behind step 5 are on [visibility decision](/docs/visibility-decision). Why the two are
+The rules behind step 5 are on [visibility decision](/docs/http-catalog/visibility-decision). Why the two are
 deliberately kept apart is on
-[why visibility is not enforcement](/docs/why-visibility-is-not-enforcement).
+[why visibility is not enforcement](/docs/http-catalog/why-visibility-is-not-enforcement).
+
+To change what a caller sees in your own backend, go to
+[how to control what a caller can see](/docs/http-catalog/control-what-a-caller-can-see).

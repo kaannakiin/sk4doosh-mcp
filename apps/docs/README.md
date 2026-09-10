@@ -9,13 +9,18 @@ pnpm turbo run build --filter=@sk-mcp/docs
 
 ## İçerik
 
-Sayfalar `src/content/*.md` altında. Dosya adı sırayı ve slug'ı, ilk `#` satırı başlığı verir
-(`01-introduction.md` → `/docs/introduction`). Sidebar `src/lib/content.ts` tarafından otomatik
-üretilir.
+Sayfalar `src/content/<ürün>/<mod>/*.md` altında; yapı iki eksenli (ürün hattı × Diátaxis modu).
+Dosya adı sırayı ve slug'ı, ilk `#` satırı başlığı verir
+(`http-catalog/00-introduction.md` → `/docs/http-catalog/introduction`). Sidebar
+`src/lib/content.ts` tarafından otomatik üretilir; ürün listesi `src/content/products.json`'dan
+gelir.
+
+Yapısal kuralları `pnpm --filter @sk-mcp/docs validate` zorlar (mod klasör adları, ürün kaydı,
+tekil slug, `# Title`, site içi link hedefleri). `pnpm lint` bunu da koşar.
 
 Site içeriği ve arayüz metinleri **İngilizce** yazılır — site sk-mcp'nin public yüzü. Repo
-kökündeki `docs/` (iç tasarım dokümanları) Türkçe kalır; CLAUDE.md'deki "prose Türkçe" kuralı
-oraya özgüdür. i18n katmanı yok: tek dil, drift yok.
+kökündeki `docs/` (iç tasarım dokümanları) Türkçe kalır; `packages/spec/` İngilizcedir çünkü site
+ona normatif kaynak olarak link verir. i18n katmanı yok: tek dil, drift yok.
 
 ## Stil katmanları
 

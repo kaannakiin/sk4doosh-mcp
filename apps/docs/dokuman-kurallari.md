@@ -14,19 +14,31 @@ Diátaxis dokümanı iki eksende böler: pratik/teorik × öğrenirken/çalış�
 | **Pratik** | **Tutorial** — elinden tutar  | **How-to** — bir görevi çözer |
 | **Teorik** | **Explanation** — neden böyle | **Reference** — ne var, kuru  |
 
-Dizin yapısı bu dört modu birebir yansıtır. Kova, dosyanın hangi klasörde olduğuyla belirlenir:
+Dizin yapısı **iki eksen** taşır: ürün hattı × mod. Birinci segment ürün, ikincisi Diátaxis
+kovasıdır — kova, dosyanın ürün klasörünün hemen altındaki hangi klasörde olduğuyla belirlenir:
 
 ```text
 src/content/
-  00-introduction.md          <- kovasız: yönlendirme sayfası, tek sayfa, kısa
-  tutorial/
-  how-to/
-  reference/
-  explanation/
+  products.json               <- ürün kaydı: id, label, tagline (dizi sırası = görünüm sırası)
+  http-catalog/
+    00-introduction.md        <- kovasız: ürünün yönlendirme sayfası, tek sayfa, kısa
+    tutorial/
+    how-to/
+    reference/
+    explanation/
+  excel-mcp/                  <- ileride: aynı yapı, kendi kovaları
 ```
 
-Sıra dosya adındaki sayıdan, başlık ilk `#` satırından gelir. Sidebar `src/lib/content.ts`
-tarafından üretilir; kayıt edilecek bir yer yoktur.
+Dört modlu taksonomi değişmedi; yalnız ağaçtaki derinliği değişti.
+
+Sıra dosya adındaki sayıdan, başlık ilk `#` satırından, slug sayı prefix'i atılmış dosya adından
+gelir. Route `/docs/<ürün>/<slug>` olduğu için slug yalnız **kendi ürünü içinde** tekil olmak
+zorundadır; iki ürün aynı `introduction` slug'ını kullanabilir. Renumber slug'ı değiştirmez —
+araya sayfa sokmak hiçbir URL'i kırmaz.
+
+Sidebar `src/lib/content.ts` tarafından üretilir. Yeni **sayfa** için kayıt edilecek bir yer
+yoktur. Yeni **ürün** için tek yer `src/content/products.json`'dır: klasörü aç, bir satır ekle.
+Yapısal her ihlali `pnpm --filter @sk-mcp/docs validate` CI'da kırar.
 
 ## Değişmez kurallar
 
@@ -40,6 +52,16 @@ En çok ihlal edilen kural. Tutorial'ın ortasına reference tablosu koymak iki 
 Aynı konu dört sayfada dört kez anlatılabilir — anlatılmalıdır da. Tekrar değildir; aynı konunun
 farklı sorulara verdiği cevaplardır. Görünürlük konusunun dört sayfası bunun örneğidir.
 
+### 1b. Bir sayfa = bir ürün hattı
+
+Bir sayfa tek bir ürün hattını anlatır; sayfanın ürünü yoludur. İki ürünü karşılaştıran bir sayfa
+yazma isteği geldiğinde o sayfa aslında iki explanation sayfasıdır — veya hiçbiri. Ortak olan şey
+ürün değil spec'tir; ortak anlatımın yeri `packages/spec/` ve repo kökündeki `docs/`'tur.
+
+Ürün klasörünün adı, ürünün paket ya da dizin adıyla eşleşir (`excel-mcp`, `xml-mcp`, `file-core`).
+`http-catalog` bilinçli istisnadır: bir paketi değil, iki SDK'ya yayılan bir yeteneği — ASP.NET Core
+ve NestJS HTTP endpoint kataloğunu — adlandırır.
+
 ### 2. Reference üretilir, yazılmaz
 
 Makine-okur kaynağı olan hiçbir şey elle yazılmaz. `packages/spec/schemas/*.schema.json` bu
@@ -50,7 +72,7 @@ hattı yoksa bile sayfa **şemaya link verir** ve alan listesini şemadan kopyal
 
 ### 3. RFC 2119 anahtar kelimeleri yalnız spec'te
 
-`MUST` / `SHOULD` / `MAY` (ve Türkçe karşılıkları) yalnız `packages/spec/*.md` içinde geçer.
+`MUST` / `SHOULD` / `MAY` yalnız `packages/spec/*.md` içinde geçer.
 Bir tutorial'da normatif dil kullanmak ikisini birden bozar: tutorial emir kipi kullanır çünkü
 öğretiyor, spec normatif kip kullanır çünkü uygulayıcıyı bağlıyor. Aynı kelimeleri paylaşamazlar.
 
@@ -64,6 +86,11 @@ tek seferde bitirir.
 
 Koşulmamış bir örnek yayınlanacaksa sayfanın başına açıkça yazılır. Sessizce yayınlanmaz.
 
+Sample verisi içeren çıktı blokları **elle çevrilmez ve elle düzenlenmez**. Sample'ın kendi string'i
+yanlış dildeyse sample düzeltilip çıktı yeniden üretilir, ya da durum sayfada ifşa edilir. Bu
+hipotetik değil: `reference/02-schema-conversion.md`'de ölçülmüş bir JSON bloğunun içinde Türkçe
+`description` değerleri aylarca durdu ve kural bu hâliyle onu yakalamadı.
+
 ### 5. Tutorial'da tek yol
 
 "Alternatif olarak", "isterseniz", "tercihinize göre" yasak. Dallanma how-to'nun işidir.
@@ -74,7 +101,7 @@ Tutorial sonuna kadar götürür; başarı gözle görülür bir çıktıyla bit
 
 ### 6. Policy adları sızmaz
 
-`packages/spec/gorunurluk.md` değişmez 3: policy adları agent'a sızmaz. Aynısı dokümanda da
+`packages/spec/visibility.md` değişmez 3: policy adları agent'a sızmaz. Aynısı dokümanda da
 geçerlidir — örneklerde gerçek müşteri policy adı, tenant adı veya endpoint yolu kullanılmaz.
 DemoApi'nin `OrdersRead`, `BusinessHours`, `alice`/`bob`/`carol` kadrosu bu iş için vardır.
 
@@ -102,7 +129,8 @@ yazmaya hazır değilsin.
 ## Dil
 
 - Site içeriği ve arayüz metinleri **İngilizce** — site sk-mcp'nin public yüzü.
-- Repo kökündeki `docs/`, `packages/spec/` ve bu dosya **Türkçe** — iç tasarım dokümanları.
+- `packages/spec/` **İngilizce** — site ona normatif kaynak olarak link verir, aynı kitlenin okuması gerekir.
+- Repo kökündeki `docs/` ve bu dosya **Türkçe** — iç tasarım dokümanları.
 - i18n katmanı yoktur, bilinçli: tek dil, drift yok.
 
 Prose stili için **Google developer documentation style guide** referanstır. Zorlamak için
@@ -110,9 +138,11 @@ Prose stili için **Google developer documentation style guide** referanstır. Z
 
 ## Sayfa eklerken kontrol listesi
 
+0. Hangi ürün hattı? Dosya `src/content/<ürün>/` altında mı, ürün `products.json`'da kayıtlı mı?
 1. Hangi kova? Cevap veremiyorsan sayfayı yazma.
 2. Dosya doğru klasörde mi, sayı prefix'i sırayı doğru veriyor mu?
 3. Başlık moda uygun kalıpta mı?
 4. Kod örneklerinin hepsi koştu mu? Koşmadıysa sayfada yazıyor mu?
 5. Şemadan elle kopyalanmış alan listesi var mı? Varsa link'e çevir.
 6. Başka bir modun işini yapan bir bölüm sızmış mı? Sızdıysa o bölüm yeni bir sayfadır.
+7. Slug bu ürün hattında tekil mi? Site içi linklerin hepsi var olan bir sayfaya mı gidiyor?

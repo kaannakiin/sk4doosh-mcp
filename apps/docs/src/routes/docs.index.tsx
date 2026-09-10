@@ -1,10 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { firstDocSlug } from "../lib/content";
+import { defaultProduct } from "../lib/content";
 
 export const Route = createFileRoute("/docs/")({
   beforeLoad: () => {
-    if (firstDocSlug) {
-      throw redirect({ to: "/docs/$slug", params: { slug: firstDocSlug } });
+    if (defaultProduct) {
+      throw redirect({
+        to: "/docs/$product/$slug",
+        params: {
+          product: defaultProduct.id,
+          slug: defaultProduct.firstSlug,
+        },
+      });
     }
   },
   component: () => null,

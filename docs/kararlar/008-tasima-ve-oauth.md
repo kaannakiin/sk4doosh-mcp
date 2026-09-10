@@ -8,7 +8,7 @@ Tarih: 2026-09-02. Durum: **kabul edildi** — Faz 4 uygulaması bu kararı taki
 
 sk-mcp **asla** `AddAuthentication`/`AddMcp` (ya da Nest eşdeğerini) çağırmaz; yaptırım her zaman host'un elindeki mekanizmadır — `JwtBearer` + `.RequireAuthorization()`, custom middleware, ya da bunların hiçbiri. Scope tamamen delege edilir (`ScopesSupported` passthrough, sk-mcp içeriğine bakmaz). Audience için soyutlama yoktur: kural + test + doküman verilir, `JwtBearer`'ın zaten sahip olduğu `ValidAudience` mekanizmasına ne yazılacağı söylenir, yeni bir doğrulama katmanı kurulmaz.
 
-Ayrıntılı normatif kurallar: [tasima.md](../../packages/spec/tasima.md).
+Ayrıntılı normatif kurallar: [transport.md](../../packages/spec/transport.md).
 
 ## Reddedilen alternatifler
 

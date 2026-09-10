@@ -1,0 +1,7 @@
+[
+  {
+    "id": "http-catalog",
+    "label": "HTTP Catalog",
+    "tagline": "The ASP.NET Core and NestJS SDKs that turn an existing backend's endpoints into a searchable agent tool catalog."
+  }
+]
