@@ -2,7 +2,9 @@
 
 Tarih: 2026-09-09. Durum: **F0, F1 ve F2 kapandı; F3 uygulandı ve platform kanıtı bekliyor. Yedi tool çalışıyor. Sıradaki kapılar F3'ün CI koşusu ve F6 yayın/kurulumdur.**
 
-Güncel kaynak/doküman tabanı `6b2bc89`; [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 başarılı. Beş native hedef × Node 22/24, gerçek MCP ve birleşik paket doğrulaması tamamlandı. Son kod düzeltmesi `4472332` ve bulgu bazlı kanıtlar [kapanış kaydında](excel-hardening-uygulama.md). `@sk-mcp/xml-mcp` `0.2.0` dört tool'u da sunuyor ve beş agent kabul senaryosu gerçek stdio MCP istemcisiyle geçiyor; [CI 34349535283](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34349535283) 13/13 ve [XML F0 34349535299](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34349535299) 10/10 yeşil. Ölçümler [F2 kapanış kaydında](xml-f2-kapanis.md). `0.3.0` ile `select_xpath`, `project_records` ve `aggregate_document` eklendi; yerel dört-filtre koşusu 712 test yeşil ve kararlar [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md)'dedir, ama **F3'ün platform kanıtı henüz alınmadı** ve o koşu gelene kadar F3 `tamamlandı` sayılmaz ([F3 kapanış kaydı](xml-f3-kapanis.md)). Sıradaki işler F3'ün CI koşusu ve F6'dır.
+Excel/file-core platform kapısı ve bulgu bazlı kanıtlar [kapanış kaydındadır](excel-hardening-uygulama.md). `@sk-mcp/xml-mcp` yedi tool'u sunuyor: dört okuma tool'u F2'de platform kanıtıyla kapandı ([F2 kapanış kaydı](xml-f2-kapanis.md)), `select_xpath`, `project_records` ve `aggregate_document` F3'te uygulandı ve kararları [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md)'dedir. **F3'ün platform kanıtı henüz alınmadı**; o koşu gelene kadar F3 `tamamlandı` sayılmaz ([F3 kapanış kaydı](xml-f3-kapanis.md)). Koşu kimlikleri ve test sayıları kapanış kayıtlarında durur, burada tekrar edilmez.
+
+Büyük dosya işi F4'te planlandı ve isteğe bağlı olmaktan çıktı: [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md) ve [F4 kapıları](fazlar/04-buyuk-dosya.md). Sıradaki işler F3'ün CI koşusu, F4-L0/L1 ve F6'dır.
 
 ## Hedef
 
@@ -46,6 +48,7 @@ Agent, yerel XML belgesinin yapısını öğrenebilmeli, namespace kimliğini ka
 - Araştırmadaki 35 bulgu otomatik olarak 35 doğrulanmış güvenlik açığı sayılmaz. Güncel durum ve koşullar bulgu raporundadır.
 - Performans sayıları ölçülmeden ürün garantisi yapılmaz. Planın önerdiği başlangıç bütçeleri ölçüm hedefidir.
 - Yazma, XSLT çalıştırma, imza doğrulama, genel HTML ayrıştırma ve otomatik dış kaynak takibi bu planın teslim kapsamı dışındadır.
+- Kanıt kaydı silinmez ve geriye dönük düzenlenmez. Yol haritası **planı** geçersiz kılar, **kanıtı** değil; bir ölçüm yanlışsa yeni kayıt açılır ve eskisine bağlanır. Emekliye ayrılan görev kimliğinin nereye gittiği yazılır. Belge sınıfları [docs/README.md](../README.md)'dedir.
 
 ## Tamamlanan teslim ve sıradaki iş
 

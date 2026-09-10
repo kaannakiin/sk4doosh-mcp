@@ -82,6 +82,7 @@ Spec yazımı boyunca eldeki gerçek C# server, repo içi DemoApi'ye ek ikinci g
 | 5   | [C# SDK Sertleştirme + Alpha](fazlar/faz-5-csharp-alpha/plan.md)           | NuGet paketi, quickstart, CI'da conformance gate, spec v1.0                                            |
 | 6   | [NestJS SDK](fazlar/faz-6-nestjs-sdk/plan.md) ✅                           | Spec'in drift kanıtı: ikinci SDK aynı fixture'ları geçer — [notlar](fazlar/faz-6-nestjs-sdk/notlar.md) |
 | 7   | [Web UI](fazlar/faz-7-web-ui/plan.md)                                      | Placeholder                                                                                            |
+| 8   | [Dosya Kaynağı Çekirdeği](fazlar/faz-8-dosya-cekirdegi/plan.md) ✅         | İkinci ürün hattı: sandbox'lı dosya sunucuları — [karar 015](kararlar/015-dosya-kaynagi-cekirdegi.md)  |
 
 Faz 6 sonunda spec `1.0.0`'a çıktı ve "hipotez v0" damgası iki implementasyonla doğrulanan
 dokümanlardan kalktı; kalanların neden kaldığı

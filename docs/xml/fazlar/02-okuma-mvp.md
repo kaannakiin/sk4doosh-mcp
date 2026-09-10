@@ -1,6 +1,6 @@
 # F2 — Salt okunur XML MVP
 
-Durum: **tamamlandı** (2026-09-09). F2-01/02/03 F1 kapanışında, F2-04–12 bu teslimde kapandı; platform kanıtı CI 34349535283 (13/13) ve XML F0 34349535299 (10/10), commit `a088abd`. Ayrıntı [F2 kapanış kaydında](../xml-f2-kapanis.md). Sorumlu: XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi. Önkoşul karşılandı: F0 geçti, F1'in XML kapıları uygulandı.
+Durum: **tamamlandı** (2026-09-09). F2-01/02/03 F1 kapanışında, F2-04–12 bu teslimde kapandı. Platform koşuları, commit ve ölçümler [F2 kapanış kaydındadır](../xml-f2-kapanis.md). Sorumlu: XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi. Önkoşul karşılandı: F0 geçti, F1'in XML kapıları uygulandı.
 
 ## Hazır altyapı ve kalan entegrasyon
 

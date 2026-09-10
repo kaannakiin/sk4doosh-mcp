@@ -22,33 +22,33 @@ Ham raporlar bu klasöre birebir kopyalanmadı. Yukarıdaki geçici dizinin kal�
 
 ## Birleştirilen tasarım kararları
 
-| Eski çelişki                                        | Bu plandaki çözüm                                                                  |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Dört tool MVP / çok geniş ilk faz                   | F2 dört tool; XPath F3; genişletmeler F5                                           |
-| Local-name-only veya namespace agnostic varsayılanı | Genişletilmiş ad ve explicit namespace map; sessiz XPath rewrite yok               |
-| NOENT açık/kapalı, DTD opt-in                       | F2 DOCTYPE reddi; expansion/resolver kapalı; getter davranışı dahil F0 doğrulaması |
-| Parser limitleri yeterli, worker gereksiz           | Parse dahil worker; iptal/cleanup kanıtı zorunlu                                   |
-| Worker heap sınırı hard bellek sınırı               | JS heap ile RSS/WASM ayrı; kesin süreç sınırı vaat edilmiyor                       |
-| DOM'u mevcut cache'e koy                            | Worker kaynak sahibi; disposal eksikliği F1-03 görevi                              |
-| Streaming index ile genel read/query                | F4 alt kümesi, offset/namespace/encoding kanıtı; arbitrary XPath yok               |
-| XML çıktı exact kaynak görünümüdür                  | Serializer sonucu kaynak byte'ı değildir; fidelity açık                            |
-| XSD özeti ucuz tam şema çözümüdür                   | Yalnız deklarasyon özeti; unresolved/cycle görünür; validation ayrı                |
+| Eski çelişki                                        | Bu plandaki çözüm                                                                                                              |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Dört tool MVP / çok geniş ilk faz                   | F2 dört tool; XPath F3; genişletmeler F5                                                                                       |
+| Local-name-only veya namespace agnostic varsayılanı | Genişletilmiş ad ve explicit namespace map; sessiz XPath rewrite yok                                                           |
+| NOENT açık/kapalı, DTD opt-in                       | F2 DOCTYPE reddi; expansion/resolver kapalı; getter davranışı dahil F0 doğrulaması                                             |
+| Parser limitleri yeterli, worker gereksiz           | Parse dahil worker; iptal/cleanup kanıtı zorunlu                                                                               |
+| Worker heap sınırı hard bellek sınırı               | JS heap ile RSS/WASM ayrı; kesin süreç sınırı vaat edilmiyor                                                                   |
+| DOM'u mevcut cache'e koy                            | Worker kaynak sahibi; disposal eksikliği F1-03 görevi                                                                          |
+| Streaming index ile genel read/query                | Kayıt parçalamaya dönüştü ([karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md)); indeks baştan kurulmaz, arbitrary XPath yok |
+| XML çıktı exact kaynak görünümüdür                  | Serializer sonucu kaynak byte'ı değildir; fidelity açık                                                                        |
+| XSD özeti ucuz tam şema çözümüdür                   | Yalnız deklarasyon özeti; unresolved/cycle görünür; validation ayrı                                                            |
 
 ## Bu devirde kontrol edilen birincil kaynaklar
 
 Kontrol tarihi 2026-09-08. GitHub master içeriği değişebilir; libxml2-wasm kaynak incelemesinin revision'ı `394487987eece208b5d02274fedc6c292f84ee6b`. Bu repository revision'ı ile npm artifact'ın birebir aynı olduğu ayrıca kanıtlanmadı; F0 paket kapısı bunu ele alır.
 
-| Kaynak                                                                                                                        | Doğrulanan sınırlı bilgi                                             | Kanıt türü                                          |
-| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------- |
-| [npm libxml2-wasm metadata](https://registry.npmjs.org/libxml2-wasm/latest)                                                   | Kontrol anında `0.7.2`, npm lisans alanı MIT, Node engine `>=18`     | Canlı metadata; proje Node hedefi ayrıca 22/24      |
-| [Resmi libxml2-wasm README](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/README.md) | WASM yaklaşımı, buffer API ve açık disposal ihtiyacı                 | Resmi doküman                                       |
-| [document.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/document.mts)       | fromString/fromBuffer ayrımı, parse seçenekleri, DOM/XPath girişleri | Kaynak incelemesi; fixture sonucu değil             |
-| [xpath.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/xpath.mts)             | Compile ve namespace map yüzeyi                                      | Kaynak incelemesi                                   |
-| [nodejs.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/nodejs.mts)           | Genel filesystem sağlayıcısının ayrı kayıt fonksiyonu                | Kaynak incelemesi; canary testi F0-05'te yapıldı    |
-| [disposable.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/disposable.mts)   | Kaynak yaşam döngüsünün ayrı soyutlaması                             | Kaynak incelemesi; leak ölçümü değil                |
-| [Node worker_threads](https://nodejs.org/api/worker_threads.html)                                                             | resourceLimits JS motoruna ilişkin; terminate yaşam döngüsü          | Resmi doküman; hedef Node sürümlerinde test F0'da   |
-| [FontoXPath README](https://github.com/FontoXML/fontoxpath)                                                                   | XPath/XQuery 3.1 alternatifinin kullanım yüzeyi                      | Resmi doküman; ürün karşılaştırma benchmark'ı değil |
-| [sax README](https://github.com/isaacs/sax-js)                                                                                | Streaming olay parser'ı adayı                                        | Resmi doküman; F4 seçimi kesinleşmiş değil          |
+| Kaynak                                                                                                                        | Doğrulanan sınırlı bilgi                                             | Kanıt türü                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [npm libxml2-wasm metadata](https://registry.npmjs.org/libxml2-wasm/latest)                                                   | Kontrol anında `0.7.2`, npm lisans alanı MIT, Node engine `>=18`     | Canlı metadata; proje Node hedefi ayrıca 22/24                                             |
+| [Resmi libxml2-wasm README](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/README.md) | WASM yaklaşımı, buffer API ve açık disposal ihtiyacı                 | Resmi doküman                                                                              |
+| [document.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/document.mts)       | fromString/fromBuffer ayrımı, parse seçenekleri, DOM/XPath girişleri | Kaynak incelemesi; fixture sonucu değil                                                    |
+| [xpath.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/xpath.mts)             | Compile ve namespace map yüzeyi                                      | Kaynak incelemesi                                                                          |
+| [nodejs.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/nodejs.mts)           | Genel filesystem sağlayıcısının ayrı kayıt fonksiyonu                | Kaynak incelemesi; canary testi F0-05'te yapıldı                                           |
+| [disposable.mts](https://github.com/jameslan/libxml2-wasm/blob/394487987eece208b5d02274fedc6c292f84ee6b/src/disposable.mts)   | Kaynak yaşam döngüsünün ayrı soyutlaması                             | Kaynak incelemesi; leak ölçümü değil                                                       |
+| [Node worker_threads](https://nodejs.org/api/worker_threads.html)                                                             | resourceLimits JS motoruna ilişkin; terminate yaşam döngüsü          | Resmi doküman; hedef Node sürümlerinde test F0'da                                          |
+| [FontoXPath README](https://github.com/FontoXML/fontoxpath)                                                                   | XPath/XQuery 3.1 alternatifinin kullanım yüzeyi                      | Resmi doküman; ürün karşılaştırma benchmark'ı değil                                        |
+| [sax README](https://github.com/isaacs/sax-js)                                                                                | Streaming olay parser'ı adayı                                        | **Reddedildi** ([K19-7](../kararlar/019-buyuk-dosya-ve-kademe.md)); byte offseti üretmiyor |
 
 Node worker belgesi kontrol anında v26 dokümanıydı; planın Node 22/24 hedefi için sürüm uyumluluğu F0-02/06'da ayrıca sınanır. Wrapper npm lisansı ile gömülü libxml2 dağıtım lisansını tek metadata alanından eşitlemeyiz.
 

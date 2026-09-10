@@ -1,6 +1,6 @@
 # F0 — Kanıt ve karar kapısı
 
-Durum: **tamamlandı** (2026-09-09). Kanıt: [run 34289898377](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34289898377), commit `6bc8486`, beş hedef × Node 22/24 = 10/10 ayak, 80/80 kayıt pass, hiçbiri inconclusive değil. F0-01–09 sonuçları [F0 kanıt kaydında](../f0-kanit-kaydi.md), bağımlılık olguları [karar ekinde](../bagimlilik-karar-eki.md). Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. Deney harness'ı `packages/xml-lab`; F0 kapandığında `packages/xml-mcp` mevcut değildi ve F0 onu oluşturmadı. Ürün paketi F1 kapanışında eklendi.
+Durum: **tamamlandı** (2026-09-09). Koşu kimliği, commit ve ayak sayıları [F0 kanıt kaydındadır](../f0-kanit-kaydi.md); F0-01–09 sonuçları ve kabul edilen sınırlar da orada, bağımlılık olguları [karar ekinde](../bagimlilik-karar-eki.md). Sorumlu: XML geliştiricisi; doğrulayan: bağımsız inceleyici. Deney harness'ı `packages/xml-lab`; F0 kapandığında `packages/xml-mcp` mevcut değildi ve F0 onu oluşturmadı. Ürün paketi F1 kapanışında eklendi.
 
 ## Güncel başlangıç noktası
 

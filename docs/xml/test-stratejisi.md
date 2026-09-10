@@ -1,6 +1,6 @@
 # XML MCP test ve agent değerlendirme planı
 
-Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F1 kapanışıyla **T08, T15, T16 ve T17'nin ürün kodu ayakları** uygulandı. **F2 kapanışıyla T01, T02, T03, T04, T12'nin cursor ayağı, T13'ün sayfa ayağı ve T14 kapandı**; kanıt [F2 kapanış kaydında](xml-f2-kapanis.md). **F3 kapanışıyla T18 ve T19 kapandı ve T01/T02/T04/T14/T16'nın F3 ayakları koştu**; kanıt [F3 kapanış kaydında](xml-f3-kapanis.md). Dört paketli toplam **712 test** (F2: 613, F1: 529), `xml-mcp` 40 → 124 → **223**. T20–T23 F4/F5'e aittir ve açıktır (2026-09-09). Agent kabul kaydı F2-09 ile alındı; XML benchmark'ı hâlâ yok.
+Durum: F0 kapsamındaki XML testleri uygulandı ve [10/10 platform CI](f0-kanit-kaydi.md) ile geçti (T05/T06 → F0-04, T07/T08 → F0-05, T09 → F0-05/08, T16 → F0-06, T17 → F0-07). F1 kapanışıyla **T08, T15, T16 ve T17'nin ürün kodu ayakları** uygulandı. **F2 kapanışıyla T01, T02, T03, T04, T12'nin cursor ayağı, T13'ün sayfa ayağı ve T14 kapandı**; kanıt [F2 kapanış kaydında](xml-f2-kapanis.md). **F3 kapanışıyla T18 ve T19 kapandı ve T01/T02/T04/T14/T16'nın F3 ayakları koştu**; kanıt [F3 kapanış kaydında](xml-f3-kapanis.md). Dört paketli toplam **712 test** (F2: 613, F1: 529), `xml-mcp` 40 → 124 → **223**. T21–T23 F5'e, T20 ve T24–T27 F4'e aittir ve açıktır (2026-09-10). T20 [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md) ile yeniden tanımlandı: parçalamada karşılaştırılacak ikinci motor yok, DOM/streaming parity yerine kalıcı/parçalı diferansiyel oracle geçti. Agent kabul kaydı F2-09 ile alındı; XML benchmark'ı hâlâ yok.
 
 T10/T11/T15'in XML uzantı ve handler ayakları `packages/xml-mcp/test` içinde uygulandı ve ortak dosya katmanı regresyonlarıyla birlikte koşuyor. T12'nin içerik değişimi ayağı worker tarafında F1'de, cursor ayağı F2-06'da kapandı; T13'ün sayfa ayağı F2-08'in ölçümüyle kapandı. Excel regex worker testleri T09 veya XML disposal testlerinin yerine geçmez. Bulgu bazlı sonuçlar [kapanış kaydında](excel-hardening-uygulama.md); aşağıdaki T kimlikleri XML kabul görevleri olarak açık kalır.
 
@@ -41,10 +41,14 @@ XML fixture'ları format ürününde tutulur; HTTP spec/conformance paketine for
 | T17          | Tekrarlanan aç/kapat/eviction/error/compiled query                 | Disposal ve bellek trendi beklenen; stale pointer veya double-free yok                      | F0-07               |
 | T18 ✅       | XPath empty/node-set/scalar/NaN/Infinity, yanlış sürüm             | Tür kaybı ve sessiz null yok; 2.0+ istek açık unsupported                                   | F3-02/04            |
 | T19 ✅       | Mixed numeric/text, hassasiyet, eksik/çoklu sütun, grup kesme      | Crash yok; dönüşüm/atlama/yuvarlama sayıları ve toplam kapsamı doğru                        | F3-05/06            |
-| T20          | Aynı belgenin DOM ve streaming alt küme sonucu                     | URI/değer/sıra eşit; chunk/offset farkı sonucu değiştirmez                                  | F4-02/07            |
+| T20          | Aynı fixture'ın kalıcı ve parçalı kademe sonucu                    | Değer ve `occurrence` dizisi eşit; parça sınırı sonucu değiştirmez                          | F4-L2/L3            |
 | T21          | XSD cycle/include dış yol, unresolved type, invalid schema         | Outline belirsizliği görünür; resolver dışarı çıkmaz; invalid belge ile engine failure ayrı | F5-S1–S4            |
 | T22          | ZIP bomb, duplicate/path traversal/encrypted entry                 | Sınırdan önce tam açılım yok; host yoluna extract yok                                       | F5-C1–C3            |
 | T23          | Mixed content format/JSON dönüşümü/önden kardeş ekleme diff        | Anlam değişimi saklanmaz; loss/matching politikası testli                                   | F5-D1–D4            |
+| T24          | CDATA/comment/PI içinde sahte kayıt etiketi, attribute içinde `>`  | Sınır tarayıcısı yanlış kesmez; `<![CDATA[</e><e>]]>` iyi-biçimli yanlış parça üretmez      | F4-L2               |
+| T25          | UTF-16 belge parçalı kademede                                      | Açık kodla reddedilir; byte tarayıcısı iki byte'lı `<` üzerinde sessizce kesmez             | F4-L2               |
+| T26          | Parça sınırına denk gelen sayfalama                                | Aralıklar ikişerli ayrık ve birleşimleri tüm kardeş dizisi; exactly-once bozulmaz           | F4-L3/L5            |
+| T27          | Kullanıcı korpusunda belge şekli anketi                            | Bütçe üstü dosyaların kayıt-şekilli oranı ölçülür; K19-3'ün varsayımı sınanır               | F4-L0               |
 
 ## Fixture önceliği
 
@@ -59,6 +63,7 @@ F2 fixture'ları `packages/xml-mcp/test/fixtures/build.ts` içinde üretiliyor; 
 - Attribute sırası değişimi kimlik değiştirmez; mixed content çocuk sırası değişimi fark oluşturur.
 - Literal arama arbitrary text'i sorgu dili olarak çalıştırmaz.
 - Rastgele malformed girdide sonuç ya bütçeli hata ya beklenen geçerli belgedir; crash/hang yoktur. Fuzz denemelerinin süre, seed ve küçültülmüş regresyon örneği kaydedilir.
+- Ürün paketinin kendi dış-I/O canary'si `packages/xml-mcp/test/external-io.spec.ts`'tedir ve F0-05'in harness ölçümünü ürün yolunda tekrarlar. Mutasyonla sınandı ve **ne kanıtladığı ölçüldü**: worker import denylist'i `libxml2-wasm/lib/nodejs.mjs` eklendiğinde kırmızıya döner, DOCTYPE reddi prolog kapısı devre dışı bırakıldığında kırmızıya döner. Buna karşılık XInclude, `schemaLocation` ve katalog PI assertion'ları parse policy, prolog kapısı ve fs provider'ın üçü birden kapatıldığı mutasyonda bile yeşil kaldı: canary içeriği hiçbir mutasyonda çıktıya ulaşmadı. Bu üçü **sızıntı dedektörü değil, davranış regresyon dedektörüdür**; "dosya yolu kaçmıyor" iddiasını taşımazlar. İddiayı taşıyan kanıt F0-05'in ağ/dosya canary'si ve DOCTYPE'ın parse öncesi reddidir.
 - İkinci XML motoruyla differential test yalnız teşhis aracıdır; iki motor aynı hatayı yapabilir. Nihai oracle fixture beklentisi ve standardın ilgili kuralıdır.
 
 ## Agent değerlendirme cetveli

@@ -10,6 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const workerEntry = resolve(here, "../dist/xml-worker.js");
 
 const hostOnly = ["@sk-mcp/", "zod", "@modelcontextprotocol"];
+const neverInWorker = ["libxml2-wasm/lib/nodejs"];
 
 function moduleGraph(entry: string): readonly string[] {
   const seen = new Set<string>();
@@ -30,7 +31,10 @@ function moduleGraph(entry: string): readonly string[] {
         visit(resolve(dirname(file), specifier));
         continue;
       }
-      if (hostOnly.some((name) => specifier.startsWith(name))) {
+      if (
+        hostOnly.some((name) => specifier.startsWith(name)) ||
+        neverInWorker.some((name) => specifier.startsWith(name))
+      ) {
         external.push(`${file} -> ${specifier}`);
       }
     }

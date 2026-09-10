@@ -1,6 +1,6 @@
 # XML MCP kararları
 
-Durum: XML mimarisi kararları. Güncelleme: 2026-09-09. F0 kapısı geçti; **K1, K3, K4, K5, K6, K7 ve K8 `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin yedi tool'u da çalışıyor: F3 yarısı (`select_xpath`, `project_records`, `aggregate_document`) da uygulandı ve platform kanıtı bekliyor. Global kayıtlar [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md), [karar 017](../kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md) ve [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md); mevcut global ADR numaraları değiştirilmez.
+Durum: XML mimarisi kararları. Güncelleme: 2026-09-10. F0 kapısı geçti; **K1, K3, K4, K5, K6, K7 ve K8 `packages/xml-mcp` kodunda uygulanmış durumdadır**. K2'nin yedi tool'u da çalışıyor: F3 yarısı (`select_xpath`, `project_records`, `aggregate_document`) da uygulandı ve platform kanıtı bekliyor. Global kayıtlar [karar 016](../kararlar/016-ikinci-dosya-sunucusu-ve-yanit-butcesi.md), [karar 017](../kararlar/017-xml-dugum-modeli-ve-yanit-sayfasi.md), [karar 018](../kararlar/018-xpath-ve-kayit-projeksiyonu.md) ve [karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md); mevcut global ADR numaraları değiştirilmez.
 
 ## K1 — Birincil motor: libxml2-wasm
 
@@ -12,14 +12,14 @@ Gerekçe: byte girdisi alan `XmlDocument.fromBuffer`, namespace destekli XPath 1
 
 ### Alternatif karşılaştırması
 
-| Seçenek                                | Uygun tarafı                                                             | Bu planın tercihi                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `libxml2-wasm`                         | Byte → DOM → namespace/XPath tek motor; manuel kaynak ömrü yönetilebilir | İlk tercih; encoding, disposal, worker ve dağıtım kapılarıyla                                       |
-| `@xmldom/xmldom` + `xpath`             | JS tabanlı DOM ve XPath 1.0 alternatifi                                  | WASM dağıtımı F0'da başarısız olursa ikinci değerlendirme; decoder ve motor uyumu ayrıca kanıtlanır |
-| `slimdom` + `fontoxpath`               | XPath 3.1/XQuery isteyen kullanım için güçlü aday                        | 3.1 gereksinimi henüz yok; ilk ürünün karmaşıklığına eklenmez                                       |
-| `fast-xml-parser`                      | XML/nesne dönüşümü odaklı aday                                           | Namespace kimliği, karışık içerik ve XPath temel ihtiyaçları için ilk motor değil                   |
-| `sax`                                  | Olay tabanlı sınırlı tarama için aday                                    | F4'te değerlendirilir; başlangıçta ikinci parser eklenmez                                           |
-| `libxmljs2` / Java tabanlı doğrulayıcı | Farklı dağıtım koşullarında değerlendirilebilir                          | Yerel derleme veya Java kurulumu gereksinimi bu ürünün kurulum hedefiyle uyuşmaz                    |
+| Seçenek                                | Uygun tarafı                                                             | Bu planın tercihi                                                                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `libxml2-wasm`                         | Byte → DOM → namespace/XPath tek motor; manuel kaynak ömrü yönetilebilir | İlk tercih; encoding, disposal, worker ve dağıtım kapılarıyla                                                                                                           |
+| `@xmldom/xmldom` + `xpath`             | JS tabanlı DOM ve XPath 1.0 alternatifi                                  | WASM dağıtımı F0'da başarısız olursa ikinci değerlendirme; decoder ve motor uyumu ayrıca kanıtlanır                                                                     |
+| `slimdom` + `fontoxpath`               | XPath 3.1/XQuery isteyen kullanım için güçlü aday                        | 3.1 gereksinimi henüz yok; ilk ürünün karmaşıklığına eklenmez                                                                                                           |
+| `fast-xml-parser`                      | XML/nesne dönüşümü odaklı aday                                           | Namespace kimliği, karışık içerik ve XPath temel ihtiyaçları için ilk motor değil                                                                                       |
+| `sax`                                  | Olay tabanlı sınırlı tarama için aday                                    | **Reddedildi** ([K19-7](../kararlar/019-buyuk-dosya-ve-kademe.md)): JS string üzerinde çalışır, byte offseti üretmez ve değer üretir. Sınır tarayıcısı in-house yazılır |
+| `libxmljs2` / Java tabanlı doğrulayıcı | Farklı dağıtım koşullarında değerlendirilebilir                          | Yerel derleme veya Java kurulumu gereksinimi bu ürünün kurulum hedefiyle uyuşmaz                                                                                        |
 
 Alternatiflerin güncel güvenlik durumu hakkında Claude raporundaki CVE sayıları burada tekrar edilmez. Advisory yokluğu güvenlik kanıtı değildir; npm wrapper kadar gömülü libxml2 sürümü de değerlendirilmelidir. Karşılaştırmanın ayrıntılı geçmişi [kaynak kaydında](kaynaklar.md).
 
@@ -87,7 +87,9 @@ Snapshot hash'i okunan byte'ların kimliğidir; dosyanın bütün okuma boyunca 
 
 ## K9 — Streaming aynı XPath'in ucuz hali değildir
 
-F4 yalnız desteklediği streaming path/record işlemlerini sunar. Genel XPath eksenleri, global sıralama veya bütün belge bilgisi isteyen aggregate işlemleri için DOM sınırı geçerlidir. Karakter offset'i byte offset'i değildir; parçayı kesip parse etmek ancestor namespace bağlamını ve encoding durumunu kaybedebilir. Claude'un “offset index ile sonraki read/query aralığını parse et” önerisi doğrudan uygulama kararı yapılmadı.
+**Karara bağlandı ([karar 019](../kararlar/019-buyuk-dosya-ve-kademe.md)).** Yaklaşım streaming değil, kayıt sınırından parçalamadır: `libxml2` tek semantik otorite kalır, tarayıcı yalnız byte konumu üretir ve yanlış kesim parse zamanında gürültülü hata verir. Kayıt içinde tam DOM ve XPath 1.0 korunur.
+
+Bu maddenin sınırı aynen geçerlidir: genel XPath eksenleri, global sıralama ve bütün belge bilgisi isteyen aggregate işlemleri bütçe üstünde `unsupported` döner; parçalama bunları kurtarmaz. Karakter offset'i byte offset'i değildir — parçalı kademe bu yüzden UTF-16'yı açık kodla reddeder. "Offset index ile sonraki aralığı parse et" önerisi artık karara bağlıdır, ama indeks **baştan kurulmaz**: önce sınırlı yeniden tarama ve maliyet açıklaması, indeks ancak ölçüldükten sonra ve bütçesiyle.
 
 ## K10 — XML ve Excel görev paylaşımı
 

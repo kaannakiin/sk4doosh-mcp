@@ -1,10 +1,10 @@
 # F1 — Ortak çekirdek ve Excel düzeltme paketleri
 
-Durum: **tamamlandı** (2026-09-09). Excel/file-core güvenlik ve platform kapısı `6b2bc89` ile geçmişti; kalan XML kapıları `packages/xml-mcp`'nin ilk teslimiyle kapatıldı ve `71cb388` için [CI #34330278812](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34330278812) 13/13 geçti. Ölçümler [F1 kapanış kaydında](../xml-f1-kapanis.md). Sorumlu: file-core/Excel geliştiricisi ve XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi.
+Durum: **tamamlandı** (2026-09-09). Excel/file-core güvenlik ve platform kapısı önce geçmişti; kalan XML kapıları `packages/xml-mcp`'nin ilk teslimiyle kapatıldı. Koşu kimliği, commit ve ölçümler [F1 kapanış kaydındadır](../xml-f1-kapanis.md). Sorumlu: file-core/Excel geliştiricisi ve XML geliştiricisi; doğrulayan: entegrasyon/test inceleyicisi.
 
 ## Hedef
 
-Excel/file-core güvenlik teslimi tamamlandı. Başlangıç uygulaması `b4924d8`, son kod düzeltmesi `4472332`; dokümanları içeren `6b2bc89` için [CI #34226587889](https://github.com/kaannakiin/sk4doosh-mcp/actions/runs/34226587889) 13/13 geçti. Native/file-core/Excel toplamı 450 test; beş hedef × Node 22/24 ve birleşik paket/MCP doğrulaması başarılı. F1'in kalan işi olan XML bağlantısı da yapıldı: `packages/xml-mcp` `file-core`'u tüketiyor, XML kaynak ömrü worker'da ölçüldü ve yanıt zarfı bütçesi `file-core`'da zorunlu yol oldu.
+Excel/file-core güvenlik teslimi tamamlandı; commit'ler, koşu kimliği ve test sayıları [kapanış kaydındadır](../excel-hardening-uygulama.md). Beş hedef × Node 22/24 ve birleşik paket/MCP doğrulaması başarılı. F1'in kalan işi olan XML bağlantısı da yapıldı: `packages/xml-mcp` `file-core`'u tüketiyor, XML kaynak ömrü worker'da ölçüldü ve yanıt zarfı bütçesi `file-core`'da zorunlu yol oldu.
 
 ## Güncel ilerleme
 
