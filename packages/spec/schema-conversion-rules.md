@@ -5,9 +5,8 @@
 > and the [conformance/schema-simplification/](../conformance/schema-simplification/) corpus pins
 > both byte for byte. The binding layer has **two** implementations (CLR reflection and Nest
 > decorator metadata), but the "source" columns in the tables below list only the C# side; the Nest
-> counterparts are written down in
-> [decision 012](../../docs/kararlar/012-tip-sekli-ve-sema-kural-katmani.md) and were not carried
-> into the tables. Binding cannot, by definition, be tested with a pure JSON fixture; it is tested
+> counterparts were not carried into the tables. Binding cannot, by definition, be tested with a
+> pure JSON fixture; it is tested
 > by each SDK's own host tests.
 
 Defines how a body or parameter type in the backend's type system is reduced to JSON Schema. The

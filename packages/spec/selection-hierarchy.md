@@ -39,7 +39,7 @@ Every level is in one of three states: no marker · `include` · `exclude`. The 
 
 ## The global default is `exclude`
 
-Nothing undeclared is exposed. This is the selection form of the default-deny invariant in [decision 001](../../docs/kararlar/001-kimlik-tasiyicilari.md): adding the SDK to a backend MUST NOT mean exposing that backend's entire surface to agents.
+Nothing undeclared is exposed. This is the selection form of the default-deny invariant: adding the SDK to a backend MUST NOT mean exposing that backend's entire surface to agents.
 
 `global: include` is a legitimate setup (expose everything, then carve out exceptions), but it **requires a declaration** — it cannot be the default.
 

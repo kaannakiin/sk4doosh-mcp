@@ -37,17 +37,6 @@ The HTTP catalog (`packages/core`, both SDKs) and the file-backed servers (`pack
 `excel-mcp`, `xml-mcp`) are two separate product shapes that share no runtime code path. One is a
 library you embed in your backend; the others are servers you run against local files.
 
-## Design documents
-
-These are internal, in Turkish, and normative where they say so.
-
-- What it is and why — [docs/00-genel-bakis.md](docs/00-genel-bakis.md)
-- How it works, enforcement versus visibility — [docs/nasil-calisiyor.md](docs/nasil-calisiyor.md)
-- Adding sk-mcp to a large existing backend, with measurements —
-  [docs/gercek-backend-entegrasyonu.md](docs/gercek-backend-entegrasyonu.md)
-- Package boundaries — [docs/paket-yerlesimi.md](docs/paket-yerlesimi.md)
-- Decisions — [docs/kararlar/](docs/kararlar/) · Phases — [docs/fazlar/](docs/fazlar/)
-
 ## Build and test
 
 ```bash

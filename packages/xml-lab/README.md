@@ -1,6 +1,6 @@
 # @sk-mcp/xml-lab
 
-F0 kanıt harness'ı. [Faz tanımı](../../docs/xml/fazlar/00-kanit-ve-karar.md), [kararlar](../../docs/xml/kararlar.md).
+F0 kanıt harness'ı.
 
 Bu paket **ürün kodu değildir**. `libxml2-wasm` tercihini hedef dağıtımda ölçen deneyleri, fixture üreteçlerini ve kanıt toplayıcısını tutar. Çıktısı `docs/xml/f0/*.json` ve Türkçe kapanış kaydıdır.
 

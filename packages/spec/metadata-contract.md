@@ -54,8 +54,7 @@ guard produces only `imperative: true`, `policies` stays empty, and `anonymous` 
 There is no framework contract called a "roles decorator" in Nest; the `SetMetadata('roles', …)`
 example in Nest's own documentation is a **host convention**, and the SDK MUST NOT read a host type
 by name. A Nest host that wants to declare authorization declaratively announces it structurally on
-its guard
-([docs/kararlar/011-nestjs-gorunurluk-ve-probe.md](../../docs/kararlar/011-nestjs-gorunurluk-ve-probe.md)).
+its guard.
 
 The case where both fields stay empty is legitimate and defined: on backends whose auth lives entirely in custom middleware there is nothing to read statically. Such an endpoint becomes `unknown` on the visibility side — missing data MUST NOT be silently converted to `allow` ([visibility.md](visibility.md) rule 4).
 
@@ -74,7 +73,7 @@ The case where both fields stay empty is legitimate and defined: on backends who
 - The root is always `type: object` and writes both `properties` and `required` **even when they are empty**. For deterministic comparison: a missing field and an empty field are not the same thing.
 - Every parameter is a property, and the property schema is that parameter's `schema`.
 - A parameter's `description` is added to the property schema only when **the schema does not carry its own `description`**. The schema source takes precedence; the parameter description is the fallback.
-- `requestBody.schema.properties` flatten to the top level ([decision 002](../../docs/kararlar/002-arguman-eslemesi.md)); `requestBody.schema.required` entries are appended to the `required` list.
+- `requestBody.schema.properties` flatten to the top level; `requestBody.schema.required` entries are appended to the `required` list.
 - The `inputSchema` root writes `additionalProperties`, whose value is derived from whether `requestBody.schema` is free-form (see [schema-conversion-rules.md](schema-conversion-rules.md) Table 6). It is not a constant `false`.
 - `required` MUST NOT carry duplicate entries and MUST NOT list a name absent from `properties`; a collision between a parameter name and a body field name stops tool production with `argument_collision`.
 - `requestBody.description` is deliberately dropped: because body fields flatten to the top level, there is no slot left for it.

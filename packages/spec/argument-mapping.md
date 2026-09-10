@@ -1,6 +1,6 @@
 # Argument Mapping
 
-> Status: **validated by two implementations** (ASP.NET Core + NestJS/Express, 2026-08-28; [decision 004](../../docs/kararlar/004-nestjs-dogrulamasi.md)) — a normative candidate. The rules the second implementation forced us to revise are folded in below.
+> Status: **validated by two implementations** (ASP.NET Core + NestJS/Express, 2026-08-28) — a normative candidate. The rules the second implementation forced us to revise are folded in below.
 
 An agent's flat JSON arguments convert deterministically into an HTTP request. Input: a request template (method, route, parameter declarations with `in: path|query|header`, an optional body declaration) plus an argument object. Output: the path and query string, data headers, and an optional JSON body. Every SDK MUST produce **identical** output from the same input; the `argument-mapping/` fixtures in [conformance](../conformance) test exactly that.
 
@@ -8,7 +8,7 @@ An agent's flat JSON arguments convert deterministically into an HTTP request. I
 
 - Argument names MUST be unique: parameter and body property names MUST NOT collide (including a path `id` plus a body `id` → error; the fix is a rename or an override). The synthetic body-root name (`body`) goes through the same check.
 - `GET`/`HEAD` MUST NOT declare a body.
-- A header-positioned parameter MUST NOT use an identity carrier name (`Authorization`, `Cookie`) — identity is never an argument ([decision 001](../../docs/kararlar/001-kimlik-tasiyicilari.md)).
+- A header-positioned parameter MUST NOT use an identity carrier name (`Authorization`, `Cookie`) — identity is never an argument.
 - A path parameter MUST NOT be an array; every path parameter MUST have a `{name}` placeholder in the route (route constraints such as `{id:int}` are stripped in the template), and every placeholder MUST have a parameter.
 
 ## Composition algorithm (at call time, in order)

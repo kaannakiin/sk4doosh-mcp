@@ -64,11 +64,6 @@ To claim `normatif` a rule needs a fixture in [`../conformance`](../conformance)
 independent implementations passing it. A rule change that does not move a fixture has not been
 made; if a schema change breaks fixtures, update them in the same commit.
 
-Version policy is [decision 010](../../docs/kararlar/010-versiyonlama-politikasi.md) and the v1.0
-amendment list is [decision 014](../../docs/kararlar/014-spec-v1-0-ve-amendment-listesi.md).
-Decisions under `docs/kararlar/` are immutable: supersede them with a new one, never edit an
-accepted file.
-
 ## Related
 
 - [`../conformance`](../conformance) — the fixture corpus that pins these rules

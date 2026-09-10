@@ -8,8 +8,7 @@ and no public API contract. If you are reading this you are changing it.
 
 `core` is **not** `file-core`. This package is the HTTP catalog implementation;
 [`../file-core`](../file-core) is the shared machinery for file-backed MCP servers. Neither depends
-on the other, in either direction. The reasoning is in
-[docs/paket-yerlesimi.md](../../docs/paket-yerlesimi.md).
+on the other, in either direction.
 
 ## What lives here
 

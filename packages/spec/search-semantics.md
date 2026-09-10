@@ -6,7 +6,7 @@ Defines the three meta-tools of search-first discovery and the ranking rules of 
 
 ## Why search-first
 
-`tools/list` returns only the three meta-tools. Hundreds of endpoints MUST NEVER enter the agent's context all at once; the agent searches, loads the schema of what it found, then calls. Because the list almost never changes there is no client cache problem; what varies is the search results, and those are fresh every time ([docs/00-genel-bakis.md](../../docs/00-genel-bakis.md)).
+`tools/list` returns only the three meta-tools. Hundreds of endpoints MUST NEVER enter the agent's context all at once; the agent searches, loads the schema of what it found, then calls. Because the list almost never changes there is no client cache problem; what varies is the search results, and those are fresh every time.
 
 ## Meta-tool contract
 

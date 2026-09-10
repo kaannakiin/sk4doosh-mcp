@@ -5,9 +5,6 @@ agents as a search-first tool catalog and replays each call through **your own**
 authentication and authorization keep working exactly as they do today. Not a gateway, not
 duplicated business logic.
 
-Architecture and rationale: [docs/00-genel-bakis.md](../../docs/00-genel-bakis.md),
-[docs/nasil-calisiyor.md](../../docs/nasil-calisiyor.md) (Turkish design documents).
-
 > Status: `0.1.0-alpha.1`. The public API is frozen in this release but it is alpha; breaking
 > changes are possible.
 
@@ -137,9 +134,5 @@ tokenization.
 ## 6. What's next
 
 - The docs site: `pnpm --filter @sk-mcp/docs dev` → `http://localhost:5180`
-- Adding sk-mcp to a large existing backend:
-  [docs/gercek-backend-entegrasyonu.md](../../docs/gercek-backend-entegrasyonu.md) (Turkish)
-- Extension points (cache, visibility, error mapping):
-  [docs/kararlar/006-genisletme-noktalari.md](../../docs/kararlar/006-genisletme-noktalari.md) (Turkish)
 - Sample: [samples/DemoApi](samples/DemoApi) — policy, role, imperative ownership checks and
   anonymous endpoints in a single controller

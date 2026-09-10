@@ -4,9 +4,6 @@ An MCP layer that embeds into your existing NestJS backend. It exposes your endp
 a search-first tool catalog and replays each call through **your own** pipeline, so your guards,
 pipes and interceptors keep running unchanged. Not a gateway, not duplicated business logic.
 
-Architecture and rationale: [docs/00-genel-bakis.md](../../docs/00-genel-bakis.md),
-[docs/nasil-calisiyor.md](../../docs/nasil-calisiyor.md) (Turkish).
-
 > Status: internal, version `0.0.0`, not published to npm. Consumed today as a workspace
 > dependency; [samples/demo-api](samples/demo-api) is the reference wiring.
 
@@ -199,9 +196,5 @@ the RFC 9728 metadata handler for you.
 ## 7. What's next
 
 - The docs site: `pnpm --filter @sk-mcp/docs dev` → `http://localhost:5180`
-- NestJS visibility and the probe tier —
-  [decision 011](../../docs/kararlar/011-nestjs-gorunurluk-ve-probe.md)
-- Replaceable internals (cache, visibility, error mapping, session store) —
-  [decision 006](../../docs/kararlar/006-genisletme-noktalari.md)
 - [samples/demo-api](samples/demo-api) — the same endpoint matrix as the .NET sample: anonymous,
   identity-only, policy, role, imperative ownership, and a POST with path, query and body

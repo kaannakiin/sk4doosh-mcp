@@ -119,10 +119,10 @@ The SDK cannot tell a wrong route from a missing resource — because the route 
 
 ## Extension points
 
-Exactly two — nothing beyond them is added without demonstrated demand ([decision 007](../../docs/kararlar/007-hata-eslemesi.md)):
+Exactly two — nothing beyond them is added without demonstrated demand:
 
 - **(a) Replace the mapper entirely.** dotnet: `IInvokeResultMapper { InvokeOutcome Map(BackendResponse, IReadOnlySet<string> knownFields) }`, registered with `TryAddSingleton<IInvokeResultMapper, InvokeResultMapper>`. Nest: `ExtensionPoints.invokeResultMapper`. A host that wants raw output, or an entirely different mapping, uses this.
-- **(b) Add a recognizer at the front.** dotnet: `options.Errors.Recognize(ErrorRecognizer)`. Nest: `options.errors.recognize(fn)`. It runs **before** the built-in recognizers (step 1), and its output still passes through the leak filter (step 5). Same delegate style as the existing `Identity.Project`/`Naming.Prefix` ([decision 003](../../docs/kararlar/003-istek-ustverisi.md)).
+- **(b) Add a recognizer at the front.** dotnet: `options.Errors.Recognize(ErrorRecognizer)`. Nest: `options.errors.recognize(fn)`. It runs **before** the built-in recognizers (step 1), and its output still passes through the leak filter (step 5). Same delegate style as the existing `Identity.Project`/`Naming.Prefix`.
 
 **Deliberately not added:** a redact/post-process hook (the filter is already mechanical and always on; a host wanting raw output uses (a)), per-status message overrides, i18n, and parsing the HTTP-date form of `Retry-After`.
 

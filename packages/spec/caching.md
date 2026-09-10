@@ -25,7 +25,7 @@ Cached per caller scope:
 
 The cache is keyed by `CallerScope(Key, Tags)`:
 
-- **`Key`** — a 64-character lowercase-hex SHA-256 digest. The digest's input is fixed by this spec and is identical in both SDKs: the declared identity carriers ([decision 001](../../docs/kararlar/001-kimlik-tasiyicilari.md)) are ordinal sorted by their lowercase names, and each is written as a `lowercase(name)=value\n` line (multi-valued headers are joined with `,`; a carrier absent from the outer request leaves its line empty). This digest input (`DigestInput`) is public and pure in both C# and TS — a host can wrap it and add its own tag.
+- **`Key`** — a 64-character lowercase-hex SHA-256 digest. The digest's input is fixed by this spec and is identical in both SDKs: the declared identity carriers are ordinal sorted by their lowercase names, and each is written as a `lowercase(name)=value\n` line (multi-valued headers are joined with `,`; a carrier absent from the outer request leaves its line empty). This digest input (`DigestInput`) is public and pure in both C# and TS — a host can wrap it and add its own tag.
 - Carrier values are **never stored in plain text anywhere** — only the hashed `Key` is stored and logged.
 - **`Tags`** — the default resolver produces no tags. Targeted invalidation tags such as `user:42` or `tenant:7` are the host's business (see below). The format is `kind:value` with no whitespace; `Key` contains no `:` (Redis segment safety).
 

@@ -2,7 +2,7 @@
 
 > Status: **normative** — validated by two independent implementations (the ASP.NET T1-T15 and Nest N1-N6 / G1-G2 matrices, plus `apps/example-agent-client` against both demos).
 
-Defines what sk-mcp adds on top of the Streamable HTTP transport: a `tools/list_changed` notification when the catalog changes, and RFC 9728 Protected Resource Metadata (PRM) with 401 decoration. Session management, Origin/CORS/TLS, and authorization itself (whether auth is required) are the **host's** design — ASP.NET and Express already offer first-class idioms for those; sk-mcp does not wrap them and only adds the two things that have no idiom. Rationale and rejected alternatives: [decision 008](../../docs/kararlar/008-tasima-ve-oauth.md).
+Defines what sk-mcp adds on top of the Streamable HTTP transport: a `tools/list_changed` notification when the catalog changes, and RFC 9728 Protected Resource Metadata (PRM) with 401 decoration. Session management, Origin/CORS/TLS, and authorization itself (whether auth is required) are the **host's** design — ASP.NET and Express already offer first-class idioms for those; sk-mcp does not wrap them and only adds the two things that have no idiom.
 
 ## Scope
 
@@ -100,4 +100,4 @@ On the Nest side the granular test-to-concept mapping lives in `transport.spec.t
 
 ## The demo authorization server
 
-An in-repo authorization server with no Docker and no external service (`sdks/dotnet/samples/DemoAuthServer/`; on the Nest side the SDK's own `mcpAuthRouter` plus an in-memory provider) exists so that all three exit criteria (DemoApi, the xunit `TestServer`, the Nest demo) can run the OAuth 2.1 flow (DCR, mandatory PKCE S256, authorization code, refresh) end to end inside a single process. An external authorization server (Keycloak, Duende, Auth0) is only documented as "this is how you connect in production" and does not enter the repository. Rationale: [decision 008](../../docs/kararlar/008-tasima-ve-oauth.md).
+An in-repo authorization server with no Docker and no external service (`sdks/dotnet/samples/DemoAuthServer/`; on the Nest side the SDK's own `mcpAuthRouter` plus an in-memory provider) exists so that all three exit criteria (DemoApi, the xunit `TestServer`, the Nest demo) can run the OAuth 2.1 flow (DCR, mandatory PKCE S256, authorization code, refresh) end to end inside a single process. An external authorization server (Keycloak, Duende, Auth0) is only documented as "this is how you connect in production" and does not enter the repository.

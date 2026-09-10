@@ -13,8 +13,6 @@ Defines how `search_tools` results are filtered against the caller's authorizati
 | Must it be correct     | Required; security is here  | No; if wrong, invoke still rejects |
 | Purpose                | Security                    | UX + preventing existence leaks    |
 
-Detail: [docs/nasil-calisiyor.md](../../docs/nasil-calisiyor.md).
-
 ## The decision is three-valued
 
 `allow` (show) · `deny` (hide) · `unknown` (could not be evaluated).
@@ -60,7 +58,7 @@ Why that order:
 - **1 comes first:** an absent identity is the cheapest and most certain rejection.
 - **2 before 3:** policy combination is AND, so one certain denial settles the result regardless of any uncertainty elsewhere. The reverse order would drop an endpoint we know something certain about into uncertainty.
 - **3, 4, 5 and 6** all produce `unknown`; their relative order does not change the outcome and is fixed for readability.
-- **A policy with no reported result is not treated as `allow`** (rule 6). The SDK MUST NOT invent values — this is the visibility form of the "no invention" invariant in [decision 001](../../docs/kararlar/001-kimlik-tasiyicilari.md). The same principle is rule 5 for identity and rule 4 for anonymity.
+- **A policy with no reported result is not treated as `allow`** (rule 6). The SDK MUST NOT invent values — this is the visibility form of the "no invention" invariant. The same principle is rule 5 for identity and rule 4 for anonymity.
 
 `auth.anonymous` is about **identity** only, not about the whole of authorization: an anonymous endpoint can still sit behind an imperative check such as a license or feature gate. That is why `yes` alone does not produce `allow`; it only lets the later rules run.
 
@@ -101,8 +99,8 @@ T2 is opt-in and its cost is bounded: the probe is applied to the first K candid
 
 For an endpoint the declarative tier left as `unknown`, the probe obtains the framework's real verdict: a synthetic request (with the same identity composition as invoke) enters the real pipeline and is cut immediately after the authorization decision, **before** the handler.
 
-- **The cost policy belongs to the host.** How aggressively the probe should run varies by backend: database load, rate limiters and acceptable search latency differ in every deployment (see the table in [decision 003](../../docs/kararlar/003-istek-ustverisi.md)). The SDK offers two settings with reasonable defaults: candidate count (`ProbeTopK`, the first K after ranking) and concurrency (`ProbeConcurrency`, 1 = sequential). T2 verdicts are additionally cached per caller; key derivation, namespacing, lifetime/jitter and invalidation are now normative in a separate document, [caching.md](caching.md). If `Identity.Project` derives a value from something other than the outer request (a clock, a counter, a database), the correct lever — as [caching.md](caching.md) also notes — is to override `ICallerScopeResolver`, not to disable the cache.
-- **The flag lives in the request context, not in a header** (C#: `HttpContext.Items`). An outer request MUST NOT be able to turn probe mode on. The host MAY use the flag to skip audit, rate-limit and logging middleware (C#: `IsSkMcpProbe()`). For skips that are not probe-specific, the synthetic-request marker is used instead (C#: `IsSkMcpRequest()`, [decision 003](../../docs/kararlar/003-istek-ustverisi.md) M9) — that marker is also carried at invoke time.
+- **The cost policy belongs to the host.** How aggressively the probe should run varies by backend: database load, rate limiters and acceptable search latency differ in every deployment. The SDK offers two settings with reasonable defaults: candidate count (`ProbeTopK`, the first K after ranking) and concurrency (`ProbeConcurrency`, 1 = sequential). T2 verdicts are additionally cached per caller; key derivation, namespacing, lifetime/jitter and invalidation are now normative in a separate document, [caching.md](caching.md). If `Identity.Project` derives a value from something other than the outer request (a clock, a counter, a database), the correct lever — as [caching.md](caching.md) also notes — is to override `ICallerScopeResolver`, not to disable the cache.
+- **The flag lives in the request context, not in a header** (C#: `HttpContext.Items`). An outer request MUST NOT be able to turn probe mode on. The host MAY use the flag to skip audit, rate-limit and logging middleware (C#: `IsSkMcpProbe()`). For skips that are not probe-specific, the synthetic-request marker is used instead (C#: `IsSkMcpRequest()`, M9) — that marker is also carried at invoke time.
 - **Two cut points:** the framework's authorization-middleware result handler, and an MVC resource filter (after every authorization filter, before model binding). The result handler records a **rejection** for every endpoint; on **success** it cuts only endpoints with no MVC action (minimal APIs) — for an MVC action it continues to `next` so imperative authorization filters run and the resource filter reads the verdict. Otherwise an endpoint carrying `[Authorize]` plus an imperative filter would be counted as `allow` without the filter ever running. A cut probe returns a success status plus the cut marker. If the host has its own result handler it is wrapped, never replaced.
 - **Eligibility (framework-neutral):** the endpoint MUST be known to routing **and** the SDK's cut layer MUST be **proven** installed for that endpoint — that is, the endpoint's execution must pass through a stage where the SDK registered a cut point, running after all authorization and before the handler. Without that proof a probe is issued only if the endpoint carries declarative authorization data **and** its method is safe (GET/HEAD).
 
@@ -123,12 +121,12 @@ Filtering search results while handing the schema to everyone makes hiding meani
 
 ## The `unknown` policy
 
-Default: **show** plus `authUncertain`. Rationale: preserve capability, and rely on enforcement being guaranteed at invoke time. Deployments sensitive to existence leaks MAY switch to `Hide` — the policy belongs to whoever writes the code (see the table in [decision 003](../../docs/kararlar/003-istek-ustverisi.md)).
+Default: **show** plus `authUncertain`. Rationale: preserve capability, and rely on enforcement being guaranteed at invoke time. Deployments sensitive to existence leaks MAY switch to `Hide` — the policy belongs to whoever writes the code.
 
 ## Invariants
 
 1. **Invoke MUST NEVER consult the visibility filter.** If it did there would be two sources of truth, and they would diverge over time. Even if the agent guesses a hidden tool's name and calls it, the pipeline stops it.
-2. **Visibility MUST use exactly the same identity composition as invoke** (the same carrier list, the same projector — [decision 001](../../docs/kararlar/001-kimlik-tasiyicilari.md)). If they diverge, the filter and enforcement contradict each other, and that is the most confusing class of error a user encounters.
+2. **Visibility MUST use exactly the same identity composition as invoke** (the same carrier list, the same projector). If they diverge, the filter and enforcement contradict each other, and that is the most confusing class of error a user encounters.
 3. **Policy names MUST NOT leak to the agent.** `auth` is an internal model; only `authUncertain` reaches the MCP surface.
 4. **Hiding MUST NOT report a reason.** A filtered endpoint is removed from the result; saying "you are not authorized" discloses its existence.
 5. Visibility **is not a security mechanism.** This document does not define an authorization model; it reads the backend's own decisions.

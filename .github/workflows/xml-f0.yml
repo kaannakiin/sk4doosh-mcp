@@ -6,12 +6,10 @@ on:
     branches: [main]
     paths:
       - "packages/xml-lab/**"
-      - "docs/xml/**"
       - "pnpm-lock.yaml"
   pull_request:
     paths:
       - "packages/xml-lab/**"
-      - "docs/xml/**"
       - "pnpm-lock.yaml"
 
 concurrency:

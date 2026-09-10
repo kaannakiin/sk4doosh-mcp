@@ -16,4 +16,4 @@
 
 ## Deliberate metadata limitations
 
-Absolute-anchor images (EXCEL-META-009), formula conditional-format thresholds (EXCEL-META-010), and sheet-local defined names (EXCEL-META-025) remain explicit, tested limitations. Their follow-up acceptance criteria live in `docs/xml/excel-hardening-uygulama.md`. Missing parser metadata is never presented as an exhaustive absence claim.
+Absolute-anchor images (EXCEL-META-009), formula conditional-format thresholds (EXCEL-META-010), and sheet-local defined names (EXCEL-META-025) remain explicit, tested limitations. Missing parser metadata is never presented as an exhaustive absence claim.

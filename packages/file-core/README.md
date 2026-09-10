@@ -2,7 +2,7 @@
 
 Dosya okuyan, salt-okunur, sandbox'lanmış MCP sunucularının paylaşılan makinesi. `@sk-mcp/excel-mcp` bunun üzerine kuruludur; `xml-mcp` ve `pdf-mcp` de kurulacaktır.
 
-Bu paket **`@sk-mcp/core` değildir** ve ona iki yönde de bağlanmaz. `@sk-mcp/core` spec'in HTTP katalog referans implementasyonudur; bu paket yerel dosya kaynaklarının makinesidir. Ayrım [paket-yerlesimi.md](../../docs/paket-yerlesimi.md)'de, gerekçe [karar 015](../../docs/kararlar/015-dosya-kaynagi-cekirdegi.md)'te.
+Bu paket **`@sk-mcp/core` değildir** ve ona iki yönde de bağlanmaz. `@sk-mcp/core` spec'in HTTP katalog referans implementasyonudur; bu paket yerel dosya kaynaklarının makinesidir.
 
 ## Ne veriyor
 
