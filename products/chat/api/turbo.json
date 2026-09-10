@@ -8,7 +8,7 @@
       "outputs": ["dist/**"]
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "build"],
       "passThroughEnv": [
         "CHAT_API_PORT",
         "CHAT_DEFAULT_LOCALE",
@@ -24,6 +24,10 @@
         "CHAT_DEFAULT_LOCALE",
         "CHAT_CORS_ORIGIN"
       ]
+    },
+    "dev:types": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

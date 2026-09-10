@@ -9,7 +9,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,mjs}\"",
     "check-types": "turbo run check-types",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,mjs}\"",
-    "dev:chat": "turbo run dev --filter='@chat/*'",
+    "dev:chat": "turbo run dev dev:types --filter='@chat/*'",
     "dev:sk": "turbo run dev --filter='!@chat/*'",
     "build:chat": "turbo run build --filter='@chat/*'",
     "build:sk": "turbo run build --filter='!@chat/*'",

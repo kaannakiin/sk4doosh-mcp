@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "node --watch dist/main.js",
+    "dev": "node --watch --watch-preserve-output dist/main.js",
+    "dev:types": "tsc --watch --preserveWatchOutput",
     "start": "node dist/main.js",
     "lint": "eslint .",
     "check-types": "tsc -p tsconfig.test.json",
