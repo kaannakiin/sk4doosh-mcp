@@ -1,0 +1,471 @@
+<mxfile host="65bd71144e">
+    <diagram id="p1" name="1 - Ilerleme">
+        <mxGraphModel dx="3014" dy="1080" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1754" pageHeight="2200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="band_browser" value="Tarayici&#xa;@ai-sdk/react useChat" style="rounded=0;fillColor=#f3ecf7;strokeColor=#9673a6;verticalAlign=top;align=center;fontStyle=1;fontSize=13;spacingTop=6;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="40" width="250" height="2040" as="geometry"/>
+                </mxCell>
+                <mxCell id="band_nest" value="Nest HTTP kenari&#xa;@chat/api process" style="rounded=0;fillColor=#eaf2fb;strokeColor=#6c8ebf;verticalAlign=top;align=center;fontStyle=1;fontSize=13;spacingTop=6;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="40" width="250" height="2040" as="geometry"/>
+                </mxCell>
+                <mxCell id="band_loop" value="streamText adim dongusu&#xa;ai@7 + ai-sdk-ollama" style="rounded=0;fillColor=#eaf5e9;strokeColor=#82b366;verticalAlign=top;align=center;fontStyle=1;fontSize=13;spacingTop=6;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="40" width="250" height="2040" as="geometry"/>
+                </mxCell>
+                <mxCell id="band_ollama" value="Ollama host&#xa;10.34.0.19:11434" style="rounded=0;fillColor=#fdf6e3;strokeColor=#d6b656;verticalAlign=top;align=center;fontStyle=1;fontSize=13;spacingTop=6;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="40" width="250" height="2040" as="geometry"/>
+                </mxCell>
+                <mxCell id="band_mcp" value="MCP reader&#xa;child process (stdio)" style="rounded=0;fillColor=#fdf0e1;strokeColor=#d79b00;verticalAlign=top;align=center;fontStyle=1;fontSize=13;spacingTop=6;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="1160" y="40" width="250" height="2040" as="geometry"/>
+                </mxCell>
+                <mxCell id="band_store" value="Depolama&#xa;RAM index + disk" style="rounded=0;fillColor=#f5f5f5;strokeColor=#808080;verticalAlign=top;align=center;fontStyle=1;fontSize=13;spacingTop=6;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="1440" y="40" width="250" height="2040" as="geometry"/>
+                </mxCell>
+                <mxCell id="phA" value="A) Yukleme - tur disinda, kendi HTTP istegi" style="rounded=0;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=2;fontSize=12;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="45" y="105" width="1640" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="u1" value="Dropzone&#xa;POST /chat/files?sessionId" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="140" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="u2" value="Multer limits.fileSize&#xa;&lt;i&gt;akis ortasinda abort, 413&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="140" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="u3" value="detectMediaType&#xa;&lt;i&gt;uzanti karar verir, byte kanitlar - 415&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="205" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="u4" value="RAM Map&#xa;&lt;i&gt;TTL, byte + dosya butcesi&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#808080;" parent="1" vertex="1">
+                    <mxGeometry x="1450" y="140" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="u5" value="disk&#xa;uploadRoot/&lt;sessionId&gt;/&lt;id&gt;.&lt;ext&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#808080;" parent="1" vertex="1">
+                    <mxGeometry x="1450" y="205" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="eu1" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="u1" target="u2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eu2" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="u2" target="u3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eu3" value="dosya adi kullanicidan gelmez" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="u3" target="u4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eu4" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="u4" target="u5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="phB" value="B) Tur baslangici - tek HTTP istegi" style="rounded=0;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=2;fontSize=12;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="45" y="300" width="1640" height="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="n1" value="useChat.sendMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="330" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="n2" value="&lt;b&gt;POST /chat&lt;/b&gt;&#xa;{ id, sessionId, messages[] }&#xa;&lt;i&gt;tum gecmis her seferinde gider&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="395" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="n3" value="LocaleMiddleware -&gt; locale" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="400" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="n4" value="@Body({ streamRequestSchema })&#xa;ZodValidationPipe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="465" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="n4x" value="422 - hic byte yazilmaz&#xa;&lt;i&gt;stream hic baslamaz&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="465" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="n5" value="validateUIMessages(parts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="535" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="n6" value="store.touch(sessionId)&#xa;&lt;i&gt;idle TTL sifirlanir&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="600" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="n7" value="readers.toolsFor(sessionId)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="670" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="m1" value="spawn - sadece dosyasi olan family&#xa;client.tools({ schemas })&#xa;&lt;i&gt;8 tool, ~2.4k token&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="1170" y="665" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="n8" value="&lt;b&gt;prompt kurulur&lt;/b&gt;&#xa;instructions = [ stable, manifest ]&#xa;messages = convertToModelMessages(ui)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="765" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="n8s" value="manifest = store.list(session)&#xa;&lt;i&gt;sandbox path listesi&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#808080;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1450" y="765" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="en1" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n1" target="n2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en2" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n2" target="n3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en3" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n3" target="n4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en3x" value="gecersiz" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;strokeColor=#b85450;fontSize=10;" parent="1" source="n4" target="n4x" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en4" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n4" target="n5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en5" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n5" target="n6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en6" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n6" target="n7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en7" value="stdio JSON-RPC" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="n7" target="m1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en8" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n7" target="n8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="en8s" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;endArrow=none;startArrow=classic;" parent="1" source="n8" target="n8s" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="phC" value="C) Adim dongusu - stopWhen: isStepCount(8)" style="rounded=0;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=2;fontSize=12;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="45" y="880" width="1640" height="900" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" value="collectToolApprovals({ messages })&#xa;&lt;i&gt;SADECE son model mesaji role=tool ise&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="910" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" value="Cozulmeyi bekleyen&#xa;onay var mi?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="635" y="995" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="onaylanani calistir&#xa;reddedilene execution-denied yaz&#xa;&lt;i&gt;model hic cagrilmaz&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="1000" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s4" value="&lt;b&gt;model cagrisi&lt;/b&gt; (doStream)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="1110" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="o1" value="POST /api/chat (stream)&#xa;num_ctx=16384, keep_alive=10m&#xa;think: gonderilmiyor - model default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="1100" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="o2" value="runner KV slot&#xa;&lt;i&gt;en uzun ortak prefix reuse,&#xa;sadece yeni suffix prefill&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="1190" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s5" value="chunk akisi&#xa;reasoning-delta | text-delta&#xa;tool-input-delta | tool-call" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="1200" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s6" value="tool-call&#xa;var mi?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="635" y="1300" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="s7" value="toolApproval({ toolCall })&#xa;-&gt; approvalFor() allowlist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="1405" width="230" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="a1" value="not-applicable&#xa;&lt;i&gt;describe_workbook / describe_document&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="1480" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="a2" value="user-approval + reason&#xa;&lt;b&gt;tool-approval-request&lt;/b&gt; (HMAC imzali)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="1480" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="a3" value="denied&#xa;&lt;i&gt;dynamic veya allowlist disi - fail closed&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="1480" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="stop1" value="&lt;b&gt;DONGU DURUR&lt;/b&gt;&#xa;&lt;i&gt;SDK: a tool call needs approval&lt;/i&gt;&#xa;tur burada biter, HTTP yaniti kapanir" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="1570" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="m2" value="callTool&#xa;&lt;i&gt;sandbox root = session dizini,&#xa;izolasyon file-core tarafinda&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="1170" y="1570" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="s8" value="tool sonucu messages&#39;a eklenir&#xa;isStepCount(8) dolmadi mi?" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="1680" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="es1" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="n8" target="s1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es2" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s1" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es3" value="Evet" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="s2" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es4" value="Hayir" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="s2" target="s4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es3b" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s3" target="s8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es5" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s4" target="o1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es6" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="o1" target="o2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es7" value="SSE chunk" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="o2" target="s5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es8" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s5" target="s6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es9" value="Evet" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="s6" target="s7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es10" value="Hayir - finishReason=stop" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="s6" target="d1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es11" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s7" target="a1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es12" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s7" target="a2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es13" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="s7" target="a3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es14" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="a2" target="stop1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es15" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="a1" target="m2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es16" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="a3" target="s8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es17" value="tool-output-available" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" parent="1" source="m2" target="s8" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="es18" value="sonraki adim" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;dashed=1;strokeColor=#82b366;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" parent="1" source="s8" target="s4" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="870" y="1710"/>
+                            <mxPoint x="870" y="1133"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="phD" value="D) Cikis ve ikinci HTTP istegi" style="rounded=0;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=2;fontSize=12;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="45" y="1800" width="1640" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="d1" value="toUIMessageStream(originalMessages)&#xa;pipeUIMessageStreamToResponse&#xa;&lt;i&gt;@Res() non-passthrough&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="1830" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="d2" value="SSE okunur&#xa;part state makinesi guncellenir" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="1830" width="230" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="d3" value="ToolCard: approval-requested&#xa;kullanici Onayla / Reddet&#xa;addToolApprovalResponse({ id, approved })" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="1900" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="d4" value="&lt;b&gt;sendAutomaticallyWhen true&lt;/b&gt;&#xa;lastAssistantMessageIsComplete...&#xa;YENI POST - ayni tur, ikinci istek" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="1985" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="ed1" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="stop1" target="d1" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ed2" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="d1" target="d2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ed3" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="d2" target="d3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ed4" style="edgeStyle=orthogonalEdgeStyle;html=1;" parent="1" source="d3" target="d4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ed5" value="tur ikiye bolunur - gecmis tekrar gider" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;strokeColor=#d79b00;strokeWidth=2;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="d4" target="n2" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="20" y="2020"/>
+                            <mxPoint x="20" y="430"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p2" name="2 - Olaylar ve durumlar">
+        <mxGraphModel dx="1600" dy="1100" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="ev_title" value="Tel uzerinde yayinlanan olaylar (UI message stream)" style="text;html=1;fontStyle=1;fontSize=15;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="30" width="520" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ev1" value="&lt;b&gt;Tur seviyesi&lt;/b&gt;&#xa;start { messageId }&#xa;finish { finishReason }&#xa;abort { reason }&#xa;error { errorText }&#xa;[DONE]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="70" width="240" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="ev2" value="&lt;b&gt;Adim seviyesi&lt;/b&gt;&#xa;start-step&#xa;finish-step&#xa;&lt;i&gt;bir adim = bir model generation&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="70" width="240" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="ev3" value="&lt;b&gt;Icerik&lt;/b&gt;&#xa;text-start / text-delta / text-end&#xa;reasoning-start / reasoning-delta / reasoning-end&#xa;&#xa;reasoning-delta SDK icin semantic output sayilir" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="220" width="240" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="ev4" value="&lt;b&gt;Tool&lt;/b&gt;&#xa;tool-input-start&#xa;tool-input-delta&#xa;tool-input-available&#xa;tool-approval-request&#xa;tool-output-available&#xa;tool-output-error" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="220" width="240" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="ev5" value="&lt;b&gt;Tuketilmeyen olay&lt;/b&gt;&#xa;reasoning-* geliyor, MessageRow.tsx sadece&#xa;part.type === text ve tool part&#39;larini ciziyor.&#xa;Model dusunurken ekranda sifir geri bildirim var." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="390" width="500" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm_title" value="Tool part durum makinesi (istemci tarafi)" style="text;html=1;fontStyle=1;fontSize=15;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="30" width="500" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm1" value="input-streaming" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="80" width="160" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm2" value="input-available" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="150" width="160" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm3" value="approval-requested&#xa;&lt;i&gt;amber, tur kapanir&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="220" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm4" value="approval-responded&#xa;&lt;i&gt;kullanici karar verdi&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="300" width="160" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm5" value="output-available" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="850" y="290" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm6" value="output-error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="850" y="340" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm7" value="output-denied" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="850" y="390" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="sm1" target="sm2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm2" value="user-approval" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="sm2" target="sm3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm2b" value="not-applicable" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;dashed=1;" edge="1" parent="1" source="sm2" target="sm5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="sm3" target="sm4">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm4" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="sm4" target="sm5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm5" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="sm4" target="sm6">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="esm6" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="sm4" target="sm7">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="sm_trap" value="&lt;b&gt;Tuzak&lt;/b&gt;&#xa;approval-responded ilerlemezse predicate true kalir,&#xa;her stream sonunda yeniden POST atilir. Cikis kosulu yok.&#xa;242 istek bundan geldi. Sunucu tarafi duzeldi,&#xa;istemci tarafinda hala tavan yok." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="460" width="400" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_title" value="Segmentasyon - ic ice gecen birimler" style="text;html=1;fontStyle=1;fontSize=15;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="600" width="500" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_r1" value="HTTP istegi #1&#xa;&lt;i&gt;stream aciktir, tek yonlu&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="640" width="620" height="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s1" value="adim 1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="700" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s1a" value="model cagrisi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="70" y="730" width="120" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s1b" value="tool calistirma" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="730" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s2" value="adim 2 - onay istendi" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="700" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s2a" value="model cagrisi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="370" y="730" width="120" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s2b" value="DURDU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;strokeWidth=2;" vertex="1" parent="1">
+                    <mxGeometry x="500" y="730" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_note1" value="120s total timeout bu kutunun TAMAMINI kapsiyor - her model cagrisi, her tool, tum dusunme suresi" style="text;html=1;align=left;fontSize=11;fontColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="800" width="580" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_gap" value="Kullanici karari&#xa;&lt;i&gt;sunucuda hicbir state yok,&#xa;onay HMAC imzasiyla tarayicida bekler&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#ffe6cc;strokeColor=#d79b00;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="690" y="640" width="230" height="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_r2" value="HTTP istegi #2&#xa;&lt;i&gt;ayni mantiksal tur, yeni istek&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="950" y="640" width="620" height="250" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s3" value="adim 1 - devam" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="970" y="700" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s3a" value="collectToolApprovals" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="980" y="730" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s3b" value="tool calistirma" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="1120" y="730" width="120" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s4" value="adim 2 - anlatim" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="1270" y="700" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s4a" value="model cagrisi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="1280" y="730" width="120" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_s4b" value="text-delta" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="1410" y="730" width="130" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="seg_note2" value="adim sayaci burada SIFIRDAN baslar - isStepCount(8) istek basina, tur basina degil" style="text;html=1;align=left;fontSize=11;fontColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="970" y="800" width="580" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="eseg1" value="stream kapandi" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="seg_r1" target="seg_gap">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eseg2" value="tam gecmis tekrar gonderilir" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" edge="1" parent="1" source="seg_gap" target="seg_r2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctx_title" value="Baglam buyumesi - her istek tum gecmisi yeniden gonderir" style="text;html=1;fontStyle=1;fontSize=15;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="910" width="700" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctx1" value="Sabit her istekte: instructions (~0.5k) + tool tanimlari (~2.4k) = ~2.9k token&#xa;Degisken: kullanici mesajlari + reasoning + tool sonuclari, kumulatif&#xa;k. adimda eklenen bir kalem (N-k+1) kez daha gonderilir - toplam ucgensel, anlik doluluk lineer&#xa;Pencere: num_ctx=16384 (bildirimli, devralinan degil)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f5f5f5;strokeColor=#808080;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="950" width="760" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="ctx2" value="Prefix KV cache&#xa;Ollama en uzun ortak prefix&#39;i yeniden kullanir, sadece yeni suffix prefill edilir.&#xa;Kosul: token 0&#39;dan itibaren byte-ozdes prefix. instructions degisirse (ornek: dosya eklendi)&#xa;o noktadan sonrasi bastan prefill olur.&#xa;keep_alive=10m - runner bosalirsa KV cache de gider." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="820" y="950" width="750" height="110" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p3" name="3 - Kapisiz koseler">
+        <mxGraphModel dx="1600" dy="1100" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="k_title" value="Su an kapisi olmayan noktalar - hangisi kimin tarafinda" style="text;html=1;fontStyle=1;fontSize=16;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="30" width="900" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="k_g1" value="Zaman - hepsi bizim tarafta" style="rounded=0;fillColor=none;strokeColor=#b85450;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="75" width="760" height="330" as="geometry"/>
+                </mxCell>
+                <mxCell id="k1" value="&lt;b&gt;totalMs = 120s, tek kapi&lt;/b&gt;&#xa;Tum turu kapsiyor: her model cagrisi + her tool + tum dusunme.&#xa;Duz sayi verildigi icin stepMs / firstChunkMs / chunkMs / toolMs hepsi undefined.&#xa;Yasayan ama yavas model oluyor, gercekten kilitlenen ayni surede yakalaniyor." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="110" width="730" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="k2" value="&lt;b&gt;Tool calistirmada timeout yok&lt;/b&gt;&#xa;toolMs kurulmuyor. Asilmis bir MCP reader child process sonsuza kadar bekler,&#xa;yalnizca 120s total kapisi onu keser - o da tum turu oldurerek." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="210" width="730" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="k3" value="&lt;b&gt;Istemci kopmasi dongüye yayilmiyor&lt;/b&gt;&#xa;streamText&#39;e abortSignal gecmiyoruz. Kullanici sekmeyi kapatinca adim dongusu,&#xa;model cagrisi ve MCP callTool calismaya devam eder." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="295" width="730" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="k_g2" value="Dongu ve butce" style="rounded=0;fillColor=none;strokeColor=#d79b00;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="820" y="75" width="760" height="330" as="geometry"/>
+                </mxCell>
+                <mxCell id="k4" value="&lt;b&gt;Otomatik yeniden gondermeye tavan yok&lt;/b&gt;&#xa;sendAutomaticallyWhen her stream sonunda degerlendiriliyor. Part ilerlemezse&#xa;istemci sonsuz POST atar. Ayni approval.id icin deneme sayaci yok." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="835" y="110" width="730" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="k5" value="&lt;b&gt;isStepCount(8) istek basina&lt;/b&gt;&#xa;Onay turu ikiye boldugu icin sayac ikinci istekte sifirlanir. Tur basina&#xa;toplam adim veya tool cagrisi butcesi yok." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="835" y="200" width="730" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="k6" value="&lt;b&gt;Baglam butcesi olcumu yok&lt;/b&gt;&#xa;Tool sonucu messages&#39;a girmeden once token maliyeti kontrol edilmiyor.&#xa;Sema tavanlari (READ_SHEET_MAX_CELLS vb.) tek savunma; kumulatif toplam olculmuyor.&#xa;16384 asilirsa ne oldugu hic gozlenmedi." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="835" y="285" width="730" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="k_g3" value="Gorunurluk" style="rounded=0;fillColor=none;strokeColor=#6c8ebf;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="425" width="760" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="k7" value="&lt;b&gt;reasoning part&#39;i cizilmiyor&lt;/b&gt;&#xa;Olay geliyor, istemci yok sayiyor. Model dusunurken UI bos.&#xa;Timeout hissinin dogrudan kaynagi." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="460" width="730" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="k8" value="&lt;b&gt;Adim gorunurlugu yok&lt;/b&gt;&#xa;start-step / finish-step geliyor ama UI kaci kacinci adimda oldugunu gostermiyor.&#xa;Kullanici 8 adimlik bir zincirin neresinde oldugunu bilmiyor." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="540" width="730" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="k9" value="&lt;b&gt;Adim maliyeti olculmuyor&lt;/b&gt;&#xa;usage adim basina geliyor, hicbir yere yazilmiyor. prompt_eval_count ile&#xa;cache isabetini dogrulayabilirdik, log yok." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="620" width="730" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="k_g4" value="Hic kosulmamis yollar" style="rounded=0;fillColor=none;strokeColor=#808080;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="820" y="425" width="760" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="k10" value="Gercek qwen3.8&#39;e karsi bastan sona basarili tek bir tur - hic olmadi&#xa;Reddet yolu -&gt; output-denied, model tool&#39;u tekrar denemeden cevapliyor mu&#xa;describe -&gt; read -&gt; anlat zinciri adim butcesine siginiyor mu&#xa;TTL sohbetin ortasinda dolunca file_not_found duzgun mu&#xa;Ikinci session ilk session&#39;in dosyasini isteyince sandbox gercekten reddediyor mu&#xa;Reader child process cokerse ne oluyor - yeniden spawn yok&#xa;MCP_MAX_SESSIONS tavani dolunca evictOverflow davranisi" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f5f5f5;strokeColor=#808080;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="835" y="460" width="730" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="k_g5" value="Ollama tarafi - bizim kapimiz yok, olmasi da gerekmiyor" style="rounded=0;fillColor=none;strokeColor=#d6b656;dashed=1;verticalAlign=top;align=left;spacingLeft=8;fontStyle=1;fontSize=13;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="715" width="1540" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="k11" value="Ollama koşan bir generation&#39;i sureyle KESMIYOR. Gordugumuz TimeoutError DOMException&#39;i&#xa;bizim AbortSignal.timeout kaynakli - Ollama boyle bir sey uretmiyor.&#xa;&#xa;Ollama&#39;nin kendi kapilari: OLLAMA_LOAD_TIMEOUT (sadece model yukleme), istek kuyrugu,&#xa;OLLAMA_NUM_PARALLEL (es zamanli slot), OLLAMA_CONTEXT_LENGTH, OLLAMA_KV_CACHE_TYPE.&#xa;&#xa;Paylasilan host riski: runner num_ctx&#39;e gore anahtarlanir. Bizim 16384 host&#39;ta yuklu olandan&#xa;farkliysa ayni agirliklar icin ikinci runner acilir - VRAM iki kat." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="55" y="750" width="1510" height="130" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

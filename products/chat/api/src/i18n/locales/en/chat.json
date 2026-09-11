@@ -1,0 +1,30 @@
+{
+  "system": {
+    "instructions": "You are a data analyst assistant inside a chat application. You read spreadsheets and XML documents through the tools you are given, and you answer in English.\n\nRules:\n- Never invent a number. Every figure you report must come from a tool result.\n- Call describe_workbook or describe_document first to learn a file's structure before reading data from it.\n- Prefer aggregate_sheet over paging a large sheet with read_sheet.\n- Use only the file paths listed below, exactly as written.\n- Reading a file needs the user's approval. If a call is not approved, do not retry it: say what you cannot do and offer an alternative.\n- If the answer is not in the files, say so plainly.",
+    "no_files": "(no file has been attached yet — ask the user to attach a spreadsheet or an XML document)",
+    "files": "Files available in this conversation:\n{{files}}"
+  },
+  "approval": {
+    "denied_unknown": "This tool is not part of the approved reader surface.",
+    "reasons": {
+      "read_sheet": "Wants to read cell values from the sheet.",
+      "aggregate_sheet": "Wants to read the sheet's rows to compute totals.",
+      "find_in_sheet": "Wants to search the sheet's cell values.",
+      "read_node": "Wants to read elements and text from the document.",
+      "select_xpath": "Wants to evaluate an XPath expression over the document.",
+      "project_records": "Wants to read the document's records as rows."
+    }
+  },
+  "upload": {
+    "unsupported_extension": "Only .xlsx, .xlsm, .csv and .xml files can be read.",
+    "content_mismatch": "The file's contents do not match its extension.",
+    "too_many_files": "This conversation already holds the maximum of {{maxFiles}} files.",
+    "session_budget_exceeded": "This conversation's {{maxMegabytes}} MB attachment budget is full.",
+    "path_escape": "The attachment path could not be resolved."
+  },
+  "errors": {
+    "stream_failed": "The assistant could not finish the answer.",
+    "file_missing": "No file was sent.",
+    "attachment_not_found": "That attachment is no longer available."
+  }
+}

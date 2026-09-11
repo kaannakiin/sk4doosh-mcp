@@ -5,18 +5,22 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "node --watch dist/main.js",
+    "dev": "node --watch --watch-preserve-output dist/main.js",
+    "dev:types": "tsc --watch --preserveWatchOutput",
     "start": "node dist/main.js",
     "lint": "eslint .",
     "check-types": "tsc -p tsconfig.test.json",
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "^2.0.48",
     "@chat/contracts": "workspace:*",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-express": "^12.0.1",
+    "ai": "^7.0.97",
+    "ai-sdk-ollama": "^4.3.0",
     "i18next": "^26.4.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",

@@ -3,16 +3,28 @@
   "extends": ["//"],
   "tags": ["chat"],
   "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
-    },
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "build"],
       "passThroughEnv": [
         "CHAT_API_PORT",
         "CHAT_DEFAULT_LOCALE",
-        "CHAT_CORS_ORIGIN"
+        "CHAT_CORS_ORIGIN",
+        "CHAT_LLM_BASE_URL",
+        "CHAT_LLM_MODEL",
+        "CHAT_LLM_API_KEY",
+        "CHAT_LLM_TIMEOUT_MS",
+        "CHAT_LLM_CONTEXT_TOKENS",
+        "CHAT_LLM_KEEP_ALIVE",
+        "CHAT_UPLOAD_ROOT",
+        "CHAT_UPLOAD_MAX_BYTES",
+        "CHAT_UPLOAD_MAX_FILES",
+        "CHAT_ATTACHMENT_TTL_MS",
+        "CHAT_SESSION_IDLE_TTL_MS",
+        "CHAT_MCP_EXCEL_CMD",
+        "CHAT_MCP_XML_CMD",
+        "CHAT_MCP_MAX_SESSIONS",
+        "CHAT_TOOL_APPROVAL_SECRET"
       ]
     },
     "start": {
@@ -22,8 +34,24 @@
       "passThroughEnv": [
         "CHAT_API_PORT",
         "CHAT_DEFAULT_LOCALE",
-        "CHAT_CORS_ORIGIN"
+        "CHAT_CORS_ORIGIN",
+        "CHAT_LLM_BASE_URL",
+        "CHAT_LLM_MODEL",
+        "CHAT_LLM_API_KEY",
+        "CHAT_LLM_TIMEOUT_MS",
+        "CHAT_LLM_CONTEXT_TOKENS",
+        "CHAT_LLM_KEEP_ALIVE",
+        "CHAT_UPLOAD_ROOT",
+        "CHAT_UPLOAD_MAX_BYTES",
+        "CHAT_UPLOAD_MAX_FILES",
+        "CHAT_ATTACHMENT_TTL_MS",
+        "CHAT_SESSION_IDLE_TTL_MS",
+        "CHAT_MCP_EXCEL_CMD",
+        "CHAT_MCP_XML_CMD",
+        "CHAT_MCP_MAX_SESSIONS",
+        "CHAT_TOOL_APPROVAL_SECRET"
       ]
-    }
+    },
+    "dev:types": { "cache": false, "persistent": true }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "chat": {
-    "echo_reply": "Aldım: {{content}}"
+  "app": {
+    "name": "Sohbet"
   }
 }

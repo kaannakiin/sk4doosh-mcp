@@ -1,0 +1,9 @@
+{
+  "bad_request": "The request could not be understood.",
+  "not_found": "Not found.",
+  "conflict": "The request conflicts with the current state.",
+  "payload_too_large": "The upload is larger than this server accepts.",
+  "unsupported_media_type": "That file type cannot be read.",
+  "validation_failed": "The request failed validation.",
+  "internal_error": "Something went wrong on the server."
+}

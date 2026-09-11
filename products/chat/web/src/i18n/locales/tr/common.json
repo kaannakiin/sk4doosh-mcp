@@ -1,20 +1,59 @@
 {
   "app": {
-    "title": "Sohbet",
-    "subtitle": "@chat/api'ye bağlı boş bir sohbet kabuğu"
+    "title": "Okuyucu Konsolu",
+    "subtitle": "Bir hesap tablosu veya XML belgesi hakkında soru sor. Her okuma senin onayını bekler."
   },
   "composer": {
-    "placeholder": "Bir mesaj yaz",
+    "placeholder": "Ekli dosyalar hakkında sor",
+    "hint": "Enter gönderir · Shift+Enter yeni satır",
     "send": "Gönder",
-    "sending": "Gönderiliyor"
+    "stop": "Durdur"
   },
   "conversation": {
-    "empty": "Henüz mesaj yok",
+    "empty": "Soldan bir dosya ekle, sonra soru sor.",
     "you": "Sen",
-    "assistant": "Asistan"
+    "assistant": "Asistan",
+    "thinking": "Çalışıyor"
+  },
+  "attachments": {
+    "title": "Ekler",
+    "empty": "Henüz dosya yok.",
+    "drop": "Dosya bırak veya seçmek için tıkla",
+    "accept": "xlsx · xlsm · csv · xml",
+    "remove": "Kaldır",
+    "uploading": "Yükleniyor",
+    "count": "{{count}} dosya",
+    "count_other": "{{count}} dosya"
+  },
+  "tool": {
+    "eyebrow": "Okuyucu çağrısı",
+    "input": "Argümanlar",
+    "output": "Sonuç",
+    "approve": "Onayla",
+    "deny": "Reddet",
+    "states": {
+      "input-streaming": "Hazırlanıyor",
+      "input-available": "Çalışıyor",
+      "approval-requested": "Onay bekliyor",
+      "approval-responded": "Onaylandı",
+      "output-available": "Tamamlandı",
+      "output-error": "Başarısız",
+      "output-denied": "Reddedildi"
+    },
+    "names": {
+      "describe_workbook": "describe_workbook",
+      "read_sheet": "read_sheet",
+      "aggregate_sheet": "aggregate_sheet",
+      "find_in_sheet": "find_in_sheet",
+      "describe_document": "describe_document",
+      "read_node": "read_node",
+      "select_xpath": "select_xpath",
+      "project_records": "project_records"
+    }
   },
   "errors": {
-    "network": "API'ye ulaşılamadı"
+    "network": "API'ye ulaşılamadı",
+    "retry": "Tekrar dene"
   },
   "locale": {
     "label": "Dil",
