@@ -4,13 +4,17 @@ import {
   type NestModule,
 } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_PIPE } from "@nestjs/core";
+import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 
+import { AttachmentsModule } from "./attachments/attachments.module.ts";
 import { ChatModule } from "./chat/chat.module.ts";
 import { loadConfig } from "./config/configuration.ts";
+import { ApiErrorFilter } from "./filters/api-error.filter.ts";
 import { HealthModule } from "./health/health.module.ts";
 import { I18nModule } from "./i18n/i18n.module.ts";
 import { LocaleMiddleware } from "./i18n/locale.middleware.ts";
+import { LlmModule } from "./llm/llm.module.ts";
+import { McpModule } from "./mcp/mcp.module.ts";
 import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
 
 @Module({
@@ -22,10 +26,16 @@ import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
       load: [loadConfig],
     }),
     I18nModule,
+    AttachmentsModule,
+    LlmModule,
+    McpModule,
     HealthModule,
     ChatModule,
   ],
-  providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
+  providers: [
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_FILTER, useClass: ApiErrorFilter },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

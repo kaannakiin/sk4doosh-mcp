@@ -1,20 +1,59 @@
 {
   "app": {
-    "title": "Chat",
-    "subtitle": "A blank chat shell wired to @chat/api"
+    "title": "Reader Console",
+    "subtitle": "Ask about a spreadsheet or an XML document. Every read waits for your approval."
   },
   "composer": {
-    "placeholder": "Write a message",
+    "placeholder": "Ask about the attached files",
+    "hint": "Enter sends · Shift+Enter for a new line",
     "send": "Send",
-    "sending": "Sending"
+    "stop": "Stop"
   },
   "conversation": {
-    "empty": "No messages yet",
+    "empty": "Attach a file on the left, then ask a question.",
     "you": "You",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "thinking": "Working"
+  },
+  "attachments": {
+    "title": "Attachments",
+    "empty": "No files yet.",
+    "drop": "Drop a file, or click to choose",
+    "accept": "xlsx · xlsm · csv · xml",
+    "remove": "Remove",
+    "uploading": "Uploading",
+    "count": "{{count}} file",
+    "count_other": "{{count}} files"
+  },
+  "tool": {
+    "eyebrow": "Reader call",
+    "input": "Arguments",
+    "output": "Result",
+    "approve": "Approve",
+    "deny": "Deny",
+    "states": {
+      "input-streaming": "Preparing",
+      "input-available": "Running",
+      "approval-requested": "Waiting for approval",
+      "approval-responded": "Approved",
+      "output-available": "Done",
+      "output-error": "Failed",
+      "output-denied": "Denied"
+    },
+    "names": {
+      "describe_workbook": "describe_workbook",
+      "read_sheet": "read_sheet",
+      "aggregate_sheet": "aggregate_sheet",
+      "find_in_sheet": "find_in_sheet",
+      "describe_document": "describe_document",
+      "read_node": "read_node",
+      "select_xpath": "select_xpath",
+      "project_records": "project_records"
+    }
   },
   "errors": {
-    "network": "The API could not be reached"
+    "network": "The API could not be reached",
+    "retry": "Try again"
   },
   "locale": {
     "label": "Language",

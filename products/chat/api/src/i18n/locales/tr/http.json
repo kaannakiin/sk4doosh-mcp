@@ -1,0 +1,9 @@
+{
+  "bad_request": "İstek anlaşılamadı.",
+  "not_found": "Bulunamadı.",
+  "conflict": "İstek mevcut durumla çelişiyor.",
+  "payload_too_large": "Yükleme bu sunucunun kabul ettiğinden büyük.",
+  "unsupported_media_type": "Bu dosya türü okunamıyor.",
+  "validation_failed": "İstek doğrulamadan geçemedi.",
+  "internal_error": "Sunucuda bir şeyler ters gitti."
+}

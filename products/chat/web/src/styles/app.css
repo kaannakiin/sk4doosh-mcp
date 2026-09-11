@@ -1,11 +1,187 @@
 @layer theme, base, components, mantine, utilities;
 @import "tailwindcss" source("../");
 @import "@mantine/core/styles.layer.css";
+@import "@mantine/dropzone/styles.layer.css";
 
-/* Mantine 9.6.0 Typography emits `:where(pre) :where(code) { padding: 0 }` before
-   `:where(code) { padding: 1px 5px }`. Both are specificity (0,1,0) because of :where(),
-   so the later generic rule wins and re-applies 5px to code inside pre — which renders as
-   an indent on a block's first line. Unlayered, so it beats the whole mantine layer. */
+[data-mantine-color-scheme="light"] {
+  --chat-surface: #f6f4f0;
+  --chat-panel: #fffefb;
+  --chat-hairline: #ddd8cf;
+  --chat-hairline-strong: #c3bcae;
+  --chat-ink: #17150f;
+  --chat-ink-dim: #6d675c;
+  --chat-accent: #3f42fe;
+  --chat-amber: #b45309;
+  --chat-green: #15803d;
+  --chat-red: #b91c1c;
+  --chat-grain: rgba(23, 21, 15, 0.025);
+}
+
+[data-mantine-color-scheme="dark"] {
+  --chat-surface: #0b0c0e;
+  --chat-panel: #131519;
+  --chat-hairline: #262a31;
+  --chat-hairline-strong: #3b414b;
+  --chat-ink: #e9e9ec;
+  --chat-ink-dim: #8d939e;
+  --chat-accent: #858ffe;
+  --chat-amber: #f0b429;
+  --chat-green: #4ade80;
+  --chat-red: #f87171;
+  --chat-grain: rgba(255, 255, 255, 0.02);
+}
+
+body {
+  background-color: var(--chat-surface);
+  background-image: radial-gradient(var(--chat-grain) 1px, transparent 1px);
+  background-size: 3px 3px;
+  color: var(--chat-ink);
+}
+
+.chat-shell {
+  display: grid;
+  grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.chat-rail {
+  border-right: 1px solid var(--chat-hairline);
+  background-color: var(--chat-panel);
+}
+
+@media (max-width: 60rem) {
+  .chat-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chat-rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--chat-hairline);
+  }
+}
+
+.chat-eyebrow {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chat-ink-dim);
+}
+
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.chat-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 5rem;
+  animation: chat-enter 220ms ease-out both;
+}
+
+@keyframes chat-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-row {
+    animation: none;
+  }
+}
+
+.chat-said {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-cursor::after {
+  content: "";
+  display: inline-block;
+  width: 0.5ch;
+  height: 1em;
+  margin-left: 0.15ch;
+  background-color: var(--chat-accent);
+  vertical-align: text-bottom;
+  animation: chat-blink 1s steps(2, end) infinite;
+}
+
+@keyframes chat-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.chat-tool {
+  border: 1px solid var(--chat-hairline);
+  border-left: 3px solid var(--chat-tool-accent, var(--chat-hairline-strong));
+  background-color: var(--chat-panel);
+  transition: border-left-color 200ms ease;
+}
+
+.chat-tool[data-state="input-streaming"],
+.chat-tool[data-state="input-available"] {
+  --chat-tool-accent: var(--chat-accent);
+}
+
+.chat-tool[data-state="approval-requested"] {
+  --chat-tool-accent: var(--chat-amber);
+  border-color: var(--chat-amber);
+}
+
+.chat-tool[data-state="approval-responded"] {
+  --chat-tool-accent: var(--chat-accent);
+}
+
+.chat-tool[data-state="output-available"] {
+  --chat-tool-accent: var(--chat-green);
+}
+
+.chat-tool[data-state="output-error"],
+.chat-tool[data-state="output-denied"] {
+  --chat-tool-accent: var(--chat-red);
+}
+
+.chat-kv {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
+  gap: 0.125rem 0.75rem;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.75rem;
+}
+
+.chat-kv dt {
+  color: var(--chat-ink-dim);
+}
+
+.chat-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.chat-payload {
+  margin: 0;
+  max-height: 18rem;
+  overflow: auto;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre;
+  color: var(--chat-ink-dim);
+}
+
+.chat-disclosure > summary {
+  cursor: pointer;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chat-ink-dim);
+}
+
 pre code {
   padding: 0;
 }

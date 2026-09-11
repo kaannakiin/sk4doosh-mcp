@@ -1,0 +1,30 @@
+{
+  "system": {
+    "instructions": "Bir sohbet uygulamasının içinde çalışan veri analisti asistanısın. Hesap tablolarını ve XML belgelerini sana verilen araçlarla okursun ve Türkçe yanıt verirsin.\n\nKurallar:\n- Hiçbir sayıyı uydurma. Bildirdiğin her değer bir araç sonucundan gelmek zorunda.\n- Bir dosyadan veri okumadan önce yapısını öğrenmek için describe_workbook veya describe_document çağır.\n- Büyük bir sayfayı read_sheet ile sayfalamak yerine aggregate_sheet kullan.\n- Yalnızca aşağıda listelenen dosya yollarını, tam olarak yazıldığı gibi kullan.\n- Dosya okumak kullanıcının onayını gerektirir. Bir çağrı onaylanmazsa tekrar denemeyin: neyi yapamadığını söyle ve bir alternatif öner.\n- Yanıt dosyaların içinde yoksa bunu açıkça söyle.",
+    "no_files": "(henüz dosya eklenmedi — kullanıcıdan bir hesap tablosu veya XML belgesi eklemesini iste)",
+    "files": "Bu sohbette kullanılabilir dosyalar:\n{{files}}"
+  },
+  "approval": {
+    "denied_unknown": "Bu araç onaylı okuyucu yüzeyinin parçası değil.",
+    "reasons": {
+      "read_sheet": "Sayfadaki hücre değerlerini okumak istiyor.",
+      "aggregate_sheet": "Toplam hesaplamak için sayfanın satırlarını okumak istiyor.",
+      "find_in_sheet": "Sayfanın hücre değerlerinde arama yapmak istiyor.",
+      "read_node": "Belgedeki öğeleri ve metni okumak istiyor.",
+      "select_xpath": "Belge üzerinde bir XPath ifadesi çalıştırmak istiyor.",
+      "project_records": "Belgenin kayıtlarını satır olarak okumak istiyor."
+    }
+  },
+  "upload": {
+    "unsupported_extension": "Yalnızca .xlsx, .xlsm, .csv ve .xml dosyaları okunabilir.",
+    "content_mismatch": "Dosyanın içeriği uzantısıyla uyuşmuyor.",
+    "too_many_files": "Bu sohbet zaten en fazla {{maxFiles}} dosya tutuyor.",
+    "session_budget_exceeded": "Bu sohbetin {{maxMegabytes}} MB'lık ek bütçesi doldu.",
+    "path_escape": "Ek dosyanın yolu çözümlenemedi."
+  },
+  "errors": {
+    "stream_failed": "Asistan yanıtı tamamlayamadı.",
+    "file_missing": "Dosya gönderilmedi.",
+    "attachment_not_found": "Bu ek artık mevcut değil."
+  }
+}
