@@ -3,31 +3,48 @@
     "title": "Okuyucu Konsolu",
     "subtitle": "Bir hesap tablosu veya XML belgesi hakkında soru sor. Her okuma senin onayını bekler."
   },
+  "sessions": {
+    "title": "Sohbetler",
+    "new": "Yeni sohbet",
+    "empty": "Henüz sohbet yok.",
+    "untitled": "Adsız",
+    "rename": "Yeniden adlandır",
+    "delete": "Sil",
+    "deleteConfirm": "“{{title}}” silinsin mi? Bu geri alınamaz.",
+    "save": "Kaydet",
+    "actions": "Sohbet işlemleri",
+    "titleLabel": "Sohbet başlığı"
+  },
   "composer": {
     "placeholder": "Ekli dosyalar hakkında sor",
     "hint": "Enter gönderir · Shift+Enter yeni satır",
     "send": "Gönder",
-    "stop": "Durdur"
+    "stop": "Durdur",
+    "expand": "Girdiyi büyüt",
+    "collapse": "Girdiyi küçült"
   },
   "conversation": {
-    "empty": "Soldan bir dosya ekle, sonra soru sor.",
-    "you": "Sen",
-    "assistant": "Asistan",
-    "thinking": "Çalışıyor"
+    "empty": "Bir dosya ekle, sonra soru sor.",
+    "you": "Senin mesajın",
+    "assistant": "Asistan yanıtı",
+    "thinking": "Düşünüyor",
+    "reasoning": "Akıl yürütme",
+    "truncated": "Daha eski turlar var ama gösterilmiyor.",
+    "toBottom": "En yeni mesaja in"
   },
   "attachments": {
-    "title": "Ekler",
-    "empty": "Henüz dosya yok.",
-    "drop": "Dosya bırak veya seçmek için tıkla",
-    "accept": "xlsx · xlsm · csv · xml",
-    "remove": "Kaldır",
-    "uploading": "Yükleniyor",
-    "count": "{{count}} dosya",
-    "count_other": "{{count}} dosya"
+    "add": "Dosya ekle",
+    "remove": "{{name}} kaldır",
+    "previewFailed": "Bu dosya önizlenemedi.",
+    "preview": "{{name}} önizle",
+    "download": "{{name}} indir",
+    "title": "Ek dosyalar",
+    "uploading": "Yükleniyor…",
+    "more": "+{{count}} tane daha",
+    "more_other": "+{{count}} tane daha",
+    "less": "Daha az göster"
   },
   "tool": {
-    "eyebrow": "Okuyucu çağrısı",
-    "input": "Argümanlar",
     "output": "Sonuç",
     "approve": "Onayla",
     "deny": "Reddet",
@@ -53,11 +70,17 @@
   },
   "errors": {
     "network": "API'ye ulaşılamadı",
-    "retry": "Tekrar dene"
+    "dismiss": "Kapat"
   },
   "locale": {
     "label": "Dil",
     "en": "English",
     "tr": "Türkçe"
+  },
+  "theme": {
+    "label": "Görünüm",
+    "light": "Açık",
+    "dark": "Koyu",
+    "auto": "Sistemle aynı"
   }
 }

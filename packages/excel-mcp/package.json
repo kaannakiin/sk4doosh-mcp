@@ -33,10 +33,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@e965/xlsx": "0.20.3",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@sk-mcp/file-core": "workspace:^",
     "csv-parse": "^7.0.2",
-    "exceljs": "^4.4.0",
+    "saxes": "^6.0.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -45,6 +46,7 @@
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "3.2.7",
     "eslint": "10.9.1",
+    "exceljs": "^4.4.0",
     "jszip": "3.10.1",
     "typescript": "7.0.2",
     "vitest": "^3.2.4"

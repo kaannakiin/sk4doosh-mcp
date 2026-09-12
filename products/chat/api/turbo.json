@@ -1,11 +1,26 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "extends": ["//"],
-  "tags": ["chat"],
+  "extends": [
+    "//"
+  ],
+  "tags": [
+    "chat",
+    "chat-server"
+  ],
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
     "dev": {
-      "dependsOn": ["^build", "build"],
+      "dependsOn": [
+        "^build",
+        "build"
+      ],
       "passThroughEnv": [
         "CHAT_API_PORT",
         "CHAT_DEFAULT_LOCALE",
@@ -13,22 +28,38 @@
         "CHAT_LLM_BASE_URL",
         "CHAT_LLM_MODEL",
         "CHAT_LLM_API_KEY",
-        "CHAT_LLM_TIMEOUT_MS",
         "CHAT_LLM_CONTEXT_TOKENS",
         "CHAT_LLM_KEEP_ALIVE",
-        "CHAT_UPLOAD_ROOT",
         "CHAT_UPLOAD_MAX_BYTES",
         "CHAT_UPLOAD_MAX_FILES",
-        "CHAT_ATTACHMENT_TTL_MS",
         "CHAT_SESSION_IDLE_TTL_MS",
         "CHAT_MCP_EXCEL_CMD",
         "CHAT_MCP_XML_CMD",
         "CHAT_MCP_MAX_SESSIONS",
-        "CHAT_TOOL_APPROVAL_SECRET"
+        "CHAT_TOOL_APPROVAL_SECRET",
+        "CHAT_DATABASE_URL",
+        "CHAT_DB_POOL_MAX",
+        "CHAT_S3_ENDPOINT",
+        "CHAT_S3_PUBLIC_ENDPOINT",
+        "CHAT_S3_BUCKET",
+        "CHAT_S3_ACCESS_KEY",
+        "CHAT_S3_SECRET_KEY",
+        "CHAT_S3_REGION",
+        "CHAT_S3_FORCE_PATH_STYLE",
+        "CHAT_S3_PRESIGN_TTL_S",
+        "CHAT_S3_TIMEOUT_MS",
+        "CHAT_CACHE_ROOT",
+        "CHAT_CACHE_MAX_BYTES",
+        "CHAT_SANDBOX_TTL_MS",
+        "CHAT_UPLOAD_MAX_FILE_BYTES",
+        "CHAT_OWNER_COOKIE_TTL_MS",
+        "CHAT_OWNER_COOKIE_SECURE"
       ]
     },
     "start": {
-      "dependsOn": ["build"],
+      "dependsOn": [
+        "build"
+      ],
       "cache": false,
       "persistent": true,
       "passThroughEnv": [
@@ -38,20 +69,40 @@
         "CHAT_LLM_BASE_URL",
         "CHAT_LLM_MODEL",
         "CHAT_LLM_API_KEY",
-        "CHAT_LLM_TIMEOUT_MS",
         "CHAT_LLM_CONTEXT_TOKENS",
         "CHAT_LLM_KEEP_ALIVE",
-        "CHAT_UPLOAD_ROOT",
         "CHAT_UPLOAD_MAX_BYTES",
         "CHAT_UPLOAD_MAX_FILES",
-        "CHAT_ATTACHMENT_TTL_MS",
         "CHAT_SESSION_IDLE_TTL_MS",
         "CHAT_MCP_EXCEL_CMD",
         "CHAT_MCP_XML_CMD",
         "CHAT_MCP_MAX_SESSIONS",
-        "CHAT_TOOL_APPROVAL_SECRET"
+        "CHAT_TOOL_APPROVAL_SECRET",
+        "CHAT_DATABASE_URL",
+        "CHAT_DB_POOL_MAX",
+        "CHAT_S3_ENDPOINT",
+        "CHAT_S3_PUBLIC_ENDPOINT",
+        "CHAT_S3_BUCKET",
+        "CHAT_S3_ACCESS_KEY",
+        "CHAT_S3_SECRET_KEY",
+        "CHAT_S3_REGION",
+        "CHAT_S3_FORCE_PATH_STYLE",
+        "CHAT_S3_PRESIGN_TTL_S",
+        "CHAT_S3_TIMEOUT_MS",
+        "CHAT_CACHE_ROOT",
+        "CHAT_CACHE_MAX_BYTES",
+        "CHAT_SANDBOX_TTL_MS",
+        "CHAT_UPLOAD_MAX_FILE_BYTES",
+        "CHAT_OWNER_COOKIE_TTL_MS",
+        "CHAT_OWNER_COOKIE_SECURE"
       ]
     },
-    "dev:types": { "cache": false, "persistent": true }
+    "dev:types": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": [
+        "^build"
+      ]
+    }
   }
 }

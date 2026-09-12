@@ -1,0 +1,16 @@
+enum MessageRole {
+  user
+  assistant
+}
+
+enum ReaderFamily {
+  workbook
+  document
+}
+
+enum TurnOutcome {
+  completed
+  failed
+  aborted
+  unknown
+}

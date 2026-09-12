@@ -30,6 +30,7 @@ out/
 build
 dist
 .tanstack
+products/chat/db/src/generated/
 
 
 # Debug

@@ -51,8 +51,8 @@ export function assertReadableFormat(magic: Buffer, requested: string): void {
     );
   }
   throw new SkMcpExcelError(
-    "corrupt_workbook",
-    `'${requested}' is not a valid .xlsx container.`,
-    "Open the file in Excel and re-save it as .xlsx.",
+    "not_a_workbook",
+    `'${requested}' is not a .xlsx container; it does not begin with a zip header.`,
+    "Check what the file really is; the extension does not match its content.",
   );
 }

@@ -1,0 +1,32 @@
+/// Guard: `externalId` is the AI SDK's `UIMessage.id`, not a uuid — the SDK's own
+/// generator produces it and the client re-sends the whole history every turn, so
+/// `(session_id, external_id)` is the idempotency key that keeps an approval
+/// round-trip from inserting a second row. `seq` is the message's position in
+/// that posted history, not an allocator, which is why a regeneration may
+/// legitimately shift it.
+///
+/// Guard: `seq` carries an index, never a unique constraint. It is positional,
+/// so a regeneration that replaces a turn with a different message id writes the
+/// new row at a seq the old row still holds — the reconcile's delete runs after
+/// its insert, so a unique constraint there turns an ordinary edit into a
+/// duplicate-key error. Measured, not theorised: it failed on the first
+/// out-of-order history a client posted.
+model ChatMessage {
+  id           BigInt      @id @default(autoincrement())
+  sessionId    BigInt      @map("session_id")
+  externalId   String      @map("external_id")
+  seq          Int
+  role         MessageRole
+  parts        Json        @db.JsonB
+  text         String      @default("")
+  outcome      TurnOutcome @default(unknown)
+  finishReason String?     @map("finish_reason")
+  createdAt    DateTime    @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt    DateTime    @default(now()) @db.Timestamptz @map("updated_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, externalId], map: "chat_message_external_key")
+  @@index([sessionId, seq], map: "chat_message_seq_idx")
+  @@map("chat_message")
+}

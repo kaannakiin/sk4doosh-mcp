@@ -1,11 +1,30 @@
 import type { Readiness } from "@chat/contracts/http/health";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { TimeoutConfiguration, ToolSet } from "ai";
 import { createOllama, type OllamaProvider } from "ai-sdk-ollama";
 
 import type { AppConfig, LlmConfig } from "../config/configuration.ts";
 
 const PROBE_TIMEOUT_MS = 5_000;
+
+/**
+ * Guard: a streaming turn is bounded by silence, not by duration. A single
+ * `totalMs` covers every step of `stopWhen`, every tool execution and the
+ * materialization download each tool triggers, so the one number that used to
+ * hold all of it killed healthy long turns — and it killed them down the abort
+ * path, which records the turn as `outcome='aborted'` with a half written
+ * answer. `chunkMs` is the guard that actually matters: a stream that has not
+ * emitted for a minute is dead, however long the turn has run. `totalMs` stays
+ * only as an outer ceiling and should never be what fires.
+ */
+const FIRST_CHUNK_TIMEOUT_MS = 120_000;
+
+const CHUNK_TIMEOUT_MS = 60_000;
+
+const TOOL_TIMEOUT_MS = 120_000;
+
+const TOTAL_TIMEOUT_MS = 900_000;
 
 interface TagsResponse {
   models?: { name?: string }[];
@@ -31,8 +50,13 @@ export class LlmService {
     });
   }
 
-  get timeoutMs(): number {
-    return this.settings.timeoutMs;
+  get timeout(): TimeoutConfiguration<ToolSet> {
+    return {
+      firstChunkMs: FIRST_CHUNK_TIMEOUT_MS,
+      chunkMs: CHUNK_TIMEOUT_MS,
+      toolMs: TOOL_TIMEOUT_MS,
+      totalMs: TOTAL_TIMEOUT_MS,
+    };
   }
 
   get modelId(): string {

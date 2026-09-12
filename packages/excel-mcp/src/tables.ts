@@ -1,5 +1,5 @@
-import type { Worksheet } from "exceljs";
 import { limits } from "./limits.js";
+import type { OoxmlTable, OoxmlTableColumn } from "./ooxml/tables.js";
 import { columnToLetters, parseCellRef } from "./range.js";
 import type { DeclaredTable } from "./sheet.js";
 
@@ -32,67 +32,15 @@ export interface TableReport {
   readonly warnings?: readonly string[];
 }
 
-interface StoredTableColumn {
-  readonly name?: string;
-  readonly totalsRowFunction?: string;
-  readonly totalsRowLabel?: string;
-  readonly filterButton?: boolean;
-}
-
-interface StoredTable {
-  readonly name?: string;
-  readonly displayName?: string;
-  readonly tableRef?: string;
-  readonly headerRow?: boolean;
-  readonly totalsRow?: boolean;
-  readonly autoFilterRef?: string;
-  readonly columns?: readonly StoredTableColumn[];
-}
-
-type RefTable = StoredTable & { readonly tableRef: string };
-
-interface TableReader {
-  readonly tables?: Readonly<Record<string, { table?: StoredTable }>>;
-  readonly autoFilter?: unknown;
-}
-
-function storedTablesOf(
-  worksheet: Worksheet,
-): readonly (readonly [string, RefTable])[] {
-  const stored = (worksheet as Worksheet & TableReader).tables;
-  if (stored === undefined) {
-    return [];
-  }
-  const found: [string, RefTable][] = [];
-  for (const [key, entry] of Object.entries(stored)) {
-    const table = entry.table;
-    const ref = table?.tableRef;
-    if (table === undefined || ref === undefined) {
-      continue;
-    }
-    found.push([key, { ...table, tableRef: ref }]);
-  }
-  return found;
-}
-
-export function declaredTablesOf(worksheet: Worksheet): DeclaredTable[] {
-  return storedTablesOf(worksheet).map(([key, table]) => ({
-    name: table.name ?? key,
-    ref: table.tableRef,
-    headerRow: table.headerRow !== false,
-    columns: (table.columns ?? []).map((column) =>
-      typeof column.name === "string" ? column.name : null,
-    ),
+export function declaredTablesOf(
+  tables: readonly OoxmlTable[],
+): DeclaredTable[] {
+  return tables.map((table) => ({
+    name: table.name,
+    ref: table.ref,
+    headerRow: table.headerRow,
+    columns: table.columns.map((column) => column.name ?? null),
   }));
-}
-
-export function autoFilterRefOf(worksheet: Worksheet): string | undefined {
-  const filter = (worksheet as Worksheet & TableReader).autoFilter;
-  return typeof filter === "string" ? filter : undefined;
-}
-
-export function tableCountOf(worksheet: Worksheet): number {
-  return storedTablesOf(worksheet).length;
 }
 
 interface Origin {
@@ -116,7 +64,7 @@ function originOf(ref: string): Origin | undefined {
 }
 
 function columnDetail(
-  column: StoredTableColumn,
+  column: OoxmlTableColumn,
   offset: number,
   origin: Origin | undefined,
   totalsRow: boolean,
@@ -142,12 +90,12 @@ function columnDetail(
   };
 }
 
-function tableDetail(key: string, table: RefTable): DeclaredTableDetail {
-  const ref = table.tableRef;
+function tableDetail(table: OoxmlTable): DeclaredTableDetail {
+  const ref = table.ref;
   const origin = originOf(ref);
-  const name = table.name ?? key;
-  const totalsRow = table.totalsRow === true;
-  const declared = table.columns ?? [];
+  const name = table.name;
+  const totalsRow = table.totalsRow;
+  const declared = table.columns;
   const columnsTruncated = declared.length > limits.maxTableColumns;
   const kept = columnsTruncated
     ? declared.slice(0, limits.maxTableColumns)
@@ -158,7 +106,7 @@ function tableDetail(key: string, table: RefTable): DeclaredTableDetail {
       ? {}
       : { displayName: table.displayName }),
     ref,
-    headerRow: table.headerRow !== false,
+    headerRow: table.headerRow,
     totalsRow,
     ...(table.autoFilterRef === undefined
       ? {}
@@ -170,25 +118,26 @@ function tableDetail(key: string, table: RefTable): DeclaredTableDetail {
   };
 }
 
-export function collectTables(worksheet: Worksheet): TableReport {
-  const ordered = storedTablesOf(worksheet)
-    .map(([key, table]) => ({ key, table, origin: originOf(table.tableRef) }))
-    .sort((left, right) => {
-      const a = left.origin;
-      const b = right.origin;
-      if (a === undefined || b === undefined) {
-        return 0;
-      }
-      return a.row === b.row ? a.left - b.left : a.row - b.row;
-    });
+export function collectTables(
+  sheet: string,
+  tables: readonly OoxmlTable[],
+): TableReport {
+  const ordered = [...tables].sort((left, right) => {
+    const a = originOf(left.ref);
+    const b = originOf(right.ref);
+    if (a === undefined || b === undefined) {
+      return 0;
+    }
+    return a.row === b.row ? a.left - b.left : a.row - b.row;
+  });
   const truncated = ordered.length > limits.maxTablesPerSheet;
   const kept = truncated ? ordered.slice(0, limits.maxTablesPerSheet) : ordered;
   return {
-    sheet: worksheet.name,
+    sheet,
     count: ordered.length,
-    tables: kept.map((entry) => tableDetail(entry.key, entry.table)),
-    ...(kept.some((entry) =>
-      entry.table.columns?.some((column) => typeof column.name !== "string"),
+    tables: kept.map(tableDetail),
+    ...(kept.some((table) =>
+      table.columns.some((column) => column.name === undefined),
     )
       ? {
           warnings: [

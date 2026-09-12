@@ -34,6 +34,9 @@
     "tags": {
       "chat": {
         "dependents": { "allow": ["chat"] }
+      },
+      "chat-server": {
+        "dependents": { "allow": ["chat-server"] }
       }
     }
   }

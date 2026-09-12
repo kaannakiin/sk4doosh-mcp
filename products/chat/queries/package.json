@@ -1,0 +1,39 @@
+{
+  "name": "@chat/queries",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chat/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@ai-sdk/react": "^4.0.100",
+    "@tanstack/react-query": "^5.96.5",
+    "ai": "^7.0.97",
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@ai-sdk/react": "^4.0.100",
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@tanstack/react-query": "^5.96.5",
+    "@types/react": "^19.2.18",
+    "ai": "^7.0.97",
+    "eslint": "10.9.1",
+    "react": "^19.2.8",
+    "typescript": "7.0.2"
+  }
+}

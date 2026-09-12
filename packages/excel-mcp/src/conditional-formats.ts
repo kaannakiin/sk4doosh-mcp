@@ -1,6 +1,10 @@
 import { truncateWellFormed } from "@sk-mcp/file-core";
-import type { Worksheet } from "exceljs";
 import { limits } from "./limits.js";
+import type {
+  OoxmlConditionalBlock,
+  OoxmlConditionalRule,
+  OoxmlThreshold,
+} from "./ooxml/conditional-formats.js";
 import {
   metadataLimitations,
   type MetadataLimitation,
@@ -9,6 +13,7 @@ import {
 export interface ConditionalFormatThreshold {
   readonly type: string;
   readonly value?: number;
+  readonly formula?: string;
   readonly unsupported?: true;
 }
 
@@ -40,47 +45,12 @@ export interface ConditionalFormatReport {
   readonly hint?: string;
 }
 
-interface StoredThreshold {
-  readonly type?: string;
-  readonly value?: number;
-}
-
-interface StoredRule {
-  readonly type?: string;
-  readonly operator?: string;
-  readonly priority?: number;
-  readonly formulae?: readonly unknown[];
-  readonly timePeriod?: string;
-  readonly iconSet?: string;
-  readonly rank?: number;
-  readonly percent?: boolean;
-  readonly bottom?: boolean;
-  readonly aboveAverage?: boolean;
-  readonly cfvo?: readonly StoredThreshold[];
-}
-
-export interface StoredConditionalFormat {
-  readonly ref?: string;
-  readonly rules?: readonly StoredRule[];
-}
-
-interface ConditionalFormatHost {
-  readonly conditionalFormattings?: readonly StoredConditionalFormat[] | null;
-}
-
-export function conditionalFormatsOf(
-  worksheet: Worksheet,
-): readonly StoredConditionalFormat[] {
-  return (
-    (worksheet as Worksheet & ConditionalFormatHost).conditionalFormattings ??
-    []
-  );
-}
-
-export function conditionalFormatRuleCountOf(worksheet: Worksheet): number {
+export function conditionalFormatRuleCountOf(
+  blocks: readonly OoxmlConditionalBlock[],
+): number {
   let total = 0;
-  for (const block of conditionalFormatsOf(worksheet)) {
-    total += block.rules?.length ?? 0;
+  for (const block of blocks) {
+    total += block.rules.length;
   }
   return total;
 }
@@ -93,25 +63,22 @@ function splitRanges(ref: string | undefined): string[] {
 }
 
 function thresholdsOf(
-  cfvo: readonly StoredThreshold[] | undefined,
+  cfvo: readonly OoxmlThreshold[] | undefined,
 ): ConditionalFormatThreshold[] | undefined {
   if (cfvo === undefined || cfvo.length === 0) {
     return undefined;
   }
-  return cfvo
-    .filter(
-      (entry): entry is StoredThreshold & { type: string } =>
-        typeof entry.type === "string",
-    )
-    .map((entry) => ({
-      type: entry.type,
-      ...(entry.type === "formula" ||
-      (entry.value !== undefined && !Number.isFinite(entry.value))
-        ? { unsupported: true as const }
-        : entry.value === undefined
-          ? {}
-          : { value: entry.value }),
-    }));
+  return cfvo.map((entry) => ({
+    type: entry.type,
+    ...(entry.formula === undefined
+      ? {}
+      : { formula: truncateWellFormed(entry.formula, limits.maxStringChars) }),
+    ...(entry.value === undefined
+      ? {}
+      : Number.isFinite(entry.value)
+        ? { value: entry.value }
+        : { unsupported: true as const }),
+  }));
 }
 
 function formulaeOf(
@@ -126,7 +93,7 @@ function formulaeOf(
 }
 
 function project(
-  rule: StoredRule,
+  rule: OoxmlConditionalRule,
   ranges: readonly string[],
 ): ConditionalFormatRule {
   const rangesTruncated = ranges.length > limits.maxRangesPerRule;
@@ -135,7 +102,7 @@ function project(
   return {
     ranges: rangesTruncated ? ranges.slice(0, limits.maxRangesPerRule) : ranges,
     rangesTruncated,
-    type: rule.type ?? "unknown",
+    type: rule.type,
     ...(rule.priority === undefined ? {} : { priority: rule.priority }),
     ...(rule.operator === undefined ? {} : { operator: rule.operator }),
     ...(formulae === undefined ? {} : { formulae }),
@@ -152,12 +119,13 @@ function project(
 }
 
 export function collectConditionalFormats(
-  worksheet: Worksheet,
+  sheet: string,
+  blocks: readonly OoxmlConditionalBlock[],
 ): ConditionalFormatReport {
   const flattened: ConditionalFormatRule[] = [];
-  for (const block of conditionalFormatsOf(worksheet)) {
+  for (const block of blocks) {
     const ranges = splitRanges(block.ref);
-    for (const rule of block.rules ?? []) {
+    for (const rule of block.rules) {
       flattened.push(project(rule, ranges));
     }
   }
@@ -177,12 +145,15 @@ export function collectConditionalFormats(
   const kept = truncated
     ? flattened.slice(0, limits.maxConditionalFormatRules)
     : flattened;
+  const unsupportedThresholds = kept.some((rule) =>
+    rule.thresholds?.some((threshold) => threshold.unsupported === true),
+  );
   return {
-    sheet: worksheet.name,
+    sheet,
     count: flattened.length,
     rules: kept,
     complete: false,
-    limitations: [metadataLimitations.thresholds],
+    limitations: unsupportedThresholds ? [metadataLimitations.thresholds] : [],
     rangesTruncated: kept.some((rule) => rule.rangesTruncated),
     truncated,
     ...(truncated

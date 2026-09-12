@@ -61,10 +61,8 @@ export type {
   PredicateOptions,
 } from "./predicate.js";
 export {
-  autoFilterRefOf,
   collectTables,
   declaredTablesOf,
-  tableCountOf,
 } from "./tables.js";
 export type {
   DeclaredTableDetail,
@@ -87,7 +85,7 @@ export type {
   MetricFunction,
   MetricRequest,
 } from "./aggregate.js";
-export { capabilities } from "./capabilities.js";
+export { capabilities, capabilitiesFor } from "./capabilities.js";
 export type { FormatCapabilities } from "./capabilities.js";
 export {
   csvSheetName,
@@ -118,29 +116,28 @@ export type {
   LoadedWorkbook,
 } from "./document.js";
 export {
-  describeWorkbook,
-  parseXlsx,
-  requireBounds,
-  selectWorksheet,
-  usedBounds,
-} from "./workbook.js";
+  describeSheetJs,
+  parseSheetJs,
+  selectSheetName,
+  sheetjsSheetView,
+} from "./sheetjs-workbook.js";
+export type { SheetJsWorkbook } from "./sheetjs-workbook.js";
 export type {
   DocumentMeta,
   SheetSummary,
   WorkbookDescription,
-} from "./workbook.js";
+} from "./types.js";
 export {
   collectConditionalFormats,
   conditionalFormatRuleCountOf,
-  conditionalFormatsOf,
 } from "./conditional-formats.js";
 export type {
   ConditionalFormatReport,
   ConditionalFormatRule,
   ConditionalFormatThreshold,
 } from "./conditional-formats.js";
-export { collectImages, imageCountOf } from "./images.js";
-export type { ImageReport, SheetImage } from "./images.js";
+export { collectImages } from "./images.js";
+export type { ImageReport, MediaEntry, SheetImage } from "./images.js";
 export { collectValidations, compressAddresses } from "./validations.js";
 export type { ValidationReport, ValidationRule } from "./validations.js";
 export { findInSheet, readSheet } from "./read-sheet.js";

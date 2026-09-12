@@ -1,0 +1,10 @@
+model ChatOwner {
+  id         BigInt   @id @default(autoincrement())
+  tokenHash  Bytes    @unique @map("token_hash")
+  createdAt  DateTime @default(now()) @db.Timestamptz @map("created_at")
+  lastSeenAt DateTime @default(now()) @db.Timestamptz @map("last_seen_at")
+
+  sessions ChatSession[]
+
+  @@map("chat_owner")
+}

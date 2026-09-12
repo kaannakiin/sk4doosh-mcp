@@ -1,0 +1,26 @@
+/// Guard: `family` and `sandboxPath` are null exactly for images, and that is a
+/// database invariant rather than a convention — an image has no reader process
+/// and is never materialized into the directory the readers are rooted at.
+/// Postgres treats nulls as distinct, so the `(session_id, sandbox_path)` unique
+/// index still admits many image rows per session.
+model ChatAttachment {
+  id          BigInt        @id @default(autoincrement())
+  publicId    String        @unique @default(uuid(7)) @db.Uuid @map("public_id")
+  sessionId   BigInt        @map("session_id")
+  filename    String
+  mediaType   String        @map("media_type")
+  family      ReaderFamily?
+  sandboxPath String?       @map("sandbox_path")
+  objectKey   String        @unique @map("object_key")
+  bytes       Int
+  checksum    Bytes
+  createdAt   DateTime      @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt   DateTime?     @db.Timestamptz @map("deleted_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, sandboxPath], map: "chat_attachment_sandbox_key")
+  @@index([sessionId], map: "chat_attachment_session_idx")
+  @@index([deletedAt], map: "chat_attachment_tombstone_idx")
+  @@map("chat_attachment")
+}

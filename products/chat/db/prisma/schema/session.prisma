@@ -1,0 +1,23 @@
+/// Guard: `publicId` is the only identifier that leaves this process. It is
+/// minted by the browser with `crypto.randomUUID()` before the server has ever
+/// heard of the session, because `useChat({ id })` keys on it, and it doubles as
+/// the sandbox directory name — which is what the uuid constraint makes safe by
+/// construction. `id` is the internal surrogate every foreign key and index
+/// carries; it must never appear in a response, a cursor or an object key.
+model ChatSession {
+  id           BigInt    @id @default(autoincrement())
+  publicId     String    @unique @db.Uuid @map("public_id")
+  ownerId      BigInt    @map("owner_id")
+  title        String?
+  messageCount Int       @default(0) @map("message_count")
+  createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt    DateTime  @default(now()) @db.Timestamptz @map("updated_at")
+  deletedAt    DateTime? @db.Timestamptz @map("deleted_at")
+
+  owner       ChatOwner        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+  attachments ChatAttachment[]
+
+  @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)], map: "chat_session_owner_recent_idx")
+  @@map("chat_session")
+}

@@ -4,7 +4,11 @@ import { performance } from "node:perf_hooks";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import { parseCsv } from "../../dist/csv.js";
-import { parseXlsx, describeWorkbook } from "../../dist/workbook.js";
+import {
+  describeSheetJs,
+  parseSheetJs,
+} from "../../dist/sheetjs-workbook.js";
+import { collectValidations } from "../../dist/validations.js";
 const report = {};
 let start = performance.now();
 const bytes = Buffer.alloc(16 * 1024 * 1024, 0x61);
@@ -42,20 +46,25 @@ zip.file(
 );
 const xlsx = await zip.generateAsync({ type: "nodebuffer" });
 start = performance.now();
-const parsed = await parseXlsx(xlsx, "validation.xlsx");
+const parsed = parseSheetJs(xlsx, "validation.xlsx");
+const describeOptions = { includeDefinedNames: false };
 report.validationParseMs = performance.now() - start;
+const validations = collectValidations("Validation", parsed.validations.get("Validation"));
+assert.equal(validations.count, 1);
+assert.equal(validations.coveredCellCount, 5001);
+report.validationCoveredCells = validations.coveredCellCount;
 const meta = {
   filePath: "validation.xlsx",
   sizeBytes: xlsx.length,
   modifiedAt: "2026-01-01T00:00:00.000Z",
 };
 start = performance.now();
-const described = describeWorkbook(parsed, meta, false);
+const described = describeSheetJs(parsed, meta, describeOptions);
 report.validationDescribeMs = performance.now() - start;
-assert.equal(described.sheets[0].dataValidationRuleCount, null);
-assert.equal(described.sheets[0].dataValidationRuleCountExact, false);
+assert.equal(described.sheets[0].dataValidationRuleCount, 1);
+assert.equal(described.sheets[0].dataValidationRuleCountExact, true);
 start = performance.now();
-describeWorkbook(parsed, meta, false);
+describeSheetJs(parsed, meta, describeOptions);
 report.validationCachedDescribeMs = performance.now() - start;
 report.peakRssKiB = process.resourceUsage().maxRSS;
 assert.ok(report.peakRssKiB < 1024 * 1024, "resource test exceeded 1 GiB RSS");

@@ -1,0 +1,228 @@
+import { asciiUpper } from "@sk-mcp/file-core";
+import { limits } from "../limits.js";
+import { parseCellRef } from "../range.js";
+import type { OpcPackage } from "./package.js";
+import { namespaces, readXmlPart } from "./xml.js";
+
+export type ValidationFormula = string | number | Date;
+
+export interface OoxmlValidationRule {
+  readonly ranges: readonly string[];
+  readonly rangesTruncated: boolean;
+  readonly type: string;
+  readonly operator?: string;
+  readonly allowBlank?: boolean;
+  readonly formulae?: readonly ValidationFormula[];
+  readonly promptTitle?: string;
+  readonly prompt?: string;
+  readonly errorTitle?: string;
+  readonly error?: string;
+  readonly errorStyle?: string;
+  readonly showInputMessage?: boolean;
+  readonly showErrorMessage?: boolean;
+}
+
+export interface OoxmlValidations {
+  readonly rules: readonly OoxmlValidationRule[];
+  readonly coveredCellCount: number;
+  readonly rangesTruncated: boolean;
+}
+
+interface Draft {
+  readonly ranges: string[];
+  readonly attributes: Record<string, unknown>;
+  readonly formulae: ValidationFormula[];
+  readonly type: string;
+}
+
+/**
+ * ECMA-376 writes these as "1"/"0", but Excel and several generators emit
+ * "true"/"false" for the same attributes; accepting only "1" silently reads
+ * half the real-world corpus as false.
+ */
+function flag(raw: string | undefined): boolean | undefined {
+  if (raw === undefined) return undefined;
+  return raw === "1" || raw === "true";
+}
+
+/**
+ * The serial epoch offset already absorbs the phantom 1900-02-29 that Excel
+ * counts, so no leap-year correction belongs here for dates at or after
+ * 1900-03-01. `date1904` shifts the epoch by the 1462 days between the two
+ * date systems.
+ */
+function serialToDate(serial: number, date1904: boolean): Date {
+  return new Date(
+    Math.round((serial - 25569 + (date1904 ? 1462 : 0)) * 86_400_000),
+  );
+}
+
+/** ECMA-376 leaves `operator` meaningless for these types, so none is reported. */
+const operatorlessTypes = new Set(["any", "list", "custom"]);
+
+function coerce(
+  text: string,
+  type: string,
+  date1904: boolean,
+): ValidationFormula {
+  switch (type) {
+    case "whole":
+    case "textLength":
+      return Number.parseInt(text, 10);
+    case "decimal":
+      return Number.parseFloat(text);
+    case "date":
+      return serialToDate(Number.parseFloat(text), date1904);
+    default:
+      return text;
+  }
+}
+
+function cleanRange(raw: string): string {
+  return asciiUpper(raw.replaceAll("$", ""));
+}
+
+function areaOf(range: string): number {
+  const [start, end] = range.split(":");
+  if (start === undefined) return 0;
+  const from = parseCellRef(start);
+  const to = end === undefined ? from : parseCellRef(end);
+  return (
+    (Math.abs(to.row - from.row) + 1) * (Math.abs(to.column - from.column) + 1)
+  );
+}
+
+/**
+ * `sqref` is a whitespace-separated list of ranges and is already the shape the
+ * report wants, so ranges are read as written rather than expanded to one
+ * address per cell and recompressed. A single `A2:A1048576` rule therefore
+ * costs nothing to describe, which is what removes the per-cell visit budget
+ * the ExcelJS-backed path needed.
+ */
+function rangesOf(sqref: string | undefined): string[] {
+  if (sqref === undefined) return [];
+  return sqref
+    .split(/\s+/)
+    .filter((part) => part !== "")
+    .map(cleanRange);
+}
+
+function identityOf(draft: Draft): string {
+  return JSON.stringify([
+    draft.type,
+    draft.formulae.map((formula) =>
+      formula instanceof Date ? formula.toISOString() : formula,
+    ),
+    Object.entries(draft.attributes).sort(([left], [right]) =>
+      left < right ? -1 : left > right ? 1 : 0,
+    ),
+  ]);
+}
+
+export function readValidations(
+  opc: OpcPackage,
+  sheetPart: string,
+  date1904 = false,
+): OoxmlValidations {
+  const xml = opc.part(sheetPart);
+  if (xml === undefined) {
+    return { rules: [], coveredCellCount: 0, rangesTruncated: false };
+  }
+
+  const drafts: Draft[] = [];
+  let current: Draft | undefined;
+  let formulaText: string | undefined;
+
+  readXmlPart(xml, sheetPart, {
+    onOpen(node) {
+      if (node.uri !== namespaces.spreadsheetml) return;
+      if (node.local === "dataValidation") {
+        const declaredType = node.attr("type");
+        const type = declaredType ?? "any";
+        const attributes: Record<string, unknown> = {};
+        const put = (name: string, value: unknown) => {
+          if (value !== undefined) attributes[name] = value;
+        };
+        if (declaredType !== undefined) {
+          put("allowBlank", flag(node.attr("allowBlank")));
+        }
+        put("showInputMessage", flag(node.attr("showInputMessage")));
+        put("showErrorMessage", flag(node.attr("showErrorMessage")));
+        if (!operatorlessTypes.has(type)) {
+          put("operator", node.attr("operator") ?? "between");
+        }
+        put("promptTitle", node.attr("promptTitle"));
+        put("prompt", node.attr("prompt"));
+        put("errorStyle", node.attr("errorStyle"));
+        put("errorTitle", node.attr("errorTitle"));
+        put("error", node.attr("error"));
+        current = {
+          ranges: rangesOf(node.attr("sqref")),
+          attributes,
+          formulae: [],
+          type,
+        };
+        return;
+      }
+      if (
+        current !== undefined &&
+        (node.local === "formula1" || node.local === "formula2")
+      ) {
+        formulaText = "";
+      }
+    },
+    onText(text) {
+      if (formulaText !== undefined) formulaText += text;
+    },
+    onClose(local, uri) {
+      if (uri !== namespaces.spreadsheetml) return;
+      if (local === "formula1" || local === "formula2") {
+        if (current !== undefined && formulaText !== undefined) {
+          current.formulae.push(coerce(formulaText, current.type, date1904));
+        }
+        formulaText = undefined;
+        return;
+      }
+      if (local === "dataValidation" && current !== undefined) {
+        if (current.formulae.length === 0) {
+          delete current.attributes["operator"];
+        }
+        drafts.push(current);
+        current = undefined;
+      }
+    },
+  });
+
+  const grouped = new Map<string, Draft>();
+  let coveredCellCount = 0;
+  for (const draft of drafts) {
+    coveredCellCount += draft.ranges.reduce(
+      (total, range) => total + areaOf(range),
+      0,
+    );
+    const key = identityOf(draft);
+    const existing = grouped.get(key);
+    if (existing === undefined) {
+      grouped.set(key, draft);
+    } else {
+      existing.ranges.push(...draft.ranges);
+    }
+  }
+
+  let rangesTruncated = false;
+  const rules = [...grouped.values()].map((draft): OoxmlValidationRule => {
+    const truncated = draft.ranges.length > limits.maxRangesPerRule;
+    rangesTruncated = rangesTruncated || truncated;
+    return {
+      ranges: truncated
+        ? draft.ranges.slice(0, limits.maxRangesPerRule)
+        : draft.ranges,
+      rangesTruncated: truncated,
+      type: draft.type,
+      ...draft.attributes,
+      ...(draft.formulae.length === 0 ? {} : { formulae: draft.formulae }),
+    };
+  });
+
+  return { rules, coveredCellCount, rangesTruncated };
+}

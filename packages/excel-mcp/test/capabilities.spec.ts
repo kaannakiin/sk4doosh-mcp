@@ -46,6 +46,7 @@ describe("declared capabilities match observed behaviour", () => {
     >
   > = {
     merges: (filePath) => handlers.get_merged_ranges({ filePath }),
+    frozenPanes: (filePath) => handlers.describe_workbook({ filePath }),
     dataValidations: (filePath) => handlers.get_data_validations({ filePath }),
     formulas: (filePath) =>
       handlers.read_sheet({ filePath, valueMode: "formulas" }),

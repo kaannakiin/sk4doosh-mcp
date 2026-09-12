@@ -6,7 +6,6 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/paths.js";
-import { selectWorksheet } from "../src/workbook.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {
   const fixtures = inject("fixtures");
@@ -25,8 +24,9 @@ async function loadXlsx(path: SandboxedPath): Promise<LoadedWorkbook> {
 async function facets(sheet: string) {
   const loaded = await loadXlsx(await pathTo("facets.xlsx"));
   return collectImages(
-    loaded.workbook,
-    selectWorksheet(loaded.workbook, sheet),
+    sheet,
+    loaded.workbook.images.get(sheet) ?? [],
+    loaded.workbook.media,
   );
 }
 

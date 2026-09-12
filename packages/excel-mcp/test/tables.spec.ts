@@ -6,7 +6,6 @@ import {
   type SandboxedPath,
 } from "../src/paths.js";
 import { collectTables } from "../src/tables.js";
-import { selectWorksheet } from "../src/workbook.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {
   const fixtures = inject("fixtures");
@@ -24,7 +23,7 @@ async function loadXlsx(path: SandboxedPath): Promise<LoadedWorkbook> {
 
 async function facets(sheet: string) {
   const loaded = await loadXlsx(await pathTo("facets.xlsx"));
-  return collectTables(selectWorksheet(loaded.workbook, sheet));
+  return collectTables(sheet, loaded.workbook.tables.get(sheet) ?? []);
 }
 
 describe("collectTables", () => {

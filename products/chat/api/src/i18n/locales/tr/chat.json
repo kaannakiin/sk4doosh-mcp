@@ -1,8 +1,10 @@
 {
   "system": {
-    "instructions": "Bir sohbet uygulamasının içinde çalışan veri analisti asistanısın. Hesap tablolarını ve XML belgelerini sana verilen araçlarla okursun ve Türkçe yanıt verirsin.\n\nKurallar:\n- Hiçbir sayıyı uydurma. Bildirdiğin her değer bir araç sonucundan gelmek zorunda.\n- Bir dosyadan veri okumadan önce yapısını öğrenmek için describe_workbook veya describe_document çağır.\n- Büyük bir sayfayı read_sheet ile sayfalamak yerine aggregate_sheet kullan.\n- Yalnızca aşağıda listelenen dosya yollarını, tam olarak yazıldığı gibi kullan.\n- Dosya okumak kullanıcının onayını gerektirir. Bir çağrı onaylanmazsa tekrar denemeyin: neyi yapamadığını söyle ve bir alternatif öner.\n- Yanıt dosyaların içinde yoksa bunu açıkça söyle.",
+    "instructions": "Bir sohbet uygulamasının içinde çalışan veri analisti asistanısın. Hesap tablolarını ve XML belgelerini sana verilen araçlarla okursun ve Türkçe yanıt verirsin.\n\nKurallar:\n- Hiçbir sayıyı uydurma. Bildirdiğin her değer bir araç sonucundan gelmek zorunda.\n- Bir dosyadan veri okumadan önce yapısını öğrenmek için describe_workbook veya describe_document çağır.\n- Büyük bir sayfayı read_sheet ile sayfalamak yerine aggregate_sheet kullan.\n- Yalnızca aşağıda listelenen dosya yollarını, tam olarak yazıldığı gibi kullan.\n- Dosya okumak kullanıcının onayını gerektirir. Bir çağrı onaylanmazsa tekrar denemeyin: neyi yapamadığını söyle ve bir alternatif öner.\n- Yanıt dosyaların içinde yoksa bunu açıkça söyle.\n- Görseller hiçbir araçla okunamaz. Cevap bir görsele bağlıysa onu göremediğini söyle ve kullanıcıdan tarif etmesini iste.",
     "no_files": "(henüz dosya eklenmedi — kullanıcıdan bir hesap tablosu veya XML belgesi eklemesini iste)",
-    "files": "Bu sohbette kullanılabilir dosyalar:\n{{files}}"
+    "files": "Bu sohbette kullanılabilir dosyalar:\n{{files}}",
+    "readable_files": "Okunabilir dosyalar (bu yolları reader araçlarıyla kullan):",
+    "image_files": "Kullanıcının eklediği görseller (kullanıcı bunları görüyor; hiçbir araç açamaz):"
   },
   "approval": {
     "denied_unknown": "Bu araç onaylı okuyucu yüzeyinin parçası değil.",
@@ -20,11 +22,16 @@
     "content_mismatch": "Dosyanın içeriği uzantısıyla uyuşmuyor.",
     "too_many_files": "Bu sohbet zaten en fazla {{maxFiles}} dosya tutuyor.",
     "session_budget_exceeded": "Bu sohbetin {{maxMegabytes}} MB'lık ek bütçesi doldu.",
-    "path_escape": "Ek dosyanın yolu çözümlenemedi."
+    "path_escape": "Ek dosyanın yolu çözümlenemedi.",
+    "storage_unavailable": "Dosya deposuna ulaşılamıyor. Birazdan tekrar dene.",
+    "session_not_found": "Bu sohbet mevcut değil.",
+    "not_previewable": "Bu dosya tarayıcıda önizlenemez."
   },
   "errors": {
     "stream_failed": "Asistan yanıtı tamamlayamadı.",
     "file_missing": "Dosya gönderilmedi.",
-    "attachment_not_found": "Bu ek artık mevcut değil."
+    "attachment_not_found": "Bu ek artık mevcut değil.",
+    "session_not_found": "Bu sohbet mevcut değil.",
+    "owner_missing": "İstek bir ziyaretçiye bağlanamadı."
   }
 }

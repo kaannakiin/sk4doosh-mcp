@@ -3,31 +3,48 @@
     "title": "Reader Console",
     "subtitle": "Ask about a spreadsheet or an XML document. Every read waits for your approval."
   },
+  "sessions": {
+    "title": "Conversations",
+    "new": "New conversation",
+    "empty": "No conversations yet.",
+    "untitled": "Untitled",
+    "rename": "Rename",
+    "delete": "Delete",
+    "deleteConfirm": "Delete “{{title}}”? This cannot be undone.",
+    "save": "Save",
+    "actions": "Conversation actions",
+    "titleLabel": "Conversation title"
+  },
   "composer": {
     "placeholder": "Ask about the attached files",
     "hint": "Enter sends · Shift+Enter for a new line",
     "send": "Send",
-    "stop": "Stop"
+    "stop": "Stop",
+    "expand": "Expand the input",
+    "collapse": "Shrink the input"
   },
   "conversation": {
-    "empty": "Attach a file on the left, then ask a question.",
-    "you": "You",
-    "assistant": "Assistant",
-    "thinking": "Working"
+    "empty": "Attach a file, then ask a question.",
+    "you": "Your message",
+    "assistant": "Assistant reply",
+    "thinking": "Thinking",
+    "reasoning": "Reasoning",
+    "truncated": "Older turns exist but are not shown.",
+    "toBottom": "Scroll to the newest message"
   },
   "attachments": {
+    "add": "Attach a file",
+    "remove": "Remove {{name}}",
+    "previewFailed": "This file could not be previewed.",
+    "preview": "Preview {{name}}",
+    "download": "Download {{name}}",
     "title": "Attachments",
-    "empty": "No files yet.",
-    "drop": "Drop a file, or click to choose",
-    "accept": "xlsx · xlsm · csv · xml",
-    "remove": "Remove",
-    "uploading": "Uploading",
-    "count": "{{count}} file",
-    "count_other": "{{count}} files"
+    "uploading": "Uploading…",
+    "more": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "less": "Show fewer"
   },
   "tool": {
-    "eyebrow": "Reader call",
-    "input": "Arguments",
     "output": "Result",
     "approve": "Approve",
     "deny": "Deny",
@@ -53,11 +70,17 @@
   },
   "errors": {
     "network": "The API could not be reached",
-    "retry": "Try again"
+    "dismiss": "Dismiss"
   },
   "locale": {
     "label": "Language",
     "en": "English",
     "tr": "Türkçe"
+  },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Match system"
   }
 }

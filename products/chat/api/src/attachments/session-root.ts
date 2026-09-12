@@ -1,16 +1,41 @@
 import type { SessionId } from "@chat/contracts/chat/session";
 import { join, resolve, sep } from "node:path";
 
-export function sessionRootFor(uploadRoot: string, session: SessionId): string {
-  return join(uploadRoot, session);
+/**
+ * The directory a reader process is rooted at.
+ *
+ * Guard: `.staging/` is a sibling of this directory, never inside it. Downloads
+ * land there and are renamed in, so a reader can only ever observe a file as
+ * absent or as complete and verified. A partial file inside the pinned root
+ * would be reachable by the reader's own name-miss fallback scan — rejected on
+ * extension, so harmless, but "harmless partial file in the sandbox" is a
+ * property somebody has to re-derive every time they touch the reader, and
+ * "never a partial file in the sandbox" is one nobody has to think about.
+ */
+export function readableRootFor(cacheRoot: string, session: SessionId): string {
+  return join(cacheRoot, session, "readable");
+}
+
+export function stagingRootFor(cacheRoot: string, session: SessionId): string {
+  return join(cacheRoot, session, ".staging");
+}
+
+export function sessionCacheRootFor(
+  cacheRoot: string,
+  session: SessionId,
+): string {
+  return join(cacheRoot, session);
 }
 
 /**
- * Guard: refuses a resolved path that escapes `root`. Every path this service
- * builds is already safe by construction — the session id is parsed as a UUID
- * and the file name is generated, never taken from the upload — so this is the
- * assertion that keeps that property from silently lapsing if either input ever
- * starts coming from somewhere else.
+ * Guard: refuses a resolved path that escapes `root`. This used to be a backstop
+ * for paths that were safe by construction — the session id parsed as a uuid, the
+ * file name generated two statements above the write. That is no longer true:
+ * `sandbox_path` is now read back from Postgres, so it is untrusted input, and
+ * "it did not come from the request" is not "it is trusted". A bad migration, a
+ * manual update or a future bulk import can put anything in that column, and the
+ * materializer writes files as the api user. This runs together with
+ * `sandboxPathSchema`, both before a file is opened.
  */
 export function isContained(root: string, candidate: string): boolean {
   const base = resolve(root);

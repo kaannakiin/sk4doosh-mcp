@@ -5,14 +5,12 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/paths.js";
-import {
-  describeWorkbook,
-  requireBounds,
-  selectWorksheet,
-  usedBounds,
-} from "../src/workbook.js";
+import { selectSheetName } from "../src/sheetjs-workbook.js";
+import { requireSheetBounds } from "../src/sheet.js";
 import {
   clearDocumentCache,
+  describeDocument,
+  documentSheet,
   loadDocument,
   type LoadedWorkbook,
 } from "../src/document.js";
@@ -49,8 +47,8 @@ describe("describeWorkbook", () => {
 
   it("reports the value-derived used range, not the declared one", async () => {
     const loaded = await loadXlsx(await pathTo("q1/sample.xlsx"));
-    const description = describeWorkbook(
-      loaded.workbook,
+    const description = describeDocument(
+      loaded,
       {
         filePath: "q1/sample.xlsx",
         sizeBytes: loaded.sizeBytes,
@@ -67,8 +65,8 @@ describe("describeWorkbook", () => {
 
   it("counts formulas and their cached values apart", async () => {
     const loaded = await loadXlsx(await pathTo("q1/sample.xlsx"));
-    const sheet = describeWorkbook(
-      loaded.workbook,
+    const sheet = describeDocument(
+      loaded,
       {
         filePath: "q1/sample.xlsx",
         sizeBytes: loaded.sizeBytes,
@@ -82,8 +80,8 @@ describe("describeWorkbook", () => {
 
   it("reports merges, hidden sheets and the date system", async () => {
     const loaded = await loadXlsx(await pathTo("q1/sample.xlsx"));
-    const description = describeWorkbook(
-      loaded.workbook,
+    const description = describeDocument(
+      loaded,
       {
         filePath: "q1/sample.xlsx",
         sizeBytes: loaded.sizeBytes,
@@ -102,8 +100,8 @@ describe("describeWorkbook", () => {
 
   it("counts the grid-external facets without walking cells", async () => {
     const loaded = await loadXlsx(await pathTo("facets.xlsx"));
-    const described = describeWorkbook(
-      loaded.workbook,
+    const described = describeDocument(
+      loaded,
       {
         filePath: "facets.xlsx",
         sizeBytes: loaded.sizeBytes,
@@ -127,8 +125,8 @@ describe("describeWorkbook", () => {
 
   it("zeroes the facet counts for an xlsx sheet that carries none", async () => {
     const loaded = await loadXlsx(await pathTo("facets.xlsx"));
-    const described = describeWorkbook(
-      loaded.workbook,
+    const described = describeDocument(
+      loaded,
       {
         filePath: "facets.xlsx",
         sizeBytes: loaded.sizeBytes,
@@ -149,8 +147,8 @@ describe("describeWorkbook", () => {
 
   it("emits guidance for a tall sheet", async () => {
     const loaded = await loadXlsx(await pathTo("large.xlsx"));
-    const description = describeWorkbook(
-      loaded.workbook,
+    const description = describeDocument(
+      loaded,
       {
         filePath: "large.xlsx",
         sizeBytes: loaded.sizeBytes,
@@ -166,13 +164,13 @@ describe("describeWorkbook", () => {
 describe("worksheet selection", () => {
   it("defaults to the first visible sheet", async () => {
     const loaded = await loadXlsx(await pathTo("q1/sample.xlsx"));
-    expect(selectWorksheet(loaded.workbook, undefined).name).toBe("Q1");
+    expect(selectSheetName(loaded.workbook, undefined)).toBe("Q1");
   });
 
   it("lists every sheet, hidden ones included, when the name is wrong", async () => {
     const loaded = await loadXlsx(await pathTo("q1/sample.xlsx"));
     try {
-      selectWorksheet(loaded.workbook, "Nope");
+      selectSheetName(loaded.workbook, "Nope");
       expect.unreachable();
     } catch (error) {
       const failure = error as SkMcpExcelError;
@@ -185,9 +183,9 @@ describe("worksheet selection", () => {
 describe("empty sheets", () => {
   it("has no used bounds", async () => {
     const loaded = await loadXlsx(await pathTo("empty.xlsx"));
-    const worksheet = selectWorksheet(loaded.workbook, undefined);
-    expect(usedBounds(worksheet)).toBeUndefined();
-    expect(await codeOf(() => requireBounds(worksheet))).toBe("empty_sheet");
+    const sheet = documentSheet(loaded, undefined);
+    expect(sheet.bounds).toBeUndefined();
+    expect(await codeOf(() => requireSheetBounds(sheet))).toBe("empty_sheet");
   });
 });
 
@@ -195,7 +193,7 @@ describe("unreadable files", () => {
   it("rejects a file that is not a zip container", async () => {
     expect(
       await codeOf(async () => loadXlsx(await pathTo("corrupt.xlsx"))),
-    ).toBe("corrupt_workbook");
+    ).toBe("not_a_workbook");
   });
 
   it("rejects an encrypted or legacy container", async () => {

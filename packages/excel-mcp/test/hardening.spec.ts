@@ -22,7 +22,9 @@ import { createHandlers, type ToolHandlers } from "../src/tools.js";
 import { parseCsv } from "../src/csv.js";
 import { limits } from "../src/limits.js";
 import { decodeCursor } from "../src/cursor.js";
-import { describeWorkbook, selectWorksheet } from "../src/workbook.js";
+import { selectSheetName } from "../src/sheetjs-workbook.js";
+import { parseSheetJs } from "../src/sheetjs-workbook.js";
+import { collectValidations } from "../src/validations.js";
 import { validateCondition } from "../src/predicate.js";
 import { declaredTablesOf } from "../src/tables.js";
 import { buildColumnIndex, resolveColumn } from "../src/columns.js";
@@ -478,12 +480,12 @@ describe("snapshot and cursor contracts (#26 #27 #28 #33)", () => {
     );
     expect(loaded.format).toBe("xlsx");
     if (loaded.format !== "xlsx") throw new Error("wrong format");
-    expect(loaded.workbook.worksheets.map((sheet) => sheet.name)).toEqual([
+    expect(loaded.workbook.sheetNames).toEqual([
       "Caf\u00e9",
       "Cafe\u0301",
     ]);
     for (const name of ["Caf\u00e9", "Cafe\u0301"]) {
-      expect(() => selectWorksheet(loaded.workbook, name)).toThrow(
+      expect(() => selectSheetName(loaded.workbook, name)).toThrow(
         expect.objectContaining({ code: "ambiguous_sheet" }),
       );
       expect(
@@ -654,8 +656,11 @@ describe("cell/header and metadata regressions", () => {
     const images = body(
       await handlers.get_images({ filePath: "metadata-loss.xlsx" }),
     );
-    expect(images).toMatchObject({ complete: false, count: 0 });
-    expect(JSON.stringify(images.limitations)).toContain("EXCEL-META-009");
+    expect(images).toMatchObject({ complete: false, count: 1 });
+    const anchored = images.images as readonly Record<string, unknown>[];
+    expect(anchored[0]).toMatchObject({ anchor: "absolute" });
+    expect(anchored[0]?.["range"]).toBeUndefined();
+    expect(images.limitations).toEqual([]);
     const formats = body(
       await handlers.get_conditional_formats({
         filePath: "metadata-loss.xlsx",
@@ -665,7 +670,7 @@ describe("cell/header and metadata regressions", () => {
     expect(formats.rules).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          thresholds: [{ type: "formula", unsupported: true }, { type: "max" }],
+          thresholds: [{ type: "formula", formula: "$A$1" }, { type: "max" }],
         }),
       ]),
     );
@@ -754,31 +759,34 @@ describe("cell/header and metadata regressions", () => {
       ],
       warnings: [expect.stringContaining("missing column names")],
     });
-    const table = sheet.getTable("T");
-    Reflect.set(table.getColumn(1), "name", undefined);
-    expect(declaredTablesOf(sheet)[0]?.columns).toEqual(["one", null, "three"]);
+    const parsed = parseSheetJs(
+      await readFile(join(directory, "missing-table-column.xlsx")),
+      "missing-table-column.xlsx",
+    );
+    expect(declaredTablesOf(parsed.tables.get("T") ?? [])[0]?.columns).toEqual([
+      "one",
+      null,
+      "three",
+    ]);
   });
-  it("keeps validation counts bounded, inexact and cached (#24)", () => {
+  it("counts validations exactly however many cells they cover (#24)", async () => {
     const book = new ExcelJS.Workbook();
     const sheet = book.addWorksheet("V");
+    sheet.getCell("A1").value = "seed";
     for (let row = 1; row <= 5001; row += 1)
       sheet.getCell(`A${row}`).dataValidation = {
         type: "whole",
         operator: "between",
         formulae: [1, 9],
       };
-    const meta = {
-      filePath: "v.xlsx",
-      sizeBytes: 1,
-      modifiedAt: "2026-01-01T00:00:00.000Z",
-    };
-    expect(describeWorkbook(book, meta, false).sheets[0]).toMatchObject({
-      dataValidationRuleCount: null,
-      dataValidationRuleCountExact: false,
-    });
-    expect(
-      describeWorkbook(book, meta, false).sheets[0]?.dataValidationRuleCount,
-    ).toBeNull();
+    const bytes = Buffer.from(await book.xlsx.writeBuffer());
+    const report = collectValidations(
+      "V",
+      parseSheetJs(bytes, "v.xlsx").validations.get("V"),
+    );
+    expect(report.count).toBe(1);
+    expect(report.coveredCellCount).toBe(5001);
+    expect(report.rangesTruncated).toBe(false);
   });
   it("reports all errorStyle variants through the handler (#11)", async () => {
     const book = new ExcelJS.Workbook();

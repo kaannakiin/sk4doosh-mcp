@@ -15,6 +15,8 @@ export const healthResponseSchema = z.object({
     status: readinessSchema,
     detail: z.string().optional(),
   }),
+  database: readinessSchema,
+  objects: readinessSchema,
   readers: z.object({
     workbook: readinessSchema,
     document: readinessSchema,

@@ -1,4 +1,3 @@
-import type { Workbook } from "exceljs";
 import {
   createDocumentStore,
   type DocumentStore,
@@ -6,7 +5,7 @@ import {
   type ParseContext,
   type SandboxedPath,
 } from "@sk-mcp/file-core";
-import { capabilities } from "./capabilities.js";
+import { capabilitiesFor, type FormatCapabilities } from "./capabilities.js";
 import {
   csvSheetName,
   csvSheetView,
@@ -23,17 +22,18 @@ import { assertReadableFormat } from "./paths.js";
 import type { SheetSource, SheetView } from "./sheet.js";
 import { vocabulary } from "./vocabulary.js";
 import {
-  describeWorkbook,
-  parseXlsx,
-  selectWorksheet,
-  xlsxSheetView,
-  type DocumentMeta,
-  type WorkbookDescription,
-} from "./workbook.js";
+  describeSheetJs,
+  parseSheetJs,
+  selectSheetName,
+  sheetjsSheetView,
+  type SheetJsWorkbook,
+} from "./sheetjs-workbook.js";
+import type { DocumentMeta, WorkbookDescription } from "./types.js";
+import { declaredTablesOf } from "./tables.js";
 
 interface XlsxBody {
   readonly format: "xlsx";
-  readonly workbook: Workbook;
+  readonly workbook: SheetJsWorkbook;
 }
 
 interface CsvBody {
@@ -69,7 +69,7 @@ async function parseDocument(
     return { format, table };
   }
   assertReadableFormat(bytes.subarray(0, 8), context.displayPath);
-  const workbook = await parseXlsx(bytes, context.displayPath);
+  const workbook = parseSheetJs(bytes, context.displayPath);
   return { format, workbook };
 }
 
@@ -136,7 +136,12 @@ export function documentSheet(
     }
     return csvSheetView(loaded.table);
   }
-  return xlsxSheetView(selectWorksheet(loaded.workbook, sheetName));
+  const name = selectSheetName(loaded.workbook, sheetName);
+  return sheetjsSheetView(
+    loaded.workbook,
+    name,
+    declaredTablesOf(loaded.workbook.tables.get(name) ?? []),
+  );
 }
 
 export function sheetSource(loaded: LoadedDocument): SheetSource {
@@ -152,7 +157,7 @@ export function csvReportOf(loaded: LoadedDocument): CsvReport | undefined {
 
 export interface DocumentDescription extends WorkbookDescription {
   readonly format: DocumentFormat;
-  readonly capabilities: (typeof capabilities)[DocumentFormat];
+  readonly capabilities: FormatCapabilities;
   readonly csv?: CsvReport;
 }
 
@@ -164,11 +169,11 @@ export function describeDocument(
   const body =
     loaded.format === "csv"
       ? describeCsv(loaded.table, meta)
-      : describeWorkbook(loaded.workbook, meta, includeDefinedNames);
+      : describeSheetJs(loaded.workbook, meta, { includeDefinedNames });
   return {
     ...body,
     format: loaded.format,
-    capabilities: capabilities[loaded.format],
+    capabilities: capabilitiesFor(loaded),
     ...(loaded.format === "csv" ? { csv: loaded.table.report } : {}),
   };
 }

@@ -5,7 +5,10 @@ from pathlib import Path
 
 RUNTIME_FIELDS = ("dependencies", "peerDependencies", "optionalDependencies")
 REQUIRED_ENTRY = "package/dist/index.js"
-EXACT_PINS = {"@sk-mcp/xml-mcp": {"libxml2-wasm": "0.7.2"}}
+EXACT_PINS = {
+    "@sk-mcp/xml-mcp": {"libxml2-wasm": "0.7.2"},
+    "@sk-mcp/excel-mcp": {"@e965/xlsx": "0.20.3"},
+}
 
 
 def fail(message):

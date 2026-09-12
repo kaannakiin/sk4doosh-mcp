@@ -5,8 +5,10 @@ import {
   type SandboxedPath,
 } from "../src/paths.js";
 import { collectValidations, compressAddresses } from "../src/validations.js";
-import { loadDocument, type LoadedWorkbook } from "../src/document.js";
-import { selectWorksheet } from "../src/workbook.js";
+import {
+  loadDocument,
+  type LoadedWorkbook,
+} from "../src/document.js";
 
 function addresses(column: string, from: number, to: number): string[] {
   const list: string[] = [];
@@ -64,7 +66,10 @@ describe("collectValidations", () => {
     const loaded = await loadXlsx(
       await resolveWorkbookPath(root, "validations.xlsx"),
     );
-    const report = collectValidations(selectWorksheet(loaded.workbook, "Data"));
+    const report = collectValidations(
+      "Data",
+      loaded.workbook.validations.get("Data"),
+    );
 
     expect(report.coveredCellCount).toBeGreaterThan(5000);
     expect(report.count).toBe(2);

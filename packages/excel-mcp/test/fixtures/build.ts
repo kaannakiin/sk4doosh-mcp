@@ -3,6 +3,7 @@ import { crc32 } from "node:zlib";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ExcelJS from "exceljs";
+import JSZip from "jszip";
 import type { DataValidation, Worksheet } from "exceljs";
 
 interface ValidationWriter {
@@ -34,6 +35,8 @@ export interface Fixtures {
   readonly flipped: string;
   readonly notAWorkbook: string;
   readonly facets: string;
+  readonly prefixed: string;
+  readonly unnumberedSheet: string;
 }
 
 export const largeRowCount = 20_000;
@@ -532,6 +535,130 @@ async function buildFacets(path: string): Promise<void> {
   await workbook.xlsx.writeFile(path);
 }
 
+
+const sharedStringValues = ["Ürün", "Adet", "Kalem", "Defter", "Toplam"];
+
+function opcParts(prefix: string, sheetPart: string): Record<string, string> {
+  const q = prefix === "" ? "" : `${prefix}:`;
+  const xmlns = prefix === "" ? 'xmlns=' : `xmlns:${prefix}=`;
+  const main = `${xmlns}"http://schemas.openxmlformats.org/spreadsheetml/2006/main"`;
+  const strings = sharedStringValues
+    .map((text) => `<${q}si><${q}t>${text}</${q}t></${q}si>`)
+    .join("");
+  const row = (index: number, cells: string) =>
+    `<${q}row r="${index}">${cells}</${q}row>`;
+  const shared = (ref: string, id: number) =>
+    `<${q}c r="${ref}" t="s"><${q}v>${id}</${q}v></${q}c>`;
+  const number = (ref: string, value: number) =>
+    `<${q}c r="${ref}"><${q}v>${value}</${q}v></${q}c>`;
+  return {
+    "_rels/.rels":
+      '<?xml version="1.0" encoding="utf-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml" Id="rIdDoc" />' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="/docProps/app.xml" Id="rIdApp" />' +
+      '<Relationship Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="/package/services/metadata/core-properties/core.psmdcp" Id="rIdCore" />' +
+      "</Relationships>",
+    "xl/workbook.xml":
+      `<?xml version="1.0" encoding="utf-8"?><${q}workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ${main}>` +
+      `<${q}sheets><${q}sheet name="Veri" sheetId="1" r:id="rIdSheet" /></${q}sheets></${q}workbook>`,
+    "xl/_rels/workbook.xml.rels":
+      '<?xml version="1.0" encoding="utf-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      `<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="/${sheetPart}" Id="rIdSheet" />` +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="/xl/sharedStrings.xml" Id="rIdStrings" />' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="/xl/styles.xml" Id="rIdStyles" />' +
+      "</Relationships>",
+    "xl/sharedStrings.xml":
+      `<?xml version="1.0" encoding="utf-8"?><${q}sst ${main} count="${sharedStringValues.length}" uniqueCount="${sharedStringValues.length}">${strings}</${q}sst>`,
+    "xl/styles.xml":
+      `<?xml version="1.0" encoding="utf-8"?><${q}styleSheet ${main}>` +
+      `<${q}fonts count="1"><${q}font /></${q}fonts><${q}fills count="1"><${q}fill /></${q}fills>` +
+      `<${q}borders count="1"><${q}border /></${q}borders>` +
+      `<${q}cellStyleXfs count="1"><${q}xf /></${q}cellStyleXfs><${q}cellXfs count="1"><${q}xf /></${q}cellXfs></${q}styleSheet>`,
+    [sheetPart]:
+      `<?xml version="1.0" encoding="utf-8"?><${q}worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ${main}>` +
+      `<${q}dimension ref="A1:B5" /><${q}sheetData>` +
+      row(1, shared("A1", 0) + shared("B1", 1)) +
+      row(2, shared("A2", 2) + number("B2", 12)) +
+      row(3, shared("A3", 3) + number("B3", 7)) +
+      row(5, shared("A5", 4)) +
+      `</${q}sheetData><${q}mergeCells count="1"><${q}mergeCell ref="A5:B5" /></${q}mergeCells>` +
+      `<${q}conditionalFormatting sqref="B1:B3">` +
+      `<${q}cfRule type="cellIs" dxfId="0" priority="2" operator="greaterThan"><${q}formula>10</${q}formula></${q}cfRule>` +
+      `<${q}cfRule type="colorScale" priority="1"><${q}colorScale>` +
+      `<${q}cfvo type="min" /><${q}cfvo type="formula" val="AVERAGE($B$1:$B$3)" /><${q}cfvo type="max" />` +
+      `</${q}colorScale></${q}cfRule></${q}conditionalFormatting>` +
+      `<${q}dataValidations count="1"><${q}dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Hata" error="Listeden seçin" sqref="A2:A3">` +
+      `<${q}formula1>&quot;Kalem,Defter&quot;</${q}formula1></${q}dataValidation></${q}dataValidations>` +
+      `<${q}drawing r:id="rIdDrawing" />` +
+      `<${q}tableParts count="1"><${q}tablePart r:id="rIdTable" /></${q}tableParts></${q}worksheet>`,
+    [`${sheetPart.replace(/([^/]+)$/, "_rels/$1.rels")}`]:
+      '<?xml version="1.0" encoding="utf-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="/xl/tables/table1.xml" Id="rIdTable" />' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="/xl/drawings/drawing1.xml" Id="rIdDrawing" />' +
+      "</Relationships>",
+    "xl/drawings/_rels/drawing1.xml.rels":
+      '<?xml version="1.0" encoding="utf-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="/xl/media/image1.png" Id="rIdImage" />' +
+      '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://ornek.test/urun" TargetMode="External" Id="rIdLink" />' +
+      "</Relationships>",
+    "xl/drawings/drawing1.xml":
+      '<?xml version="1.0" encoding="utf-8"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<xdr:twoCellAnchor editAs="oneCell">' +
+      "<xdr:from><xdr:col>3</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>" +
+      "<xdr:to><xdr:col>5</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>6</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>" +
+      '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="1" name="Resim"><a:hlinkClick r:id="rIdLink" tooltip="Ürün sayfası" /></xdr:cNvPr><xdr:cNvPicPr /></xdr:nvPicPr>' +
+      '<xdr:blipFill><a:blip r:embed="rIdImage" /></xdr:blipFill>' +
+      '<xdr:spPr><a:xfrm><a:off x="0" y="0" /><a:ext cx="0" cy="0" /></a:xfrm></xdr:spPr></xdr:pic><xdr:clientData />' +
+      "</xdr:twoCellAnchor>" +
+      '<xdr:absoluteAnchor><xdr:pos x="0" y="0" /><xdr:ext cx="1143000" cy="762000" />' +
+      '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Mutlak" /><xdr:cNvPicPr /></xdr:nvPicPr>' +
+      '<xdr:blipFill><a:blip r:embed="rIdImage" /></xdr:blipFill><xdr:spPr /></xdr:pic><xdr:clientData />' +
+      "</xdr:absoluteAnchor></xdr:wsDr>",
+    "xl/tables/table1.xml":
+      `<?xml version="1.0" encoding="utf-8"?><${q}table ${main} id="1" name="Kalemler" displayName="Kalemler" ref="A1:B3" headerRowCount="1" totalsRowCount="0">` +
+      `<${q}autoFilter ref="A1:B3"><${q}filterColumn colId="1" hiddenButton="0" /></${q}autoFilter>` +
+      `<${q}tableColumns count="2"><${q}tableColumn id="1" name="Ürün" /><${q}tableColumn id="2" name="Adet" /></${q}tableColumns></${q}table>`,
+    "docProps/app.xml":
+      '<?xml version="1.0" encoding="utf-8"?><ap:Properties xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes" xmlns:ap="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">' +
+      "<ap:Application>SystemSoft Reporting</ap:Application><ap:DocSecurity>0</ap:DocSecurity></ap:Properties>",
+    "package/services/metadata/core-properties/core.psmdcp":
+      '<?xml version="1.0" encoding="utf-8"?><coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">' +
+      "<dc:creator>fixture</dc:creator></coreProperties>",
+    "[Content_Types].xml":
+      '<?xml version="1.0" encoding="utf-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />' +
+      '<Default Extension="psmdcp" ContentType="application/vnd.openxmlformats-package.core-properties+xml" />' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" />' +
+      `<Override PartName="/${sheetPart}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml" />` +
+      '<Default Extension="png" ContentType="image/png" />' +
+      '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml" />' +
+      '<Override PartName="/xl/tables/table1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml" />' +
+      '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" />' +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml" />' +
+      '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml" />' +
+      "</Types>",
+  };
+}
+
+/**
+ * Two workbook layouts ExcelJS cannot read but Excel opens without complaint:
+ * a prefixed SpreadsheetML namespace (every .NET DocumentFormat.OpenXml
+ * writer) and a worksheet part with no ordinal in its name (SpreadsheetLight).
+ * Both are valid OPC, so a reader that rejects them is the defect.
+ */
+async function buildOpc(
+  path: string,
+  prefix: string,
+  sheetPart: string,
+): Promise<void> {
+  const zip = new JSZip();
+  for (const [name, body] of Object.entries(opcParts(prefix, sheetPart))) {
+    zip.file(name, body);
+  }
+  zip.file("xl/media/image1.png", Buffer.from(onePixelPng, "base64"));
+  await writeFile(path, await zip.generateAsync({ type: "nodebuffer" }));
+}
+
 export async function buildFixtures(): Promise<Fixtures> {
   const root = await mkdtemp(join(tmpdir(), "sk-mcp-excel-"));
   await mkdir(join(root, "q1"));
@@ -554,6 +681,8 @@ export async function buildFixtures(): Promise<Fixtures> {
     flipped: join(root, "flipped.xlsx"),
     notAWorkbook: join(root, "not-a-workbook.xlsx"),
     facets: join(root, "facets.xlsx"),
+    prefixed: join(root, "prefixed.xlsx"),
+    unnumberedSheet: join(root, "unnumbered-sheet.xlsx"),
   };
   await buildSample(fixtures.sample);
   await buildValidations(fixtures.validations);
@@ -569,6 +698,8 @@ export async function buildFixtures(): Promise<Fixtures> {
   await buildMalformed(fixtures.truncated, fixtures.flipped);
   await buildNotAWorkbook(fixtures.notAWorkbook);
   await buildFacets(fixtures.facets);
+  await buildOpc(fixtures.prefixed, "x", "xl/worksheets/sheet1.xml");
+  await buildOpc(fixtures.unnumberedSheet, "", "xl/worksheets/sheet.xml");
   await writeFile(
     fixtures.corrupt,
     Buffer.from("not a spreadsheet at all", "utf8"),

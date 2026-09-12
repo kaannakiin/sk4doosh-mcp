@@ -6,7 +6,21 @@ export const ATTACHMENT_MAX_FILES_DEFAULT = 8;
 
 export const ATTACHMENT_MAX_FILES_HARD = 32;
 
-export const ATTACHMENT_TTL_MS_DEFAULT = 30 * 60 * 1000; // 30 minutes
+export const ATTACHMENT_MAX_FILE_BYTES_DEFAULT = 15 * 1024 * 1024;
+
+export const ATTACHMENT_MAX_FILE_BYTES_HARD = 50 * 1024 * 1024;
+
+export const SANDBOX_TTL_MS_DEFAULT = 30 * 60 * 1000;
+
+export const CACHE_MAX_BYTES_DEFAULT = 2 * 1024 * 1024 * 1024;
+
+export const CACHE_MAX_BYTES_HARD = 32 * 1024 * 1024 * 1024;
+
+export const PRESIGN_TTL_S_DEFAULT = 300;
+
+export const PRESIGN_TTL_S_HARD = 900;
+
+export const UPLOAD_CONCURRENCY_DEFAULT = 4;
 
 export const SESSION_IDLE_TTL_MS_DEFAULT = 30 * 60 * 1000; // 30 minutes
 

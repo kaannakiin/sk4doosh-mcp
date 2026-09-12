@@ -72,7 +72,7 @@ describe("a workbook that passes the magic-byte gate but cannot be parsed", () =
   );
 
   it("reports a zip that carries no workbook part", async () => {
-    expect(await codeOf("not-a-workbook.xlsx")).toBe("corrupt_workbook");
+    expect(await codeOf("not-a-workbook.xlsx")).toBe("not_a_workbook");
   });
 
   it("blames the file, not the server, for a zip that is not a workbook", async () => {

@@ -1,15 +1,12 @@
-import type { Workbook, Worksheet } from "exceljs";
 import { limits } from "./limits.js";
-import {
-  metadataLimitations,
-  type MetadataLimitation,
-} from "./metadata-support.js";
+import type { MetadataLimitation } from "./metadata-support.js";
+import type { AnchorCell, OoxmlImage } from "./ooxml/images.js";
 import { formatRectangle } from "./range.js";
 
 export interface SheetImage {
   readonly imageId: number;
-  readonly anchor: "oneCell" | "twoCell";
-  readonly range: string;
+  readonly anchor: "oneCell" | "twoCell" | "absolute";
+  readonly range?: string;
   readonly extension?: string;
   readonly sizeBytes?: number;
   readonly widthPx?: number;
@@ -30,69 +27,25 @@ export interface ImageReport {
   readonly hint?: string;
 }
 
-interface StoredAnchor {
-  readonly nativeCol: number;
-  readonly nativeColOff: number;
-  readonly nativeRow: number;
-  readonly nativeRowOff: number;
-}
-
-interface StoredImageRange {
-  readonly tl?: StoredAnchor;
-  readonly br?: StoredAnchor;
-  readonly ext?: { readonly width?: number; readonly height?: number };
-  readonly editAs?: string;
-  readonly hyperlinks?: {
-    readonly hyperlink?: string;
-    readonly tooltip?: string;
-  };
-}
-
-interface StoredImage {
-  readonly imageId?: number;
-  readonly range?: StoredImageRange;
-}
-
-interface StoredMedia {
-  readonly extension?: string;
-  readonly buffer?: { readonly length: number };
-}
-
-interface MediaHost {
-  readonly media?: readonly StoredMedia[];
-}
-
-function sheetImagesOf(worksheet: Worksheet): readonly StoredImage[] {
-  return worksheet.getImages() as unknown as readonly StoredImage[];
-}
-
-function mediaOf(workbook: Workbook): readonly StoredMedia[] {
-  return (workbook as Workbook & MediaHost).media ?? [];
-}
-
-export function imageCountOf(worksheet: Worksheet): number {
-  return sheetImagesOf(worksheet).length;
-}
-
-function occupiedRange(range: StoredImageRange | undefined): string {
-  const topLeft = range?.tl;
-  if (topLeft === undefined) {
-    return "A1";
+/**
+ * A `to` anchor sitting exactly on a cell boundary stops at the previous cell;
+ * any offset into the cell means the picture covers it. An absolute anchor has
+ * no cell anchor at all, so it gets no range rather than a fabricated one.
+ */
+function occupiedRange(
+  from: AnchorCell | undefined,
+  to: AnchorCell | undefined,
+): string | undefined {
+  if (from === undefined) {
+    return undefined;
   }
-  const top = topLeft.nativeRow + 1;
-  const left = topLeft.nativeCol + 1;
-  const bottomRight = range?.br;
-  if (bottomRight === undefined) {
+  const top = from.row + 1;
+  const left = from.column + 1;
+  if (to === undefined) {
     return formatRectangle(top, left, top, left);
   }
-  const bottom =
-    bottomRight.nativeRowOff === 0
-      ? bottomRight.nativeRow
-      : bottomRight.nativeRow + 1;
-  const right =
-    bottomRight.nativeColOff === 0
-      ? bottomRight.nativeCol
-      : bottomRight.nativeCol + 1;
+  const bottom = to.rowOffset === 0 ? to.row : to.row + 1;
+  const right = to.columnOffset === 0 ? to.column : to.column + 1;
   return formatRectangle(
     top,
     left,
@@ -101,48 +54,52 @@ function occupiedRange(range: StoredImageRange | undefined): string {
   );
 }
 
+export interface MediaEntry {
+  readonly id: number;
+  readonly sizeBytes?: number;
+}
+
 function describe(
-  image: StoredImage,
-  media: readonly StoredMedia[],
+  image: OoxmlImage,
+  media: ReadonlyMap<string, MediaEntry>,
 ): SheetImage {
-  const range = image.range;
-  const imageId = image.imageId ?? 0;
-  const entry = media[imageId];
-  const extent = range?.ext;
-  const links = range?.hyperlinks;
+  const part = image.mediaPart;
+  const entry = part === undefined ? undefined : media.get(part);
+  const range = occupiedRange(image.from, image.to);
+  const extension = part?.split(".").pop();
+  const sizeBytes = entry?.sizeBytes;
   return {
-    imageId,
-    anchor: range?.br === undefined ? "oneCell" : "twoCell",
-    range: occupiedRange(range),
-    ...(entry?.extension === undefined ? {} : { extension: entry.extension }),
-    ...(entry?.buffer === undefined ? {} : { sizeBytes: entry.buffer.length }),
-    ...(extent?.width === undefined ? {} : { widthPx: extent.width }),
-    ...(extent?.height === undefined ? {} : { heightPx: extent.height }),
-    ...(range?.editAs === undefined ? {} : { editAs: range.editAs }),
-    ...(links?.hyperlink === undefined ? {} : { hyperlink: links.hyperlink }),
-    ...(links?.tooltip === undefined ? {} : { tooltip: links.tooltip }),
+    imageId: entry?.id ?? -1,
+    anchor: image.anchor,
+    ...(range === undefined ? {} : { range }),
+    ...(extension === undefined ? {} : { extension }),
+    ...(sizeBytes === undefined ? {} : { sizeBytes }),
+    ...(image.widthPx === undefined ? {} : { widthPx: image.widthPx }),
+    ...(image.heightPx === undefined ? {} : { heightPx: image.heightPx }),
+    ...(image.editAs === undefined ? {} : { editAs: image.editAs }),
+    ...(image.hyperlink === undefined ? {} : { hyperlink: image.hyperlink }),
+    ...(image.tooltip === undefined ? {} : { tooltip: image.tooltip }),
   };
 }
 
 export function collectImages(
-  workbook: Workbook,
-  worksheet: Worksheet,
+  sheet: string,
+  images: readonly OoxmlImage[],
+  media: ReadonlyMap<string, MediaEntry>,
 ): ImageReport {
-  const found = sheetImagesOf(worksheet);
-  const media = mediaOf(workbook);
-  const truncated = found.length > limits.maxImagesPerSheet;
-  const kept = truncated ? found.slice(0, limits.maxImagesPerSheet) : found;
+  const truncated = images.length > limits.maxImagesPerSheet;
+  const kept = truncated ? images.slice(0, limits.maxImagesPerSheet) : images;
   return {
-    sheet: worksheet.name,
-    count: found.length,
+    sheet,
+    count: images.length,
     images: kept.map((image) => describe(image, media)),
     complete: false,
-    limitations: [metadataLimitations.images],
+    limitations: [],
     truncated,
     ...(truncated
       ? {
           truncationReason: "maxImagesPerSheet" as const,
-          hint: `${found.length} images are anchored on this sheet; the first ${limits.maxImagesPerSheet} are listed. Call describe_workbook for the count on every sheet.`,
+          hint: `${images.length} images are anchored on this sheet; the first ${limits.maxImagesPerSheet} are listed. Call describe_workbook for the count on every sheet.`,
         }
       : {}),
   };

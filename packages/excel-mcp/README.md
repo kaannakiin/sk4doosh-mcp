@@ -4,6 +4,8 @@ Ajanın yerel Excel dosyalarını **okuduğu** bağımsız bir MCP sunucusu. Yaz
 
 Okunan biçimler: `.xlsx`, `.xlsm`, `.csv`. Sandbox, doküman önbelleği, hata zarfı, cursor codec ve tool kayıt katmanı [@sk-mcp/file-core](../file-core)'dan gelir.
 
+Hücreleri, aralıkları, birleştirmeleri, formülleri ve tanımlı adları SheetJS okur. Data validation, Excel Table, koşullu biçim, resim ve dondurulmuş bölme bilgisi doğrudan OOXML part'larından okunur. Çalışma zamanında exceljs yoktur.
+
 ## Kurulum
 
 Sunucu, okumasına izin verilen klasörü **zorunlu bir argüman** olarak alır. Bu klasörün dışı okunamaz.
@@ -84,6 +86,21 @@ CSV'nin taşıyamadığı bir şey açıkça istenirse (`valueMode`, `mergedCell
 
 Chart, pivot table ve sparkline **hiçbir formatta** okunamaz — bu bir CSV kısıtı değil, okuyucunun tavanı: exceljs `xl/charts/*.xml`'i hiç açmıyor, pivot için object model'i yok, sparkline'lar worksheet `extLst`'inde tanınmıyor. `get_images` bu türler açıkça istendiğinde `unsupported_object_kind` döner ve `capabilities` bloğu üçünü de her iki formatta `false` bildirir.
 
+## Zengin metadata
+
+`get_data_validations`, `get_tables`, `get_conditional_formats` ve `get_images` OOXML part'larını `saxes` ile namespace-duyarlı okur. Eşleştirme `(namespace uri, local ad)` üzerinden yapılır — dosyanın yazdığı prefix'e hiç bakılmaz — bu yüzden `<x:dataValidation>` ile `<dataValidation>` çağrı yerinde ayırt edilemez. Sonuç: bu tool'lar her OPC yerleşiminde çalışır, prefix'li .NET çıktılarında ve worksheet part'ı `sheet.xml` diye adlandırılmış dosyalarda dahil.
+
+Okunanlar ve nereden:
+
+| tool | kaynak |
+| --- | --- |
+| `get_data_validations` | worksheet part, `dataValidations/dataValidation`. Aralıklar `sqref`'ten olduğu gibi alınır, hücre hücre açılmaz — tüm sütunu kaplayan kural da tam sayılır, `dataValidationRuleCountExact` her zaman `true` |
+| `get_tables` | worksheet `tableParts` → sheet rels → `xl/tables/*.xml`. `filterButton` `colId` ile eşlenir, konumla değil |
+| `get_conditional_formats` | worksheet `conditionalFormatting/cfRule`. `containsText` ailesi tip + operatöre ayrıştırılır. `cfvo type="formula"` eşiğinin ifadesi `formula` alanında korunur |
+| `get_images` | worksheet `drawing` → sheet rels → `xl/drawings/*.xml` → `a:blip r:embed` → drawing rels → `xl/media/*`. `twoCell`, `oneCell` ve `absolute` anchor'ların üçü de raporlanır; absolute anchor'ın hücre aralığı yoktur, uydurmak yerine `range` alanı düşer |
+
+Chart, pivot table ve sparkline hâlâ okunmaz — `capabilities` bloğu üçünü de her formatta `false` bildirir ve `get_images` bu türler açıkça istendiğinde `unsupported_object_kind` döner.
+
 ## Arama ve eşleştirme
 
 `caseSensitive` kapalıyken eşleştirme büyük/küçük harf **ve aksan** duyarsızdır: `istanbul` sorgusu `İSTANBUL`'u, `sisli` sorgusu `ŞİŞLİ`'yi bulur. Katlama dil-bağımsızdır, Türkçe'ye özel tablo yoktur. `regex` modu katlanmaz.
@@ -95,5 +112,13 @@ Sabittir, yapılandırılamaz: dosya 50 MB (CSV 16 MB, 2M hücre) · yanıt 10.0
 ## Hatalar
 
 Hatalar `isError: true` ile ve `{error, message, recovery}` gövdesiyle döner. `error` alanı makine-okunur bir koddur; `recovery` bir sonraki çağrının nasıl düzeltileceğini söyler.
+
+Bozuk dosya iddiası üç ayrı koda bölünmüştür ve hiçbiri diğerinin yerine kullanılmaz:
+
+| kod                  | ne zaman                                                                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `not_a_workbook`     | bayt dizisi zip başlığıyla başlamıyor, ya da geçerli bir zip ama içinde workbook part'ı yok (`.docx`'in `.xlsx` diye adlandırılmış hali) |
+| `encrypted_workbook` | OLE2/CFB başlığı — parola korumalı ya da eski ikili biçim                                                                                |
+| `corrupt_workbook`   | zip geçerli, workbook part'ı var, ama parser çözemedi. Mesaj parser'ın kendi açıklamasını taşır                                          |
 
 Sunucunun kendi kusurundan doğan, sınıflandırılamayan bir hata `internal_error` döner ve **`recovery` taşımaz** — bilinen bir "sonraki çağrı" yoktur, ve olmadığı halde varmış gibi yapmak ajanı sağlam bir dosyayı onarmaya yollar. Ham ayrıntı stderr'e yazılır.

@@ -3,32 +3,68 @@
 @import "@mantine/core/styles.layer.css";
 @import "@mantine/dropzone/styles.layer.css";
 
+/**
+ * Guard: the palette hangs off Mantine's color-scheme attribute rather than
+ * `prefers-color-scheme`, because the theme switcher writes that attribute and
+ * an explicit choice has to outrank the device setting.
+ */
 [data-mantine-color-scheme="light"] {
-  --chat-surface: #f6f4f0;
-  --chat-panel: #fffefb;
-  --chat-hairline: #ddd8cf;
-  --chat-hairline-strong: #c3bcae;
-  --chat-ink: #17150f;
-  --chat-ink-dim: #6d675c;
-  --chat-accent: #3f42fe;
-  --chat-amber: #b45309;
-  --chat-green: #15803d;
-  --chat-red: #b91c1c;
-  --chat-grain: rgba(23, 21, 15, 0.025);
+  --chat-surface: #faf7f2;
+  --chat-panel: #ffffff;
+  --chat-raised: #f2eee7;
+  --chat-hairline: rgba(29, 26, 21, 0.1);
+  --chat-hairline-strong: rgba(29, 26, 21, 0.2);
+  --chat-ink: #1d1a15;
+  --chat-ink-dim: #6e675c;
+  --chat-accent: #1f5f5b;
+  --chat-accent-soft: rgba(31, 95, 91, 0.1);
+  --chat-amber: #8a5a0f;
+  --chat-green: #2f6b3a;
+  --chat-red: #a8342b;
+  --chat-grain: rgba(29, 26, 21, 0.022);
 }
 
 [data-mantine-color-scheme="dark"] {
-  --chat-surface: #0b0c0e;
-  --chat-panel: #131519;
-  --chat-hairline: #262a31;
-  --chat-hairline-strong: #3b414b;
-  --chat-ink: #e9e9ec;
-  --chat-ink-dim: #8d939e;
-  --chat-accent: #858ffe;
-  --chat-amber: #f0b429;
-  --chat-green: #4ade80;
-  --chat-red: #f87171;
-  --chat-grain: rgba(255, 255, 255, 0.02);
+  --chat-surface: #121110;
+  --chat-panel: #1a1917;
+  --chat-raised: #232120;
+  --chat-hairline: rgba(238, 233, 224, 0.12);
+  --chat-hairline-strong: rgba(238, 233, 224, 0.24);
+  --chat-ink: #ece6dc;
+  --chat-ink-dim: #9a9287;
+  --chat-accent: #6fbfb4;
+  --chat-accent-soft: rgba(111, 191, 180, 0.14);
+  --chat-amber: #d9a441;
+  --chat-green: #79c08a;
+  --chat-red: #e58a7f;
+  --chat-grain: rgba(255, 255, 255, 0.018);
+}
+
+/**
+ * Guard: `inline`, not a plain `@theme`. A plain one resolves each value at
+ * build time, which bakes the light palette into every utility and leaves the
+ * dark scheme unstyled. `inline` keeps the `var()` in the generated declaration,
+ * so `bg-panel` follows the attribute at runtime.
+ */
+@theme inline {
+  --color-surface: var(--chat-surface);
+  --color-panel: var(--chat-panel);
+  --color-raised: var(--chat-raised);
+  --color-hairline: var(--chat-hairline);
+  --color-hairline-strong: var(--chat-hairline-strong);
+  --color-ink: var(--chat-ink);
+  --color-ink-dim: var(--chat-ink-dim);
+  --color-accent: var(--chat-accent);
+  --color-accent-soft: var(--chat-accent-soft);
+  --color-amber: var(--chat-amber);
+  --color-green: var(--chat-green);
+  --color-red: var(--chat-red);
+
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --container-measure: 46rem;
 }
 
 body {
@@ -36,152 +72,170 @@ body {
   background-image: radial-gradient(var(--chat-grain) 1px, transparent 1px);
   background-size: 3px 3px;
   color: var(--chat-ink);
+  font-family: var(--font-sans);
 }
 
-.chat-shell {
-  display: grid;
-  grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
-  min-height: 100dvh;
-}
-
-.chat-rail {
-  border-right: 1px solid var(--chat-hairline);
-  background-color: var(--chat-panel);
-}
-
-@media (max-width: 60rem) {
-  .chat-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .chat-rail {
-    border-right: 0;
-    border-bottom: 1px solid var(--chat-hairline);
-  }
-}
-
-.chat-eyebrow {
-  font-family: var(--mantine-font-family-monospace);
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--chat-ink-dim);
-}
-
-.chat-log {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-
-.chat-row {
+/**
+ * Guard: a rendering hint, not styling. It keeps offscreen turns out of layout
+ * and paint while a long conversation scrolls, which no utility expresses.
+ */
+.chat-turn {
   content-visibility: auto;
-  contain-intrinsic-size: auto 5rem;
-  animation: chat-enter 220ms ease-out both;
+  contain-intrinsic-size: auto 6rem;
 }
 
-@keyframes chat-enter {
-  from {
-    opacity: 0;
-    transform: translateY(0.375rem);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chat-row {
-    animation: none;
-  }
-}
-
-.chat-said {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.chat-cursor::after {
+/**
+ * Guard: the caret hangs off the last rendered block, not off a text node. An
+ * answer is markdown, so its tail may be a list item, a table or a code fence —
+ * there is no single paragraph to attach it to.
+ */
+.chat-markdown[data-live] > :last-child::after {
   content: "";
   display: inline-block;
-  width: 0.5ch;
-  height: 1em;
-  margin-left: 0.15ch;
-  background-color: var(--chat-accent);
+  width: 2px;
+  height: 1.05em;
+  margin-inline-start: 0.15em;
   vertical-align: text-bottom;
-  animation: chat-blink 1s steps(2, end) infinite;
+  background-color: var(--chat-accent);
+  animation: chat-blink 1.1s steps(2, start) infinite;
+}
+
+.chat-thinking::after {
+  content: "…";
+  animation: chat-blink 1.4s steps(2, start) infinite;
 }
 
 @keyframes chat-blink {
-  50% {
-    opacity: 0;
+  to {
+    visibility: hidden;
   }
 }
 
-.chat-tool {
-  border: 1px solid var(--chat-hairline);
-  border-left: 3px solid var(--chat-tool-accent, var(--chat-hairline-strong));
-  background-color: var(--chat-panel);
-  transition: border-left-color 200ms ease;
-}
-
-.chat-tool[data-state="input-streaming"],
-.chat-tool[data-state="input-available"] {
-  --chat-tool-accent: var(--chat-accent);
-}
-
-.chat-tool[data-state="approval-requested"] {
-  --chat-tool-accent: var(--chat-amber);
-  border-color: var(--chat-amber);
-}
-
-.chat-tool[data-state="approval-responded"] {
-  --chat-tool-accent: var(--chat-accent);
-}
-
-.chat-tool[data-state="output-available"] {
-  --chat-tool-accent: var(--chat-green);
-}
-
-.chat-tool[data-state="output-error"],
-.chat-tool[data-state="output-denied"] {
-  --chat-tool-accent: var(--chat-red);
-}
-
-.chat-kv {
-  display: grid;
-  grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
-  gap: 0.125rem 0.75rem;
-  font-family: var(--mantine-font-family-monospace);
-  font-size: 0.75rem;
-}
-
-.chat-kv dt {
-  color: var(--chat-ink-dim);
-}
-
-.chat-kv dd {
-  margin: 0;
+/**
+ * Guard: this is the one styled scope that stays css. `react-markdown` builds
+ * these elements from the model's answer, so there is no jsx to hang a utility
+ * on — a list item or a table cell inside a turn is created by the parser.
+ */
+.chat-markdown {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.75;
   overflow-wrap: anywhere;
 }
 
-.chat-payload {
-  margin: 0;
-  max-height: 18rem;
-  overflow: auto;
-  font-family: var(--mantine-font-family-monospace);
-  font-size: 0.75rem;
+.chat-markdown > * + * {
+  margin-top: 0.875rem;
+}
+
+.chat-markdown :is(h1, h2, h3, h4) {
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+.chat-markdown > :is(h1, h2, h3, h4) + * {
+  margin-top: 0.5rem;
+}
+
+.chat-markdown > * + :is(h1, h2, h3, h4) {
+  margin-top: 1.5rem;
+}
+
+.chat-markdown h1 {
+  font-size: 1.5rem;
+}
+
+.chat-markdown h2 {
+  font-size: 1.3125rem;
+}
+
+.chat-markdown h3 {
+  font-size: 1.125rem;
+}
+
+.chat-markdown h4 {
+  font-size: 1rem;
+}
+
+.chat-markdown :is(ul, ol) {
+  padding-inline-start: 1.5rem;
+}
+
+.chat-markdown ul {
+  list-style: disc;
+}
+
+.chat-markdown ol {
+  list-style: decimal;
+}
+
+.chat-markdown li + li,
+.chat-markdown li > :is(ul, ol) {
+  margin-top: 0.25rem;
+}
+
+.chat-markdown strong {
+  font-weight: 600;
+}
+
+.chat-markdown em {
+  font-style: italic;
+}
+
+.chat-markdown a {
+  color: var(--chat-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-markdown blockquote {
+  padding-inline-start: 0.875rem;
+  border-inline-start: 2px solid var(--chat-hairline-strong);
+  color: var(--chat-ink-dim);
+  font-style: italic;
+}
+
+.chat-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--chat-hairline);
+}
+
+.chat-markdown :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background-color: var(--chat-raised);
+  font-family: var(--font-mono);
+  font-size: 0.8125em;
+}
+
+.chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
   line-height: 1.5;
-  white-space: pre;
-  color: var(--chat-ink-dim);
 }
 
-.chat-disclosure > summary {
-  cursor: pointer;
-  font-family: var(--mantine-font-family-monospace);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--chat-ink-dim);
+.chat-markdown :is(th, td) {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--chat-hairline);
+  text-align: start;
+  vertical-align: top;
 }
 
-pre code {
-  padding: 0;
+.chat-markdown th {
+  background-color: var(--chat-raised);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chat-markdown input[type="checkbox"] {
+  margin-inline-end: 0.375rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-markdown[data-live] > :last-child::after,
+  .chat-thinking::after {
+    animation: none;
+  }
 }

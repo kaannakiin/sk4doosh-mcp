@@ -11,6 +11,39 @@ export type Detection =
 
 const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
 
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/**
+ * Guard: only the three-byte prefix is checked. The fourth byte is the first
+ * marker and varies by encoder — JFIF, EXIF, a bare quantisation table — so
+ * pinning it rejects valid files. The `FF D9` trailer is not checked either:
+ * progressive encodings and trailing padding make it unreliable.
+ */
+const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
+
+const GIF_PREFIX = [0x47, 0x49, 0x46, 0x38];
+
+const GIF_SUFFIXES = [
+  [0x37, 0x61],
+  [0x39, 0x61],
+];
+
+const RIFF_SIGNATURE = [0x52, 0x49, 0x46, 0x46];
+
+const WEBP_FOURCC = [0x57, 0x45, 0x42, 0x50];
+
+/**
+ * Guard: bytes 4 to 7 are the RIFF chunk size and are deliberately skipped, and
+ * one of these stream fourccs must follow at offset 12. `RIFF????WEBP` alone is
+ * satisfied by any RIFF container renamed `.webp`; this is what proves there is
+ * an image stream in it.
+ */
+const WEBP_STREAMS = [
+  [0x56, 0x50, 0x38, 0x20],
+  [0x56, 0x50, 0x38, 0x4c],
+  [0x56, 0x50, 0x38, 0x58],
+];
+
 const NUL_SCAN_BYTES = 8 * 1024;
 
 function extensionOf(filename: string): string {
@@ -19,8 +52,31 @@ function extensionOf(filename: string): string {
   return match?.[1]?.toLowerCase() ?? "";
 }
 
+function startsWith(
+  bytes: Uint8Array,
+  signature: readonly number[],
+  offset = 0,
+): boolean {
+  return signature.every((byte, index) => bytes[offset + index] === byte);
+}
+
 function startsWithZipSignature(bytes: Uint8Array): boolean {
-  return ZIP_SIGNATURE.every((byte, index) => bytes[index] === byte);
+  return startsWith(bytes, ZIP_SIGNATURE);
+}
+
+function isGif(bytes: Uint8Array): boolean {
+  return (
+    startsWith(bytes, GIF_PREFIX) &&
+    GIF_SUFFIXES.some((suffix) => startsWith(bytes, suffix, 4))
+  );
+}
+
+function isWebp(bytes: Uint8Array): boolean {
+  return (
+    startsWith(bytes, RIFF_SIGNATURE) &&
+    startsWith(bytes, WEBP_FOURCC, 8) &&
+    WEBP_STREAMS.some((stream) => startsWith(bytes, stream, 12))
+  );
 }
 
 function skipByteOrderMark(bytes: Uint8Array): number {
@@ -55,6 +111,32 @@ function looksLikeText(bytes: Uint8Array): boolean {
 }
 
 /**
+ * The byte proof each media type owes.
+ *
+ * Guard: a table rather than a chain, because nine types do not fit in a nested
+ * ternary and because each entry naming its own proof is what the per-family
+ * philosophy actually says. Magic bytes do not make an upload safe — a
+ * signature-valid png can still be a decompression bomb — which is why no
+ * decoder is ever added on this side: the per-file ceiling bounds the transfer,
+ * the browser is the only decoder and it is sandboxed per origin, and the forced
+ * content type means a polyglot cannot be reinterpreted as something scriptable.
+ */
+const PROOF_BY_MEDIA_TYPE: Readonly<
+  Record<SupportedMediaType, (bytes: Uint8Array) => boolean>
+> = {
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+    startsWithZipSignature,
+  "application/vnd.ms-excel.sheet.macroEnabled.12": startsWithZipSignature,
+  "text/csv": looksLikeText,
+  "application/xml": looksLikeMarkup,
+  "text/xml": looksLikeMarkup,
+  "image/png": (bytes) => startsWith(bytes, PNG_SIGNATURE),
+  "image/jpeg": (bytes) => startsWith(bytes, JPEG_SIGNATURE),
+  "image/gif": isGif,
+  "image/webp": isWebp,
+};
+
+/**
  * Resolves the media type of an upload from its extension and then proves it
  * against the bytes.
  *
@@ -75,14 +157,7 @@ export function detectMediaType(
     return { ok: false, reason: "unsupported_extension" };
   }
 
-  const proven =
-    mediaType === "text/csv"
-      ? looksLikeText(bytes)
-      : mediaType === "application/xml" || mediaType === "text/xml"
-        ? looksLikeMarkup(bytes)
-        : startsWithZipSignature(bytes);
-
-  return proven
+  return PROOF_BY_MEDIA_TYPE[mediaType](bytes)
     ? { ok: true, mediaType }
     : { ok: false, reason: "content_mismatch" };
 }

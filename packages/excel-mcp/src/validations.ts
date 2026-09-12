@@ -1,18 +1,9 @@
-import type { DataValidation, Worksheet } from "exceljs";
-import { limits } from "./limits.js";
+import type { OoxmlValidations, ValidationFormula } from "./ooxml/validations.js";
 import { formatRectangle, parseCellRef } from "./range.js";
-import { validationsOf } from "./workbook.js";
 
 interface RowRun {
   readonly top: number;
   readonly bottom: number;
-}
-
-function stableKey(rule: DataValidation): string {
-  const entries = Object.entries(
-    rule as unknown as Record<string, unknown>,
-  ).sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
-  return JSON.stringify(entries);
 }
 
 function toRuns(rows: number[]): RowRun[] {
@@ -80,15 +71,15 @@ export function compressAddresses(addresses: readonly string[]): string[] {
 export interface ValidationRule {
   readonly ranges: readonly string[];
   readonly rangesTruncated: boolean;
-  readonly type: DataValidation["type"];
-  readonly operator?: DataValidation["operator"];
+  readonly type: string;
+  readonly operator?: string;
   readonly allowBlank?: boolean;
-  readonly formulae?: readonly unknown[];
+  readonly formulae?: readonly ValidationFormula[];
   readonly promptTitle?: string;
   readonly prompt?: string;
   readonly errorTitle?: string;
   readonly error?: string;
-  readonly errorStyle?: DataValidation["errorStyle"];
+  readonly errorStyle?: string;
   readonly showInputMessage?: boolean;
   readonly showErrorMessage?: boolean;
 }
@@ -101,59 +92,22 @@ export interface ValidationReport {
   readonly rangesTruncated: boolean;
 }
 
-export function collectValidations(worksheet: Worksheet): ValidationReport {
-  const model = validationsOf(worksheet);
-  const groups = new Map<
-    string,
-    { rule: DataValidation; addresses: string[] }
-  >();
-  let coveredCellCount = 0;
-  for (const [address, rule] of Object.entries(model)) {
-    if (rule === undefined) {
-      continue;
-    }
-    coveredCellCount += 1;
-    const key = stableKey(rule);
-    const group = groups.get(key);
-    if (group === undefined) {
-      groups.set(key, { rule, addresses: [address] });
-    } else {
-      group.addresses.push(address);
-    }
-  }
-  let rangesTruncated = false;
-  const rules = [...groups.values()].map((group): ValidationRule => {
-    const ranges = compressAddresses(group.addresses);
-    const truncated = ranges.length > limits.maxRangesPerRule;
-    rangesTruncated = rangesTruncated || truncated;
-    const rule = group.rule;
-    return {
-      ranges: truncated ? ranges.slice(0, limits.maxRangesPerRule) : ranges,
-      rangesTruncated: truncated,
-      type: rule.type,
-      ...(rule.operator === undefined ? {} : { operator: rule.operator }),
-      ...(rule.allowBlank === undefined ? {} : { allowBlank: rule.allowBlank }),
-      ...(rule.formulae === undefined ? {} : { formulae: rule.formulae }),
-      ...(rule.promptTitle === undefined
-        ? {}
-        : { promptTitle: rule.promptTitle }),
-      ...(rule.prompt === undefined ? {} : { prompt: rule.prompt }),
-      ...(rule.errorTitle === undefined ? {} : { errorTitle: rule.errorTitle }),
-      ...(rule.error === undefined ? {} : { error: rule.error }),
-      ...(rule.errorStyle === undefined ? {} : { errorStyle: rule.errorStyle }),
-      ...(rule.showInputMessage === undefined
-        ? {}
-        : { showInputMessage: rule.showInputMessage }),
-      ...(rule.showErrorMessage === undefined
-        ? {}
-        : { showErrorMessage: rule.showErrorMessage }),
-    };
-  });
+/**
+ * Reads straight from the `sqref` the file declares, so a rule covering a whole
+ * column is one range rather than a million addresses. The ExcelJS-backed path
+ * this replaces expanded every rule to one entry per cell, which is why it
+ * needed a visit budget and reported a null count once it ran out.
+ */
+export function collectValidations(
+  sheet: string,
+  validations: OoxmlValidations | undefined,
+): ValidationReport {
+  const rules = validations?.rules ?? [];
   return {
-    sheet: worksheet.name,
+    sheet,
     count: rules.length,
-    coveredCellCount,
+    coveredCellCount: validations?.coveredCellCount ?? 0,
     rules,
-    rangesTruncated,
+    rangesTruncated: validations?.rangesTruncated ?? false,
   };
 }

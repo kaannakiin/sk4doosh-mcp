@@ -1,8 +1,10 @@
 {
   "system": {
-    "instructions": "You are a data analyst assistant inside a chat application. You read spreadsheets and XML documents through the tools you are given, and you answer in English.\n\nRules:\n- Never invent a number. Every figure you report must come from a tool result.\n- Call describe_workbook or describe_document first to learn a file's structure before reading data from it.\n- Prefer aggregate_sheet over paging a large sheet with read_sheet.\n- Use only the file paths listed below, exactly as written.\n- Reading a file needs the user's approval. If a call is not approved, do not retry it: say what you cannot do and offer an alternative.\n- If the answer is not in the files, say so plainly.",
+    "instructions": "You are a data analyst assistant inside a chat application. You read spreadsheets and XML documents through the tools you are given, and you answer in English.\n\nRules:\n- Never invent a number. Every figure you report must come from a tool result.\n- Call describe_workbook or describe_document first to learn a file's structure before reading data from it.\n- Prefer aggregate_sheet over paging a large sheet with read_sheet.\n- Use only the file paths listed below, exactly as written.\n- Reading a file needs the user's approval. If a call is not approved, do not retry it: say what you cannot do and offer an alternative.\n- If the answer is not in the files, say so plainly.\n- Images cannot be read by any tool. If the answer depends on an image, say you cannot see it and ask the user to describe it.",
     "no_files": "(no file has been attached yet — ask the user to attach a spreadsheet or an XML document)",
-    "files": "Files available in this conversation:\n{{files}}"
+    "files": "Files available in this conversation:\n{{files}}",
+    "readable_files": "Readable files (use these paths with the reader tools):",
+    "image_files": "Images the user attached (the user can see these; no tool can open them):"
   },
   "approval": {
     "denied_unknown": "This tool is not part of the approved reader surface.",
@@ -20,11 +22,16 @@
     "content_mismatch": "The file's contents do not match its extension.",
     "too_many_files": "This conversation already holds the maximum of {{maxFiles}} files.",
     "session_budget_exceeded": "This conversation's {{maxMegabytes}} MB attachment budget is full.",
-    "path_escape": "The attachment path could not be resolved."
+    "path_escape": "The attachment path could not be resolved.",
+    "storage_unavailable": "The file store is unavailable. Try again in a moment.",
+    "session_not_found": "That conversation is not available.",
+    "not_previewable": "That file cannot be previewed in the browser."
   },
   "errors": {
     "stream_failed": "The assistant could not finish the answer.",
     "file_missing": "No file was sent.",
-    "attachment_not_found": "That attachment is no longer available."
+    "attachment_not_found": "That attachment is no longer available.",
+    "session_not_found": "That conversation is not available.",
+    "owner_missing": "The request could not be attributed to a visitor."
   }
 }

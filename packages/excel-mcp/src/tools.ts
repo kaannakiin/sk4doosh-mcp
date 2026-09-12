@@ -27,6 +27,7 @@ import { collectConditionalFormats } from "./conditional-formats.js";
 import { collectImages } from "./images.js";
 import { collectTables } from "./tables.js";
 import { collectValidations } from "./validations.js";
+import { selectSheetName } from "./sheetjs-workbook.js";
 import {
   createDocumentCache,
   csvReportOf,
@@ -45,7 +46,6 @@ import { formatRange, resolveRange } from "./range.js";
 
 import type { CsvReport, DelimiterName, EncodingName } from "./csv.js";
 import { requireSheetBounds } from "./sheet.js";
-import { selectWorksheet } from "./workbook.js";
 import { inheritCursorOptions, decodeCursor } from "./cursor.js";
 
 const modeEnvelopeBytes = measureJson({ mode: "resident" });
@@ -681,11 +681,11 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       { root: root.real, tool: "get_merged_ranges" },
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
-        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        const merges = worksheet.model.merges;
+        const sheet = documentSheet(loaded, args.sheetName);
+        const merges = sheet.merges;
         return json(
           withMode(
-            { sheet: worksheet.name, merges, count: merges.length },
+            { sheet: sheet.name, merges, count: merges.length },
             loaded.mode,
           ),
         );
@@ -696,8 +696,13 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       { root: root.real, tool: "get_data_validations" },
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
-        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        return json(withMode(collectValidations(worksheet), loaded.mode));
+        const sheet = selectSheetName(loaded.workbook, args.sheetName);
+        return json(
+          withMode(
+            collectValidations(sheet, loaded.workbook.validations.get(sheet)),
+            loaded.mode,
+          ),
+        );
       },
     ),
 
@@ -705,8 +710,13 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       { root: root.real, tool: "get_tables" },
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
-        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
-        return json(withMode(collectTables(worksheet), loaded.mode));
+        const sheet = selectSheetName(loaded.workbook, args.sheetName);
+        return json(
+          withMode(
+            collectTables(sheet, loaded.workbook.tables.get(sheet) ?? []),
+            loaded.mode,
+          ),
+        );
       },
     ),
 
@@ -714,9 +724,15 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       { root: root.real, tool: "get_conditional_formats" },
       async (args, tool) => {
         const loaded = await openXlsx(args.filePath, tool);
-        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        const sheet = selectSheetName(loaded.workbook, args.sheetName);
         return json(
-          withMode(collectConditionalFormats(worksheet), loaded.mode),
+          withMode(
+            collectConditionalFormats(
+              sheet,
+              loaded.workbook.conditionalFormats.get(sheet) ?? [],
+            ),
+            loaded.mode,
+          ),
         );
       },
     ),
@@ -726,9 +742,16 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       async (args, tool) => {
         assertPictureKind(args.kind);
         const loaded = await openXlsx(args.filePath, tool);
-        const worksheet = selectWorksheet(loaded.workbook, args.sheetName);
+        const sheet = selectSheetName(loaded.workbook, args.sheetName);
         return json(
-          withMode(collectImages(loaded.workbook, worksheet), loaded.mode),
+          withMode(
+            collectImages(
+              sheet,
+              loaded.workbook.images.get(sheet) ?? [],
+              loaded.workbook.media,
+            ),
+            loaded.mode,
+          ),
         );
       },
     ),

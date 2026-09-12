@@ -5,7 +5,7 @@ import { SkMcpExcelError } from "./errors.js";
 import { limits } from "./limits.js";
 import { columnToLetters, type GridBounds } from "./range.js";
 import type { RowView, SheetView } from "./sheet.js";
-import type { DocumentMeta, WorkbookDescription } from "./workbook.js";
+import type { DocumentMeta, WorkbookDescription } from "./types.js";
 
 export const csvSheetName = "csv";
 

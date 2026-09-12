@@ -201,7 +201,7 @@ describe("error surfacing", () => {
   it.each([
     ["../package.json.xlsx", "path_outside_root"],
     ["missing.xlsx", "file_not_found"],
-    ["corrupt.xlsx", "corrupt_workbook"],
+    ["corrupt.xlsx", "not_a_workbook"],
     ["encrypted.xlsx", "encrypted_workbook"],
   ])("maps %s to %s", async (filePath, code) => {
     const result = await handlers.describe_workbook({ filePath });

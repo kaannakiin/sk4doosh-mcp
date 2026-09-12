@@ -12,6 +12,7 @@ export type SkMcpExcelErrorCode =
   | CoreErrorCode
   | "encrypted_workbook"
   | "corrupt_workbook"
+  | "not_a_workbook"
   | "undecodable_text"
   | "ambiguous_delimiter"
   | "unsupported_object_kind"

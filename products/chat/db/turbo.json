@@ -1,0 +1,31 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tags": ["chat", "chat-server"],
+  "tasks": {
+    "gen": {
+      "inputs": ["prisma/schema/**", "prisma.config.ts"],
+      "outputs": ["src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "gen"],
+      "outputs": ["dist/**"]
+    },
+    "check-types": {
+      "dependsOn": ["^build", "gen"]
+    },
+    "db:migrate": {
+      "cache": false,
+      "dependsOn": ["gen"],
+      "passThroughEnv": ["CHAT_DATABASE_URL", "CHAT_DATABASE_SHADOW_URL"]
+    },
+    "db:deploy": {
+      "cache": false,
+      "passThroughEnv": ["CHAT_DATABASE_URL"]
+    },
+    "db:status": {
+      "cache": false,
+      "passThroughEnv": ["CHAT_DATABASE_URL"]
+    }
+  }
+}

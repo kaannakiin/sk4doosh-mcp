@@ -1,29 +1,18 @@
-import { DEFAULT_LOCALE } from "@chat/contracts/common/locale";
-import { negotiateLocale } from "@chat/contracts/common/negotiate-locale";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { getCookie, getRequestHeader } from "@tanstack/react-start/server";
-
-import { LOCALE_COOKIE, parseLocaleCookie } from "../lib/locale-cookie";
 
 /**
- * Guard: the explicit choice outranks `Accept-Language`, which is only a first
- * guess for a first visit.
+ * Guard: a conversation's id is minted here and the visitor is moved onto it,
+ * because the api has no create endpoint — it writes the row lazily while
+ * reconciling the first turn. The id therefore has to exist before the server
+ * has heard of it, and the url is what makes the conversation shareable,
+ * reloadable and navigable with the back button.
  */
-const preferredLocale = createServerFn().handler(() => {
-  const remembered = parseLocaleCookie(getCookie(LOCALE_COOKIE));
-
-  return (
-    remembered ??
-    negotiateLocale(getRequestHeader("accept-language"), DEFAULT_LOCALE)
-  );
-});
-
 export const Route = createFileRoute("/")({
-  loader: async () => {
+  beforeLoad: () => {
     throw redirect({
-      to: "/$locale",
-      params: { locale: await preferredLocale() },
+      to: "/c/$sessionId",
+      params: { sessionId: crypto.randomUUID() },
+      replace: true,
     });
   },
 });

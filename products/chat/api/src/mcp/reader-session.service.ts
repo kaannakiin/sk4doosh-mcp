@@ -8,16 +8,19 @@ import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { ToolSet } from "ai";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { AttachmentStoreService } from "../attachments/attachment-store.service.ts";
+import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
 import type {
   AppConfig,
   ReaderConfig,
   SessionConfig,
 } from "../config/configuration.ts";
+import type { OwnerId } from "../owner/owner-id.ts";
+import { withMaterialization } from "./materializing-tools.ts";
 import { readerCommandFor } from "./reader-command.ts";
 
 const SWEEP_INTERVAL_MS = 60_000;
@@ -44,6 +47,7 @@ export class ReaderSessionService implements OnModuleDestroy {
   constructor(
     config: ConfigService<AppConfig, true>,
     private readonly store: AttachmentStoreService,
+    private readonly cache: SandboxCacheService,
   ) {
     this.readers = config.get("readers", { infer: true });
     this.sessions = config.get("sessions", { infer: true });
@@ -56,8 +60,8 @@ export class ReaderSessionService implements OnModuleDestroy {
    * holds a file for are connected: a session with one CSV never pays for an
    * XML reader process, and never offers the model four tools it cannot use.
    */
-  async toolsFor(session: SessionId): Promise<ToolSet> {
-    const families = this.store.familiesFor(session);
+  async toolsFor(owner: OwnerId, session: SessionId): Promise<ToolSet> {
+    const families = await this.store.familiesFor(owner, session);
     if (families.size === 0) {
       return {};
     }
@@ -65,7 +69,7 @@ export class ReaderSessionService implements OnModuleDestroy {
     await this.evictOverflow(session);
 
     const sets = await Promise.all(
-      [...families].map((family) => this.toolsOf(session, family)),
+      [...families].map((family) => this.toolsOf(owner, session, family)),
     );
 
     return Object.assign({}, ...sets) as ToolSet;
@@ -113,6 +117,7 @@ export class ReaderSessionService implements OnModuleDestroy {
   }
 
   async release(session: SessionId): Promise<void> {
+    this.cache.unpin(session);
     const prefix = `${session}:`;
     for (const [key, pending] of [...this.clients.entries()]) {
       if (!key.startsWith(prefix)) {
@@ -131,6 +136,7 @@ export class ReaderSessionService implements OnModuleDestroy {
   }
 
   private async toolsOf(
+    owner: OwnerId,
     session: SessionId,
     family: ReaderFamily,
   ): Promise<ToolSet> {
@@ -144,8 +150,15 @@ export class ReaderSessionService implements OnModuleDestroy {
     const pending =
       existing ??
       (async () => {
-        const root = this.store.rootFor(session);
-        await mkdir(root, { recursive: true });
+        /**
+         * Guard: the directory is created before the reader spawns because the
+         * root is pinned at that moment, but it is left empty. The pinned handle
+         * is a directory capability and every read resolves against it per call,
+         * so bytes written later are fully visible — that is what lets a file
+         * arrive only when a tool call names it.
+         */
+        const root = await this.cache.readableRootFor(session);
+        this.cache.pin(session);
 
         return this.connect(raw, root);
       })();
@@ -155,9 +168,12 @@ export class ReaderSessionService implements OnModuleDestroy {
       const client = await pending;
       this.readiness.set(family, "ready");
 
-      return (await client.tools({
-        schemas: SCHEMAS_BY_FAMILY[family],
-      })) as ToolSet;
+      return withMaterialization(
+        (await client.tools({
+          schemas: SCHEMAS_BY_FAMILY[family],
+        })) as ToolSet,
+        (filePath) => this.store.resolveForTool(owner, session, filePath),
+      );
     } catch (cause) {
       this.clients.delete(key);
       this.readiness.set(family, "failed");
@@ -197,7 +213,7 @@ export class ReaderSessionService implements OnModuleDestroy {
       return;
     }
 
-    const evictable = this.store
+    const evictable = this.cache
       .idleSessions(0)
       .filter((session) => session !== active && live.has(session));
 
@@ -206,14 +222,22 @@ export class ReaderSessionService implements OnModuleDestroy {
       live.size - this.sessions.maxSessions,
     )) {
       await this.release(session);
-      await this.store.dispose(session);
+      await this.cache.evictSession(session);
     }
   }
 
+  /**
+   * Guard: the client is released before the cache is dropped, and that order is
+   * load bearing. Unlinking a file a reader still holds open keeps the inode — and
+   * the disk space — alive until the descriptor closes, while a lookup by name
+   * starts failing, so a mid-conversation reap turns into a confusing tool error
+   * on the next call. Closing first means no reader is ever holding what is about
+   * to be removed.
+   */
   private async sweep(): Promise<void> {
-    for (const session of this.store.idleSessions(this.sessions.idleTtlMs)) {
+    for (const session of this.cache.idleSessions(this.sessions.idleTtlMs)) {
       await this.release(session);
-      await this.store.dispose(session);
+      await this.cache.evictSession(session);
     }
   }
 }
