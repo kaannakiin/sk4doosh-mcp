@@ -1,0 +1,14 @@
+enum AuthClientType {
+  web
+  ios
+  android
+  desktop
+  other
+}
+
+enum AuthChallengePurpose {
+  verifyEmail
+  verifyPhone
+  phoneLogin
+  passwordReset
+}

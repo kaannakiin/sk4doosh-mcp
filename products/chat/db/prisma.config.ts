@@ -32,7 +32,7 @@ const url = optional("CHAT_DATABASE_URL");
 const shadowDatabaseUrl = optional("CHAT_DATABASE_SHADOW_URL");
 
 export default defineConfig({
-  schema: "prisma/schema",
+  schema: "prisma",
   migrations: { path: "prisma/migrations" },
   ...(url === undefined
     ? {}

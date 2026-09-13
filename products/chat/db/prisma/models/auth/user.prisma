@@ -1,0 +1,54 @@
+/// Application identity. Authentication methods remain separate so an account
+/// may use email/password, phone OTP, OAuth, or any combination of them.
+model User {
+  id              BigInt    @id @default(autoincrement())
+  publicId        String    @unique @default(uuid(7)) @map("public_id") @db.Uuid
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
+  email           String?   @unique
+  phoneE164       String?   @unique @map("phone_e164")
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz
+  phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz
+  disabledAt      DateTime? @map("disabled_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  passwordCredential UserPasswordCredential?
+  oauthAccounts      OAuthAccount[]
+  sessions           AuthSession[]
+  challenges         AuthChallenge[]
+
+  @@map("app_user")
+}
+
+/// The encoded password hash owns its algorithm, salt, and work parameters.
+/// Raw passwords and independently managed salts must never reach this table.
+model UserPasswordCredential {
+  userId            BigInt   @id @map("user_id")
+  passwordHash      String   @map("password_hash")
+  passwordChangedAt DateTime @default(now()) @map("password_changed_at") @db.Timestamptz
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_password_credential")
+}
+
+/// Login-provider identity only. Provider API tokens and the user's external
+/// MCP/company connections belong to separate credential domains.
+model OAuthAccount {
+  id                BigInt   @id @default(autoincrement())
+  userId            BigInt   @map("user_id")
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  verifiedAt        DateTime @default(now()) @map("verified_at") @db.Timestamptz
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  lastUsedAt        DateTime @default(now()) @map("last_used_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId], map: "oauth_account_provider_key")
+  @@index([userId], map: "oauth_account_user_idx")
+  @@map("oauth_account")
+}

@@ -1,0 +1,60 @@
+/// One independently revocable login per browser, mobile app, or desktop app.
+/// Short-lived access tokens refer to `publicId`; no access token is stored.
+model AuthSession {
+  id         BigInt         @id @default(autoincrement())
+  publicId   String         @unique @default(uuid(7)) @map("public_id") @db.Uuid
+  userId     BigInt         @map("user_id")
+  clientType AuthClientType @map("client_type")
+  deviceName String?        @map("device_name")
+  userAgent  String?        @map("user_agent")
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz
+  expiresAt  DateTime       @map("expires_at") @db.Timestamptz
+  revokedAt  DateTime?      @map("revoked_at") @db.Timestamptz
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens AuthRefreshToken[]
+
+  @@index([userId, revokedAt, createdAt(sort: Desc)], map: "auth_session_user_state_created_idx")
+  @@index([expiresAt], map: "auth_session_expires_idx")
+  @@map("auth_session")
+}
+
+/// A session is the refresh-token family. Rotation consumes one generation and
+/// creates the next; reuse of a consumed generation revokes the whole session.
+model AuthRefreshToken {
+  id         BigInt    @id @default(autoincrement())
+  sessionId  BigInt    @map("session_id")
+  generation Int
+  tokenHash  Bytes     @unique @map("token_hash")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz
+
+  session AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, generation], map: "auth_refresh_token_generation_key")
+  @@index([expiresAt], map: "auth_refresh_token_expires_idx")
+  @@map("auth_refresh_token")
+}
+
+/// Short-lived proof for contact verification, SMS login, and password reset.
+/// `secretHash` is a digest of a high-entropy link token or a peppered OTP.
+model AuthChallenge {
+  id             BigInt               @id @default(autoincrement())
+  publicId       String               @unique @default(uuid(7)) @map("public_id") @db.Uuid
+  userId         BigInt               @map("user_id")
+  purpose        AuthChallengePurpose
+  target         String
+  secretHash     Bytes                @unique @map("secret_hash")
+  failedAttempts Int                  @default(0) @map("failed_attempts")
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt      DateTime             @map("expires_at") @db.Timestamptz
+  consumedAt     DateTime?            @map("consumed_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt(sort: Desc)], map: "auth_challenge_user_purpose_created_idx")
+  @@index([expiresAt], map: "auth_challenge_expires_idx")
+  @@map("auth_challenge")
+}
