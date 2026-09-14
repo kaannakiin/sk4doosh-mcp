@@ -3,6 +3,7 @@ export interface SearchDocument {
   readonly description?: string;
   readonly tags?: readonly string[];
   readonly route: string;
+  readonly alternateRoutes?: readonly string[];
 }
 
 export const nameWeight = 3.0;
@@ -143,6 +144,9 @@ export class ToolIndex {
         accumulate(terms, tag, tagWeight);
       }
       accumulate(terms, document.route, routeWeight);
+      for (const alternate of document.alternateRoutes ?? []) {
+        accumulate(terms, alternate, routeWeight);
+      }
       let length = 0;
       for (const value of terms.values()) {
         length += value;

@@ -62,12 +62,15 @@ The rationale is agglutinative languages. In Turkish descriptions, `siparişi`, 
 
 ## Fields and weights
 
-| Field         | Weight |
-| ------------- | ------ |
-| `name`        | 3.0    |
-| `description` | 1.5    |
-| `tags`        | 1.0    |
-| `route`       | 1.0    |
+| Field             | Weight |
+| ----------------- | ------ |
+| `name`            | 3.0    |
+| `description`     | 1.5    |
+| `tags`            | 1.0    |
+| `route`           | 1.0    |
+| `alternateRoutes` | 1.0    |
+
+`alternateRoutes` carries the routes that were folded away when one operation was bound to several ([naming.md](naming.md)). They are tokenized at the same weight as `route` so a query naming a compatibility path still finds the tool; the tool's own contract still names the single route it invokes.
 
 A document's term frequency is the sum of the weights of every field the term occurs in (`tf`). Document length is the sum of all `tf` values; average length is taken over the documents.
 

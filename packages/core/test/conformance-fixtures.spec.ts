@@ -240,6 +240,9 @@ describe("conformance: search", () => {
             : { description: t.description }),
           ...(t.tags === undefined ? {} : { tags: t.tags }),
           route: t.route,
+          ...(t.alternateRoutes === undefined
+            ? {}
+            : { alternateRoutes: t.alternateRoutes }),
         })),
       );
       expect(

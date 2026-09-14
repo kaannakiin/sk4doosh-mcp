@@ -28,6 +28,7 @@ export {
   longNameThreshold,
   snakeCase,
 } from "./naming.js";
+export type { FoldedOperation, NamingOptions, PrefixMode } from "./naming.js";
 export { combineMarkers, isSelected } from "./selection.js";
 export type { SelectionDefault, SelectionMarker } from "./selection.js";
 export {

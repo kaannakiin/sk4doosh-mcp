@@ -9,8 +9,14 @@ import {
 } from "@nestjs/common";
 import { createRequire } from "node:module";
 import type { EndpointDescriptor, JsonSchemaObject } from "@sk-mcp/core";
-import { simplifySchema } from "@sk-mcp/core";
+import {
+  allowsAdditional,
+  flattenableBody,
+  simplifySchema,
+  typeOf,
+} from "@sk-mcp/core";
 import { markersOf, type McpToolOptions } from "../decorators.js";
+import { atLeast, severityOf, type CatalogSeverity } from "./diagnostics.js";
 import {
   NestTypeShapeBinder,
   type TypeShapeBinderOptions,
@@ -18,17 +24,29 @@ import {
 
 const load = createRequire(import.meta.url);
 
-const { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA, ROUTE_ARGS_METADATA } =
-  load("@nestjs/common/constants") as {
-    GUARDS_METADATA: string;
-    METHOD_METADATA: string;
-    PATH_METADATA: string;
-    ROUTE_ARGS_METADATA: string;
-  };
+const {
+  GUARDS_METADATA,
+  METHOD_METADATA,
+  MODULE_PATH,
+  PATH_METADATA,
+  ROUTE_ARGS_METADATA,
+  VERSION_METADATA,
+} = load("@nestjs/common/constants") as {
+  GUARDS_METADATA: string;
+  METHOD_METADATA: string;
+  MODULE_PATH: string;
+  PATH_METADATA: string;
+  ROUTE_ARGS_METADATA: string;
+  VERSION_METADATA: string;
+};
 
 const { RouteParamtypes } = load(
   "@nestjs/common/enums/route-paramtypes.enum",
 ) as { RouteParamtypes: Record<string, number> };
+
+const { RoutePathFactory } = load("@nestjs/core/router/route-path-factory") as {
+  RoutePathFactory: new (applicationConfig: unknown) => RoutePaths;
+};
 
 const BODY = RouteParamtypes["BODY"] as number;
 const QUERY = RouteParamtypes["QUERY"] as number;
@@ -37,6 +55,29 @@ const HEADERS = RouteParamtypes["HEADERS"] as number;
 const FILE = RouteParamtypes["FILE"] as number;
 const FILES = RouteParamtypes["FILES"] as number;
 const RAW_BODY = RouteParamtypes["RAW_BODY"] as number;
+
+export interface RoutePathMetadata {
+  readonly ctrlPath?: string;
+  readonly methodPath?: string;
+  readonly globalPrefix?: string;
+  readonly modulePath?: string;
+  readonly controllerVersion?: unknown;
+  readonly methodVersion?: unknown;
+  readonly versioningOptions?: unknown;
+}
+
+export interface RoutePaths {
+  create(metadata: RoutePathMetadata, requestMethod?: number): string[];
+}
+
+/** `RoutePathFactory` reads `getGlobalPrefixOptions()`; with no application there is no exclusion list. */
+export function createRoutePaths(applicationConfig?: unknown): RoutePaths {
+  return new RoutePathFactory(
+    applicationConfig ?? { getGlobalPrefixOptions: () => ({}) },
+  );
+}
+
+const withoutApplication = createRoutePaths();
 
 export interface DiscoveryDiagnostic {
   readonly code: string;
@@ -55,8 +96,11 @@ export interface VisibilityDeclaration {
 
 export interface DiscoveryOptions {
   readonly globalPrefix?: string;
+  readonly versioningOptions?: unknown;
+  readonly routePaths?: RoutePaths;
   readonly schema?: TypeShapeBinderOptions;
   readonly globalGuards?: readonly unknown[];
+  readonly severity?: (code: string) => CatalogSeverity;
   readonly report?: (diagnostic: DiscoveryDiagnostic) => void;
 }
 
@@ -88,6 +132,8 @@ const pipeScalars: ReadonlyArray<readonly [unknown, JsonSchemaObject]> = [
   [ParseEnumPipe, { type: "string" }],
 ];
 
+const queryScalars = new Set(["string", "number", "integer", "boolean"]);
+
 interface ArgumentEntry {
   readonly index: number;
   readonly data?: unknown;
@@ -105,6 +151,24 @@ export function discoverEndpoints(
   return found;
 }
 
+/** `RouterModule` writes the module path under a key scoped to the application instance, falling back to the bare key. */
+export function modulePathOf(
+  moduleMetatype: unknown,
+  applicationId: string,
+): string | undefined {
+  if (typeof moduleMetatype !== "function") {
+    return undefined;
+  }
+  const scoped = Reflect.getMetadata(
+    MODULE_PATH + applicationId,
+    moduleMetatype,
+  ) as string | undefined;
+  return (
+    scoped ??
+    (Reflect.getMetadata(MODULE_PATH, moduleMetatype) as string | undefined)
+  );
+}
+
 function fromController(
   candidate: ControllerCandidate,
   options: DiscoveryOptions,
@@ -112,6 +176,10 @@ function fromController(
   const controller = candidate.metatype;
   const prototype = controller.prototype as Record<string, unknown>;
   const classPaths = pathsOf(controller);
+  const controllerVersion = Reflect.getMetadata(
+    VERSION_METADATA,
+    controller,
+  ) as unknown;
   const containerMarkers = markersOf(controller);
   const results: DiscoveredEndpoint[] = [];
 
@@ -134,15 +202,16 @@ function fromController(
       continue;
     }
 
-    for (const methodPath of pathsOf(handler)) {
-      const route = joinRoute([
-        options.globalPrefix,
-        candidate.modulePath,
-        ...classPaths.slice(0, 1),
-        methodPath,
-      ]);
-      const wildcard = /[*]/.test(route);
-      if (wildcard) {
+    for (const route of routesOf(
+      candidate,
+      classPaths,
+      pathsOf(handler),
+      controllerVersion,
+      Reflect.getMetadata(VERSION_METADATA, handler) as unknown,
+      verb,
+      options,
+    )) {
+      if (/[*]/.test(route)) {
         options.report?.({
           code: "unsupported_binding",
           message: `${controller.name}.${handlerName} uses a wildcard route segment, which the neutral route model cannot express; endpoint skipped.`,
@@ -174,6 +243,45 @@ function fromController(
   return results;
 }
 
+function routesOf(
+  candidate: ControllerCandidate,
+  classPaths: readonly string[],
+  methodPaths: readonly string[],
+  controllerVersion: unknown,
+  methodVersion: unknown,
+  requestMethod: RequestMethod,
+  options: DiscoveryOptions,
+): string[] {
+  const factory = options.routePaths ?? withoutApplication;
+  const routes = new Set<string>();
+  for (const ctrlPath of classPaths) {
+    for (const methodPath of methodPaths) {
+      const created = factory.create(
+        {
+          ctrlPath,
+          methodPath,
+          ...(options.globalPrefix === undefined
+            ? {}
+            : { globalPrefix: options.globalPrefix }),
+          ...(candidate.modulePath === undefined
+            ? {}
+            : { modulePath: candidate.modulePath }),
+          ...(controllerVersion === undefined ? {} : { controllerVersion }),
+          ...(methodVersion === undefined ? {} : { methodVersion }),
+          ...(options.versioningOptions === undefined
+            ? {}
+            : { versioningOptions: options.versioningOptions }),
+        },
+        requestMethod,
+      );
+      for (const route of created) {
+        routes.add(normalizeRoute(route));
+      }
+    }
+  }
+  return [...routes];
+}
+
 function describe(
   controller: NewableFunction,
   handlerName: string,
@@ -191,9 +299,11 @@ function describe(
   ) ?? []) as unknown[];
 
   const declared: NonNullable<EndpointDescriptor["parameters"]> = [];
+  const expanded: NonNullable<EndpointDescriptor["parameters"]> = [];
   let bodySchema: JsonSchemaObject | undefined;
   let bodyFields: Record<string, JsonSchemaObject> | undefined;
   let unsupported = false;
+  let unresolvedQuery = false;
 
   for (const [key, entry] of Object.entries(args)) {
     const kind = Number(key.split(":")[0]);
@@ -201,30 +311,43 @@ function describe(
     const declaredType = paramTypes[entry.index];
 
     switch (kind) {
-      case QUERY:
+      case QUERY: {
+        if (name !== undefined) {
+          declared.push({
+            name,
+            in: "query",
+            required: false,
+            schema: scalarFor(entry, declaredType),
+          });
+          break;
+        }
+        const members = queryFor(
+          controller,
+          handlerName,
+          declaredType,
+          options,
+        );
+        if (members === undefined) {
+          unresolvedQuery = true;
+          break;
+        }
+        expanded.push(...members);
+        break;
+      }
+      case HEADERS:
         if (name === undefined) {
           options.report?.({
-            code: "unbound_query_object",
-            message: `${controller.name}.${handlerName} binds the whole query object; its members cannot be read, so they are omitted from the tool.`,
+            code: "unbound_header_object",
+            message: `${controller.name}.${handlerName} binds the whole header object; its members cannot be read, so they are omitted from the tool. Bind the headers the tool needs by name.`,
           });
           break;
         }
         declared.push({
           name,
-          in: "query",
+          in: "header",
           required: false,
           schema: scalarFor(entry, declaredType),
         });
-        break;
-      case HEADERS:
-        if (name !== undefined) {
-          declared.push({
-            name,
-            in: "header",
-            required: false,
-            schema: scalarFor(entry, declaredType),
-          });
-        }
         break;
       case BODY:
         if (name === undefined) {
@@ -258,6 +381,15 @@ function describe(
     });
     return undefined;
   }
+  if (
+    unresolvedQuery &&
+    atLeast(
+      (options.severity ?? severityOf)("unresolved_query_shape"),
+      "endpointDropped",
+    )
+  ) {
+    return undefined;
+  }
   if (bodyFields !== undefined) {
     bodySchema = { type: "object", properties: bodyFields };
   }
@@ -271,9 +403,14 @@ function describe(
       ({ type: "string" } as JsonSchemaObject),
   }));
 
+  const claimed = new Set([
+    ...pathParameters.map((parameter) => parameter.name),
+    ...declared.map((parameter) => parameter.name),
+  ]);
   const parameters = [
     ...pathParameters,
     ...declared.filter((parameter) => parameter.in !== "path"),
+    ...expanded.filter((parameter) => !claimed.has(parameter.name)),
   ];
 
   const descriptor: EndpointDescriptor = {
@@ -373,19 +510,99 @@ function descriptionOf(
   return declared !== undefined && declared.length > 0 ? declared : undefined;
 }
 
+function shapeOf(
+  declaredType: unknown,
+  options: DiscoveryOptions,
+): { schema: JsonSchemaObject; diagnostics: DiscoveryDiagnostic[] } {
+  const collected: DiscoveryDiagnostic[] = [];
+  const binder = new NestTypeShapeBinder({
+    ...options.schema,
+    report: (diagnostic) => collected.push(diagnostic),
+  });
+  const { schema, diagnostics } = simplifySchema(binder.bind(declaredType));
+  collected.push(...diagnostics);
+  return { schema, diagnostics: collected };
+}
+
 function bodyFor(
   declaredType: unknown,
   options: DiscoveryOptions,
 ): JsonSchemaObject {
-  const binder = new NestTypeShapeBinder({
-    ...options.schema,
-    report: (diagnostic) => options.report?.(diagnostic),
-  });
-  const { schema, diagnostics } = simplifySchema(binder.bind(declaredType));
+  const { schema, diagnostics } = shapeOf(declaredType, options);
   for (const diagnostic of diagnostics) {
     options.report?.(diagnostic);
   }
   return schema;
+}
+
+function isQueryable(schema: JsonSchemaObject): boolean {
+  const type = typeOf(schema);
+  if (type === "array") {
+    const items = schema.items;
+    return items !== undefined && queryScalars.has(typeOf(items) ?? "");
+  }
+  return queryScalars.has(type ?? "");
+}
+
+function queryFor(
+  controller: NewableFunction,
+  handlerName: string,
+  declaredType: unknown,
+  options: DiscoveryOptions,
+): EndpointDescriptor["parameters"] | undefined {
+  const { schema, diagnostics } = shapeOf(declaredType, options);
+  const flattenable = flattenableBody(schema);
+  const properties = flattenable?.properties ?? {};
+  const unresolved = (): undefined => {
+    options.report?.({
+      code: "unresolved_query_shape",
+      message: `${controller.name}.${handlerName} binds the whole query object but no member of '${nameOf(declaredType)}' can be read, so the tool would carry no filters. Decorate its properties with class-validator, or declare options.schema.typeShape.`,
+    });
+    return undefined;
+  };
+
+  if (allowsAdditional(schema) || Object.keys(properties).length === 0) {
+    return unresolved();
+  }
+
+  const required = new Set(flattenable?.required ?? []);
+  const parameters: NonNullable<EndpointDescriptor["parameters"]> = [];
+  const skipped: string[] = [];
+  for (const [name, property] of Object.entries(properties)) {
+    if (!isQueryable(property)) {
+      skipped.push(name);
+      continue;
+    }
+    parameters.push({
+      name,
+      in: "query",
+      required: required.has(name),
+      schema: property,
+    });
+  }
+
+  if (parameters.length === 0) {
+    return unresolved();
+  }
+
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.code !== "unreadable_shape") {
+      options.report?.(diagnostic);
+    }
+  }
+  if (skipped.length > 0) {
+    options.report?.({
+      code: "unbound_query_object",
+      message: `${controller.name}.${handlerName} binds the whole query object; ${skipped.join(", ")} cannot be expressed as query parameters and are omitted from the tool.`,
+    });
+  }
+  return parameters;
+}
+
+function nameOf(declaredType: unknown): string {
+  return typeof declaredType === "function"
+    ? declaredType.name
+    : "the query type";
 }
 
 function scalarFor(
@@ -490,17 +707,12 @@ function pathsOf(target: object | NewableFunction): string[] {
   return paths.length === 0 ? [""] : paths;
 }
 
-function joinRoute(parts: ReadonlyArray<string | undefined>): string {
+export function normalizeRoute(route: string): string {
   const segments: string[] = [];
-  for (const part of parts) {
-    if (part === undefined) {
-      continue;
-    }
-    for (const segment of part.split("/")) {
-      const trimmed = segment.trim();
-      if (trimmed.length > 0 && trimmed !== "/") {
-        segments.push(normalizeSegment(trimmed));
-      }
+  for (const segment of route.split("/")) {
+    const trimmed = segment.trim();
+    if (trimmed.length > 0 && trimmed !== "/") {
+      segments.push(normalizeSegment(trimmed));
     }
   }
   return `/${segments.join("/")}`;

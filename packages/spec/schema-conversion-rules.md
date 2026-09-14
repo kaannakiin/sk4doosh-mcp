@@ -256,20 +256,24 @@ composer's second body mode.
 
 ## Table 7 — Diagnostics
 
-| Code                            | When                                                              | Result                         |
-| ------------------------------- | ----------------------------------------------------------------- | ------------------------------ |
-| `argument_collision`            | a parameter name collides with a body field or the body root name | the endpoint is dropped        |
-| `multiple_body_bindings`        | more than one body declaration                                    | the endpoint is dropped        |
-| `unsupported_binding`           | a form or file binding                                            | the endpoint is dropped        |
-| `unsupported_method`            | the HTTP method has no counterpart in the neutral model           | the endpoint is dropped        |
-| `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies       | the endpoint is dropped        |
-| `synthetic_body_argument`       | a non-object body root was wrapped into a `body` argument         | warning                        |
-| `unsupported_dictionary_key`    | a dictionary key that cannot be serialized                        | the value shape is dropped     |
-| `unreadable_shape`              | the binding layer could not read the shape                        | the boundary object is written |
-| `schema_def_name_disambiguated` | two hoisted types carry the same simple name                      | warning, a suffix is added     |
-| `schema_depth_truncated`        | the host's depth budget cut a branch                              | warning                        |
-| `enum_format_unresolved`        | the enum wire form cannot be read                                 | warning                        |
-| `naming_policy_unresolved`      | the field-name policy cannot be read                              | warning                        |
+| Code                            | When                                                               | Result                         |
+| ------------------------------- | ------------------------------------------------------------------ | ------------------------------ |
+| `argument_collision`            | a parameter name collides with a body field or the body root name  | the endpoint is dropped        |
+| `multiple_body_bindings`        | more than one body declaration                                     | the endpoint is dropped        |
+| `unsupported_binding`           | a form or file binding                                             | the endpoint is dropped        |
+| `unsupported_method`            | the HTTP method has no counterpart in the neutral model            | the endpoint is dropped        |
+| `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies        | the endpoint is dropped        |
+| `unresolved_query_shape`        | a whole-object query binding whose members cannot be read at all   | the endpoint is dropped        |
+| `synthetic_body_argument`       | a non-object body root was wrapped into a `body` argument          | warning                        |
+| `unbound_query_object`          | some members of a whole-object query binding are not expressible   | warning, those members dropped |
+| `unbound_header_object`         | a whole-object header binding                                      | warning, the binding dropped   |
+| `route_folded`                  | one operation was bound to several routes ([naming.md](naming.md)) | warning                        |
+| `unsupported_dictionary_key`    | a dictionary key that cannot be serialized                         | the value shape is dropped     |
+| `unreadable_shape`              | the binding layer could not read the shape                         | the boundary object is written |
+| `schema_def_name_disambiguated` | two hoisted types carry the same simple name                       | warning, a suffix is added     |
+| `schema_depth_truncated`        | the host's depth budget cut a branch                               | warning                        |
+| `enum_format_unresolved`        | the enum wire form cannot be read                                  | warning                        |
+| `naming_policy_unresolved`      | the field-name policy cannot be read                               | warning                        |
 
 Severity has three levels: `Warning`, `EndpointDropped`, `Fatal`. `Fatal` is reserved for codes that
 make the whole catalog inconsistent (two endpoints claiming the same name). An argument collision is
@@ -281,6 +285,18 @@ the retired `non_object_body`: that code dropped because the endpoint could not 
 whereas an opaque body forwards every unknown key thanks to `additionalProperties: true`, so the tool
 stays **fully callable** with a weaker contract. Dropping it would be a regression. A host that says
 "no opaque bodies in production" adds the code to `Diagnostics.Escalate`.
+
+`unresolved_query_shape` is the case where that reasoning does not hold, which is why it drops the
+endpoint instead. Query has no counterpart to `additionalProperties: true`: the composer writes only
+the parameters the template declares, so a key the schema never named is not forwarded, it is
+discarded. A tool published with an unreadable query object is therefore not a weaker contract but a
+**wrong** one — the agent reads "this operation takes no filters", calls it, and silently gets an
+unfiltered result set. That is indistinguishable from an operation that genuinely has no filters, and
+the two must not produce the same observable outcome. When only _some_ members are unreadable the
+endpoint survives with `unbound_query_object`, because the members that were read are real and the
+tool is still narrower than no tool. A host that prefers a filterless tool to no tool adds
+`unresolved_query_shape` to `Diagnostics.Downgrade`. Both messages MUST name the way out: decorate
+the type so the binding layer can read it, or declare the shape through the host's type-shape hook.
 
 ## Unpinned areas
 

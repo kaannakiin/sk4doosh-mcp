@@ -118,6 +118,48 @@ NestJS has no equivalent of ASP.NET's description metadata, so `@McpTool({ descr
 an agent gets something to search against. Input schemas come from your `class-validator` DTOs and
 your pipes: `ParseIntPipe` yields an integer, `@Min`/`@Max` become `minimum`/`maximum`.
 
+A whole-object query binding is expanded into one argument per member, so the agent sees the
+filters:
+
+```ts
+class ListOrdersQuery {
+  @IsString() customerId!: string;
+  @IsString() @IsOptional() status?: string;
+  @IsInt() @Min(1) @IsOptional() page?: number;
+}
+
+@Get("orders")
+list(@Query() query: ListOrdersQuery) { ... }
+// arguments: customerId (required), status, page
+```
+
+The expansion needs a readable type. A member that cannot be expressed as a query parameter — a
+nested object, a dictionary — is omitted with an `unbound_query_object` warning. If **no** member
+can be read (`@Query() q: Record<string, unknown>`, or a DTO with no `class-validator` decorators)
+the endpoint is dropped with `unresolved_query_shape` rather than published as a tool that claims
+to take no filters. Decorate the type, declare `options.schema.typeShape`, or add the code to
+`options.diagnostics.downgrade` to publish it filterless anyway.
+
+### Routes
+
+Routes are composed by Nest's own route factory, so the descriptor's route is the path Nest
+actually serves: `setGlobalPrefix` (with its `exclude` list), `RouterModule.register({ path })`,
+URI versioning, controller path and method path. Two consequences worth knowing:
+
+- **A global prefix moves the protected-resource metadata.** Nest applies the prefix to middleware
+  paths too, so `/.well-known/oauth-protected-resource/mcp` becomes `/api/.well-known/...` and RFC
+  9728 discovery breaks. When `resourceServer` is set, sk-mcp raises a fatal `prm_path_prefixed`
+  diagnostic naming the fix: `setGlobalPrefix("api", { exclude: ["/.well-known/oauth-protected-resource/mcp"] })`.
+- **Non-URI versioning is not carried into invocation.** With `HEADER`, `MEDIA_TYPE` or `CUSTOM`
+  versioning the version never enters the path, and the synthetic request sk-mcp replays carries no
+  version header, so dispatch lands on the default version. URI versioning has no such gap.
+
+One operation bound to several routes — `@Controller(["orders", "purchases"])`, a legacy path kept
+alongside a new one, or one handler under two URI versions — stays **one tool**: the same code at
+two URLs is one operation, and two identical tools only dilute search. The invoked route is chosen
+deterministically (shortest, then ordinal), the folded routes are reported as `route_folded`, and
+they stay searchable so a query naming the compatibility path still finds the tool.
+
 At scale, invert it and exclude the exceptions:
 
 ```ts
@@ -183,15 +225,17 @@ the RFC 9728 metadata handler for you.
 
 ## 6. Troubleshooting
 
-| Symptom                                        | Cause                                                               | Fix                                                                             |
-| ---------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `search_tools` always empty                    | `selection.default` is `exclude` and nothing is decorated           | Add `@McpTool()`, or set `selection.default = "include"`                        |
-| Everything comes back `authUncertain`          | A guard without `describeVisibility()`, or `tier` still declarative | Declare the guards, or set `visibility.tier = "probe"`                          |
-| Catalog empty, decorators appear to do nothing | `reflect-metadata` not imported first                               | Make it the first import in `main.ts`                                           |
-| Startup throws resolving a provider            | `app.use(...)` before `app.init()`                                  | `await app.init()` first                                                        |
-| No PRM document, 401 carries no pointer        | `resourceServer` unset                                              | Set `options.resourceServer`; check `/.well-known/oauth-protected-resource/mcp` |
-| `GET /mcp` returns 405                         | `transport.sessionMode` is `stateless` (the default)                | Expected. Use `POST`, or switch to `stateful`                                   |
-| Host will not boot, fatal diagnostic           | `name_collision` / `ambiguous_selection` / `invalid_name`           | Read the codes in the log, then `options.diagnostics.downgrade`                 |
+| Symptom                                                     | Cause                                                               | Fix                                                                             |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `search_tools` always empty                                 | `selection.default` is `exclude` and nothing is decorated           | Add `@McpTool()`, or set `selection.default = "include"`                        |
+| Everything comes back `authUncertain`                       | A guard without `describeVisibility()`, or `tier` still declarative | Declare the guards, or set `visibility.tier = "probe"`                          |
+| Catalog empty, decorators appear to do nothing              | `reflect-metadata` not imported first                               | Make it the first import in `main.ts`                                           |
+| Startup throws resolving a provider                         | `app.use(...)` before `app.init()`                                  | `await app.init()` first                                                        |
+| No PRM document, 401 carries no pointer                     | `resourceServer` unset                                              | Set `options.resourceServer`; check `/.well-known/oauth-protected-resource/mcp` |
+| `GET /mcp` returns 405                                      | `transport.sessionMode` is `stateless` (the default)                | Expected. Use `POST`, or switch to `stateful`                                   |
+| Host will not boot, fatal diagnostic                        | `name_collision` / `ambiguous_selection` / `invalid_name`           | Read the codes in the log, then `options.diagnostics.downgrade`                 |
+| A tool is missing and `unresolved_query_shape` was reported | Its `@Query()` type carries no readable members                     | Decorate the DTO, declare `options.schema.typeShape`, or downgrade the code     |
+| PRM 404s under a global prefix                              | `prm_path_prefixed` — Nest prefixed the `.well-known` path          | Add the metadata path to `setGlobalPrefix`'s `exclude` list                     |
 
 ## 7. What's next
 

@@ -1,0 +1,21 @@
+{
+  "kind": "search",
+  "description": "katlanan route arama indeksinde kalir: tek operasyon /Rest/Auth/Logout ve /Rest/Logout'a bagliyken 'auth' sorgusu tool'u bulur",
+  "input": {
+    "tools": [
+      {
+        "name": "system_soft_logout",
+        "route": "/Rest/Logout",
+        "alternateRoutes": ["/Rest/Auth/Logout"]
+      },
+      {
+        "name": "report_status",
+        "route": "/Rest/Status/Report"
+      }
+    ],
+    "query": "auth"
+  },
+  "expected": {
+    "names": ["system_soft_logout"]
+  }
+}

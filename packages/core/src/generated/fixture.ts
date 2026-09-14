@@ -260,6 +260,7 @@ export interface SearchTool {
   description?: string;
   tags?: string[];
   route: string;
+  alternateRoutes?: string[];
 }
 export interface SearchExpectation {
   names: string[];

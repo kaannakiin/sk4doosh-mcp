@@ -56,6 +56,8 @@ If an operation is bound to more than one route (a legacy path kept for compatib
 
 The rationale: a tool is an operation, not a route. Compatibility routes are a deployment matter and are none of the agent's business; two nearly identical tools pollute search results. Measured: 10 of the 15 name collisions on the real backend were this case (two route attributes on a single method) — and the "define an `operationId`" fix does not work there, because a single correct `operationId` already exists.
 
+Folding is not silent. The SDK emits a `route_folded` warning naming the operation, the routes that were folded away and the route the tool invokes, and the folded routes are handed to the search index as `alternateRoutes` ([search-semantics.md](search-semantics.md)) so a query naming a compatibility path still finds the tool. Choosing the route by declaration order instead of the deterministic rule is a defect: the same source then produces different catalogs.
+
 If no `operationId` is defined, no grouping is performed: names generated from routes already differ per route.
 
 Including `container` in the identity is mandatory. Grouping by `(operationId, method)` alone would silently merge two distinct operations that happen to share a name in different containers (a `Delete` action on two different controllers).

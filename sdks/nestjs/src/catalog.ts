@@ -1,5 +1,9 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { DiscoveryService } from "@nestjs/core";
+import { Inject, Injectable, RequestMethod } from "@nestjs/common";
+import {
+  ApplicationConfig,
+  DiscoveryService,
+  ModulesContainer,
+} from "@nestjs/core";
 import {
   combineMarkers,
   createRequestTemplateFromEndpoint,
@@ -20,10 +24,14 @@ import {
   type CatalogDiagnostic,
 } from "./discovery/diagnostics.js";
 import {
+  createRoutePaths,
   discoverEndpoints,
+  modulePathOf,
+  normalizeRoute,
   type DiscoveredEndpoint,
 } from "./discovery/endpoint-discovery.js";
 import { SK_MCP_OPTIONS, type SkMcpOptions } from "./options.js";
+import { protectedResourceMetadataPath } from "./transport/protected-resource-metadata.js";
 
 export interface CatalogEntry {
   readonly tool: ToolDefinition;
@@ -31,6 +39,7 @@ export interface CatalogEntry {
   readonly controller: NewableFunction;
   readonly handlerName: string;
   readonly template?: RequestTemplate;
+  readonly alternateRoutes?: readonly string[];
 }
 
 export interface CatalogSnapshot {
@@ -52,6 +61,8 @@ export class SkMcpCatalog {
 
   constructor(
     private readonly discovery: DiscoveryService,
+    private readonly modules: ModulesContainer,
+    private readonly applicationConfig: ApplicationConfig,
     @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
   ) {}
 
@@ -102,21 +113,41 @@ export class SkMcpCatalog {
       diagnostics.push(diagnostic);
     };
 
+    const routePaths = createRoutePaths(this.applicationConfig);
+    const globalPrefix = this.applicationConfig.getGlobalPrefix();
+    const versioningOptions = this.applicationConfig.getVersioning();
+    const mcpPath = this.options.resourceServer?.mcpPath ?? "/mcp";
+    this.checkMetadataPath(globalPrefix, mcpPath, routePaths, report);
+
+    const applicationId = this.modules.applicationId;
     const controllers = this.discovery
       .getControllers()
       .filter((wrapper) => typeof wrapper.metatype === "function")
-      .map((wrapper) => ({ metatype: wrapper.metatype as NewableFunction }));
+      .map((wrapper) => {
+        const modulePath = modulePathOf(wrapper.host?.metatype, applicationId);
+        return {
+          metatype: wrapper.metatype as NewableFunction,
+          ...(modulePath === undefined ? {} : { modulePath }),
+        };
+      });
 
     const discovered = discoverEndpoints(controllers, {
       ...(this.options.schema === undefined
         ? {}
         : { schema: this.options.schema }),
+      ...(versioningOptions === undefined ? {} : { versioningOptions }),
+      globalPrefix,
+      routePaths,
+      severity: (code) => severityOf(code, this.options.diagnostics),
       report,
     });
 
-    const reserved = this.options.resourceServer?.mcpPath ?? "/mcp";
+    const reserved = routePaths
+      .create({ globalPrefix, methodPath: mcpPath }, RequestMethod.ALL)
+      .map(normalizeRoute);
     const routed = discovered.filter(
-      (endpoint) => !endpoint.descriptor.route.startsWith(reserved),
+      (endpoint) =>
+        !reserved.some((path) => endpoint.descriptor.route.startsWith(path)),
     );
 
     const chosen: DiscoveredEndpoint[] = [];
@@ -148,8 +179,18 @@ export class SkMcpCatalog {
       }
     }
 
-    const operations = deduplicateOperations(chosen, (endpoint) =>
-      this.declared(endpoint),
+    const alternates = new Map<DiscoveredEndpoint, string[]>();
+    const operations = deduplicateOperations(
+      chosen,
+      (endpoint) => this.declared(endpoint),
+      ({ kept, folded }) => {
+        const routes = folded.map((endpoint) => endpoint.descriptor.route);
+        alternates.set(kept, routes);
+        report({
+          code: "route_folded",
+          message: `${kept.controller.name}.${kept.handlerName} is also mounted at ${routes.join(", ")}; one tool is produced and ${kept.descriptor.route} is the route it invokes.`,
+        });
+      },
     );
 
     let names: string[];
@@ -194,19 +235,16 @@ export class SkMcpCatalog {
             ? error.code
             : "template_rejected";
         report({ code, message: (error as Error).message });
-        if (
-          atLeast(severityOf(code, this.options.diagnostics), "endpointDropped")
-        ) {
-          continue;
-        }
         continue;
       }
+      const alternateRoutes = alternates.get(endpoint);
       const entry: CatalogEntry = {
         tool,
         descriptor,
         controller: endpoint.controller,
         handlerName: endpoint.handlerName,
         ...(template === undefined ? {} : { template }),
+        ...(alternateRoutes === undefined ? {} : { alternateRoutes }),
       };
       entries.push(entry);
       byName.set(name, entry);
@@ -237,6 +275,9 @@ export class SkMcpCatalog {
             ? {}
             : { tags: entry.descriptor.tags }),
           route: entry.descriptor.route,
+          ...(entry.alternateRoutes === undefined
+            ? {}
+            : { alternateRoutes: entry.alternateRoutes }),
         })),
       ),
       diagnostics,
@@ -245,6 +286,29 @@ export class SkMcpCatalog {
       discovered: discovered.length,
       selected: chosen.length,
     };
+  }
+
+  private checkMetadataPath(
+    globalPrefix: string,
+    mcpPath: string,
+    routePaths: ReturnType<typeof createRoutePaths>,
+    report: (diagnostic: CatalogDiagnostic) => void,
+  ): void {
+    if (this.options.resourceServer === undefined || globalPrefix === "") {
+      return;
+    }
+    const metadataPath = protectedResourceMetadataPath(mcpPath);
+    const [served] = routePaths.create(
+      { globalPrefix, methodPath: metadataPath },
+      RequestMethod.GET,
+    );
+    if (served === metadataPath) {
+      return;
+    }
+    report({
+      code: "prm_path_prefixed",
+      message: `The global prefix moves the protected-resource metadata to '${String(served)}', but RFC 9728 requires it at '${metadataPath}'; clients cannot discover the authorization server. Pass it to setGlobalPrefix's exclude list: setGlobalPrefix('${globalPrefix}', { exclude: ['${metadataPath}'] }).`,
+    });
   }
 
   private declared(endpoint: DiscoveredEndpoint): EndpointDescriptor {

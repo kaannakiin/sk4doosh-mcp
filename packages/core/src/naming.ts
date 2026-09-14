@@ -161,12 +161,19 @@ function shorter(candidate: string, current: string): boolean {
   return candidate < current;
 }
 
+export interface FoldedOperation<T> {
+  readonly kept: T;
+  readonly folded: readonly T[];
+}
+
 export function deduplicateOperations<T>(
   items: readonly T[],
   selector: (item: T) => EndpointDescriptor,
+  onFolded?: (fold: FoldedOperation<T>) => void,
 ): T[] {
   const operations: T[] = [];
   const seen = new Map<string, number>();
+  const grouped = new Map<string, T[]>();
   for (const item of items) {
     const endpoint = selector(item);
     if (
@@ -181,6 +188,12 @@ export function deduplicateOperations<T>(
       endpoint.operationId,
       endpoint.method.toUpperCase(),
     ]);
+    const members = grouped.get(key);
+    if (members === undefined) {
+      grouped.set(key, [item]);
+    } else {
+      members.push(item);
+    }
     const index = seen.get(key);
     if (index === undefined) {
       seen.set(key, operations.length);
@@ -189,6 +202,15 @@ export function deduplicateOperations<T>(
     }
     if (shorter(endpoint.route, selector(operations[index] as T).route)) {
       operations[index] = item;
+    }
+  }
+  if (onFolded !== undefined) {
+    for (const [key, members] of grouped) {
+      if (members.length < 2) {
+        continue;
+      }
+      const kept = operations[seen.get(key) as number] as T;
+      onFolded({ kept, folded: members.filter((member) => member !== kept) });
     }
   }
   return operations;

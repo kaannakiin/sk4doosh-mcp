@@ -12,10 +12,17 @@ export {
 } from "./outer-connection.js";
 export { catalogGenerationMetaKey, registerSkMcpTools } from "./meta-tools.js";
 export type { MetaToolDependencies } from "./meta-tools.js";
-export { discoverEndpoints } from "./discovery/endpoint-discovery.js";
+export {
+  createRoutePaths,
+  discoverEndpoints,
+  modulePathOf,
+  normalizeRoute,
+} from "./discovery/endpoint-discovery.js";
 export type {
   DiscoveredEndpoint,
   DiscoveryOptions,
+  RoutePathMetadata,
+  RoutePaths,
   VisibilityDeclaration,
 } from "./discovery/endpoint-discovery.js";
 export { NestTypeShapeBinder } from "./discovery/type-shape.js";

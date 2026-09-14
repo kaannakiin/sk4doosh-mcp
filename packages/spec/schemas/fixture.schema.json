@@ -617,6 +617,13 @@
         "route": {
           "type": "string",
           "pattern": "^/"
+        },
+        "alternateRoutes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/"
+          }
         }
       }
     },
