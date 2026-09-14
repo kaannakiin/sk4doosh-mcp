@@ -7,6 +7,7 @@ import { ConfigService } from "@nestjs/config";
 import { Client } from "minio";
 import type { Readable } from "node:stream";
 
+import { errorMessage } from "../common/utils/error.utils.ts";
 import type { AppConfig, StorageConfig } from "../config/configuration.ts";
 
 export interface PresignedUrl {
@@ -56,7 +57,7 @@ export class ObjectStorageService implements OnModuleInit {
       this.readiness = "ready";
     } catch (cause) {
       this.readiness = "failed";
-      this.logger.error(`object storage unavailable: ${describe(cause)}`);
+      this.logger.error(`object storage unavailable: ${errorMessage(cause)}`);
     }
   }
 
@@ -155,8 +156,4 @@ function contentDisposition(
   const ascii = filename.replace(/[^\x20-\x7e]/gu, "_").replace(/["\\]/gu, "_");
 
   return `${disposition}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
-}
-
-function describe(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }

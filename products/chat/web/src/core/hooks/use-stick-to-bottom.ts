@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 /** How far from the bottom still counts as "reading the newest turn". */
 const STICK_THRESHOLD_PX = 72;
+
+export interface StickToBottom<T extends HTMLElement> {
+  readonly ref: RefObject<T | null>;
+  readonly pinned: boolean;
+  readonly scrollToBottom: () => void;
+}
 
 /**
  * Keeps a scroll container pinned to its newest content until the reader scrolls
@@ -16,8 +22,10 @@ const STICK_THRESHOLD_PX = 72;
  *
  * @param signal the value that changes whenever new content is appended
  */
-export function useStickToBottom(signal: unknown) {
-  const ref = useRef<HTMLDivElement>(null);
+export function useStickToBottom<T extends HTMLElement = HTMLDivElement>(
+  signal: unknown,
+): StickToBottom<T> {
+  const ref = useRef<T>(null);
   const stuck = useRef(true);
   const [pinned, setPinned] = useState(true);
 

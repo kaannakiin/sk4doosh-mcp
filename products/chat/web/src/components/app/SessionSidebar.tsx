@@ -8,12 +8,13 @@ import { useSessionList } from "@chat/queries/sessions/list";
 import { Button, Loader, Modal, Text, TextInput } from "@mantine/core";
 import { IconPencilPlus } from "@tabler/icons-react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useLocale } from "../../lib/use-locale";
-import { LocaleSwitcher } from "../LocaleSwitcher";
-import { ThemeSwitcher } from "../ThemeSwitcher";
+import { useInfiniteSentinel } from "~/core/hooks/use-infinite-sentinel";
+import { useLocale } from "~/core/hooks/use-locale";
+import { LocaleSwitcher } from "~/components/LocaleSwitcher";
+import { ThemeSwitcher } from "~/components/ThemeSwitcher";
 import { SessionRow } from "./SessionRow";
 
 export interface SessionSidebarProps {
@@ -33,31 +34,11 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
   const [deleting, setDeleting] = useState<SessionSummary | undefined>();
   const [draft, setDraft] = useState("");
 
-  const sentinel = useRef<HTMLDivElement>(null);
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
-
-  /**
-   * Guard: the observer is rebuilt whenever paging state changes, because the
-   * callback closes over `hasNextPage`. Keeping one observer alive across a page
-   * load leaves it asking for a page that no longer exists.
-   */
-  useEffect(() => {
-    const node = sentinel.current;
-    if (node === null || !hasNextPage) {
-      return;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting) && !isFetchingNextPage) {
-        void fetchNextPage();
-      }
-    });
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const sentinel = useInfiniteSentinel({
+    hasNextPage: list.hasNextPage,
+    isFetchingNextPage: list.isFetchingNextPage,
+    fetchNextPage: list.fetchNextPage,
+  });
 
   const sessions = list.data ?? [];
 
@@ -112,7 +93,7 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
         ))}
 
         <div ref={sentinel} aria-hidden />
-        {isFetchingNextPage ? (
+        {list.isFetchingNextPage ? (
           <div className="px-1.5 py-3">
             <Loader size="xs" />
           </div>

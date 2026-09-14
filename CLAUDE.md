@@ -38,7 +38,7 @@
 
   Design narration is still forbidden: no restating the code, no explaining what a tier "is for", no history.
 
-- The two product lines do not cross. No `apps/*`, `packages/*` or `sdks/*` package may depend on `@chat/*` (`boundaries.tags.chat.dependents.allow: ["chat"]` in `turbo.json`, checked by `pnpm boundaries`), and `@chat/*` source may not import `@sk-mcp/*` product packages (`@sk-mcp/eslint-config/chat`). The concrete trap: `@sk-mcp/sdk-nestjs` is on **zod 3** and `@chat/contracts` is on **zod 4**; two zod majors in one process make `instanceof ZodError` and schema identity fail silently.
+- The two product lines do not cross. No `apps/*`, `packages/*` or `sdks/*` package may depend on `@chat/*` (`boundaries.tags.chat.dependents.allow: ["chat"]` in `turbo.json`, checked by `pnpm boundaries`), and `@chat/*` source may not import `@sk-mcp/*` product packages (`@sk-mcp/eslint-config/chat`). The concrete trap is zod: both `@sk-mcp/sdk-nestjs` and `@chat/contracts` declare it as a peer and both are on **4.x**, but nothing in the graph keeps them in step, and two zod majors in one process make `instanceof ZodError` and schema identity fail silently. The boundary is what stops a unilateral major bump on either side from turning into that failure.
 
 - Every zod schema in the chat product lives in `products/chat/contracts`. A `z.` call inside `products/chat/api/src` or `products/chat/web/src` is a defect, environment schemas included (`config/api-env`, `config/web-env`): a schema declared next to one consumer drifts from the other side of the wire within a release. Type-only `zod` imports stay legal so a pipe can name `ZodType`. Enforced by `@sk-mcp/eslint-config/chat`'s `chatApp` export.
 

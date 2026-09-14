@@ -1,3 +1,4 @@
+import type { UserId } from "./auth.js";
 import type { Db } from "./client.js";
 import type { SessionPage, SessionRow } from "./rows.js";
 
@@ -26,26 +27,26 @@ export interface SessionListQuery {
 }
 
 /**
- * One page of an owner's conversations, newest first.
+ * One page of a user's conversations, newest first.
  *
  * Guard: the keyset compares `(updated_at, id)` against the cursor's position,
  * and the cursor's public id is resolved to its surrogate in the same statement.
  * Ordering on the surrogate rather than on the public id is what lets
- * `chat_session_owner_recent_idx` satisfy the sort without a sort node, while the
+ * `chat_session_user_recent_idx` satisfy the sort without a sort node, while the
  * cursor the client holds still names nothing internal.
  *
  * @param limit rows to return; one extra is read to decide whether more exist
  */
 export async function listSessions(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   query: SessionListQuery,
 ): Promise<SessionPage> {
-  const owner = BigInt(ownerId);
+  const user = BigInt(userId);
   const cursor = query.cursor;
   const records = await db.chatSession.findMany({
     where: {
-      ownerId: owner,
+      userId: user,
       deletedAt: null,
       ...(cursor === undefined
         ? {}
@@ -54,7 +55,7 @@ export async function listSessions(
               { updatedAt: { lt: cursor.updatedAt } },
               {
                 updatedAt: cursor.updatedAt,
-                id: { lt: await surrogateOf(db, owner, cursor.id) },
+                id: { lt: await surrogateOf(db, user, cursor.id) },
               },
             ],
           }),
@@ -77,11 +78,11 @@ export async function listSessions(
 
 async function surrogateOf(
   db: Db,
-  ownerId: bigint,
+  userId: bigint,
   publicId: string,
 ): Promise<bigint> {
   const found = await db.chatSession.findFirst({
-    where: { publicId, ownerId },
+    where: { publicId, userId },
     select: { id: true },
   });
 
@@ -89,13 +90,13 @@ async function surrogateOf(
 }
 
 /**
- * Counts an owner's attachments per session, for the list response.
+ * Counts a user's attachments per session, for the list response.
  *
  * @returns a map from public session id to its live attachment count
  */
 export async function attachmentCounts(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionIds: readonly string[],
 ): Promise<ReadonlyMap<string, number>> {
   if (sessionIds.length === 0) {
@@ -103,7 +104,7 @@ export async function attachmentCounts(
   }
 
   const rows = await db.chatSession.findMany({
-    where: { ownerId: BigInt(ownerId), publicId: { in: [...sessionIds] } },
+    where: { userId: BigInt(userId), publicId: { in: [...sessionIds] } },
     select: {
       publicId: true,
       _count: { select: { attachments: { where: { deletedAt: null } } } },
@@ -120,11 +121,11 @@ export async function attachmentCounts(
  */
 export async function softDeleteSession(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
 ): Promise<boolean> {
   const { count } = await db.chatSession.updateMany({
-    where: { publicId: sessionId, ownerId: BigInt(ownerId), deletedAt: null },
+    where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
     data: { deletedAt: new Date() },
   });
 
@@ -133,11 +134,11 @@ export async function softDeleteSession(
 
 export async function findSession(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
 ): Promise<SessionRow | undefined> {
   const found = await db.chatSession.findFirst({
-    where: { publicId: sessionId, ownerId: BigInt(ownerId), deletedAt: null },
+    where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
   });
 
   return found === null ? undefined : toRow(found);
@@ -146,7 +147,7 @@ export async function findSession(
 /**
  * Renames a conversation.
  *
- * Guard: written with `updateMany` rather than `update`, so the owner predicate
+ * Guard: written with `updateMany` rather than `update`, so the user predicate
  * sits in the same statement as the write. `update` keys on a unique column and
  * cannot carry one, which would turn a guessed public id into somebody else's
  * retitled session.
@@ -156,18 +157,18 @@ export async function findSession(
  * top of the sidebar under the visitor's cursor and shift every page boundary
  * behind it.
  *
- * @returns the renamed row, or `undefined` when it is not this owner's
+ * @returns the renamed row, or `undefined` when it is not this user's
  */
 export async function renameSession(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
   title: string,
 ): Promise<SessionRow | undefined> {
   const { count } = await db.chatSession.updateMany({
-    where: { publicId: sessionId, ownerId: BigInt(ownerId), deletedAt: null },
+    where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
     data: { title },
   });
 
-  return count === 0 ? undefined : findSession(db, ownerId, sessionId);
+  return count === 0 ? undefined : findSession(db, userId, sessionId);
 }

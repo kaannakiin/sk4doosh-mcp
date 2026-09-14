@@ -13,11 +13,14 @@ import { I18nService } from "../i18n/i18n.service.ts";
 
 const CODE_BY_STATUS: Readonly<Record<number, string>> = {
   400: "bad_request",
+  401: "unauthorized",
+  403: "unauthorized",
   404: "not_found",
   409: "conflict",
   413: "payload_too_large",
   415: "unsupported_media_type",
   422: "validation_failed",
+  429: "too_many_requests",
 };
 
 function isApiError(value: unknown): value is ApiError {

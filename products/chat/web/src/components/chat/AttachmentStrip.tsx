@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { formatBytes } from "../../lib/relative-time";
+import { formatBytes } from "~/lib/relative-time";
 import { AttachmentGlyph } from "./attachment-icon";
 import { AttachmentPreview } from "./AttachmentPreview";
 import { AttachmentThumb } from "./AttachmentThumb";

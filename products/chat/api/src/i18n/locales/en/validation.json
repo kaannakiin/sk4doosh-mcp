@@ -2,6 +2,15 @@
   "failed": "The request body is invalid",
   "fields": {
     "content": "Message",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phoneE164": "Phone number",
+    "password": "Password",
+    "challengeId": "Verification request",
+    "code": "Verification code",
+    "provider": "Sign-in provider",
+    "intent": "OAuth intent",
     "root": "Request body"
   },
   "issues": {

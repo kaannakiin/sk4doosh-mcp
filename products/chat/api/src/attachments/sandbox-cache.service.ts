@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
 
+import { errorMessage } from "../common/utils/error.utils.ts";
 import type { AppConfig, CacheConfig } from "../config/configuration.ts";
 import { ObjectStorageService } from "./object-storage.service.ts";
 import {
@@ -273,7 +274,7 @@ export class SandboxCacheService
       if (cause instanceof MaterializationError) {
         throw cause;
       }
-      this.logger.error(`materialization failed: ${describe(cause)}`);
+      this.logger.error(`materialization failed: ${errorMessage(cause)}`);
       throw new MaterializationError("corrupt");
     }
   }
@@ -320,8 +321,4 @@ export class SandboxCacheService
     this.entries.delete(key);
     this.used = Math.max(0, this.used - entry.bytes);
   }
-}
-
-function describe(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }

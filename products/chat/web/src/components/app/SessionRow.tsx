@@ -1,15 +1,13 @@
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
-import { sessionDetailOptions } from "@chat/queries/sessions/detail";
-import { useChatClient } from "@chat/queries/provider";
+import { useWarmSessionDetail } from "@chat/queries/sessions/detail";
 import { ActionIcon, Menu } from "@mantine/core";
 import { IconDots, IconPencil, IconTrash } from "@tabler/icons-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { formatRelative } from "../../lib/relative-time";
-import { useLocale } from "../../lib/use-locale";
+import { formatRelative } from "~/lib/relative-time";
+import { useLocale } from "~/core/hooks/use-locale";
 
 export interface SessionRowProps {
   readonly session: SessionSummary;
@@ -28,19 +26,7 @@ function SessionRowComponent({
 }: SessionRowProps) {
   const { t } = useTranslation();
   const locale = useLocale();
-  const queryClient = useQueryClient();
-  const client = useChatClient();
-
-  /**
-   * Guard: hovering warms the conversation, not just the route. The chat surface
-   * cannot mount until its history has arrived — `useChat` reads `messages` once
-   * — so without this the visitor watches a skeleton on every switch.
-   */
-  const warm = () => {
-    void queryClient.prefetchQuery(
-      sessionDetailOptions(client, session.id, locale),
-    );
-  };
+  const warm = useWarmSessionDetail(session.id, locale);
 
   return (
     <div

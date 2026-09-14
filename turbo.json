@@ -1,7 +1,14 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["SKMCP_BASE_URL", "SKMCP_USER", "SKMCP_AUTH", "SKMCP_TOKEN"],
+  "globalEnv": [
+    "SKMCP_BASE_URL",
+    "SKMCP_USER",
+    "SKMCP_AUTH",
+    "SKMCP_TOKEN",
+    "CHAT_RUN_DB_TESTS",
+    "CHAT_TEST_DATABASE_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

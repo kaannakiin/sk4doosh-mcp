@@ -18,12 +18,12 @@ import {
   renameSession,
   settleTurn,
   softDeleteSession,
+  type UserId,
 } from "@chat/db";
 import { Injectable, Logger } from "@nestjs/common";
 import type { UIMessage } from "ai";
 
 import { DbService } from "../db/db.service.ts";
-import type { OwnerId } from "../owner/owner-id.ts";
 import { hydrate, titleFrom, toInputs } from "./message-history.ts";
 
 export interface TurnEnd {
@@ -45,17 +45,17 @@ export class ChatHistoryService {
    * Guard: this runs before `streamText`, not after it. A process that dies mid
    * generation must not lose the question the visitor just asked, and the write
    * doubles as the ownership check — the session row is locked and matched to
-   * this owner in the same statement.
+   * this user in the same statement.
    *
-   * @returns `false` when the session id belongs to another owner
+   * @returns `false` when the session id belongs to another user
    */
   async persist(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     messages: readonly UIMessage[],
   ): Promise<boolean> {
     return reconcileTurn(this.db.client, {
-      ownerId: owner,
+      userId,
       sessionId: session,
       messages: toInputs(messages),
       title: titleFrom(messages),
@@ -70,13 +70,13 @@ export class ChatHistoryService {
    * assistant row is bad, corrupting the answer the visitor is reading is worse.
    */
   async settle(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     event: TurnEnd,
   ): Promise<void> {
     try {
       const written = await reconcileTurn(this.db.client, {
-        ownerId: owner,
+        userId,
         sessionId: session,
         messages: toInputs(event.messages),
         title: titleFrom(event.messages),
@@ -87,7 +87,7 @@ export class ChatHistoryService {
 
       await settleTurn(
         this.db.client,
-        owner,
+        userId,
         session,
         event.responseMessage.id,
         outcomeOf(event.outcome.status),
@@ -102,7 +102,7 @@ export class ChatHistoryService {
   }
 
   async list(
-    owner: OwnerId,
+    userId: UserId,
     query: SessionListQuery,
   ): Promise<SessionListResponse> {
     const cursor =
@@ -110,7 +110,7 @@ export class ChatHistoryService {
         ? undefined
         : decodeSessionCursor(query.cursor);
 
-    const page = await listSessions(this.db.client, owner, {
+    const page = await listSessions(this.db.client, userId, {
       limit: query.limit,
       ...(cursor === undefined
         ? {}
@@ -119,7 +119,7 @@ export class ChatHistoryService {
 
     const counts = await attachmentCounts(
       this.db.client,
-      owner,
+      userId,
       page.sessions.map((session) => session.id),
     );
 
@@ -146,19 +146,19 @@ export class ChatHistoryService {
   /**
    * Everything needed to reopen a conversation, minus its attachments.
    *
-   * @returns `undefined` when the session does not exist for this owner
+   * @returns `undefined` when the session does not exist for this user
    */
   async load(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     limit: number,
   ): Promise<Omit<SessionDetailResponse, "attachments"> | undefined> {
-    const found = await findSessionOf(this.db, owner, session);
+    const found = await findSessionOf(this.db, userId, session);
     if (found === undefined) {
       return undefined;
     }
 
-    const stored = await listMessages(this.db.client, owner, session, limit);
+    const stored = await listMessages(this.db.client, userId, session, limit);
     const { messages, dropped } = await hydrate(stored.messages);
     if (dropped > 0) {
       this.logger.warn(
@@ -185,35 +185,35 @@ export class ChatHistoryService {
    * with `coalesce(title, …)` — and this overwrites it on the visitor's request.
    * The coalesce is what keeps a later turn from reverting that choice.
    *
-   * @returns `undefined` when the session does not exist for this owner
+   * @returns `undefined` when the session does not exist for this user
    */
   async rename(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     title: string,
   ): Promise<SessionSummary | undefined> {
-    const renamed = await renameSession(this.db.client, owner, session, title);
+    const renamed = await renameSession(this.db.client, userId, session, title);
 
     return renamed === undefined
       ? undefined
-      : findSessionOf(this.db, owner, session);
+      : findSessionOf(this.db, userId, session);
   }
 
-  async remove(owner: OwnerId, session: SessionId): Promise<boolean> {
-    return softDeleteSession(this.db.client, owner, session);
+  async remove(userId: UserId, session: SessionId): Promise<boolean> {
+    return softDeleteSession(this.db.client, userId, session);
   }
 }
 
 async function findSessionOf(
   db: DbService,
-  owner: OwnerId,
+  userId: UserId,
   session: SessionId,
 ): Promise<SessionSummary | undefined> {
-  const row = await findSession(db.client, owner, session);
+  const row = await findSession(db.client, userId, session);
   if (row === undefined) {
     return undefined;
   }
-  const counts = await attachmentCounts(db.client, owner, [session]);
+  const counts = await attachmentCounts(db.client, userId, [session]);
 
   return {
     id: row.id,

@@ -1,9 +1,10 @@
 import { Burger, Drawer } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet } from "@tanstack/react-router";
-import { Activity, useEffect } from "react";
+import { Activity } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useMediaMatchEffect } from "~/core/hooks/use-media-match-effect";
 import { SessionSidebar } from "./SessionSidebar";
 
 const DESKTOP_COLUMN = "(width >= 64rem)";
@@ -18,25 +19,11 @@ export function AppShell() {
   const [opened, { open, close }] = useDisclosure(false);
 
   /**
-   * Guard: the breakpoint is measured in an effect and never read during render,
-   * so the first client pass still matches the server's. Growing into the
-   * desktop column closes the drawer, which is what keeps the column from
-   * sitting blank behind a drawer that no longer has a trigger.
+   * Guard: growing into the desktop column closes the drawer, which is what
+   * keeps the column from sitting blank behind a drawer that no longer has a
+   * trigger.
    */
-  useEffect(() => {
-    const column = window.matchMedia(DESKTOP_COLUMN);
-    const sync = () => {
-      if (column.matches) {
-        close();
-      }
-    };
-    sync();
-    column.addEventListener("change", sync);
-
-    return () => {
-      column.removeEventListener("change", sync);
-    };
-  }, [close]);
+  useMediaMatchEffect(DESKTOP_COLUMN, close);
 
   return (
     <div className="grid h-dvh grid-cols-[minmax(0,1fr)] overflow-hidden lg:grid-cols-[17rem_minmax(0,1fr)]">

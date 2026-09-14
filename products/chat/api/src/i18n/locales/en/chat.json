@@ -31,7 +31,6 @@
     "stream_failed": "The assistant could not finish the answer.",
     "file_missing": "No file was sent.",
     "attachment_not_found": "That attachment is no longer available.",
-    "session_not_found": "That conversation is not available.",
-    "owner_missing": "The request could not be attributed to a visitor."
+    "session_not_found": "That conversation is not available."
   }
 }

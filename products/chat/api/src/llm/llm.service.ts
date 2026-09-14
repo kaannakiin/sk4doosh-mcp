@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import type { TimeoutConfiguration, ToolSet } from "ai";
 import { createOllama, type OllamaProvider } from "ai-sdk-ollama";
 
+import { errorMessage } from "../common/utils/error.utils.ts";
 import type { AppConfig, LlmConfig } from "../config/configuration.ts";
 
 const PROBE_TIMEOUT_MS = 5_000;
@@ -118,7 +119,7 @@ export class LlmService {
       return {
         model: this.settings.model,
         status: "failed",
-        detail: cause instanceof Error ? cause.message : String(cause),
+        detail: errorMessage(cause),
       };
     }
   }

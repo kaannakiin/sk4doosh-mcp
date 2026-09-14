@@ -4,7 +4,7 @@ import { getToolName } from "ai";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { formatToolInput, formatToolOutput } from "../../../lib/tool-output";
+import { formatToolInput, formatToolOutput } from "~/lib/tool-output";
 
 export type ReaderToolPart = ToolUIPart | DynamicToolUIPart;
 

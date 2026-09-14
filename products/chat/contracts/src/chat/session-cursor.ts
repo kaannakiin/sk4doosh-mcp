@@ -11,7 +11,7 @@ const CURSOR_MAX_CHARS = 512;
  * still chatting while paging. Both halves are carried because `updatedAt` is not
  * unique, and the tiebreaker is the public id rather than the table's surrogate —
  * a surrogate inside a base64 string is still readable, and would leak how many
- * sessions exist across every owner.
+ * sessions exist across every user.
  */
 export const sessionCursorSchema = z.object({
   updatedAt: z.iso.datetime(),

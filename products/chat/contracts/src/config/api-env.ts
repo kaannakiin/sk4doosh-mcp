@@ -15,8 +15,6 @@ import {
   SANDBOX_TTL_MS_DEFAULT,
   SESSION_IDLE_TTL_MS_DEFAULT,
 } from "../attachment/limits.ts";
-import { OWNER_COOKIE_TTL_MS_DEFAULT } from "../chat/owner.ts";
-import { DEFAULT_LOCALE, localeSchema } from "../common/locale.ts";
 import {
   DB_POOL_MAX_DEFAULT,
   DB_POOL_MAX_HARD,
@@ -31,6 +29,15 @@ import {
  * cannot be expressed, which is the accepted trade.
  */
 const mcpCommandSchema = z.string().trim().min(1).optional();
+const redisUrlSchema = z.url().superRefine((value, ctx) => {
+  const protocol = new URL(value).protocol;
+  if (protocol !== "redis:" && protocol !== "rediss:") {
+    ctx.addIssue({
+      code: "custom",
+      message: "must use the redis or rediss protocol",
+    });
+  }
+});
 
 /**
  * Guard: a variable that is present but blank is absent. A committed
@@ -57,8 +64,46 @@ export const apiEnvSchema = z.preprocess(
   z
     .object({
       CHAT_API_PORT: z.coerce.number().int().positive().default(5191),
-      CHAT_DEFAULT_LOCALE: localeSchema.default(DEFAULT_LOCALE),
       CHAT_CORS_ORIGIN: z.url().default("http://localhost:5190"),
+      CHAT_TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+      NODE_ENV: z
+        .enum(["development", "test", "production"])
+        .default("development"),
+
+      CHAT_AUTH_SECRET: z
+        .string()
+        .trim()
+        .min(43, "must encode at least 32 bytes")
+        .pipe(z.base64()),
+      CHAT_AUTH_PUBLIC_API_URL: z.url().default("http://localhost:5191"),
+      CHAT_AUTH_WEB_REDIRECT_URL: z.url().optional(),
+      CHAT_AUTH_COOKIE_SECURE: z.stringbool().default(false),
+
+      CHAT_AUTH_GOOGLE_CLIENT_ID: z.string().trim().min(1).optional(),
+      CHAT_AUTH_GOOGLE_CLIENT_SECRET: z.string().trim().min(1).optional(),
+      CHAT_AUTH_GOOGLE_REDIRECT_URI: z.url().optional(),
+      CHAT_AUTH_GITHUB_CLIENT_ID: z.string().trim().min(1).optional(),
+      CHAT_AUTH_GITHUB_CLIENT_SECRET: z.string().trim().min(1).optional(),
+      CHAT_AUTH_GITHUB_REDIRECT_URI: z.url().optional(),
+
+      CHAT_REDIS_URL: redisUrlSchema.default("redis://127.0.0.1:6379"),
+      CHAT_REDIS_KEY_PREFIX: z
+        .string()
+        .trim()
+        .regex(/^[a-z][a-z0-9-]{0,31}$/u)
+        .default("chat"),
+      CHAT_REDIS_CONNECT_TIMEOUT_MS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .max(30_000)
+        .default(2_000),
+      CHAT_REDIS_COMMAND_TIMEOUT_MS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .max(30_000)
+        .default(1_000),
 
       /**
        * Guard: no default. Session history and attachment metadata have no
@@ -73,19 +118,6 @@ export const apiEnvSchema = z.preprocess(
         .positive()
         .max(DB_POOL_MAX_HARD)
         .default(DB_POOL_MAX_DEFAULT),
-
-      CHAT_OWNER_COOKIE_TTL_MS: z.coerce
-        .number()
-        .int()
-        .positive()
-        .default(OWNER_COOKIE_TTL_MS_DEFAULT),
-      /**
-       * Guard: `Secure` is off by default because the dev web server proxies the
-       * api under its own plain-http origin, and a `Secure` cookie is dropped
-       * there — silently, producing a fresh owner on every request. It must be on
-       * wherever the site is served over https.
-       */
-      CHAT_OWNER_COOKIE_SECURE: z.stringbool().default(false),
 
       CHAT_LLM_BASE_URL: z.url().default("http://127.0.0.1:11434"),
       CHAT_LLM_MODEL: z.string().trim().min(1).default("qwen3:8b"),
@@ -209,6 +241,47 @@ export const apiEnvSchema = z.preprocess(
           path: ["CHAT_UPLOAD_MAX_FILE_BYTES"],
           message: "the per-file ceiling cannot exceed the per-session budget",
         });
+      }
+
+      for (const provider of ["GOOGLE", "GITHUB"] as const) {
+        const values = [
+          env[`CHAT_AUTH_${provider}_CLIENT_ID`],
+          env[`CHAT_AUTH_${provider}_CLIENT_SECRET`],
+          env[`CHAT_AUTH_${provider}_REDIRECT_URI`],
+        ];
+        const configured = values.filter((value) => value !== undefined).length;
+        if (configured !== 0 && configured !== values.length) {
+          ctx.addIssue({
+            code: "custom",
+            path: [`CHAT_AUTH_${provider}_CLIENT_ID`],
+            message: `${provider.toLowerCase()} oauth configuration must be complete`,
+          });
+        }
+      }
+
+      if (env.NODE_ENV === "production") {
+        if (!env.CHAT_AUTH_COOKIE_SECURE) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["CHAT_AUTH_COOKIE_SECURE"],
+            message: "auth cookies must be secure in production",
+          });
+        }
+        const redisUrl = new URL(env.CHAT_REDIS_URL);
+        if (redisUrl.protocol !== "rediss:") {
+          ctx.addIssue({
+            code: "custom",
+            path: ["CHAT_REDIS_URL"],
+            message: "redis TLS is required in production",
+          });
+        }
+        if (redisUrl.password.length === 0) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["CHAT_REDIS_URL"],
+            message: "redis authentication is required in production",
+          });
+        }
       }
     }),
 );

@@ -2,6 +2,7 @@ import type { Locale } from "@chat/contracts/common/locale";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { StreamRequest } from "@chat/contracts/chat/stream-request";
 import type { ApiError } from "@chat/contracts/http/error";
+import type { UserId } from "@chat/db";
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { SystemModelMessage } from "ai";
@@ -23,7 +24,6 @@ import type { AppConfig } from "../config/configuration.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import { LlmService } from "../llm/llm.service.ts";
 import { ReaderSessionService } from "../mcp/reader-session.service.ts";
-import type { OwnerId } from "../owner/owner-id.ts";
 import { approvalFor } from "../mcp/tool-approval.ts";
 import { attachmentManifest } from "./attachment-manifest.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
@@ -69,7 +69,7 @@ export class ChatService {
 
   async stream(
     request: StreamRequest,
-    owner: OwnerId,
+    userId: UserId,
     response: ServerResponse,
     locale: Locale,
   ): Promise<void> {
@@ -77,7 +77,7 @@ export class ChatService {
     this.cache.touch(request.sessionId);
 
     const owned = await this.history.persist(
-      owner,
+      userId,
       request.sessionId,
       messages,
     );
@@ -93,7 +93,7 @@ export class ChatService {
 
     const abort = abortOnDisconnect(response);
 
-    const manifest = await this.manifest(owner, request.sessionId, locale);
+    const manifest = await this.manifest(userId, request.sessionId, locale);
 
     const result = await streamText({
       model: this.llm.model(),
@@ -105,7 +105,7 @@ export class ChatService {
         manifest,
       ],
       messages: await convertToModelMessages(messages),
-      tools: await this.readers.toolsFor(owner, request.sessionId),
+      tools: await this.readers.toolsFor(userId, request.sessionId),
       stopWhen: isStepCount(STEP_LIMIT),
       timeout: this.llm.timeout,
       abortSignal: abort.signal,
@@ -125,7 +125,7 @@ export class ChatService {
         originalMessages: messages,
         generateMessageId: messageId,
         onError: (cause) => this.renderError(cause, locale),
-        onEnd: (event) => this.history.settle(owner, request.sessionId, event),
+        onEnd: (event) => this.history.settle(userId, request.sessionId, event),
       }),
     });
   }
@@ -141,12 +141,12 @@ export class ChatService {
    * client stays true for a part that can never leave `approval-responded`.
    */
   private async manifest(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     locale: Locale,
   ): Promise<SystemModelMessage> {
     const { readable, images } = attachmentManifest(
-      await this.store.list(owner, session),
+      await this.store.list(userId, session),
     );
 
     const sections: string[] = [];

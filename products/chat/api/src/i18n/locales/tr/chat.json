@@ -31,7 +31,6 @@
     "stream_failed": "Asistan yanıtı tamamlayamadı.",
     "file_missing": "Dosya gönderilmedi.",
     "attachment_not_found": "Bu ek artık mevcut değil.",
-    "session_not_found": "Bu sohbet mevcut değil.",
-    "owner_missing": "İstek bir ziyaretçiye bağlanamadı."
+    "session_not_found": "Bu sohbet mevcut değil."
   }
 }

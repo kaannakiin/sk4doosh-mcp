@@ -5,5 +5,16 @@
   "payload_too_large": "The upload is larger than this server accepts.",
   "unsupported_media_type": "That file type cannot be read.",
   "validation_failed": "The request failed validation.",
+  "account_exists": "An account already exists for that contact.",
+  "invalid_credentials": "The credentials are invalid.",
+  "verification_required": "Verify the account before signing in.",
+  "invalid_or_expired_challenge": "The verification code is invalid or expired.",
+  "unauthorized": "Authentication is required.",
+  "session_expired": "The session has expired.",
+  "oauth_provider_unavailable": "That sign-in provider is not configured.",
+  "oauth_state_invalid": "The external sign-in request is invalid or expired.",
+  "oauth_link_required": "Sign in to the existing account before linking this provider.",
+  "oauth_account_conflict": "That provider account is already linked.",
+  "too_many_requests": "Too many attempts. Try again later.",
   "internal_error": "Something went wrong on the server."
 }

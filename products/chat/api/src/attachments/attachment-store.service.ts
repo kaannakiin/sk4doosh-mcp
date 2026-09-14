@@ -24,15 +24,16 @@ import {
   listAttachments,
   softDeleteAttachment,
   type AttachmentRow,
+  type UserId,
 } from "@chat/db";
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createHash, randomUUID } from "node:crypto";
 
 import type { AppConfig, UploadConfig } from "../config/configuration.ts";
-import { I18nService } from "../i18n/i18n.service.ts";
+import { errorMessage } from "../common/utils/error.utils.ts";
 import { DbService } from "../db/db.service.ts";
-import type { OwnerId } from "../owner/owner-id.ts";
+import { I18nService } from "../i18n/i18n.service.ts";
 import { detectMediaType, type DetectionFailure } from "./detect-media-type.ts";
 import { ObjectStorageService } from "./object-storage.service.ts";
 import { SandboxCacheService } from "./sandbox-cache.service.ts";
@@ -71,17 +72,17 @@ export class AttachmentStoreService {
     this.uploads = config.get("uploads", { infer: true });
   }
 
-  async list(owner: OwnerId, session: SessionId): Promise<Attachment[]> {
-    return (await listAttachments(this.db.client, owner, session)).map(
+  async list(userId: UserId, session: SessionId): Promise<Attachment[]> {
+    return (await listAttachments(this.db.client, userId, session)).map(
       toPublic,
     );
   }
 
   async familiesFor(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
   ): Promise<ReadonlySet<ReaderFamily>> {
-    return new Set(await familiesFor(this.db.client, owner, session));
+    return new Set(await familiesFor(this.db.client, userId, session));
   }
 
   /**
@@ -95,7 +96,7 @@ export class AttachmentStoreService {
    * broken image. One orphan is litter, the other is poison.
    */
   async put(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     file: UploadedFile,
   ): Promise<UploadResponse> {
@@ -104,20 +105,20 @@ export class AttachmentStoreService {
     }
     this.inflightUploads += 1;
     try {
-      return await this.store(owner, session, file);
+      return await this.store(userId, session, file);
     } finally {
       this.inflightUploads -= 1;
     }
   }
 
   async remove(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     attachmentId: string,
   ): Promise<boolean> {
     const removed = await softDeleteAttachment(
       this.db.client,
-      owner,
+      userId,
       session,
       attachmentId,
     );
@@ -130,7 +131,7 @@ export class AttachmentStoreService {
       await this.objects.remove(removed.objectKey);
     } catch (cause) {
       this.logger.error(
-        `orphan object ${removed.objectKey}: ${describe(cause)}`,
+        `orphan object ${removed.objectKey}: ${errorMessage(cause)}`,
       );
     }
 
@@ -140,19 +141,19 @@ export class AttachmentStoreService {
   /**
    * Resolves the path a reader tool named and puts its bytes on disk.
    *
-   * Guard: the lookup is by `sandbox_path` and scoped to this owner's session, so
+   * Guard: the lookup is by `sandbox_path` and scoped to this user's session, so
    * a model that hallucinates a name or replays another conversation's file gets
    * a miss here rather than a read. Cross-session access is refused twice — once
    * by this query, once by the reader's own containment check.
    */
   async resolveForTool(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     filePath: string,
   ): Promise<void> {
     const record = await findBySandboxPath(
       this.db.client,
-      owner,
+      userId,
       session,
       filePath,
     );
@@ -164,14 +165,14 @@ export class AttachmentStoreService {
   }
 
   async presign(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     attachmentId: string,
     asked: PresignDisposition,
   ): Promise<PresignedUrlResponse | undefined> {
     const record = await findAttachment(
       this.db.client,
-      owner,
+      userId,
       session,
       attachmentId,
     );
@@ -205,7 +206,7 @@ export class AttachmentStoreService {
   }
 
   private async store(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     file: UploadedFile,
   ): Promise<UploadResponse> {
@@ -238,12 +239,12 @@ export class AttachmentStoreService {
         "x-amz-meta-filename": encodeURIComponent(file.originalname),
       });
     } catch (cause) {
-      this.logger.error(`object store write failed: ${describe(cause)}`);
+      this.logger.error(`object store write failed: ${errorMessage(cause)}`);
       throw this.reject("storage_unavailable", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     const outcome = await createAttachment(this.db.client, {
-      ownerId: owner,
+      userId,
       sessionId: session,
       attachmentId,
       filename: file.originalname,
@@ -256,7 +257,7 @@ export class AttachmentStoreService {
       maxFiles: this.uploads.maxFiles,
       maxBytes: this.uploads.maxBytes,
     }).catch((cause: unknown) => {
-      this.logger.error(`attachment insert failed: ${describe(cause)}`);
+      this.logger.error(`attachment insert failed: ${errorMessage(cause)}`);
 
       return { ok: false, reason: "session_not_found" } as const;
     });
@@ -265,7 +266,7 @@ export class AttachmentStoreService {
       await this.objects
         .remove(objectKey)
         .catch((cause: unknown) =>
-          this.logger.error(`orphan object ${objectKey}: ${describe(cause)}`),
+          this.logger.error(`orphan object ${objectKey}: ${errorMessage(cause)}`),
         );
       throw this.reject(outcome.reason, statusFor(outcome.reason));
     }
@@ -311,8 +312,4 @@ function toPublic(row: AttachmentRow): Attachment {
     bytes: row.bytes,
     createdAt: row.createdAt.toISOString(),
   };
-}
-
-function describe(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }

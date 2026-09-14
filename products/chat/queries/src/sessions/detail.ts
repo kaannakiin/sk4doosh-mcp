@@ -4,7 +4,12 @@ import type { SessionId } from "@chat/contracts/chat/session";
 import { sessionDetailResponseSchema } from "@chat/contracts/chat/session-detail";
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
 import type { Locale } from "@chat/contracts/common/locale";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useCallback } from "react";
 
 import { isSessionNotFound, type ChatClient } from "../client.ts";
 import { chatKeys } from "../keys.ts";
@@ -74,4 +79,25 @@ export function sessionDetailOptions(
 
 export function useSessionDetail(sessionId: SessionId, locale: Locale) {
   return useQuery(sessionDetailOptions(useChatClient(), sessionId, locale));
+}
+
+/**
+ * Warms one conversation before the visitor opens it.
+ *
+ * Guard: hovering warms the conversation, not just the route. The chat surface
+ * cannot mount until its history has arrived — `useChat` reads `messages` once
+ * — so without this the visitor watches a skeleton on every switch.
+ */
+export function useWarmSessionDetail(
+  sessionId: SessionId,
+  locale: Locale,
+): () => void {
+  const queryClient = useQueryClient();
+  const client = useChatClient();
+
+  return useCallback(() => {
+    void queryClient.prefetchQuery(
+      sessionDetailOptions(client, sessionId, locale),
+    );
+  }, [queryClient, client, sessionId, locale]);
 }

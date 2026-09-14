@@ -3,9 +3,10 @@ import { ConfigService } from "@nestjs/config";
 import { MulterModule } from "@nestjs/platform-express";
 
 import { AttachmentsModule } from "../attachments/attachments.module.ts";
+import { AuthModule } from "../auth/auth.module.ts";
 import type { AppConfig } from "../config/configuration.ts";
-import { LlmModule } from "../llm/llm.module.ts";
 import { DbModule } from "../db/db.module.ts";
+import { LlmModule } from "../llm/llm.module.ts";
 import { McpModule } from "../mcp/mcp.module.ts";
 import { ChatController } from "./chat.controller.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
@@ -14,6 +15,7 @@ import { ChatService } from "./chat.service.ts";
 @Module({
   imports: [
     AttachmentsModule,
+    AuthModule,
     DbModule,
     LlmModule,
     McpModule,
