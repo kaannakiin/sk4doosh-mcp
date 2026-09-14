@@ -4,7 +4,8 @@ using System.Text;
 namespace SkMcp.AspNetCore.Search;
 
 internal sealed record SearchDocument(
-    string Name, string? Description, IReadOnlyList<string> Tags, string Route);
+    string Name, string? Description, IReadOnlyList<string> Tags, string Route,
+    IReadOnlyList<string>? AlternateRoutes = null);
 
 internal sealed class ToolIndex
 {
@@ -34,6 +35,10 @@ internal sealed class ToolIndex
                 Accumulate(terms, tag, TagWeight);
             }
             Accumulate(terms, document.Route, RouteWeight);
+            foreach (string alternate in document.AlternateRoutes ?? [])
+            {
+                Accumulate(terms, alternate, RouteWeight);
+            }
 
             _documents.Add(new IndexedDocument(document.Name, terms, terms.Values.Sum()));
         }

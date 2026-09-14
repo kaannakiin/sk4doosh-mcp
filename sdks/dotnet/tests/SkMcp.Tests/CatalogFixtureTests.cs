@@ -168,7 +168,10 @@ public sealed class CatalogFixtureTests
                     tool.TryGetProperty("tags", out JsonElement tags)
                         ? [.. tags.EnumerateArray().Select(t => t.GetString()!)]
                         : [],
-                    tool.GetProperty("route").GetString()!));
+                    tool.GetProperty("route").GetString()!,
+                    tool.TryGetProperty("alternateRoutes", out JsonElement alternates)
+                        ? [.. alternates.EnumerateArray().Select(a => a.GetString()!)]
+                        : null));
             }
             int limit = input.TryGetProperty("limit", out JsonElement declared)
                 ? declared.GetInt32()

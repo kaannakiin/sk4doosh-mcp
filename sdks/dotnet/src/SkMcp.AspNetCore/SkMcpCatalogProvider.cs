@@ -166,7 +166,8 @@ internal sealed class SkMcpCatalogProvider(
             e.Tool.Name,
             e.Tool.Description,
             e.Descriptor.Tags ?? [],
-            e.Descriptor.Route)));
+            e.Descriptor.Route,
+            e.AlternateRoutes)));
         CatalogDiagnostic[] fatal = result.Diagnostics
             .Where(d => options.Value.Diagnostics.SeverityOf(d.Code)
                 >= options.Value.Diagnostics.FailOn)

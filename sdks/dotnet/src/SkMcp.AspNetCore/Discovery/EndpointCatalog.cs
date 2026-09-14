@@ -27,6 +27,7 @@ public sealed record CatalogEntry
     public required EndpointDescriptor Descriptor { get; init; }
     public Endpoint? Endpoint { get; init; }
     public RequestTemplate? Template { get; init; }
+    public IReadOnlyList<string>? AlternateRoutes { get; init; }
 }
 
 internal sealed record CatalogBuildResult
@@ -129,8 +130,17 @@ internal static partial class EndpointCatalog
         List<CatalogEntry> entries = [];
         Dictionary<string, EndpointDescriptor> claimed = new(StringComparer.Ordinal);
 
+        Dictionary<string, IReadOnlyList<string>> alternates = new(StringComparer.Ordinal);
         List<(Endpoint? Endpoint, EndpointDescriptor Descriptor, ToolAnnotations? Overrides)> operations =
-            [.. ToolNameFactory.Deduplicate(candidates, c => c.Descriptor)];
+            [.. ToolNameFactory.Deduplicate(candidates, c => c.Descriptor, (kept, folded) =>
+            {
+                string[] routes = [.. folded.Select(f => f.Descriptor.Route)];
+                alternates[FoldKey(kept.Descriptor)] = routes;
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.RouteFolded,
+                    $"{kept.Descriptor.Method} {kept.Descriptor.Route} is also mounted at {string.Join(", ", routes)}; "
+                    + $"one tool is produced and {kept.Descriptor.Route} is the route it invokes."));
+            })];
         Dictionary<string, int> bodyGroups = new(StringComparer.Ordinal);
         if (prefixMode == PrefixMode.OnCollision)
         {
@@ -205,6 +215,7 @@ internal static partial class EndpointCatalog
                 Descriptor = descriptor,
                 Endpoint = endpoint,
                 Template = template,
+                AlternateRoutes = alternates.GetValueOrDefault(FoldKey(descriptor)),
             });
         }
 
@@ -521,6 +532,9 @@ internal static partial class EndpointCatalog
         }
         return SelectionResolver.Combine(include, exclude);
     }
+
+    private static string FoldKey(EndpointDescriptor descriptor) =>
+        string.Join('\u0000', descriptor.Container, descriptor.OperationId, descriptor.Method.ToUpperInvariant());
 
     private static string? Locate(BindingSource? source)
     {

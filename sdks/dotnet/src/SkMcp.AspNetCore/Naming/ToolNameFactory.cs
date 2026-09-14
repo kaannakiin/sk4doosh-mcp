@@ -176,13 +176,16 @@ internal static partial class ToolNameFactory
     }
 
     public static IReadOnlyList<T> Deduplicate<T>(
-        IEnumerable<T> items, Func<T, EndpointDescriptor> selector)
+        IEnumerable<T> items,
+        Func<T, EndpointDescriptor> selector,
+        Action<T, IReadOnlyList<T>>? onFolded = null)
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(selector);
 
         List<T> operations = [];
-        Dictionary<(string Container, string OperationId, string Method), int> seen = [];
+        Dictionary<(string Container, string OperationId, string Method), (int Operation, int Member)> seen = [];
+        Dictionary<(string Container, string OperationId, string Method), List<T>> grouped = [];
 
         foreach (T item in items)
         {
@@ -198,15 +201,36 @@ internal static partial class ToolNameFactory
                 endpoint.OperationId,
                 endpoint.Method.ToUpperInvariant());
 
-            if (!seen.TryGetValue(key, out int index))
+            if (!grouped.TryGetValue(key, out List<T>? members))
             {
-                seen[key] = operations.Count;
+                members = [];
+                grouped[key] = members;
+            }
+            members.Add(item);
+
+            if (!seen.TryGetValue(key, out (int Operation, int Member) position))
+            {
+                seen[key] = (operations.Count, members.Count - 1);
                 operations.Add(item);
                 continue;
             }
-            if (Shorter(endpoint.Route, selector(operations[index]).Route))
+            if (Shorter(endpoint.Route, selector(operations[position.Operation]).Route))
             {
-                operations[index] = item;
+                operations[position.Operation] = item;
+                seen[key] = (position.Operation, members.Count - 1);
+            }
+        }
+
+        if (onFolded is not null)
+        {
+            foreach (((string, string, string) key, List<T> members) in grouped)
+            {
+                if (members.Count < 2)
+                {
+                    continue;
+                }
+                int kept = seen[key].Member;
+                onFolded(members[kept], [.. members.Where((_, index) => index != kept)]);
             }
         }
         return operations;

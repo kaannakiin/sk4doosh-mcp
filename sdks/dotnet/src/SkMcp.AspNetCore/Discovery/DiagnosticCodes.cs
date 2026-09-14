@@ -14,6 +14,7 @@ public static class DiagnosticCodes
     public const string NameCollision = "name_collision";
     public const string NameDisambiguated = "name_disambiguated";
     public const string NamingPolicyUnresolved = "naming_policy_unresolved";
+    public const string RouteFolded = "route_folded";
     public const string SchemaDefConflict = "schema_def_conflict";
     public const string SchemaDefNameDisambiguated = "schema_def_name_disambiguated";
     public const string SchemaDepthTruncated = "schema_depth_truncated";
