@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { isRefusal, scanRecordBoundaries } from "../src/boundary.js";
+import { isRefusal, scanRecordBoundaries } from "../src/host/chunk/boundary.js";
 import type { Fixtures } from "./fixtures/build.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 

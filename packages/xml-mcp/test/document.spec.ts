@@ -4,16 +4,16 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import {
   createXmlDocumentCache,
   type XmlDocumentCache,
-} from "../src/document.js";
-import type { SkMcpXmlError } from "../src/errors.js";
-import { limits } from "../src/limits.js";
+} from "../src/host/document.js";
+import type { SkMcpXmlError } from "../src/host/platform/errors.js";
+import { limits } from "../src/host/platform/limits.js";
 import {
   createDocumentRoot,
   resolveDocumentPath,
   type DocumentRoot,
   type SandboxedPath,
-} from "../src/paths.js";
-import { createXmlWorkerPool, type XmlWorkerPool } from "../src/worker-pool.js";
+} from "../src/host/platform/paths.js";
+import { createXmlWorkerPool, type XmlWorkerPool } from "../src/host/pool.js";
 
 let root: DocumentRoot;
 let pool: XmlWorkerPool;

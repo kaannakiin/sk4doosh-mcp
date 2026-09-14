@@ -5,5 +5,16 @@
   "payload_too_large": "Yükleme bu sunucunun kabul ettiğinden büyük.",
   "unsupported_media_type": "Bu dosya türü okunamıyor.",
   "validation_failed": "İstek doğrulamadan geçemedi.",
+  "account_exists": "Bu iletişim bilgisiyle bir hesap zaten var.",
+  "invalid_credentials": "Giriş bilgileri geçersiz.",
+  "verification_required": "Giriş yapmadan önce hesabı doğrulayın.",
+  "invalid_or_expired_challenge": "Doğrulama kodu geçersiz veya süresi dolmuş.",
+  "unauthorized": "Kimlik doğrulaması gerekli.",
+  "session_expired": "Oturumun süresi dolmuş.",
+  "oauth_provider_unavailable": "Bu giriş sağlayıcısı yapılandırılmamış.",
+  "oauth_state_invalid": "Harici giriş isteği geçersiz veya süresi dolmuş.",
+  "oauth_link_required": "Bu sağlayıcıyı bağlamadan önce mevcut hesaba giriş yapın.",
+  "oauth_account_conflict": "Bu sağlayıcı hesabı zaten bağlı.",
+  "too_many_requests": "Çok fazla deneme yapıldı. Daha sonra tekrar deneyin.",
   "internal_error": "Sunucuda bir şeyler ters gitti."
 }

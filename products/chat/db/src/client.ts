@@ -1,8 +1,12 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "./generated/client.js";
+import { Prisma, PrismaClient } from "./generated/client.js";
 
-export type Db = PrismaClient;
+const GLOBAL_OMIT = {
+  userPasswordCredential: { passwordHash: true },
+  authRefreshToken: { tokenHash: true },
+  authChallenge: { secretHash: true },
+} as const satisfies Prisma.GlobalOmitConfig;
 
 export interface DbOptions {
   readonly connectionString: string;
@@ -15,11 +19,17 @@ export interface DbOptions {
  * @param options connection string and pool ceiling, both from validated config
  * @returns a client the caller owns and must `$disconnect` on shutdown
  */
-export function createDb(options: DbOptions): Db {
+export function createDb(options: DbOptions) {
   return new PrismaClient({
     adapter: new PrismaPg({
       connectionString: options.connectionString,
       max: options.poolMax,
     }),
+    omit: GLOBAL_OMIT,
+    transactionOptions: {
+      timeout: 30_000,
+    },
   });
 }
+
+export type Db = ReturnType<typeof createDb>;

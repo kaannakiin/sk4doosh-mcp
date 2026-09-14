@@ -1,0 +1,135 @@
+import type { DescribeFacts, RootFacts } from "./describe.js";
+import type { FindPage, FindProbe } from "./find.js";
+import type {
+  AggregateOutcome,
+  AggregateProbe,
+  ChunkPage,
+  ChunkProbe,
+  RecordPage,
+  RecordProbe,
+  XPathOutcome,
+  XPathProbe,
+} from "./query.js";
+import type {
+  ContextRecord,
+  NodeAddress,
+  NodePath,
+  NodeRecord,
+} from "./node.js";
+
+export interface ParsedFacts {
+  readonly declaredEncoding: string | null;
+  readonly warningCount: number;
+  readonly root: RootFacts;
+}
+
+export interface DiagProjection {
+  readonly live: number;
+  readonly collected: number;
+  readonly cached: number;
+}
+
+export interface ReadView {
+  readonly address?: NodeAddress;
+  readonly scopePath?: NodePath;
+  readonly maxDepth: number;
+  readonly maxNodes: number;
+  readonly maxChars: number;
+  readonly resume?: NodePath;
+}
+
+export interface ReadPage {
+  readonly records: readonly NodeRecord[];
+  readonly context?: readonly ContextRecord[];
+  readonly scopeAddress: NodeAddress;
+  readonly scopePath: NodePath;
+  readonly next?: NodePath;
+}
+
+interface Resident {
+  readonly stamp: string;
+}
+
+interface WorkerOps {
+  parse: {
+    req: Resident & { readonly logical: string; readonly bytes: Uint8Array };
+    res: ParsedFacts;
+  };
+  describe: {
+    req: Resident & {
+      readonly maxVisits: number;
+      readonly maxCandidates: number;
+    };
+    res: DescribeFacts;
+  };
+  read: { req: Resident & { readonly view: ReadView }; res: ReadPage };
+  find: { req: Resident & { readonly probe: FindProbe }; res: FindPage };
+  xpath: { req: Resident & { readonly probe: XPathProbe }; res: XPathOutcome };
+  records: {
+    req: Resident & { readonly probe: RecordProbe };
+    res: RecordPage;
+  };
+  aggregate: {
+    req: Resident & { readonly probe: AggregateProbe };
+    res: AggregateOutcome;
+  };
+  projectChunks: {
+    req: {
+      readonly fragments: readonly Uint8Array[];
+      readonly firstOccurrence: number;
+      readonly probe: ChunkProbe;
+    };
+    res: ChunkPage;
+  };
+  diag: { req: Record<never, never>; res: DiagProjection };
+  release: { req: Record<never, never>; res: null };
+}
+
+export type WorkerKind = keyof WorkerOps;
+
+export type WorkerResultOf<K extends WorkerKind> = WorkerOps[K]["res"];
+
+export type WorkerRequestBody = {
+  [P in WorkerKind]: { readonly kind: P } & WorkerOps[P]["req"];
+}[WorkerKind];
+
+export type WorkerBodyOf<K extends WorkerKind> = Extract<
+  WorkerRequestBody,
+  { readonly kind: K }
+>;
+
+export type WorkerRequest = {
+  [P in WorkerKind]: {
+    readonly kind: P;
+    readonly id: number;
+  } & WorkerOps[P]["req"];
+}[WorkerKind];
+
+export type WorkerFailure =
+  | "malformed_xml"
+  | "doctype_not_allowed"
+  | "unknown_residency"
+  | "address_not_found"
+  | "xpath_compile"
+  | "xpath_eval"
+  | "numeric_precision"
+  | "internal_error";
+
+export type WorkerSuccess = {
+  [P in WorkerKind]: {
+    readonly kind: P;
+    readonly id: number;
+    readonly ok: true;
+    readonly value: WorkerOps[P]["res"];
+  };
+}[WorkerKind];
+
+export interface WorkerRejection {
+  readonly kind: WorkerKind | "boot";
+  readonly id: number;
+  readonly ok: false;
+  readonly failure: WorkerFailure;
+  readonly detail?: string;
+}
+
+export type WorkerReply = WorkerSuccess | WorkerRejection;

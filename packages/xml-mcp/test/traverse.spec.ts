@@ -1,8 +1,8 @@
 import { XmlDocument, XmlElement, type XmlNode } from "libxml2-wasm";
 import { XmlProcessingInstructionNode } from "libxml2-wasm/lib/nodes.mjs";
 import { describe, expect, it } from "vitest";
-import type { CharacterRecord, NodeRecord } from "../src/node-model.js";
-import { HARDENED } from "../src/parse-policy.js";
+import type { CharacterRecord, NodeRecord } from "../src/model/node.js";
+import { HARDENED } from "../src/engine/policy.js";
 import {
   firstChildOf,
   kindOf,
@@ -10,7 +10,7 @@ import {
   piTargetOf,
   resolveAddress,
   walk,
-} from "../src/traverse.js";
+} from "../src/engine/traverse.js";
 
 const everyKind =
   '<root>lead<b>bold</b>mid<?render mode="fast"?><![CDATA[ raw ]]><!--remark--> tail </root>';

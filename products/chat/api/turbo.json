@@ -23,7 +23,6 @@
       ],
       "passThroughEnv": [
         "CHAT_API_PORT",
-        "CHAT_DEFAULT_LOCALE",
         "CHAT_CORS_ORIGIN",
         "CHAT_LLM_BASE_URL",
         "CHAT_LLM_MODEL",
@@ -51,9 +50,7 @@
         "CHAT_CACHE_ROOT",
         "CHAT_CACHE_MAX_BYTES",
         "CHAT_SANDBOX_TTL_MS",
-        "CHAT_UPLOAD_MAX_FILE_BYTES",
-        "CHAT_OWNER_COOKIE_TTL_MS",
-        "CHAT_OWNER_COOKIE_SECURE"
+        "CHAT_UPLOAD_MAX_FILE_BYTES"
       ]
     },
     "start": {
@@ -64,7 +61,6 @@
       "persistent": true,
       "passThroughEnv": [
         "CHAT_API_PORT",
-        "CHAT_DEFAULT_LOCALE",
         "CHAT_CORS_ORIGIN",
         "CHAT_LLM_BASE_URL",
         "CHAT_LLM_MODEL",
@@ -92,9 +88,7 @@
         "CHAT_CACHE_ROOT",
         "CHAT_CACHE_MAX_BYTES",
         "CHAT_SANDBOX_TTL_MS",
-        "CHAT_UPLOAD_MAX_FILE_BYTES",
-        "CHAT_OWNER_COOKIE_TTL_MS",
-        "CHAT_OWNER_COOKIE_SECURE"
+        "CHAT_UPLOAD_MAX_FILE_BYTES"
       ]
     },
     "dev:types": {

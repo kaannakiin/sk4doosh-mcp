@@ -1,3 +1,4 @@
+import type { UserId } from "./auth.js";
 import type { Db } from "./client.js";
 import { Prisma } from "./generated/client.js";
 import type { MessageRole, MessageRow, TurnOutcome } from "./rows.js";
@@ -11,7 +12,7 @@ export interface MessageInput {
 }
 
 export interface ReconcileParams {
-  readonly ownerId: string;
+  readonly userId: UserId;
   readonly sessionId: string;
   readonly messages: readonly MessageInput[];
   readonly title: string | null;
@@ -27,18 +28,18 @@ export interface ReconcileParams {
  * `(session_id, external_id)` already names it, and a regeneration shortens the
  * list so the tail delete removes what the client dropped.
  *
- * @returns `false` when the session id belongs to somebody else
+ * @returns `false` when the session id belongs to another user
  */
 export async function reconcileTurn(
   db: Db,
   params: ReconcileParams,
 ): Promise<boolean> {
-  const owner = BigInt(params.ownerId);
+  const user = BigInt(params.userId);
 
   return db.$transaction(async (tx) => {
     await tx.$executeRaw`
-      insert into chat_session (public_id, owner_id, title, created_at, updated_at)
-      values (${params.sessionId}::uuid, ${owner}, ${params.title}, now(), now())
+      insert into chat_session (public_id, user_id, title, created_at, updated_at)
+      values (${params.sessionId}::uuid, ${user}, ${params.title}, now(), now())
       on conflict (public_id) do nothing
     `;
 
@@ -46,13 +47,13 @@ export async function reconcileTurn(
      * Guard: this single statement is the ownership check and the per-session
      * write lock at once. Without `for update` two concurrent turns on one
      * session interleave their reconciles and the seq numbering of the loser is
-     * silently overwritten; without the `owner_id` predicate a guessed session id
+     * silently overwritten; without the `user_id` predicate a guessed session id
      * would be enough to write into somebody else's conversation.
      */
     const locked = await tx.$queryRaw<{ id: bigint }[]>`
       select id from chat_session
       where public_id = ${params.sessionId}::uuid
-        and owner_id = ${owner}
+        and user_id = ${user}
         and deleted_at is null
       for update
     `;
@@ -127,8 +128,8 @@ export async function reconcileTurn(
 /**
  * Records how a turn ended, on the assistant message it produced.
  *
- * Guard: the owner is matched here and not only by the caller. `reconcileTurn`
- * already refuses a session another owner holds, and today this runs behind that
+ * Guard: the user is matched here and not only by the caller. `reconcileTurn`
+ * already refuses a session another user holds, and today this runs behind that
  * refusal — but the check belongs to the statement, because this function is
  * exported and the next caller inherits no such gate. The predicate also closes
  * a window the caller cannot: the two run in separate transactions, so a session
@@ -136,7 +137,7 @@ export async function reconcileTurn(
  */
 export async function settleTurn(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
   externalId: string,
   outcome: TurnOutcome,
@@ -150,7 +151,7 @@ export async function settleTurn(
      where external_id = ${externalId}
        and session_id = (select id from chat_session
                           where public_id = ${sessionId}::uuid
-                            and owner_id = ${BigInt(ownerId)}
+                            and user_id = ${BigInt(userId)}
                             and deleted_at is null)
   `;
 }
@@ -163,12 +164,12 @@ export async function settleTurn(
  */
 export async function listMessages(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
   limit: number,
 ): Promise<{ messages: MessageRow[]; truncated: boolean }> {
   const session = await db.chatSession.findFirst({
-    where: { publicId: sessionId, ownerId: BigInt(ownerId), deletedAt: null },
+    where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
     select: { id: true },
   });
   if (session === null) {

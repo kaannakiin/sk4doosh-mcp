@@ -7,17 +7,17 @@
 model ChatSession {
   id           BigInt    @id @default(autoincrement())
   publicId     String    @unique @db.Uuid @map("public_id")
-  ownerId      BigInt    @map("owner_id")
+  userId       BigInt    @map("user_id")
   title        String?
   messageCount Int       @default(0) @map("message_count")
   createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt    DateTime  @default(now()) @db.Timestamptz @map("updated_at")
   deletedAt    DateTime? @db.Timestamptz @map("deleted_at")
 
-  owner       ChatOwner        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    ChatMessage[]
   attachments ChatAttachment[]
 
-  @@index([ownerId, updatedAt(sort: Desc), id(sort: Desc)], map: "chat_session_owner_recent_idx")
+  @@index([userId, updatedAt(sort: Desc), id(sort: Desc)], map: "chat_session_user_recent_idx")
   @@map("chat_session")
 }

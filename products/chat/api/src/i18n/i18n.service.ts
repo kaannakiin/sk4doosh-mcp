@@ -4,10 +4,8 @@ import {
   type Locale,
 } from "@chat/contracts/common/locale";
 import { Injectable, type OnModuleInit } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import i18next, { type i18n } from "i18next";
 
-import type { AppConfig } from "../config/configuration.ts";
 import enChat from "./locales/en/chat.json" with { type: "json" };
 import enCommon from "./locales/en/common.json" with { type: "json" };
 import enHttp from "./locales/en/http.json" with { type: "json" };
@@ -24,10 +22,8 @@ const NAMESPACES = ["common", "validation", "chat", "http"];
 export class I18nService implements OnModuleInit {
   private readonly instance: i18n = i18next.createInstance();
 
-  constructor(private readonly config: ConfigService<AppConfig, true>) {}
-
   get defaultLocale(): Locale {
-    return this.config.get("defaultLocale", { infer: true }) ?? DEFAULT_LOCALE;
+    return DEFAULT_LOCALE;
   }
 
   async onModuleInit(): Promise<void> {

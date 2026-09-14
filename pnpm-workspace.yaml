@@ -7,8 +7,12 @@ packages:
 allowBuilds:
   "@prisma/engines": true
   "@swc/core": true
+  argon2: true
+  cpu-features: true
   esbuild: true
   prisma: true
+  protobufjs: true
+  ssh2: true
 minimumReleaseAgeExclude:
   - json-schema-to-typescript@16.0.0
   - "@types/react-dom@19.2.7"

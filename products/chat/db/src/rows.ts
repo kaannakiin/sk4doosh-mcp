@@ -49,12 +49,6 @@ export type EnumParity =
   | Assert<Exact<ReaderFamily, SchemaReaderFamily>>
   | Assert<Exact<TurnOutcome, SchemaTurnOutcome>>;
 
-export interface OwnerRow {
-  readonly id: string;
-  readonly createdAt: Date;
-  readonly lastSeenAt: Date;
-}
-
 export interface SessionRow {
   readonly id: string;
   readonly title: string | null;
@@ -96,7 +90,7 @@ export interface SessionUsage {
  *
  * Guard: the cursor carries `updatedAt` plus the session's public id, never the
  * `BigInt` surrogate. A surrogate in an opaque-looking cursor is still base64,
- * so it would leak how many sessions exist across every owner.
+ * so it would leak how many sessions exist across every user.
  */
 export interface SessionPage {
   readonly sessions: readonly SessionRow[];

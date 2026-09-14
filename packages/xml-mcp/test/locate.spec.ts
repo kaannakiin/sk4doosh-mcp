@@ -1,9 +1,9 @@
 import { XmlDocument, XmlElement, type XmlNode } from "libxml2-wasm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { locate, nodeIdOf, previousSibling } from "../src/locate.js";
-import { formatAddress, formatNodeId } from "../src/node-model.js";
-import { HARDENED } from "../src/parse-policy.js";
-import { firstChildOf, nextSibling, walk } from "../src/traverse.js";
+import { locate, nodeIdOf, previousSibling } from "../src/engine/locate.js";
+import { formatAddress, formatNodeId } from "../src/model/node.js";
+import { HARDENED } from "../src/engine/policy.js";
+import { firstChildOf, nextSibling, walk } from "../src/engine/traverse.js";
 
 const source =
   '<?xml version="1.0"?>\n' +

@@ -2,6 +2,15 @@
   "failed": "İstek gövdesi geçersiz",
   "fields": {
     "content": "Mesaj",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "email": "E-posta",
+    "phoneE164": "Telefon numarası",
+    "password": "Parola",
+    "challengeId": "Doğrulama isteği",
+    "code": "Doğrulama kodu",
+    "provider": "Giriş sağlayıcısı",
+    "intent": "OAuth amacı",
     "root": "İstek gövdesi"
   },
   "issues": {

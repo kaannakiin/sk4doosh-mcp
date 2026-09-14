@@ -1,3 +1,4 @@
+import type { UserId } from "./auth.js";
 import type { Db } from "./client.js";
 import type { AttachmentRow, ReaderFamily, SessionUsage } from "./rows.js";
 
@@ -28,18 +29,18 @@ function toRow(record: AttachmentRecord, sessionId: string): AttachmentRow {
   };
 }
 
-const live = (ownerId: string, sessionId: string) => ({
+const live = (userId: UserId, sessionId: string) => ({
   deletedAt: null,
-  session: { publicId: sessionId, ownerId: BigInt(ownerId), deletedAt: null },
+  session: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
 });
 
 export async function listAttachments(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
 ): Promise<AttachmentRow[]> {
   const rows = await db.chatAttachment.findMany({
-    where: live(ownerId, sessionId),
+    where: live(userId, sessionId),
     orderBy: { id: "asc" },
   });
 
@@ -48,12 +49,12 @@ export async function listAttachments(
 
 export async function findAttachment(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
   attachmentId: string,
 ): Promise<AttachmentRow | undefined> {
   const row = await db.chatAttachment.findFirst({
-    where: { publicId: attachmentId, ...live(ownerId, sessionId) },
+    where: { publicId: attachmentId, ...live(userId, sessionId) },
   });
 
   return row === null ? undefined : toRow(row, sessionId);
@@ -68,12 +69,12 @@ export async function findAttachment(
  */
 export async function findBySandboxPath(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
   sandboxPath: string,
 ): Promise<AttachmentRow | undefined> {
   const row = await db.chatAttachment.findFirst({
-    where: { sandboxPath, ...live(ownerId, sessionId) },
+    where: { sandboxPath, ...live(userId, sessionId) },
   });
 
   return row === null ? undefined : toRow(row, sessionId);
@@ -81,11 +82,11 @@ export async function findBySandboxPath(
 
 export async function familiesFor(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
 ): Promise<ReaderFamily[]> {
   const rows = await db.chatAttachment.findMany({
-    where: { ...live(ownerId, sessionId), family: { not: null } },
+    where: { ...live(userId, sessionId), family: { not: null } },
     distinct: ["family"],
     select: { family: true },
   });
@@ -95,11 +96,11 @@ export async function familiesFor(
 
 export async function sessionUsage(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
 ): Promise<SessionUsage> {
   const totals = await db.chatAttachment.aggregate({
-    where: live(ownerId, sessionId),
+    where: live(userId, sessionId),
     _count: true,
     _sum: { bytes: true },
   });
@@ -108,7 +109,7 @@ export async function sessionUsage(
 }
 
 export interface NewAttachment {
-  readonly ownerId: string;
+  readonly userId: UserId;
   readonly sessionId: string;
   readonly attachmentId: string;
   readonly filename: string;
@@ -147,7 +148,7 @@ export async function createAttachment(
   db: Db,
   attachment: NewAttachment,
 ): Promise<AttachmentOutcome> {
-  const owner = BigInt(attachment.ownerId);
+  const user = BigInt(attachment.userId);
 
   return db.$transaction(async (tx) => {
     /**
@@ -157,15 +158,15 @@ export async function createAttachment(
      * first upload of every session fail.
      */
     await tx.$executeRaw`
-      insert into chat_session (public_id, owner_id, created_at, updated_at)
-      values (${attachment.sessionId}::uuid, ${owner}, now(), now())
+      insert into chat_session (public_id, user_id, created_at, updated_at)
+      values (${attachment.sessionId}::uuid, ${user}, now(), now())
       on conflict (public_id) do nothing
     `;
 
     const locked = await tx.$queryRaw<{ id: bigint }[]>`
       select id from chat_session
       where public_id = ${attachment.sessionId}::uuid
-        and owner_id = ${owner}
+        and user_id = ${user}
         and deleted_at is null
       for update
     `;
@@ -223,11 +224,11 @@ export async function createAttachment(
  */
 export async function softDeleteAttachment(
   db: Db,
-  ownerId: string,
+  userId: UserId,
   sessionId: string,
   attachmentId: string,
 ): Promise<AttachmentRow | undefined> {
-  const found = await findAttachment(db, ownerId, sessionId, attachmentId);
+  const found = await findAttachment(db, userId, sessionId, attachmentId);
   if (found === undefined) {
     return undefined;
   }

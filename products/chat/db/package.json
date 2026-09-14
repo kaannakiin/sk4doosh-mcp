@@ -13,10 +13,12 @@
     "gen": "prisma generate",
     "build": "tsc",
     "lint": "eslint .",
-    "check-types": "tsc --noEmit && tsc -p tsconfig.tools.json",
+    "check-types": "tsc --noEmit && tsc -p tsconfig.tools.json && tsc -p tsconfig.test.json",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:status": "prisma migrate status"
+    "db:status": "prisma migrate status",
+    "test": "vitest run",
+    "test:integration": "CHAT_RUN_DB_TESTS=true vitest run test/auth.integration.spec.ts"
   },
   "dependencies": {
     "@chat/contracts": "workspace:*",
@@ -29,9 +31,11 @@
     "@sk-mcp/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.11.0",
+    "@testcontainers/postgresql": "^12.1.0",
     "eslint": "10.9.1",
     "prisma": "7.10.0",
     "typescript": "7.0.2",
+    "vitest": "^3.2.4",
     "zod": "^4.5.4"
   }
 }

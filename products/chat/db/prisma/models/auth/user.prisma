@@ -17,6 +17,7 @@ model User {
   oauthAccounts      OAuthAccount[]
   sessions           AuthSession[]
   challenges         AuthChallenge[]
+  chatSessions       ChatSession[]
 
   @@map("app_user")
 }

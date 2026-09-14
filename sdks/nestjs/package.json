@@ -21,7 +21,8 @@
   "peerDependencies": {
     "@modelcontextprotocol/sdk": ">=1.30.0",
     "@nestjs/common": ">=10",
-    "@nestjs/core": ">=10"
+    "@nestjs/core": ">=10",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
@@ -43,7 +44,6 @@
     "rxjs": "^7.8.2",
     "typescript": "7.0.2",
     "unplugin-swc": "^1.5.5",
-    "vitest": "^3.2.4",
-    "zod": "^3.25.76"
+    "vitest": "^3.2.4"
   }
 }

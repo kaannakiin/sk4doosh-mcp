@@ -4,7 +4,7 @@
   "tags": ["chat", "chat-server"],
   "tasks": {
     "gen": {
-      "inputs": ["prisma/schema/**", "prisma.config.ts"],
+      "inputs": ["prisma/**/*.prisma", "prisma.config.ts"],
       "outputs": ["src/generated/**"]
     },
     "build": {

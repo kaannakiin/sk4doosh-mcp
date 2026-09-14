@@ -4,17 +4,17 @@ import { beforeAll, describe, expect, inject, it } from "vitest";
 import {
   isRefusal,
   scanRecordBoundaries,
-  type BoundaryScan,
-} from "../src/boundary.js";
-import { wrapRecord } from "../src/fragment.js";
-import { HARDENED } from "../src/parse-policy.js";
-import { cellsOf, scanItems } from "../src/records.js";
+} from "../src/host/chunk/boundary.js";
+import type { BoundaryScan } from "../src/model/scan.js";
+import { wrapRecord } from "../src/host/chunk/fragment.js";
+import { HARDENED } from "../src/engine/policy.js";
+import { cellsOf, scanItems } from "../src/engine/records.js";
 import type {
   Cell,
   ColumnSpec,
   ItemSelector,
   ScanLimits,
-} from "../src/query-model.js";
+} from "../src/model/query.js";
 import type { Fixtures } from "./fixtures/build.js";
 
 let fixtures: Fixtures;

@@ -6,7 +6,7 @@ import { routeTree } from "./routeTree.gen";
 /**
  * Guard: the query client is built here, inside the per-request factory, rather
  * than at module scope. One server process renders for every visitor, and a
- * module-level client would serve one owner's sessions to the next.
+ * module-level client would serve one user's sessions to the next.
  */
 export function getRouter() {
   return createRouter({

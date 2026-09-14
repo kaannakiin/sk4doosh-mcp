@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { coreLimits } from "@sk-mcp/file-core";
-import { toolDefinitions } from "../src/tools.js";
+import { toolDefinitions } from "../src/tools/definitions.js";
 import type { Fixtures } from "./fixtures/build.js";
 import {
   bodyOf,

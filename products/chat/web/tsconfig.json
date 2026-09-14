@@ -8,7 +8,8 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "types": ["node", "vite/client"],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": { "~/*": ["./src/*"] }
   },
   "include": ["src", "vite.config.ts", "eslint.config.js"],
   "exclude": ["node_modules", "dist", ".tanstack"]

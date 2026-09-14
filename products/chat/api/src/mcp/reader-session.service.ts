@@ -3,6 +3,7 @@ import type { SessionId } from "@chat/contracts/chat/session";
 import type { Readiness } from "@chat/contracts/http/health";
 import { EXCEL_TOOL_SCHEMAS } from "@chat/contracts/tools/excel/catalog";
 import { XML_TOOL_SCHEMAS } from "@chat/contracts/tools/xml/catalog";
+import type { UserId } from "@chat/db";
 import { createMCPClient, type MCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
@@ -14,12 +15,12 @@ import { join } from "node:path";
 
 import { AttachmentStoreService } from "../attachments/attachment-store.service.ts";
 import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
+import { errorMessage } from "../common/utils/error.utils.ts";
 import type {
   AppConfig,
   ReaderConfig,
   SessionConfig,
 } from "../config/configuration.ts";
-import type { OwnerId } from "../owner/owner-id.ts";
 import { withMaterialization } from "./materializing-tools.ts";
 import { readerCommandFor } from "./reader-command.ts";
 
@@ -60,8 +61,8 @@ export class ReaderSessionService implements OnModuleDestroy {
    * holds a file for are connected: a session with one CSV never pays for an
    * XML reader process, and never offers the model four tools it cannot use.
    */
-  async toolsFor(owner: OwnerId, session: SessionId): Promise<ToolSet> {
-    const families = await this.store.familiesFor(owner, session);
+  async toolsFor(userId: UserId, session: SessionId): Promise<ToolSet> {
+    const families = await this.store.familiesFor(userId, session);
     if (families.size === 0) {
       return {};
     }
@@ -69,7 +70,7 @@ export class ReaderSessionService implements OnModuleDestroy {
     await this.evictOverflow(session);
 
     const sets = await Promise.all(
-      [...families].map((family) => this.toolsOf(owner, session, family)),
+      [...families].map((family) => this.toolsOf(userId, session, family)),
     );
 
     return Object.assign({}, ...sets) as ToolSet;
@@ -107,7 +108,7 @@ export class ReaderSessionService implements OnModuleDestroy {
         await client.close();
       }
     } catch (cause) {
-      this.logger.warn(`reader probe failed (${family}): ${describe(cause)}`);
+      this.logger.warn(`reader probe failed (${family}): ${errorMessage(cause)}`);
       this.readiness.set(family, "failed");
 
       return "failed";
@@ -136,7 +137,7 @@ export class ReaderSessionService implements OnModuleDestroy {
   }
 
   private async toolsOf(
-    owner: OwnerId,
+    userId: UserId,
     session: SessionId,
     family: ReaderFamily,
   ): Promise<ToolSet> {
@@ -172,12 +173,12 @@ export class ReaderSessionService implements OnModuleDestroy {
         (await client.tools({
           schemas: SCHEMAS_BY_FAMILY[family],
         })) as ToolSet,
-        (filePath) => this.store.resolveForTool(owner, session, filePath),
+        (filePath) => this.store.resolveForTool(userId, session, filePath),
       );
     } catch (cause) {
       this.clients.delete(key);
       this.readiness.set(family, "failed");
-      this.logger.warn(`reader unavailable (${family}): ${describe(cause)}`);
+      this.logger.warn(`reader unavailable (${family}): ${errorMessage(cause)}`);
 
       return {};
     }
@@ -240,10 +241,6 @@ export class ReaderSessionService implements OnModuleDestroy {
       await this.cache.evictSession(session);
     }
   }
-}
-
-function describe(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }
 
 async function closeQuietly(pending: Promise<MCPClient>): Promise<void> {

@@ -26,6 +26,7 @@ import {
   type StreamRequest,
 } from "@chat/contracts/chat/stream-request";
 import type { ApiError } from "@chat/contracts/http/error";
+import type { UserId } from "@chat/db";
 import {
   Body,
   Controller,
@@ -41,6 +42,7 @@ import {
   Req,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -50,18 +52,20 @@ import {
   AttachmentStoreService,
   type UploadedFile as StoredUpload,
 } from "../attachments/attachment-store.service.ts";
+import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
+import { AuthGuard } from "../auth/auth.guard.ts";
+import { AuthOriginGuard } from "../auth/auth-origin.guard.ts";
+import { requireAuth, type RequestWithAuth } from "../auth/request-auth.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import type { RequestWithLocale } from "../i18n/request-locale.ts";
-import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
 import { ReaderSessionService } from "../mcp/reader-session.service.ts";
-import type { OwnerId } from "../owner/owner-id.ts";
-import type { RequestWithOwner } from "../owner/request-owner.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
 import { ChatService } from "./chat.service.ts";
 
-type ChatRequest = RequestWithLocale & RequestWithOwner;
+type ChatRequest = RequestWithAuth & RequestWithLocale;
 
 @Controller("chat")
+@UseGuards(AuthOriginGuard, AuthGuard)
 export class ChatController {
   constructor(
     private readonly chat: ChatService,
@@ -88,7 +92,7 @@ export class ChatController {
   ): Promise<void> {
     await this.chat.stream(
       body,
-      this.ownerOf(request),
+      this.userIdOf(request),
       response,
       this.localeOf(request),
     );
@@ -99,11 +103,11 @@ export class ChatController {
     @Query({ schema: sessionListQuerySchema }) query: SessionListQuery,
     @Req() request: ChatRequest,
   ): Promise<SessionListResponse> {
-    return this.history.list(this.ownerOf(request), query);
+    return this.history.list(this.userIdOf(request), query);
   }
 
   /**
-   * Guard: a session this owner does not have reads as `not_found`, never as
+   * Guard: a session this user does not have reads as `not_found`, never as
    * `forbidden`. A 403 confirms that a guessed id names a real conversation,
    * which turns a client-minted uuid into something worth enumerating.
    */
@@ -113,7 +117,7 @@ export class ChatController {
     @Req() request: ChatRequest,
   ): Promise<SessionDetailResponse> {
     const detail = await this.history.load(
-      this.ownerOf(request),
+      this.userIdOf(request),
       sessionId,
       SESSION_HISTORY_LIMIT_DEFAULT,
     );
@@ -123,7 +127,7 @@ export class ChatController {
 
     return {
       ...detail,
-      attachments: await this.store.list(this.ownerOf(request), sessionId),
+      attachments: await this.store.list(this.userIdOf(request), sessionId),
     };
   }
 
@@ -151,7 +155,7 @@ export class ChatController {
     @Req() request: ChatRequest,
   ): Promise<SessionSummary> {
     const renamed = await this.history.rename(
-      this.ownerOf(request),
+      this.userIdOf(request),
       sessionId,
       body.title,
     );
@@ -168,7 +172,7 @@ export class ChatController {
     @Param("sessionId", { schema: sessionIdSchema }) sessionId: SessionId,
     @Req() request: ChatRequest,
   ): Promise<void> {
-    const removed = await this.history.remove(this.ownerOf(request), sessionId);
+    const removed = await this.history.remove(this.userIdOf(request), sessionId);
     if (!removed) {
       throw this.fail("session_not_found", HttpStatus.NOT_FOUND);
     }
@@ -188,7 +192,7 @@ export class ChatController {
       throw this.fail("file_missing", HttpStatus.BAD_REQUEST);
     }
 
-    return this.store.put(this.ownerOf(request), sessionId, file);
+    return this.store.put(this.userIdOf(request), sessionId, file);
   }
 
   @Get("files")
@@ -197,7 +201,7 @@ export class ChatController {
     @Req() request: ChatRequest,
   ): Promise<AttachmentListResponse> {
     return {
-      attachments: await this.store.list(this.ownerOf(request), sessionId),
+      attachments: await this.store.list(this.userIdOf(request), sessionId),
     };
   }
 
@@ -217,7 +221,7 @@ export class ChatController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<PresignedUrlResponse> {
     const signed = await this.store.presign(
-      this.ownerOf(request),
+      this.userIdOf(request),
       query.sessionId as SessionId,
       attachmentId,
       query.disposition,
@@ -238,22 +242,17 @@ export class ChatController {
     @Param("attachmentId", { schema: attachmentIdSchema }) attachmentId: string,
     @Req() request: ChatRequest,
   ): Promise<AttachmentListResponse> {
-    const owner = this.ownerOf(request);
-    const removed = await this.store.remove(owner, sessionId, attachmentId);
+    const userId = this.userIdOf(request);
+    const removed = await this.store.remove(userId, sessionId, attachmentId);
     if (!removed) {
       throw this.fail("attachment_not_found", HttpStatus.NOT_FOUND);
     }
 
-    return { attachments: await this.store.list(owner, sessionId) };
+    return { attachments: await this.store.list(userId, sessionId) };
   }
 
-  private ownerOf(request: ChatRequest): OwnerId {
-    const owner = request.owner;
-    if (owner === undefined) {
-      throw this.fail("owner_missing", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    return owner;
+  private userIdOf(request: ChatRequest): UserId {
+    return requireAuth(request).user.internalId;
   }
 
   private localeOf(

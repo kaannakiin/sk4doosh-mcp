@@ -1,5 +1,4 @@
 import { apiEnvSchema } from "@chat/contracts/config/api-env";
-import type { Locale } from "@chat/contracts/common/locale";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,9 +7,26 @@ export interface DatabaseConfig {
   poolMax: number;
 }
 
-export interface OwnerConfig {
-  cookieTtlMs: number;
+export interface RedisConfig {
+  url: string;
+  keyPrefix: string;
+  connectTimeoutMs: number;
+  commandTimeoutMs: number;
+}
+
+export interface OAuthProviderConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
+export interface AuthConfig {
+  secret: string;
+  publicApiUrl: string;
+  webRedirectUrl: string;
   cookieSecure: boolean;
+  google?: OAuthProviderConfig;
+  github?: OAuthProviderConfig;
 }
 
 export interface LlmConfig {
@@ -63,10 +79,12 @@ export interface ReaderConfig {
 
 export interface AppConfig {
   port: number;
-  defaultLocale: Locale;
+  environment: "development" | "test" | "production";
   corsOrigin: string;
+  trustProxyHops: number;
   database: DatabaseConfig;
-  owner: OwnerConfig;
+  redis: RedisConfig;
+  auth: AuthConfig;
   llm: LlmConfig;
   uploads: UploadConfig;
   storage: StorageConfig;
@@ -94,20 +112,55 @@ function endpointOf(raw: string): S3Endpoint {
   };
 }
 
+function providerConfig(
+  clientId: string | undefined,
+  clientSecret: string | undefined,
+  redirectUri: string | undefined,
+): OAuthProviderConfig | undefined {
+  return clientId === undefined ||
+    clientSecret === undefined ||
+    redirectUri === undefined
+    ? undefined
+    : { clientId, clientSecret, redirectUri };
+}
+
 export function loadConfig(): AppConfig {
   const env = apiEnvSchema.parse(process.env);
+  const google = providerConfig(
+    env.CHAT_AUTH_GOOGLE_CLIENT_ID,
+    env.CHAT_AUTH_GOOGLE_CLIENT_SECRET,
+    env.CHAT_AUTH_GOOGLE_REDIRECT_URI,
+  );
+  const github = providerConfig(
+    env.CHAT_AUTH_GITHUB_CLIENT_ID,
+    env.CHAT_AUTH_GITHUB_CLIENT_SECRET,
+    env.CHAT_AUTH_GITHUB_REDIRECT_URI,
+  );
 
   return {
     port: env.CHAT_API_PORT,
-    defaultLocale: env.CHAT_DEFAULT_LOCALE,
+    environment: env.NODE_ENV,
     corsOrigin: env.CHAT_CORS_ORIGIN,
+    trustProxyHops: env.CHAT_TRUST_PROXY_HOPS,
     database: {
       url: env.CHAT_DATABASE_URL,
       poolMax: env.CHAT_DB_POOL_MAX,
     },
-    owner: {
-      cookieTtlMs: env.CHAT_OWNER_COOKIE_TTL_MS,
-      cookieSecure: env.CHAT_OWNER_COOKIE_SECURE,
+    redis: {
+      url: env.CHAT_REDIS_URL,
+      keyPrefix: env.CHAT_REDIS_KEY_PREFIX,
+      connectTimeoutMs: env.CHAT_REDIS_CONNECT_TIMEOUT_MS,
+      commandTimeoutMs: env.CHAT_REDIS_COMMAND_TIMEOUT_MS,
+    },
+    auth: {
+      secret: env.CHAT_AUTH_SECRET,
+      publicApiUrl: env.CHAT_AUTH_PUBLIC_API_URL,
+      webRedirectUrl:
+        env.CHAT_AUTH_WEB_REDIRECT_URL ??
+        new URL("/auth/callback", env.CHAT_CORS_ORIGIN).toString(),
+      cookieSecure: env.CHAT_AUTH_COOKIE_SECURE,
+      google,
+      github,
     },
     llm: {
       baseUrl: env.CHAT_LLM_BASE_URL,

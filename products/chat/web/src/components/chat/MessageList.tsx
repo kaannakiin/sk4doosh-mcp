@@ -4,8 +4,8 @@ import { IconArrowDown } from "@tabler/icons-react";
 import { UnstyledButton } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
+import { useStickToBottom } from "~/core/hooks/use-stick-to-bottom";
 import { MessageBubble } from "./MessageBubble";
-import { useStickToBottom } from "./use-stick-to-bottom";
 
 export interface MessageListProps {
   readonly sessionId: SessionId;

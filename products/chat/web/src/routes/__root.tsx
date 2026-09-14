@@ -12,16 +12,14 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
 import { I18nextProvider } from "react-i18next";
 
-import { AppShell } from "../components/app/AppShell";
-import { createI18n } from "../i18n/create-instance";
-import { chatClient } from "../lib/chat-client";
-import { resolveLocale } from "../lib/locale";
-import { rememberLocale } from "../lib/locale-cookie";
+import { AppShell } from "~/components/app/AppShell";
+import { useI18nRuntime } from "~/core/hooks/use-i18n-runtime";
+import { chatClient } from "~/lib/chat-client";
+import { resolveLocale } from "~/lib/locale";
 import appCss from "../styles/app.css?url";
-import { theme } from "../theme";
+import { theme } from "~/theme";
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -53,18 +51,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootComponent,
 });
 
-/**
- * Guard: one i18next instance per locale, built here and never at module scope.
- * SSR serves many visitors from one Node process, so a shared instance leaks one
- * reader's language into the next render the moment `changeLanguage` runs.
- */
 function RootComponent() {
   const { queryClient, locale } = Route.useRouteContext();
-  const i18n = useMemo(() => createI18n(locale), [locale]);
-
-  useEffect(() => {
-    rememberLocale(locale);
-  }, [locale]);
+  const i18n = useI18nRuntime(locale);
 
   return (
     <html lang={locale} {...mantineHtmlProps}>

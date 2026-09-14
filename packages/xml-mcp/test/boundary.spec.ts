@@ -3,11 +3,10 @@ import {
   isRefusal,
   scanRecordBoundaries,
   surveyShape,
-  type BoundaryScan,
-  type ScanOptions,
-} from "../src/boundary.js";
-import { wrapperPrefix, wrapRecord } from "../src/fragment.js";
-import type { ItemSelector } from "../src/query-model.js";
+} from "../src/host/chunk/boundary.js";
+import type { BoundaryScan, ScanOptions } from "../src/model/scan.js";
+import { wrapperPrefix, wrapRecord } from "../src/host/chunk/fragment.js";
+import type { ItemSelector } from "../src/model/query.js";
 
 const options: ScanOptions = { maxRecordBytes: 1024, maxSpans: 100 };
 

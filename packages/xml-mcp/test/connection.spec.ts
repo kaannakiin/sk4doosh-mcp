@@ -4,17 +4,18 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { SkMcpXmlError } from "../src/errors.js";
-import { formats } from "../src/formats.js";
-import { limits } from "../src/limits.js";
+import { SkMcpXmlError } from "../src/host/platform/errors.js";
+import { formats } from "../src/host/platform/formats.js";
+import { limits } from "../src/host/platform/limits.js";
 import {
   createDocumentRoot,
   resolveDocumentPath,
   type DocumentRoot,
-} from "../src/paths.js";
+} from "../src/host/platform/paths.js";
 import { createXmlMcpServer } from "../src/server.js";
-import { createHandlers, toolNames, type ToolHandlers } from "../src/tools.js";
-import { vocabulary } from "../src/vocabulary.js";
+import { toolNames, type ToolHandlers } from "../src/tools/definitions.js";
+import { createHandlers } from "../src/tools/handlers.js";
+import { vocabulary } from "../src/host/platform/vocabulary.js";
 
 let root: DocumentRoot;
 let handlers: ToolHandlers;
@@ -128,8 +129,8 @@ describe("the sandbox holds for XML shapes", () => {
     await mkdir(trap, { recursive: true });
     const code = await codeOf(async () => {
       const resolved = await resolveDocumentPath(root, "trap.xml");
-      const { createXmlWorkerPool } = await import("../src/worker-pool.js");
-      const { createXmlDocumentCache } = await import("../src/document.js");
+      const { createXmlWorkerPool } = await import("../src/host/pool.js");
+      const { createXmlDocumentCache } = await import("../src/host/document.js");
       const pool = createXmlWorkerPool();
       try {
         await createXmlDocumentCache(pool, root.real).load(resolved);

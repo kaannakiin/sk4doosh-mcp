@@ -1,20 +1,20 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { diag, XmlDocument } from "libxml2-wasm";
-import { aggregateDocument } from "./aggregate.js";
-import { describeDocument, rootFactsOf } from "./describe.js";
-import { scan } from "./find.js";
-import { NumericPrecisionError } from "./numeric.js";
-import { HARDENED } from "./parse-policy.js";
-import { projectChunks, projectRecords } from "./records.js";
-import { resolveAddress, resolveScopePath, walk } from "./traverse.js";
-import {
-  projectDiag,
-  type ParsedFacts,
-  type WorkerFailure,
-  type WorkerReply,
-  type WorkerRequest,
-} from "./worker-protocol.js";
-import { evaluate } from "./xpath.js";
+import { aggregateDocument } from "./engine/aggregate.js";
+import { describeDocument, rootFactsOf } from "./engine/describe.js";
+import { scan } from "./engine/find.js";
+import { NumericPrecisionError } from "./engine/numeric.js";
+import { HARDENED } from "./engine/policy.js";
+import { projectChunks, projectRecords } from "./engine/records.js";
+import { resolveAddress, resolveScopePath, walk } from "./engine/traverse.js";
+import { projectDiag } from "./engine/protocol.js";
+import type {
+  ParsedFacts,
+  WorkerFailure,
+  WorkerReply,
+  WorkerRequest,
+} from "./model/worker.js";
+import { evaluate } from "./engine/xpath.js";
 
 const port = parentPort;
 if (port === null) {

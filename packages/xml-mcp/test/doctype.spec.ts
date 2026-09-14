@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, inject, it } from "vitest";
-import { scanProlog } from "../src/doctype.js";
-import { limits } from "../src/limits.js";
+import { scanProlog } from "../src/host/chunk/doctype.js";
+import { limits } from "../src/host/platform/limits.js";
 
 const scan = (text: string) =>
   scanProlog(Buffer.from(text, "utf8"), limits.prologScanBytes);

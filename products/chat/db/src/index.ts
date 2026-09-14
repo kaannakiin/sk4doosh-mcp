@@ -8,6 +8,7 @@
  * oversight.
  */
 export { createDb } from "./client.js";
+export { isUniqueConstraintError } from "./errors.js";
 export {
   createAttachment,
   familiesFor,
@@ -22,7 +23,37 @@ export type {
   AttachmentRefusal,
   NewAttachment,
 } from "./attachments.js";
-export { createOwner, resolveOwner } from "./owners.js";
+export {
+  consumeChallengeAndCreateSession,
+  createEmailRegistration,
+  createOAuthUserAndSession,
+  createPhoneLoginChallenge,
+  createPhoneRegistration,
+  createSession,
+  findActiveSession,
+  findChallenge,
+  findOAuthUser,
+  findPasswordLogin,
+  findUserByVerifiedEmail,
+  linkOAuthAccount,
+  recordChallengeFailure,
+  replaceChallenge,
+  revokeSession,
+  revokeSessionByRefreshToken,
+  rotateRefreshToken,
+  updatePasswordHash,
+} from "./auth.js";
+export type {
+  AuthUserRow,
+  ChallengePurpose,
+  ChallengeRow,
+  PasswordLoginRow,
+  PendingChallengeRow,
+  RefreshOutcome,
+  SessionRow as AuthSessionRow,
+  SessionSeed,
+  UserId,
+} from "./auth.js";
 export { listMessages, reconcileTurn, settleTurn } from "./messages.js";
 export type { MessageInput, ReconcileParams } from "./messages.js";
 export {
@@ -38,7 +69,6 @@ export type {
   AttachmentRow,
   MessageRole,
   MessageRow,
-  OwnerRow,
   ReaderFamily,
   SessionPage,
   SessionRow,

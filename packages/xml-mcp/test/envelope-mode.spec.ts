@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { modeFor } from "@sk-mcp/file-core";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { modePolicy } from "../src/limits.js";
+import { modePolicy } from "../src/host/platform/limits.js";
 import type { Fixtures } from "./fixtures/build.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 

@@ -12,6 +12,11 @@ const JSON_BODY_LIMIT = "8mb";
 const app = await NestFactory.create<NestExpressApplication>(AppModule);
 const config = app.get<ConfigService<AppConfig, true>>(ConfigService);
 const port = config.get("port", { infer: true });
+const trustProxyHops = config.get("trustProxyHops", { infer: true });
+
+if (trustProxyHops > 0) {
+  app.set("trust proxy", trustProxyHops);
+}
 
 /**
  * Guard: a chat turn posts the whole UI message history, tool inputs and tool
@@ -22,10 +27,9 @@ app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
 app.use(cookieParser());
 app.enableShutdownHooks();
 /**
- * Guard: `credentials` is on because the owner cookie is the only thing that
- * scopes a read. It is unused while the web dev server proxies this api under its
- * own origin — which is the supported setup — and is what a deployment serving
- * the api on its own host needs instead.
+ * Guard: auth cookies are the only accepted session transport. The web dev server
+ * proxies this api under its own origin; deployments on a separate allowed origin
+ * need credentialed CORS for the browser to include them.
  */
 app.enableCors({
   origin: config.get("corsOrigin", { infer: true }),

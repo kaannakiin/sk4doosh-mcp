@@ -3,8 +3,8 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import {
   emptyResultDiagnostic,
   refuseUnsupported,
-} from "../src/xpath-diagnosis.js";
-import { lex } from "../src/xpath-lex.js";
+} from "../src/host/xpath/diagnosis.js";
+import { lex } from "../src/host/xpath/lex.js";
 import type { Fixtures } from "./fixtures/build.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 

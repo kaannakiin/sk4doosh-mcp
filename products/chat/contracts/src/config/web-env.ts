@@ -2,8 +2,8 @@ import { z } from "zod";
 
 /**
  * Guard: a root-relative prefix is accepted alongside an absolute URL, and it is
- * the default. The dev server proxies the api under its own origin so the owner
- * cookie stays same-site — `SameSite=Lax` then carries it, and no fetch has to
+ * the default. The dev server proxies the api under its own origin so auth
+ * cookies stay same-site — `SameSite=Lax` then carries them, and no fetch has to
  * opt into `credentials`. An absolute URL is still legal for a deployment that
  * serves the api on its own host, which is also the only shape that works from a
  * server-side render: a relative path has no origin to resolve against, so every

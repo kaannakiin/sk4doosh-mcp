@@ -10,7 +10,7 @@ import {
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useLocale } from "../../lib/use-locale";
+import { useLocale } from "~/core/hooks/use-locale";
 
 import { AttachmentStrip } from "./AttachmentStrip";
 import { FilePart } from "./parts/FilePart";

@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { encodePosition } from "../src/cursor.js";
-import { limits } from "../src/limits.js";
+import { encodePosition } from "../src/host/page/cursor.js";
+import { limits } from "../src/host/platform/limits.js";
 import type { Fixtures } from "./fixtures/build.js";
 import {
   bodyOf,

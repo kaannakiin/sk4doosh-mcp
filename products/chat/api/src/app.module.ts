@@ -7,6 +7,7 @@ import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 
 import { AttachmentsModule } from "./attachments/attachments.module.ts";
+import { AuthModule } from "./auth/auth.module.ts";
 import { ChatModule } from "./chat/chat.module.ts";
 import { DbModule } from "./db/db.module.ts";
 import { loadConfig } from "./config/configuration.ts";
@@ -16,8 +17,6 @@ import { I18nModule } from "./i18n/i18n.module.ts";
 import { LocaleMiddleware } from "./i18n/locale.middleware.ts";
 import { LlmModule } from "./llm/llm.module.ts";
 import { McpModule } from "./mcp/mcp.module.ts";
-import { OwnerMiddleware } from "./owner/owner.middleware.ts";
-import { OwnerModule } from "./owner/owner.module.ts";
 import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
 
 @Module({
@@ -30,7 +29,7 @@ import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
     }),
     I18nModule,
     DbModule,
-    OwnerModule,
+    AuthModule,
     AttachmentsModule,
     LlmModule,
     McpModule,
@@ -44,6 +43,6 @@ import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(LocaleMiddleware, OwnerMiddleware).forRoutes("{*path}");
+    consumer.apply(LocaleMiddleware).forRoutes("{*path}");
   }
 }
