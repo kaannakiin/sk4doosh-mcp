@@ -206,12 +206,7 @@ internal static partial class EndpointCatalog
 
             entries.Add(new CatalogEntry
             {
-                Tool = Apply(
-                    ToolDefinitionFactory.Create(
-                        descriptor,
-                        severityOf(DiagnosticCodes.ArgumentCollision) >= CatalogSeverity.EndpointDropped,
-                        name),
-                    overrides),
+                Tool = Apply(ToolDefinitionFactory.Create(descriptor, name), overrides),
                 Descriptor = descriptor,
                 Endpoint = endpoint,
                 Template = template,
@@ -324,7 +319,8 @@ internal static partial class EndpointCatalog
             });
         }
 
-        if (body is not null && RequestBodyShape.BodyRootReasonOf(body) is { } reason)
+        if (body is not null
+            && RequestBodyShape.BodyRootReasonOf(body, parameters.Select(parameter => parameter.Name)) is { } reason)
         {
             string rootArgument = RequestBodyShape.BodyRootArgument;
             string key = RequestBodyShape.UnflattenableRootKey(body.Schema) ?? "no flattenable member";
@@ -336,6 +332,9 @@ internal static partial class EndpointCatalog
                 "unflattenable_root" => new CatalogDiagnostic(
                     DiagnosticCodes.UnflattenableBodyRoot,
                     $"{api.HttpMethod} {route} binds a request body whose root carries '{key}', which flattening would discard; it is exposed as a single '{rootArgument}' argument that keeps the body schema whole."),
+                "collision" => new CatalogDiagnostic(
+                    DiagnosticCodes.BodyFieldCollision,
+                    $"{api.HttpMethod} {route} binds a request body whose field '{RequestBodyShape.CollidingBodyField(body.Schema, parameters.Select(parameter => parameter.Name))}' collides with a parameter of the same name; it is exposed as a single '{rootArgument}' argument so neither slot is guessed."),
                 _ => new CatalogDiagnostic(
                     DiagnosticCodes.SyntheticBodyArgument,
                     $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it is exposed as a single '{rootArgument}' argument whose value becomes the whole body."),
@@ -632,7 +631,9 @@ internal static partial class EndpointCatalog
             string? bodyRoot = null;
             if (descriptor.RequestBody is { Schema: { } bodySchema } requestBody)
             {
-                bodyRoot = RequestBodyShape.BodyRootOf(requestBody);
+                bodyRoot = RequestBodyShape.BodyRootOf(
+                    requestBody,
+                    (descriptor.Parameters ?? []).Select(parameter => parameter.Name));
                 if (bodyRoot is null)
                 {
                     if (bodySchema["properties"] is JsonObject properties)

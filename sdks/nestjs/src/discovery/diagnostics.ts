@@ -21,6 +21,7 @@ const defaults: Readonly<Record<string, CatalogSeverity>> = {
   optional_body_argument: "warning",
   synthetic_body_argument: "warning",
   unflattenable_body_root: "warning",
+  body_field_collision: "warning",
   unbound_query_object: "warning",
   unbound_header_object: "warning",
 };

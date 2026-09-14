@@ -108,7 +108,7 @@ host whose policy can be read accepts only one form.
 **`unresolved` means the measurement failed, not that the validator is lenient.** A binding layer
 whose enum check happens to accept both forms MUST still report the form the handler compares
 against. The concrete case is class-validator's `@IsEnum`, which validates against the enum object's
-values and therefore also accepts a numeric enum's *member name*; a handler comparing
+values and therefore also accepts a numeric enum's _member name_; a handler comparing
 `x === Status.Active` then takes the wrong branch for an input that passed validation. Reporting
 `unresolved` there would publish an `anyOf` inviting exactly that call, so a numeric enum resolves to
 `integer`. Reserve `unresolved` for a host whose serializer genuinely could not be read.
@@ -135,7 +135,7 @@ members never enter the IR at all, so they are not the rule's concern.
 **Table 4 governs schemas the caller sends, never schemas it reads.** `dropReadOnlyProperties` is a
 statement about arguments — a server-computed field is noise in an input schema because the caller
 cannot set it. In a **response** schema the same field is the payload: a member is read-only
-*because* it is something the server reports. So a `responses[*].schema` MUST be written with
+_because_ it is something the server reports. So a `responses[*].schema` MUST be written with
 dropping off, whatever the host set `dropReadOnlyProperties` to; the host knob narrows inputs only.
 An SDK that writes both from one options instance inverts the rule exactly where it costs most, and
 because both directions of one DTO then pass through the same diagnostic sink, it MUST NOT report a
@@ -259,16 +259,17 @@ No SDK SHOULD rely on the budget's existence or on any default value for it.
 
 `inputSchema` is always a plain object; MCP tool arguments are a JSON object.
 
-| Body root schema                                        | Behaviour                                                |
-| ------------------------------------------------------- | -------------------------------------------------------- |
-| `type: object` with `properties`, body required         | fields flatten to the top level                          |
-| `type: object`, `additionalProperties` open, required   | the body is free-form; unknown keys are forwarded, and a **typed** `additionalProperties` is carried to the root as a schema, not flattened to `true` |
-| any root carrying a key outside the flattenable set     | one synthetic argument `body`; `unflattenable_body_root` |
-| `type: object` with neither `properties` nor open `additionalProperties` | one synthetic argument `body`; `unflattenable_body_root` |
-| an array or scalar root                                 | one synthetic argument `body`; `synthetic_body_argument` |
-| any root with `requestBody.required: false`             | one synthetic argument `body`, **not** required; `optional_body_argument` |
-| no `type` (host declaration)                            | treated as an object                                     |
-| more than one body declaration                          | the endpoint is **dropped**, `multiple_body_bindings`    |
+| Body root schema                                                         | Behaviour                                                                                                                                             |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type: object` with `properties`, body required                          | fields flatten to the top level                                                                                                                       |
+| `type: object`, `additionalProperties` open, required                    | the body is free-form; unknown keys are forwarded, and a **typed** `additionalProperties` is carried to the root as a schema, not flattened to `true` |
+| any root carrying a key outside the flattenable set                      | one synthetic argument `body`; `unflattenable_body_root`                                                                                              |
+| `type: object` with neither `properties` nor open `additionalProperties` | one synthetic argument `body`; `unflattenable_body_root`                                                                                              |
+| an array or scalar root                                                  | one synthetic argument `body`; `synthetic_body_argument`                                                                                              |
+| any root with `requestBody.required: false`                              | one synthetic argument `body`, **not** required; `optional_body_argument`                                                                             |
+| a root whose field name collides with a parameter name                   | one synthetic argument `body`; `body_field_collision`                                                                                                 |
+| no `type` (host declaration)                                             | treated as an object                                                                                                                                  |
+| more than one body declaration                                           | the endpoint is **dropped**, `multiple_body_bindings`                                                                                                 |
 
 `requestBody.required` is the body-level bit and is distinct from the field-level `required` entries
 inside `requestBody.schema`. Omitted, it means `true`. A body may be optional while a field inside it
@@ -313,7 +314,7 @@ exactly the string `"object"`. The array form (`["object","null"]`) says a JSON 
 accepted, which flattening cannot express.
 
 The two keywords that show why this is not stylistic are `minProperties` and `propertyNames`: both
-apply to *every* key of the instance, and after flattening the tool root's keys include the path and
+apply to _every_ key of the instance, and after flattening the tool root's keys include the path and
 query parameters. `minProperties: 1` would start counting `tenantId`; an integer-keyed dictionary's
 `propertyNames: {"pattern":"^-?[0-9]+$"}` would reject it outright. `additionalProperties` is the
 opposite case and is safe to carry, because it applies only to keys absent from `properties` and
@@ -330,7 +331,7 @@ is less convenient beats an incomplete one that looks convenient.
 
 **No flattenable surface.** A root that is neither `properties`-bearing nor open to additional keys
 takes the root argument too, and this one is a correctness fix rather than a fidelity fix. A bare
-`{"$ref": …}` or a bare `{"type":"object"}` used to flatten into *nothing*: no body field was
+`{"$ref": …}` or a bare `{"type":"object"}` used to flatten into _nothing_: no body field was
 declared, the template's `hasBody` came out `false`, and the request went out **with no body at all**.
 Note that `{"type":"object","properties":{}}` is a different thing and still flattens — it declares
 an object with no fields and sends `{}`.
@@ -351,6 +352,19 @@ the fields stop being top-level arguments, and an endpoint that also has a param
 now collides (`argument_collision`) where the flattened form did not, so flipping this one boolean
 can drop such an endpoint.
 
+**A body field whose name collides with a parameter takes the root too.** Flattening merges the
+body's field names with the path, query and header parameter names into one namespace, and MCP gives
+that namespace no `in` to separate them by. Where two names meet, one value would have to reach two
+wire slots, and nothing in the descriptor says whether they are the same thing: in
+`POST /orders/{id}` with a body field `id` they are, and in `POST /projects/{id}/members/{memberId}`
+with a body field `id` they are not. Sending one value to both is silently wrong wherever the second
+reading holds, so the body takes the root argument and `body_field_collision` is emitted. This is the
+same rule as every other row of Table 6 — flattening is allowed only where it loses nothing — and not
+a special case: `{"id": 7, "body": {"id": 7, …}}` names both slots and neither is guessed.
+
+The check runs on the flattened result, so it sees exactly the names `inputSchema` would carry. A
+host that renames fields through `propertyName` is compared on the renamed form.
+
 The name goes through the same collision check as parameter names: if a parameter named `body`
 exists, `argument_collision` is emitted and the endpoint is dropped. A template MUST NOT declare
 both a body root and body fields at once (`conflicting_body_modes`).
@@ -368,26 +382,27 @@ own freedom is carried by the schema of that property.
 
 ## Table 7 — Diagnostics
 
-| Code                            | When                                                               | Result                         |
-| ------------------------------- | ------------------------------------------------------------------ | ------------------------------ |
-| `argument_collision`            | a parameter name collides with a body field or the body root name  | the endpoint is dropped        |
-| `multiple_body_bindings`        | more than one body declaration                                     | the endpoint is dropped        |
-| `unsupported_binding`           | a form or file binding                                             | the endpoint is dropped        |
-| `unsupported_method`            | the HTTP method has no counterpart in the neutral model            | the endpoint is dropped        |
-| `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies        | the endpoint is dropped        |
-| `unresolved_query_shape`        | a whole-object query binding whose members cannot be read at all   | the endpoint is dropped        |
-| `synthetic_body_argument`       | a non-object body root was wrapped into a `body` argument          | warning                        |
-| `unflattenable_body_root`       | a body root carried a keyword flattening would discard, or offered nothing to flatten | warning, the body is wrapped |
-| `optional_body_argument`        | a body declared `required: false` was wrapped into an optional `body` argument | warning         |
-| `unbound_query_object`          | some members of a whole-object query binding are not expressible   | warning, those members dropped |
-| `unbound_header_object`         | a whole-object header binding                                      | warning, the binding dropped   |
-| `route_folded`                  | one operation was bound to several routes ([naming.md](naming.md)) | warning                        |
-| `unsupported_dictionary_key`    | a dictionary key that cannot be serialized                         | the value shape is dropped     |
-| `unreadable_shape`              | the binding layer could not read the shape                         | the boundary object is written |
-| `schema_def_name_disambiguated` | two hoisted types carry the same simple name                       | warning, a suffix is added     |
-| `schema_depth_truncated`        | the host's depth budget cut a branch                               | warning                        |
-| `enum_format_unresolved`        | the enum wire form cannot be read                                  | warning                        |
-| `naming_policy_unresolved`      | the field-name policy cannot be read                               | warning                        |
+| Code                            | When                                                                                  | Result                         |
+| ------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------ |
+| `argument_collision`            | a parameter name collides with the body root name `body`                              | the endpoint is dropped        |
+| `multiple_body_bindings`        | more than one body declaration                                                        | the endpoint is dropped        |
+| `unsupported_binding`           | a form or file binding                                                                | the endpoint is dropped        |
+| `unsupported_method`            | the HTTP method has no counterpart in the neutral model                               | the endpoint is dropped        |
+| `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies                           | the endpoint is dropped        |
+| `unresolved_query_shape`        | a whole-object query binding whose members cannot be read at all                      | the endpoint is dropped        |
+| `synthetic_body_argument`       | a non-object body root was wrapped into a `body` argument                             | warning                        |
+| `unflattenable_body_root`       | a body root carried a keyword flattening would discard, or offered nothing to flatten | warning, the body is wrapped   |
+| `optional_body_argument`        | a body declared `required: false` was wrapped into an optional `body` argument        | warning                        |
+| `body_field_collision`          | a body field name collides with a parameter name                                      | warning, the body is wrapped   |
+| `unbound_query_object`          | some members of a whole-object query binding are not expressible                      | warning, those members dropped |
+| `unbound_header_object`         | a whole-object header binding                                                         | warning, the binding dropped   |
+| `route_folded`                  | one operation was bound to several routes ([naming.md](naming.md))                    | warning                        |
+| `unsupported_dictionary_key`    | a dictionary key that cannot be serialized                                            | the value shape is dropped     |
+| `unreadable_shape`              | the binding layer could not read the shape                                            | the boundary object is written |
+| `schema_def_name_disambiguated` | two hoisted types carry the same simple name                                          | warning, a suffix is added     |
+| `schema_depth_truncated`        | the host's depth budget cut a branch                                                  | warning                        |
+| `enum_format_unresolved`        | the enum wire form cannot be read                                                     | warning                        |
+| `naming_policy_unresolved`      | the field-name policy cannot be read                                                  | warning                        |
 
 Severity has three levels: `Warning`, `EndpointDropped`, `Fatal`. `Fatal` is reserved for codes that
 make the whole catalog inconsistent (two endpoints claiming the same name). An argument collision is

@@ -74,6 +74,32 @@ internal static class RequestBodyShape
         return null;
     }
 
+    /// <summary>Names the body field flattening would merge onto a parameter of the same name.</summary>
+    /// <remarks>
+    /// MCP gives tool arguments one namespace and no <c>in</c>, so a flattened field and a parameter
+    /// that share a name would claim one key for two wire slots. Nothing in the descriptor says
+    /// whether they denote the same value — <c>POST /orders/{id}</c> with a body field <c>id</c> says
+    /// yes, <c>POST /projects/{id}/members/{memberId}</c> with a body field <c>id</c> says no — so
+    /// neither reading may be guessed and the body takes the root argument instead.
+    /// </remarks>
+    /// <returns>The field name, for a diagnostic to name; <c>null</c> when flattening is unambiguous.</returns>
+    public static string? CollidingBodyField(JsonObject schema, IEnumerable<string> parameterNames)
+    {
+        if (schema["properties"] is not JsonObject properties)
+        {
+            return null;
+        }
+        HashSet<string> taken = new(parameterNames, StringComparer.Ordinal);
+        foreach ((string name, JsonNode? _) in properties)
+        {
+            if (taken.Contains(name))
+            {
+                return name;
+            }
+        }
+        return null;
+    }
+
     /// <summary>
     /// Decides whether the body travels as one synthetic argument instead of flattening.
     /// </summary>
@@ -88,8 +114,13 @@ internal static class RequestBodyShape
     /// takes the root because a flattened body has no wrapper left to omit and would always send
     /// <c>{}</c>.
     /// </remarks>
+    /// <param name="body">The declared request body.</param>
+    /// <param name="parameterNames">
+    /// The endpoint's parameter names, which flattening would share a namespace with; a field that
+    /// collides with one of them forces root mode.
+    /// </param>
     /// <returns>Why the body needs a root argument, or <c>null</c> to flatten its fields.</returns>
-    public static string? BodyRootReasonOf(RequestBody body)
+    public static string? BodyRootReasonOf(RequestBody body, IEnumerable<string>? parameterNames = null)
     {
         if (body.Required == false)
         {
@@ -103,14 +134,16 @@ internal static class RequestBodyShape
         {
             return "unflattenable_root";
         }
-        return body.Schema["properties"] is null && !AllowsAdditional(body.Schema)
-            ? "unflattenable_root"
-            : null;
+        if (body.Schema["properties"] is null && !AllowsAdditional(body.Schema))
+        {
+            return "unflattenable_root";
+        }
+        return CollidingBodyField(body.Schema, parameterNames ?? []) is null ? null : "collision";
     }
 
     /// <returns>The synthetic argument name, or <c>null</c> to flatten the body's fields.</returns>
-    public static string? BodyRootOf(RequestBody body) =>
-        BodyRootReasonOf(body) is null ? null : BodyRootArgument;
+    public static string? BodyRootOf(RequestBody body, IEnumerable<string>? parameterNames = null) =>
+        BodyRootReasonOf(body, parameterNames) is null ? null : BodyRootArgument;
 
     /// <summary>Reads a body's <c>additionalProperties</c> as the tool root should write it.</summary>
     /// <remarks>

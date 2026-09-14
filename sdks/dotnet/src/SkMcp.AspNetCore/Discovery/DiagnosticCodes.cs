@@ -6,6 +6,7 @@ public static class DiagnosticCodes
 {
     public const string AmbiguousSelection = "ambiguous_selection";
     public const string ArgumentCollision = "argument_collision";
+    public const string BodyFieldCollision = "body_field_collision";
     public const string EnumFormatUnresolved = "enum_format_unresolved";
     public const string InvalidName = "invalid_name";
     public const string LongToolName = "long_tool_name";

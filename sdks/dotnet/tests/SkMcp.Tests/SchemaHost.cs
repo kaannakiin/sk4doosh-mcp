@@ -62,6 +62,9 @@ public sealed class SchemaBodiesController : ControllerBase
     [HttpPost("numbers")]
     public IActionResult Numbers([FromBody] List<int> values) => Ok(values);
 
+    [HttpPost("root-name/{body}")]
+    public IActionResult RootName(string body, [FromBody] List<int> values) => Ok(new { body, values });
+
     [HttpPost("notes/{id:int}")]
     public IActionResult AddNote(int id, [FromQuery] bool notify, [FromBody] NotePayload payload) =>
         Ok(new { id, notify, payload });

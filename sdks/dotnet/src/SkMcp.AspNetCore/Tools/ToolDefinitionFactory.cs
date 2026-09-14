@@ -8,7 +8,7 @@ namespace SkMcp.AspNetCore.Tools;
 internal static class ToolDefinitionFactory
 {
     public static ToolDefinition Create(
-        EndpointDescriptor endpoint, bool strictArguments = true, string? name = null)
+        EndpointDescriptor endpoint, string? name = null)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
@@ -18,13 +18,13 @@ internal static class ToolDefinitionFactory
             Description = string.IsNullOrWhiteSpace(endpoint.Description)
                 ? $"{endpoint.Method} {endpoint.Route}"
                 : endpoint.Description,
-            InputSchema = BuildInputSchema(endpoint, strictArguments),
+            InputSchema = BuildInputSchema(endpoint),
             Annotations = Annotate(endpoint.Method),
             Auth = endpoint.Auth,
         };
     }
 
-    private static JsonObject BuildInputSchema(EndpointDescriptor endpoint, bool strictArguments)
+    private static JsonObject BuildInputSchema(EndpointDescriptor endpoint)
     {
         JsonObject properties = [];
         JsonArray required = [];
@@ -50,11 +50,13 @@ internal static class ToolDefinitionFactory
         JsonNode additionalProperties = false;
         string? root = endpoint.RequestBody is null
             ? null
-            : RequestBodyShape.BodyRootOf(endpoint.RequestBody);
+            : RequestBodyShape.BodyRootOf(
+                endpoint.RequestBody,
+                (endpoint.Parameters ?? []).Select(parameter => parameter.Name));
         JsonObject? seed = null;
         if (endpoint.RequestBody is not null && root is { } bodyRoot)
         {
-            if (strictArguments && properties.ContainsKey(bodyRoot))
+            if (properties.ContainsKey(bodyRoot))
             {
                 throw new SkMcpTemplateException(
                     SkMcpTemplateException.ArgumentCollision,
@@ -76,12 +78,6 @@ internal static class ToolDefinitionFactory
             {
                 foreach ((string name, JsonNode? schema) in bodyProperties)
                 {
-                    if (strictArguments && properties.ContainsKey(name))
-                    {
-                        throw new SkMcpTemplateException(
-                            SkMcpTemplateException.ArgumentCollision,
-                            $"Body property '{name}' collides with a parameter name on {endpoint.Method} {endpoint.Route}; rename one of them.");
-                    }
                     properties[name] = schema?.DeepClone();
                 }
             }

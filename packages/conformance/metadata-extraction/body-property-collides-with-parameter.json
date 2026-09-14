@@ -1,6 +1,6 @@
 {
   "kind": "metadata-extraction",
-  "description": "path id ile govde id ayni ada sahipse tool uretimi argument_collision ile durur",
+  "description": "Path id ile govde id ayni ada sahipse govde root mode'a duser: tek anahtar iki tel yuvasina gidemez, ikisi de acikca adlandirilir",
   "input": {
     "operationId": "ReplaceOrder",
     "method": "PUT",
@@ -24,5 +24,25 @@
     },
     "auth": { "anonymous": "no", "policies": [], "imperative": false }
   },
-  "expected": { "error": "argument_collision" }
+  "expected": {
+    "name": "replace_order",
+    "description": "PUT /orders/{id}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "item": { "type": "string" }
+          }
+        }
+      },
+      "required": ["id", "body"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": true, "idempotentHint": true },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
 }

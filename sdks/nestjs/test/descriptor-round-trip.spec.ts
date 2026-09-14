@@ -97,6 +97,16 @@ class CollidingBody {
   item?: string;
 }
 
+class CollidingRootBody {
+  @IsString()
+  @IsOptional()
+  body?: string;
+
+  @IsString()
+  @IsOptional()
+  item?: string;
+}
+
 class CancelBody {
   @IsString()
   reason!: string;
@@ -130,6 +140,13 @@ class OrdersController {
   replaceOrder(
     @Param("id", ParseIntPipe) _id: number,
     @Body() _body: CollidingBody,
+  ): void {}
+
+  @Put(":body/bulk")
+  @UseGuards(AuthenticatedGuard)
+  replaceOrderBody(
+    @Param("body") _body: string,
+    @Body() _payload: CollidingRootBody,
   ): void {}
 
   @Delete(":id")
@@ -185,6 +202,10 @@ const hosts: Record<string, HostCase> = {
   "body-property-collides-with-parameter.json": {
     controller: OrdersController,
     handler: "replaceOrder",
+  },
+  "body-root-name-collides-with-parameter.json": {
+    controller: OrdersController,
+    handler: "replaceOrderBody",
   },
   "delete-order.json": {
     controller: OrdersController,

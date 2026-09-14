@@ -32,7 +32,8 @@ function describe(
 
 export const bodyRootArgument = "body";
 
-export type BodyRootReason = "optional" | "non_object" | "unflattenable_root";
+export type BodyRootReason =
+  "optional" | "non_object" | "unflattenable_root" | "collision";
 
 /**
  * The body-root keys flattening consumes, preserves elsewhere, or drops by rule.
@@ -105,6 +106,30 @@ export function unflattenableRootKey(
 }
 
 /**
+ * Names the body field flattening would merge onto a parameter of the same name, if there is one.
+ *
+ * MCP gives tool arguments one namespace and no `in`, so a flattened field and a parameter that
+ * share a name would claim one key for two wire slots. Nothing in the descriptor says whether they
+ * denote the same value — `POST /orders/{id}` with a body field `id` says yes, and
+ * `POST /projects/{id}/members/{memberId}` with a body field `id` says no — so neither reading may
+ * be guessed and the body takes the root argument instead.
+ *
+ * @returns the field name, for a diagnostic to name; `undefined` when flattening is unambiguous.
+ */
+export function collidingBodyField(
+  body: JsonSchemaObject,
+  parameterNames: Iterable<string>,
+): string | undefined {
+  const taken = new Set(parameterNames);
+  for (const name of Object.keys(body.properties ?? {})) {
+    if (taken.has(name)) {
+      return name;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Decides whether the body travels as one synthetic argument instead of flattening.
  *
  * Flattening preserves a body root's `properties` and `required` and nothing else, so it is allowed
@@ -116,11 +141,14 @@ export function unflattenableRootKey(
  *
  * @param required the body-level `requestBody.required`; `false` forces root mode, because a
  * flattened body has no wrapper left to omit and would always send `{}`.
+ * @param parameterNames the endpoint's parameter names, which flattening would share a namespace
+ * with; a field that collides with one of them forces root mode.
  * @returns why the body needs a root argument, or `undefined` to flatten its fields.
  */
 export function bodyRootReasonOf(
   body: JsonSchemaObject | undefined,
   required?: boolean,
+  parameterNames: Iterable<string> = [],
 ): BodyRootReason | undefined {
   if (body === undefined) {
     return undefined;
@@ -138,6 +166,9 @@ export function bodyRootReasonOf(
   if (body.properties === undefined && !allowsAdditional(body)) {
     return "unflattenable_root";
   }
+  if (collidingBodyField(body, parameterNames) !== undefined) {
+    return "collision";
+  }
   return undefined;
 }
 
@@ -147,8 +178,9 @@ export function bodyRootReasonOf(
 export function bodyRootOf(
   body: JsonSchemaObject | undefined,
   required?: boolean,
+  parameterNames: Iterable<string> = [],
 ): string | undefined {
-  return bodyRootReasonOf(body, required) === undefined
+  return bodyRootReasonOf(body, required, parameterNames) === undefined
     ? undefined
     : bodyRootArgument;
 }
@@ -161,11 +193,12 @@ function buildInputSchema(endpoint: EndpointDescriptor): InputSchema {
   const parameters = endpoint.parameters ?? [];
   const body = endpoint.requestBody?.schema;
   const bodyRequired = endpoint.requestBody?.required;
-  const root = bodyRootOf(body, bodyRequired);
+  const parameterNames = parameters.map((parameter) => parameter.name);
+  const root = bodyRootOf(body, bodyRequired, parameterNames);
   const flattened = root === undefined ? flattenableBody(body) : undefined;
 
   assertUniqueArgumentNames(
-    parameters.map((parameter) => parameter.name),
+    parameterNames,
     root !== undefined
       ? [root]
       : flattened === undefined

@@ -39,6 +39,7 @@ export {
   bodyRootArgument,
   bodyRootOf,
   bodyRootReasonOf,
+  collidingBodyField,
   unflattenableRootKey,
   createToolDefinition,
 } from "./tool-definition.js";

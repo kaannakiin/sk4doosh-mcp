@@ -48,24 +48,48 @@ describe("createToolDefinition", () => {
     });
   });
 
-  it("D3: a parameter name colliding with a body property throws argument_collision", () => {
+  it("D3: a parameter name colliding with a body field takes the root argument", () => {
+    const tool = createToolDefinition(
+      endpoint({
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "integer" },
+          },
+        ],
+        requestBody: {
+          schema: {
+            type: "object",
+            properties: { id: { type: "integer" } },
+          },
+        },
+      }),
+    );
+    expect(Object.keys(tool.inputSchema["properties"] ?? {})).toEqual([
+      "id",
+      "body",
+    ]);
+    expect(tool.inputSchema["required"]).toEqual(["id", "body"]);
+  });
+
+  it("D3b: the root argument name itself still collides", () => {
     expect(
       codeOf(() =>
         createToolDefinition(
           endpoint({
+            route: "/orders/{body}",
             parameters: [
               {
-                name: "id",
+                name: "body",
                 in: "path",
                 required: true,
-                schema: { type: "integer" },
+                schema: { type: "string" },
               },
             ],
             requestBody: {
-              schema: {
-                type: "object",
-                properties: { id: { type: "integer" } },
-              },
+              schema: { type: "array", items: { type: "integer" } },
             },
           }),
         ),
@@ -219,7 +243,7 @@ describe("createTool", () => {
     expect(tool.template.parameters[0]?.kind).toBe("integer");
   });
 
-  it("D9: both entry points reject the same collision identically", () => {
+  it("D9: both entry points wrap the same collision identically", () => {
     const colliding = endpoint({
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "integer" } },
@@ -228,9 +252,13 @@ describe("createTool", () => {
         schema: { type: "object", properties: { id: { type: "integer" } } },
       },
     });
-    expect(codeOf(() => createToolDefinition(colliding))).toBe(
-      "argument_collision",
-    );
-    expect(codeOf(() => createTool(colliding))).toBe("argument_collision");
+    const tool = createTool(colliding);
+    expect(
+      Object.keys(
+        createToolDefinition(colliding).inputSchema["properties"] ?? {},
+      ),
+    ).toEqual(["id", "body"]);
+    expect(tool.template.bodyRoot).toBe("body");
+    expect([...tool.template.bodyProperties]).toEqual([]);
   });
 });

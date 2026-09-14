@@ -12,6 +12,14 @@ class NoteDto {
   text!: string;
 }
 
+class IdentifiedNoteDto {
+  @IsString()
+  id!: string;
+
+  @IsString()
+  text!: string;
+}
+
 @Controller("diagnosed")
 @McpTool()
 class DiagnosedController {
@@ -28,6 +36,14 @@ class DiagnosedController {
 
   @Post("scalars")
   scalars(@Body() _values: number[]): string {
+    return "ok";
+  }
+
+  @Post("colliding/:id")
+  colliding(
+    @Param("id") _id: string,
+    @Body() _note: IdentifiedNoteDto,
+  ): string {
     return "ok";
   }
 }
@@ -64,7 +80,22 @@ describe("body root diagnostics", () => {
     expect(codesFor("scalars")).toEqual(["synthetic_body_argument"]);
   });
 
-  it("B4: none of these are fatal", () => {
+  it("B4: a body field colliding with a parameter is reported", () => {
+    expect(codesFor("colliding")).toEqual(["body_field_collision"]);
+  });
+
+  it("B5: the colliding endpoint survives, with the body under the root argument", () => {
+    const entry = catalog.current.entries.find(
+      (candidate) => candidate.descriptor.route === "/diagnosed/colliding/{id}",
+    );
+    expect(entry).toBeDefined();
+    expect(Object.keys(entry?.tool.inputSchema.properties ?? {})).toEqual([
+      "id",
+      "body",
+    ]);
+  });
+
+  it("B6: none of these are fatal", () => {
     expect(catalog.current.fatal).toEqual([]);
   });
 });

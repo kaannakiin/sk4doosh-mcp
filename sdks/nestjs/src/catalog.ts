@@ -7,6 +7,7 @@ import {
 import {
   bodyRootArgument,
   bodyRootReasonOf,
+  collidingBodyField,
   combineMarkers,
   createRequestTemplateFromEndpoint,
   createToolDefinition,
@@ -330,7 +331,10 @@ function reportBodyRoot(
   report: (diagnostic: CatalogDiagnostic) => void,
 ): void {
   const body = descriptor.requestBody;
-  const reason = bodyRootReasonOf(body?.schema, body?.required);
+  const parameterNames = (descriptor.parameters ?? []).map(
+    (parameter) => parameter.name,
+  );
+  const reason = bodyRootReasonOf(body?.schema, body?.required, parameterNames);
   if (reason === undefined || body === undefined) {
     return;
   }
@@ -346,6 +350,14 @@ function reportBodyRoot(
     report({
       code: "synthetic_body_argument",
       message: `${where} binds a request body that is not a JSON object; it is exposed as a single '${bodyRootArgument}' argument whose value becomes the whole body.`,
+    });
+    return;
+  }
+  if (reason === "collision") {
+    const field = collidingBodyField(body.schema, parameterNames);
+    report({
+      code: "body_field_collision",
+      message: `${where} binds a request body whose field '${field}' collides with a parameter of the same name; it is exposed as a single '${bodyRootArgument}' argument so neither slot is guessed.`,
     });
     return;
   }

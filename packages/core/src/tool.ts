@@ -47,7 +47,11 @@ export function createRequestTemplateFromEndpoint(
   );
 
   const body = endpoint.requestBody?.schema;
-  const root = bodyRootOf(body, endpoint.requestBody?.required);
+  const root = bodyRootOf(
+    body,
+    endpoint.requestBody?.required,
+    parameters.map((parameter) => parameter.name),
+  );
   if (root !== undefined) {
     return createRequestTemplate({
       method: endpoint.method,

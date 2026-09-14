@@ -91,14 +91,26 @@ public sealed class SchemaHostTests : IAsyncLifetime
     }
 
     [Fact]
-    public void J16_ArgumentCollision_DropsEndpointAndReportsDiagnostic()
+    public void J16_CollidingBodyField_TakesTheRootArgumentAndStaysInvocable()
     {
-        Assert.DoesNotContain(
+        CatalogEntry entry = Assert.Single(
             _host.Catalog.Result.Entries,
-            entry => entry.Descriptor.Route.Contains("/schema/collide", StringComparison.Ordinal));
+            candidate => candidate.Descriptor.Route.Contains("/schema/collide", StringComparison.Ordinal));
+
+        JsonObject properties = (JsonObject)entry.Tool.InputSchema["properties"]!;
+        Assert.Equal(["id", "body"], properties.Select(p => p.Key));
+        Assert.Contains(
+            "id",
+            ((JsonObject)((JsonObject)properties["body"]!)["properties"]!).Select(p => p.Key));
         Assert.Contains(
             _host.Catalog.Result.Diagnostics,
-            d => d.Code == "argument_collision");
+            d => d.Code == "body_field_collision");
+
+        ComposedRequest composed = RequestComposer.Compose(
+            entry.Template!,
+            JsonDocument.Parse("""{"id":7,"body":{"id":42,"label":"kalem"}}""").RootElement);
+        Assert.Equal("/schema/collide/7", composed.PathAndQuery);
+        Assert.Contains("\"id\":42", Encoding.UTF8.GetString(composed.Body!));
     }
 
     [Fact]
@@ -183,13 +195,13 @@ public sealed class SchemaHostTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task J19_DiagnosticsDowngrade_KeepsEndpointListed()
+    public void J19_RootArgumentNameCollision_StillDropsEndpoint()
     {
-        await using SchemaHost lenient = await SchemaHost.StartAsync(
-            configure: options => options.Diagnostics.Downgrade.Add("argument_collision"));
-
+        Assert.DoesNotContain(
+            _host.Catalog.Result.Entries,
+            entry => entry.Descriptor.Route.Contains("/schema/root-name", StringComparison.Ordinal));
         Assert.Contains(
-            lenient.Catalog.Result.Entries,
-            entry => entry.Descriptor.Route.Contains("/schema/collide", StringComparison.Ordinal));
+            _host.Catalog.Result.Diagnostics,
+            d => d.Code == "argument_collision");
     }
 }

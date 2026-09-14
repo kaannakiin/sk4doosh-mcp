@@ -1,0 +1,28 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Root mode'a dusen govde 'body' adli bir parametreyle karsilasirsa cozulecek yer kalmaz: endpoint argument_collision ile duser",
+  "input": {
+    "operationId": "ReplaceOrderBody",
+    "method": "PUT",
+    "route": "/orders/{body}/bulk",
+    "parameters": [
+      {
+        "name": "body",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "body": { "type": "string" },
+          "item": { "type": "string" }
+        }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": { "error": "argument_collision" }
+}
