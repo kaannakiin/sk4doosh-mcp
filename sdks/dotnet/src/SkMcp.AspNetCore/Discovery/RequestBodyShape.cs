@@ -35,12 +35,21 @@ internal static class RequestBodyShape
     /// already has a parameter named <c>body</c>, so a key wrongly treated as a constraint turns a
     /// working tool into a dropped one. <c>$schema</c> in particular is written by
     /// <c>zod-to-json-schema</c> and by any standalone serialization, and reaches this predicate
-    /// through a host-supplied verbatim schema.
+    /// through a host-supplied verbatim schema; it names a dialect, and the only keywords flattening
+    /// reads — <c>properties</c> and <c>required</c> — mean the same in every dialect.
+    /// <para>
+    /// A key that decides <em>where a <c>$ref</c> resolves</em> is never an annotation, however it
+    /// reads. <c>$id</c> makes the body root its own schema resource and rebases every reference
+    /// inside it; <c>$anchor</c> declares a plain-name fragment that a <c>{"$ref":"#Name"}</c> in a
+    /// lifted property points at. Dropping either leaves the references spelled correctly and aimed
+    /// at nothing, which is the same defect as a lost <c>$defs</c> bag. Both stay out of this set,
+    /// and out of <see cref="FlattenableKeys"/>, so they take the root argument.
+    /// </para>
     /// </remarks>
     private static readonly HashSet<string> IgnoredKeys =
         new(StringComparer.Ordinal)
         {
-            "title", "$schema", "$id", "$anchor", "$comment", "example", "examples",
+            "title", "$schema", "$comment", "example", "examples",
             "default", "deprecated", "readOnly", "writeOnly",
         };
 

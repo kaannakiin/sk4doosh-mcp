@@ -1,0 +1,53 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Govde kokundeki $id kokü ayri bir schema resource yapar; $defs torbasini tool kokune tasimak referanslari sessizce rebase ederdi, o yuzden govde sarmalanir",
+  "input": {
+    "operationId": "MoveCustomer",
+    "method": "POST",
+    "route": "/customers/move",
+    "requestBody": {
+      "schema": {
+        "$id": "https://example.test/schemas/move-customer",
+        "type": "object",
+        "properties": {
+          "to": { "$ref": "#/$defs/Address" }
+        },
+        "required": ["to"],
+        "$defs": {
+          "Address": {
+            "type": "object",
+            "properties": { "street": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "move_customer",
+    "description": "POST /customers/move",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "$id": "https://example.test/schemas/move-customer",
+          "type": "object",
+          "properties": {
+            "to": { "$ref": "#/$defs/Address" }
+          },
+          "required": ["to"],
+          "$defs": {
+            "Address": {
+              "type": "object",
+              "properties": { "street": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "required": ["body"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

@@ -286,13 +286,27 @@ key** is one of:
 
 plus these keys, which annotate without constraining and MUST NOT force the root argument:
 
-`title`, `$schema`, `$id`, `$anchor`, `$comment`, `example`, `examples`, `default`, `deprecated`,
-`readOnly`, `writeOnly`, and any key beginning `x-`
+`title`, `$schema`, `$comment`, `example`, `examples`, `default`, `deprecated`, `readOnly`,
+`writeOnly`, and any key beginning `x-`
 
 The annotation list is normative and has to stay generous, because root mode is not free: an endpoint
 that already has a parameter named `body` is **dropped** with `argument_collision`, so a key wrongly
 read as a constraint turns a working tool into a missing one. `$schema` earns its place by being
-written by default by `zod-to-json-schema` and by any standalone schema serialization.
+written by default by `zod-to-json-schema` and by any standalone schema serialization; it names a
+dialect, and the only keywords flattening reads — `properties` and `required` — mean the same in
+every dialect.
+
+**A key that decides where a `$ref` resolves is never an annotation**, however much it reads like
+one. `$id` makes the body root its own schema resource and rebases every reference inside it;
+`$anchor` declares a plain-name fragment that a `{"$ref":"#Name"}` in a lifted property points at.
+Flattening drops the root, so either one leaves the references spelled correctly and aimed at
+nothing — the same defect as a lost `$defs` bag, and the reason both take the root argument.
+`$dynamicAnchor`, `$recursiveAnchor` and `definitions` are outside every list here and so take it
+too, which is the intended default for anything resolution-bearing that nobody enumerated.
+
+The resource boundary binds `$defs` hoisting as well: a property that declares `$id` keeps its own
+`$defs`, because a `#/$defs/…` inside it resolves against that `$id` and not against `inputSchema`.
+Hoisting such a bag to the root would aim the references at nothing.
 
 `type` is the one safe key whose **value** is checked as well: flattening requires it to be absent or
 exactly the string `"object"`. The array form (`["object","null"]`) says a JSON `null` body is

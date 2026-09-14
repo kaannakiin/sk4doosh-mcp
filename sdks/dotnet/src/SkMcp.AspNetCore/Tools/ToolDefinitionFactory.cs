@@ -112,12 +112,19 @@ internal static class ToolDefinitionFactory
     }
 
     /// <summary>Merges every <c>$defs</c> bag reachable from the tool's own root into one.</summary>
+    /// <remarks>
+    /// A property declaring <c>$id</c> is skipped: it is its own schema resource, so a
+    /// <c>#/$defs/...</c> inside it resolves against that <c>$id</c> and not against the tool
+    /// document. Hoisting its bag to the tool root would leave those references aimed at nothing —
+    /// the very defect hoisting exists to prevent.
+    /// </remarks>
     /// <param name="seed">
     /// The flattened body's own root bag. A flattened body contributes its properties to
     /// <paramref name="properties"/> but its root — and so its bag — is never emitted, so without
     /// this the <c>$ref</c>s lifted out of it would point at nothing. Its entries are cloned and the
     /// bag itself is never detached: the descriptor is shared across the catalog snapshot, and
-    /// stripping <c>$defs</c> from it would break every tool built after the first.
+    /// stripping <c>$defs</c> from it would break every tool built after the first. A root declaring
+    /// <c>$id</c> never reaches here, because it takes the root argument instead of flattening.
     /// </param>
     /// <exception cref="SkMcpTemplateException">
     /// <c>schema_def_conflict</c> when one key carries two different schemas.
@@ -151,6 +158,10 @@ internal static class ToolDefinitionFactory
         foreach ((string _, JsonNode? node) in properties)
         {
             if (node is not JsonObject owner || owner["$defs"] is not JsonObject own)
+            {
+                continue;
+            }
+            if (owner["$id"] is not null)
             {
                 continue;
             }

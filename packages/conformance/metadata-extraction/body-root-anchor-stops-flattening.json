@@ -1,0 +1,52 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Govde kokundeki $anchor bir cozumleme hedefi adlandirir: duzlesirse tasinan property'nin '#Node' referansi hedefsiz kalir, o yuzden govde sarmalanir",
+  "input": {
+    "operationId": "SaveTree",
+    "method": "POST",
+    "route": "/trees/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "$anchor": "Node",
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "child": { "$ref": "#Node" }
+        },
+        "required": ["label"]
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "save_tree",
+    "description": "POST /trees/{id}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "body": {
+          "$anchor": "Node",
+          "type": "object",
+          "properties": {
+            "label": { "type": "string" },
+            "child": { "$ref": "#Node" }
+          },
+          "required": ["label"]
+        }
+      },
+      "required": ["id", "body"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

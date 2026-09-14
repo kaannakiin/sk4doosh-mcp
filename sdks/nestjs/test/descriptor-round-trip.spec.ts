@@ -216,9 +216,13 @@ const unproducible: Record<string, string> = {
   "body-root-property-names-stops-flattening.json":
     "An integer-keyed dictionary body: @Body() over a Record gives the binder no readable key type, so it never emits propertyNames.",
   "body-root-nullable-type-stops-flattening.json":
-    "type as [\"object\",\"null\"]: TypeScript has no runtime nullability, so the IR carries no nullable node (schema-conversion-rules.md, Unpinned areas).",
+    'type as ["object","null"]: TypeScript has no runtime nullability, so the IR carries no nullable node (schema-conversion-rules.md, Unpinned areas).',
   "body-root-ref-only-is-wrapped.json":
     "A bare $ref body root: simplifySchema always writes the root inline, so no SDK emits one. It exists to pin the rule for hand-written descriptors and host schema hooks.",
+  "body-root-anchor-stops-flattening.json":
+    "$anchor on a body root: the type-shape binder addresses hoisted types as #/$defs/<name> and never emits a plain-name fragment.",
+  "body-root-id-stops-flattening.json":
+    "$id on a body root: the binder writes no schema resource boundary, so only a host-supplied verbatim schema carries one.",
   "body-root-annotations-still-flatten.json":
     "$schema and title on a body root: the binder writes neither, so only a host-supplied verbatim schema carries them.",
   "typed-additional-properties-survive.json":

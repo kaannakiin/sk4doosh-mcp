@@ -55,13 +55,19 @@ const flattenableKeys = new Set([
  * The list has to be generous: root mode raises `argument_collision` when the endpoint already has a
  * parameter named `body`, so a key wrongly treated as a constraint turns a working tool into a
  * dropped one. `$schema` in particular is written by `zod-to-json-schema` and by any standalone
- * serialization, and reaches this predicate through a `verbatim` host schema.
+ * serialization, and reaches this predicate through a `verbatim` host schema; it names a dialect, and
+ * the only keywords flattening reads — `properties` and `required` — mean the same in every dialect.
+ *
+ * A key that decides **where a `$ref` resolves** is never an annotation, however it reads. `$id`
+ * makes the body root its own schema resource and rebases every reference inside it; `$anchor`
+ * declares a plain-name fragment that a `{"$ref":"#Name"}` in a lifted property points at. Dropping
+ * either leaves the references spelled correctly and aimed at nothing, which is the same defect as a
+ * lost `$defs` bag. Both stay out of this set, and out of the flattenable set, so they take the root
+ * argument.
  */
 const ignoredKeys = new Set([
   "title",
   "$schema",
-  "$id",
-  "$anchor",
   "$comment",
   "example",
   "examples",
@@ -246,11 +252,16 @@ function canonical(value: unknown): string {
 /**
  * Merges every `$defs` bag reachable from the tool's own root into one.
  *
+ * A property declaring `$id` is skipped: it is its own schema resource, so a `#/$defs/...` inside it
+ * resolves against that `$id` and not against the tool document. Hoisting its bag to the tool root
+ * would leave those references aimed at nothing — the very defect hoisting exists to prevent.
+ *
  * @param seed the flattened body's own root bag. A flattened body contributes its properties to
  * `properties` but its root — and therefore its bag — is never emitted, so without this the `$ref`s
  * lifted out of it would point at nothing. It is cloned and its source is left intact: the
  * descriptor is shared across the catalog snapshot, so stripping `$defs` from it would break every
- * tool built after the first.
+ * tool built after the first. A root declaring `$id` never reaches here, because it takes the root
+ * argument instead of flattening.
  * @throws SkMcpTemplateError `schema_def_conflict` when one key carries two different schemas.
  */
 function liftDefs(
@@ -282,6 +293,9 @@ function liftDefs(
   for (const schema of Object.values(properties)) {
     const own = schema.$defs;
     if (own === undefined) {
+      continue;
+    }
+    if (schema.$id !== undefined) {
       continue;
     }
     delete schema.$defs;
