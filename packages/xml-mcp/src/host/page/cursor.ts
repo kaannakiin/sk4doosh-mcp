@@ -6,9 +6,9 @@ import {
   type Cursor,
   type Fingerprint,
 } from "@sk-mcp/file-core";
-import { SkMcpXmlError } from "./errors.js";
-import { limits } from "./limits.js";
-import type { NodePath } from "./node-model.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
+import type { NodePath } from "../../model/node.js";
 
 export type CursorTool = "read" | "find" | "xpath" | "records";
 

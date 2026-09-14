@@ -10,9 +10,9 @@ import {
   type ElementStep,
   type NodeAddress,
   type NodePath,
-} from "./node-model.js";
+} from "../model/node.js";
 import { stepOf } from "./traverse.js";
-import type { Unaddressable } from "./query-model.js";
+import type { Unaddressable } from "../model/query.js";
 
 /**
  * Mirrors traverse.ts's borrow of `next`: the processing-instruction class

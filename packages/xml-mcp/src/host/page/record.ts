@@ -5,10 +5,10 @@ import {
   type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "./errors.js";
-import { limits } from "./limits.js";
-import type { ExpandedName, NodeAddress } from "./node-model.js";
-import type { ColumnReport, RecordPage, Row } from "./query-model.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
+import type { ExpandedName, NodeAddress } from "../../model/node.js";
+import type { ColumnReport, RecordPage, Row } from "../../model/query.js";
 
 const cursorSlackBytes = 32;
 

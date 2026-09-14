@@ -5,10 +5,10 @@ import {
   type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "./errors.js";
-import type { FindMatch, FindPage } from "./find-model.js";
-import { limits } from "./limits.js";
-import { parseNodeId, type NodeAddress, type NodePath } from "./node-model.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import type { FindMatch, FindPage } from "../../model/find.js";
+import { limits } from "../platform/limits.js";
+import { parseNodeId, type NodeAddress, type NodePath } from "../../model/node.js";
 
 const cursorSlackBytes = 32;
 

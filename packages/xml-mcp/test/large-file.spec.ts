@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { limits } from "../src/limits.js";
+import { limits } from "../src/host/platform/limits.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 
 const enabled = process.env["SKMCP_XML_LARGE"] === "1";

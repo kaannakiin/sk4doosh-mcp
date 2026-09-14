@@ -8,7 +8,7 @@ import type {
   GroupResult,
   MetricRequest,
   MetricValue,
-} from "./query-model.js";
+} from "../model/query.js";
 import {
   cellsOf,
   countInto,

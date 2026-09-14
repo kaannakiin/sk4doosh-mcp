@@ -4,16 +4,16 @@ import {
   type Fingerprint,
   type SourceMode,
 } from "@sk-mcp/file-core";
-import { SkMcpXmlError } from "./errors.js";
-import { limits } from "./limits.js";
-import type { ExpandedName, NodeAddress } from "./node-model.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
+import type { ExpandedName, NodeAddress } from "../../model/node.js";
 import type {
   AggregateOutcome,
   ColumnReport,
   GroupResult,
   MetricFunction,
   NumericMode,
-} from "./query-model.js";
+} from "../../model/query.js";
 
 export interface MetricEcho {
   readonly fn: MetricFunction;

@@ -1,7 +1,7 @@
 import { readFile, stat, utimes, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { encodePosition } from "../src/cursor.js";
+import { encodePosition } from "../src/host/page/cursor.js";
 import type { Fixtures } from "./fixtures/build.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 

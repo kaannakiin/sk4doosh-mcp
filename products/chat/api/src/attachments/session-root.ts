@@ -64,7 +64,7 @@ const TURKISH_FOLD = new Map([
  * `"İ".toLowerCase()` yields a two-code-point sequence and `"I".toLowerCase()`
  * yields the dotless `ı` under a Turkish locale, so a plain lowercase leaves
  * bytes in a name that is supposed to be ASCII-only. Same trap the spec side
- * documents in `packages/xml-mcp/src/text.ts`.
+ * documents in `packages/xml-mcp/src/primitives/text.ts`.
  */
 function fold(value: string): string {
   let folded = "";

@@ -3,8 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ParseOption } from "libxml2-wasm";
 import { describe, expect, it } from "vitest";
-import { limits, workerCapacityFor } from "../src/limits.js";
-import { forbiddenParseOptions, HARDENED } from "../src/parse-policy.js";
+import { limits, workerCapacityFor } from "../src/host/platform/limits.js";
+import { forbiddenParseOptions, HARDENED } from "../src/engine/policy.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const workerEntry = resolve(here, "../dist/xml-worker.js");

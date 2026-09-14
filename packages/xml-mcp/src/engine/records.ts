@@ -1,13 +1,13 @@
 import { XmlCData, XmlDocument, XmlElement, XmlText } from "libxml2-wasm";
-import { HARDENED } from "./parse-policy.js";
-import { asciiLower } from "./text.js";
+import { HARDENED } from "./policy.js";
+import { asciiLower } from "../primitives/text.js";
 import {
   formatNodeId,
   sameName,
   type ExpandedName,
   type NodeAddress,
   type NodePath,
-} from "./node-model.js";
+} from "../model/node.js";
 import type {
   Cell,
   ChunkPage,
@@ -21,7 +21,7 @@ import type {
   RecordProbe,
   Row,
   ScanLimits,
-} from "./query-model.js";
+} from "../model/query.js";
 import {
   clampChars,
   firstChildOf,

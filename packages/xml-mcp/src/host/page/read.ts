@@ -5,16 +5,16 @@ import {
   type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "./errors.js";
-import { limits } from "./limits.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
 import {
   parseNodeId,
   type ContextRecord,
   type NodeAddress,
   type NodePath,
   type NodeRecord,
-} from "./node-model.js";
-import type { ReadPage } from "./worker-protocol.js";
+} from "../../model/node.js";
+import type { ReadPage } from "../../model/worker.js";
 
 const cursorSlackBytes = 32;
 

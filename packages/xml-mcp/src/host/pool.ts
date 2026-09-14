@@ -1,14 +1,22 @@
 import { once } from "node:events";
 import { Worker } from "node:worker_threads";
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import type {
   WorkerReply,
   WorkerRequest,
   WorkerRequestBody,
   WorkerResultOf,
-} from "./worker-protocol.js";
+} from "../model/worker.js";
 
-const entry = new URL("../dist/xml-worker.js", import.meta.url);
+/**
+ * Guard: the specifier is relative to the package root, not to this module.
+ * src/ and dist/ mirror each other, so one `..` per folder below the root
+ * lands on the package from both sides — from src/host/ under vitest and from
+ * dist/host/ under the published CLI — and the `dist/` segment then names the
+ * emitted worker in either case. One `..` too few resolves inside src/, one
+ * too many escapes the package. Another folder level here needs another `..`.
+ */
+const entry = new URL("../../dist/xml-worker.js", import.meta.url);
 
 export type PoolOutcome<T> =
   | { readonly ok: true; readonly value: T }

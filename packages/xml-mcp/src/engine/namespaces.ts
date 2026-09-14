@@ -1,14 +1,8 @@
 import { XmlElement } from "libxml2-wasm";
 import { firstChildOf, nextSibling } from "./traverse.js";
+import type { NamespaceAlias } from "../model/describe.js";
 
 export const XML_RESERVED_URI = "http://www.w3.org/XML/1998/namespace";
-
-export interface NamespaceAlias {
-  readonly uri: string;
-  readonly alias: string;
-  readonly declaredPrefixes: readonly string[];
-  readonly synthetic: boolean;
-}
 
 export interface NamespaceSurvey {
   readonly aliases: readonly NamespaceAlias[];

@@ -1,11 +1,12 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { createXmlDocumentCache } from "../../src/document.js";
-import { createDocumentRoot } from "../../src/paths.js";
-import { createHandlers, type ToolHandlers } from "../../src/tools.js";
+import { createXmlDocumentCache } from "../../src/host/document.js";
+import { createDocumentRoot } from "../../src/host/platform/paths.js";
+import type { ToolHandlers } from "../../src/tools/definitions.js";
+import { createHandlers } from "../../src/tools/handlers.js";
 import {
   createXmlWorkerPool,
   type XmlWorkerPool,
-} from "../../src/worker-pool.js";
+} from "../../src/host/pool.js";
 
 export interface Harness {
   readonly handlers: ToolHandlers;

@@ -5,7 +5,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { coreLimits } from "@sk-mcp/file-core";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { limits } from "../src/limits.js";
+import { limits } from "../src/host/platform/limits.js";
 import type { Fixtures } from "./fixtures/build.js";
 import { namespaces, queryCorpus } from "./fixtures/manifest.js";
 

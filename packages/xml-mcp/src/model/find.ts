@@ -1,4 +1,4 @@
-import type { ExpandedName, NodeAddress, NodePath } from "./node-model.js";
+import type { ExpandedName, NodeAddress, NodePath } from "./node.js";
 
 export type MatchMode = "contains" | "exact";
 export type SearchIn = "text" | "attributes" | "both";

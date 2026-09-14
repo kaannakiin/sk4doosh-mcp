@@ -1,10 +1,10 @@
 import { XmlDocument } from "libxml2-wasm";
 import { describe, expect, it } from "vitest";
-import { describeDocument } from "../src/describe.js";
-import { clark } from "../src/node-model.js";
-import { surveyNamespaces } from "../src/namespaces.js";
-import { HARDENED } from "../src/parse-policy.js";
-import { resolveAddress, walk } from "../src/traverse.js";
+import { describeDocument } from "../src/engine/describe.js";
+import { clark } from "../src/model/node.js";
+import { surveyNamespaces } from "../src/engine/namespaces.js";
+import { HARDENED } from "../src/engine/policy.js";
+import { resolveAddress, walk } from "../src/engine/traverse.js";
 
 function parse(xml: string): XmlDocument {
   return XmlDocument.fromBuffer(Buffer.from(xml, "utf8"), { option: HARDENED });

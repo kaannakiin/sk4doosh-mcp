@@ -1,12 +1,13 @@
 import { createRequire } from "node:module";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createFileSourceServer } from "@sk-mcp/file-core";
-import { createXmlDocumentCache } from "./document.js";
-import { SkMcpXmlError } from "./errors.js";
-import { limits, workerCapacityFor } from "./limits.js";
-import type { DocumentRoot } from "./paths.js";
-import { createHandlers, toolDefinitions } from "./tools.js";
-import { createXmlWorkerPool, type XmlWorkerPool } from "./worker-pool.js";
+import { createXmlDocumentCache } from "./host/document.js";
+import { SkMcpXmlError } from "./host/platform/errors.js";
+import { limits, workerCapacityFor } from "./host/platform/limits.js";
+import type { DocumentRoot } from "./host/platform/paths.js";
+import { toolDefinitions } from "./tools/definitions.js";
+import { createHandlers } from "./tools/handlers.js";
+import { createXmlWorkerPool, type XmlWorkerPool } from "./host/pool.js";
 
 const manifest = createRequire(import.meta.url)("../package.json") as {
   version: string;

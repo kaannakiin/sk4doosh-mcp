@@ -2,7 +2,7 @@ import type {
   ExpandedName,
   NamespaceBinding,
   NodeAddress,
-} from "./node-model.js";
+} from "./node.js";
 
 export type MemberKind =
   | "element"

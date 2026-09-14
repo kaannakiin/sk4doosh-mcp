@@ -1,4 +1,4 @@
-import type { InheritedContext } from "./boundary.js";
+import type { InheritedContext } from "../../model/scan.js";
 
 const encoder = new TextEncoder();
 

@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { detectByteOrderMark } from "@sk-mcp/file-core";
-import { scanProlog, unsupportedPrologEncoding } from "../src/doctype.js";
-import { limits } from "../src/limits.js";
+import { scanProlog, unsupportedPrologEncoding } from "../src/host/chunk/doctype.js";
+import { limits } from "../src/host/platform/limits.js";
 import type { Fixtures } from "./fixtures/build.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 

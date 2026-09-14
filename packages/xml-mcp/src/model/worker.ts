@@ -1,5 +1,5 @@
 import type { DescribeFacts, RootFacts } from "./describe.js";
-import type { FindPage, FindProbe } from "./find-model.js";
+import type { FindPage, FindProbe } from "./find.js";
 import type {
   AggregateOutcome,
   AggregateProbe,
@@ -9,15 +9,13 @@ import type {
   RecordProbe,
   XPathOutcome,
   XPathProbe,
-} from "./query-model.js";
+} from "./query.js";
 import type {
   ContextRecord,
   NodeAddress,
   NodePath,
   NodeRecord,
-} from "./node-model.js";
-
-export type { RootFacts };
+} from "./node.js";
 
 export interface ParsedFacts {
   readonly declaredEncoding: string | null;
@@ -135,21 +133,3 @@ export interface WorkerRejection {
 }
 
 export type WorkerReply = WorkerSuccess | WorkerRejection;
-
-interface DiagEntry {
-  readonly totalInstances: number;
-  readonly garbageCollected: number;
-}
-
-export function projectDiag(
-  report: Readonly<Record<string, DiagEntry>>,
-  cached: number,
-): DiagProjection {
-  let live = 0;
-  let collected = 0;
-  for (const entry of Object.values(report)) {
-    live += entry.totalInstances;
-    collected += entry.garbageCollected;
-  }
-  return { live, collected, cached };
-}

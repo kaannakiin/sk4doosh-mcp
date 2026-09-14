@@ -10,13 +10,13 @@ import {
   type XmlNode,
 } from "libxml2-wasm";
 import { locate, nodeIdOf, type Placement } from "./locate.js";
-import { qualify } from "./node-model.js";
+import { qualify } from "../model/node.js";
 import type {
   NodeSetMember,
   NumberKind,
   XPathOutcome,
   XPathProbe,
-} from "./query-model.js";
+} from "../model/query.js";
 import { clampChars, isProcessingInstruction, piTargetOf } from "./traverse.js";
 
 const namespaceDeclNode = "XmlNamespaceDeclNode";

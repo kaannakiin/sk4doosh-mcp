@@ -10,20 +10,20 @@ import {
   declaredEncodingOf,
   isRefusal,
   surveyShape,
-  type ShapeSurvey,
-} from "./boundary.js";
-import { refusalError } from "./chunked.js";
-import { scanProlog } from "./doctype.js";
-import { SkMcpXmlError, fail } from "./errors.js";
-import { limits } from "./limits.js";
-import { vocabulary } from "./vocabulary.js";
-import type { XmlWorkerPool } from "./worker-pool.js";
+} from "./chunk/boundary.js";
+import type { RootFacts } from "../model/describe.js";
+import type { ShapeSurvey } from "../model/scan.js";
+import { refusalError } from "./chunk/chunked.js";
+import { scanProlog } from "./chunk/doctype.js";
+import { SkMcpXmlError, fail } from "./platform/errors.js";
+import { limits } from "./platform/limits.js";
+import { vocabulary } from "./platform/vocabulary.js";
+import type { XmlWorkerPool } from "./pool.js";
 import type {
-  RootFacts,
   WorkerBodyOf,
   WorkerKind,
   WorkerResultOf,
-} from "./worker-protocol.js";
+} from "../model/worker.js";
 
 export interface ResidentXmlDocument {
   readonly format: "xml";

@@ -1,11 +1,11 @@
 import { XmlCData, XmlElement, XmlText } from "libxml2-wasm";
-import type { FindMatch, FindPage, FindProbe } from "./find-model.js";
+import type { FindMatch, FindPage, FindProbe } from "../model/find.js";
 import {
   clark,
   formatNodeId,
   type NodeAddress,
   type NodePath,
-} from "./node-model.js";
+} from "../model/node.js";
 import {
   advance,
   descend,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectDiag } from "../src/worker-protocol.js";
+import { projectDiag } from "../src/engine/protocol.js";
 
 describe("the diagnostics projection", () => {
   it("keeps engine pointers out of the reply", () => {

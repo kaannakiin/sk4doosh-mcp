@@ -5,7 +5,7 @@ import {
   NumericPrecisionError,
   sumOf,
   toNumber,
-} from "../src/numeric.js";
+} from "../src/engine/numeric.js";
 
 const accepted: readonly (readonly [string, number, boolean])[] = [
   ["1", 1, false],

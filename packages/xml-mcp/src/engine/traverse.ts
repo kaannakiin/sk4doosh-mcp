@@ -23,7 +23,7 @@ import {
   type ContextRecord,
   type NodePath,
   type NodeRecord,
-} from "./node-model.js";
+} from "../model/node.js";
 
 /**
  * XmlProcessingInstructionNode extends XmlNode, not XmlTreeNode, so `pi.next` is

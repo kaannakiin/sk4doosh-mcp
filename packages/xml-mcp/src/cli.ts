@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { parseServerArgv } from "@sk-mcp/file-core";
-import { createDocumentRoot } from "./paths.js";
+import { createDocumentRoot } from "./host/platform/paths.js";
 import { createXmlMcpServer } from "./server.js";
 
 function fail(message: string, code: number): never {

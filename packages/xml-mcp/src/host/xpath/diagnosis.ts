@@ -1,6 +1,6 @@
-import { SkMcpXmlError } from "./errors.js";
-import type { NamespaceBinding } from "./node-model.js";
-import { lex } from "./xpath-lex.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import type { NamespaceBinding } from "../../model/node.js";
+import { lex } from "./lex.js";
 
 const laterVersionFunctions = new Set([
   "matches",

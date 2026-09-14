@@ -5,13 +5,13 @@ import {
   type SourceMode,
 } from "@sk-mcp/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "./errors.js";
-import { limits } from "./limits.js";
-import type { NodeSetMember, NumberKind, XPathOutcome } from "./query-model.js";
+import { SkMcpXmlError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
+import type { NodeSetMember, NumberKind, XPathOutcome } from "../../model/query.js";
 import {
   emptyResultDiagnostic,
   type QueryDiagnostic,
-} from "./xpath-diagnosis.js";
+} from "../xpath/diagnosis.js";
 
 const cursorSlackBytes = 32;
 
