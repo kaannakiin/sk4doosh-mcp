@@ -108,7 +108,7 @@ export function Composer({
 
           <textarea
             ref={input}
-            className="min-h-6 resize-none overflow-y-auto border-0 bg-transparent px-1 py-1.5 font-sans text-[0.9375rem] leading-normal text-inherit [grid-area:input] [scrollbar-width:thin] placeholder:text-ink-dim focus:outline-none group-data-grown/composer:pe-7"
+            className="min-h-6 resize-none overflow-y-auto border-0 bg-transparent px-1 py-1.5 font-sans text-[0.9375rem] leading-normal text-inherit [grid-area:input] scrollbar-thin placeholder:text-ink-dim focus:outline-none group-data-grown/composer:pe-7"
             rows={1}
             value={draft}
             placeholder={t("composer.placeholder")}

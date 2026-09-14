@@ -2,17 +2,21 @@ import {
   AUTH_CHALLENGE_MAX_ATTEMPTS,
   AUTH_CHALLENGE_RESEND_MS,
   AUTH_CHALLENGE_TTL_MS,
+  type AuthChannel,
   type ChallengeConfirmation,
+  type ChallengePurpose as ContractChallengePurpose,
   type EmailRegistration,
   type PasswordLogin,
   type PendingChallenge,
   type PhoneRegistration,
+  type VerificationRequest,
 } from "@chat/contracts/auth/auth";
 import {
   consumeChallengeAndCreateSession,
   createEmailRegistration,
   createPhoneLoginChallenge,
   createPhoneRegistration,
+  createVerificationChallenge,
   findChallenge,
   findPasswordLogin,
   isUniqueConstraintError,
@@ -21,19 +25,16 @@ import {
   updatePasswordHash,
   type ChallengePurpose,
   type PendingChallengeRow,
+  type VerificationContact,
 } from "@chat/db";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
 
 import { DbService } from "../db/db.service.ts";
 import { AuthCryptoService, type OtpMaterial } from "./auth-crypto.service.ts";
 import { AuthErrorsService } from "./auth-errors.service.ts";
 import { AuthSessionService } from "./auth-session.service.ts";
 import type { SessionGrant } from "./auth.types.ts";
-import {
-  InjectOtpDelivery,
-  type OtpDelivery,
-} from "./otp-delivery.ts";
+import { InjectOtpDelivery, type OtpDelivery } from "./otp-delivery.ts";
 import { PasswordService } from "./password.service.ts";
 
 @Injectable()
@@ -113,12 +114,12 @@ export class AuthService {
       return this.pending(challenge);
     }
 
-    return {
-      challengeId: randomUUID(),
-      expiresAt: expiresAt.toISOString(),
-      channel: "phone",
-      maskedTarget: maskPhone(phoneE164),
-    };
+    return this.fakePending(
+      "phoneLogin",
+      "phone",
+      maskPhone(phoneE164),
+      new Date(),
+    );
   }
 
   async confirmPhoneLogin(
@@ -126,6 +127,45 @@ export class AuthService {
     userAgent?: string,
   ): Promise<SessionGrant> {
     return this.confirm(input, ["phoneLogin"], userAgent);
+  }
+
+  /**
+   * Issues a fresh code for an account that was created but never verified.
+   *
+   * @returns a pending challenge, real or decoy — the two are indistinguishable
+   */
+  async requestVerification(
+    input: VerificationRequest,
+  ): Promise<PendingChallenge> {
+    const contact = contactOf(input);
+    const otp = this.crypto.createOtp();
+    const now = new Date();
+    const challenge = await createVerificationChallenge(
+      this.db.client,
+      contact,
+      { secretHash: otp.encodedHash, expiresAt: this.challengeExpiry() },
+      new Date(now.getTime() - AUTH_CHALLENGE_RESEND_MS),
+      now,
+    );
+    if (challenge !== undefined) {
+      await this.deliver(challenge, otp);
+
+      return this.pending(challenge);
+    }
+
+    return "email" in contact
+      ? this.fakePending(
+          "verifyContact",
+          "email",
+          maskEmail(contact.email),
+          now,
+        )
+      : this.fakePending(
+          "verifyContact",
+          "phone",
+          maskPhone(contact.phoneE164),
+          now,
+        );
   }
 
   async resend(challengeId: string): Promise<PendingChallenge> {
@@ -141,7 +181,10 @@ export class AuthService {
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
-    if (now.getTime() - previous.createdAt.getTime() < AUTH_CHALLENGE_RESEND_MS) {
+    if (
+      now.getTime() - previous.createdAt.getTime() <
+      AUTH_CHALLENGE_RESEND_MS
+    ) {
       this.errors.fail("too_many_requests", HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -260,11 +303,53 @@ export class AuthService {
   private pending(challenge: PendingChallengeRow): PendingChallenge {
     return {
       challengeId: challenge.publicId,
+      purpose: contractPurpose(challenge.purpose),
       expiresAt: challenge.expiresAt.toISOString(),
+      resendAt: new Date(
+        challenge.createdAt.getTime() + AUTH_CHALLENGE_RESEND_MS,
+      ).toISOString(),
       channel: challenge.purpose === "verifyEmail" ? "email" : "phone",
       maskedTarget: maskTarget(challenge.purpose, challenge.target),
     };
   }
+
+  /**
+   * Guard: the decoy is built from the same clock and the same fields as a real
+   * pending challenge. Anything that lets the two be told apart — a missing
+   * `resendAt`, a rounder expiry — turns this response into an account oracle,
+   * which is the one thing the decoy exists to prevent.
+   */
+  private fakePending(
+    purpose: ContractChallengePurpose,
+    channel: AuthChannel,
+    maskedTarget: string,
+    now: Date,
+  ): PendingChallenge {
+    return {
+      challengeId: this.crypto.decoyChallengeId(now),
+      purpose,
+      expiresAt: new Date(now.getTime() + AUTH_CHALLENGE_TTL_MS).toISOString(),
+      resendAt: new Date(
+        now.getTime() + AUTH_CHALLENGE_RESEND_MS,
+      ).toISOString(),
+      channel,
+      maskedTarget,
+    };
+  }
+}
+
+function contactOf(input: VerificationRequest): VerificationContact {
+  if (input.email !== undefined) {
+    return { email: input.email };
+  }
+  if (input.phoneE164 !== undefined) {
+    return { phoneE164: input.phoneE164 };
+  }
+  throw new Error("verificationRequestSchema admitted a body with no contact");
+}
+
+function contractPurpose(purpose: ChallengePurpose): ContractChallengePurpose {
+  return purpose === "phoneLogin" ? "phoneLogin" : "verifyContact";
 }
 
 function maskTarget(purpose: ChallengePurpose, target: string): string {

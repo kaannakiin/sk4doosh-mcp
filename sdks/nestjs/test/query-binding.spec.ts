@@ -195,3 +195,42 @@ describe("whole-object query binding", () => {
     ]);
   });
 });
+
+describe("per-parameter declarations", () => {
+  @Controller("items")
+  class ItemsController {
+    @Get()
+    @McpTool({
+      parameters: {
+        tag: { style: "form", explode: false },
+        customerId: { required: true },
+        "x-trace": { required: true },
+      },
+    })
+    list(
+      @Query("tag") _tag: string[],
+      @Query("customerId") _customerId: string,
+      @Headers("x-trace") _trace: string,
+    ): void {}
+  }
+
+  const descriptor = discoverEndpoints([{ metatype: ItemsController }], {})[0]!
+    .descriptor;
+  const byName = Object.fromEntries(
+    (descriptor.parameters ?? []).map((p) => [p.name, p]),
+  );
+
+  it("carries the declared serialization style onto the parameter", () => {
+    expect(byName["tag"]?.style).toBe("form");
+    expect(byName["tag"]?.explode).toBe(false);
+  });
+
+  it("lets a named query or header parameter be declared required", () => {
+    expect(byName["customerId"]?.required).toBe(true);
+    expect(byName["x-trace"]?.required).toBe(true);
+  });
+
+  it("leaves an undeclared parameter alone", () => {
+    expect(byName["tag"]?.required).toBe(false);
+  });
+});

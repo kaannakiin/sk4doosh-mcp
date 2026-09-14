@@ -28,7 +28,13 @@ export function MessageList({
   const { ref, pinned, scrollToBottom } = useStickToBottom(
     pending ? "pending" : messages,
   );
-  const last = messages.length - 1;
+  /**
+   * Guard: a turn with no parts is not drawn. Conversations stored before the
+   * api stopped writing them still carry the empty assistant row a failed stream
+   * left behind, and rendering it opens a blank gap between two questions.
+   */
+  const drawn = messages.filter((message) => message.parts.length > 0);
+  const last = drawn.length - 1;
 
   return (
     <div className="relative min-h-0 flex-1">
@@ -46,7 +52,7 @@ export function MessageList({
             </p>
           ) : null}
 
-          {messages.map((message, index) => (
+          {drawn.map((message, index) => (
             <MessageBubble
               key={message.id}
               sessionId={sessionId}

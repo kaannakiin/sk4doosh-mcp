@@ -1,15 +1,54 @@
 import { assertUniqueArgumentNames } from "./argument-names.js";
 import { SkMcpTemplateError } from "./errors.js";
+import type { Parameter } from "./generated/endpoint-descriptor.js";
 
 export type ParameterLocation = "path" | "query" | "header";
 
 export type ParameterKind = "string" | "integer" | "number" | "boolean";
+
+export type ParameterStyle = NonNullable<Parameter["style"]>;
 
 export interface ParameterBinding {
   readonly name: string;
   readonly location: ParameterLocation;
   readonly kind: ParameterKind;
   readonly isArray?: boolean;
+  /**
+   * The delimiter that joins array items into one value; `undefined` repeats
+   * the key instead. Normalised from `style`/`explode` by
+   * {@link arraySeparatorFor} so the invalid pairings cannot be represented.
+   */
+  readonly arraySeparator?: string;
+}
+
+const delimiters: Readonly<Record<ParameterStyle, string>> = {
+  form: ",",
+  spaceDelimited: " ",
+  pipeDelimited: "|",
+};
+
+/**
+ * Normalises an OpenAPI `style`/`explode` pair into a separator.
+ *
+ * @returns the delimiter to join array items with, or `undefined` to repeat the key.
+ * @throws SkMcpTemplateError `unsupported_array_style` for a pairing that has no wire form.
+ */
+export function arraySeparatorFor(
+  style: ParameterStyle | undefined,
+  explode: boolean | undefined,
+  parameterName: string,
+): string | undefined {
+  const resolved = style ?? "form";
+  if (explode ?? true) {
+    if (resolved !== "form") {
+      throw new SkMcpTemplateError(
+        "unsupported_array_style",
+        `Parameter '${parameterName}' declares style '${resolved}' with explode true, which has no wire form; set explode false.`,
+      );
+    }
+    return undefined;
+  }
+  return delimiters[resolved];
 }
 
 export interface RequestTemplate {
@@ -90,6 +129,22 @@ export function createRequestTemplate(
       throw new SkMcpTemplateError(
         "path_parameter_array",
         `Path parameter '${parameter.name}' cannot be an array.`,
+      );
+    }
+    /**
+     * A repeated header is unrepresentable: `ComposedRequest.headers` is a
+     * `Record<string, string>`, so the second write would overwrite the first.
+     * Folding into one comma-separated value (RFC 9110 §5.3) is the only shape
+     * that survives, and it has to be asked for explicitly.
+     */
+    if (
+      parameter.location === "header" &&
+      parameter.isArray &&
+      parameter.arraySeparator === undefined
+    ) {
+      throw new SkMcpTemplateError(
+        "header_parameter_array",
+        `Header parameter '${parameter.name}' is an array but repeats the key, which a header cannot carry; declare explode false.`,
       );
     }
   }

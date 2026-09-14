@@ -51,6 +51,10 @@ public sealed class SchemaBodiesController : ControllerBase
     [HttpPost("notes/{id:int}")]
     public IActionResult AddNote(int id, [FromQuery] bool notify, [FromBody] NotePayload payload) =>
         Ok(new { id, notify, payload });
+
+    [HttpPost("notes/{id:int}/optional")]
+    public IActionResult AddOptionalNote(int id, [FromBody] NotePayload? payload) =>
+        Ok(new { id, payload });
 }
 
 public sealed class SchemaHost : IAsyncDisposable

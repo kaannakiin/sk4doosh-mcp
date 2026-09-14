@@ -51,9 +51,19 @@ export function compose(
           `Query argument '${p.name}' must be an array.`,
         );
       }
-      for (const item of value) {
+      if (value.length === 0) {
+        continue;
+      }
+      const items = value.map((item) =>
+        percentEncode(formatScalar(item, p, "invalid_type")),
+      );
+      if (p.arraySeparator === undefined) {
+        for (const item of items) {
+          query.push(`${percentEncode(p.name)}=${item}`);
+        }
+      } else {
         query.push(
-          `${percentEncode(p.name)}=${percentEncode(formatScalar(item, p, "invalid_type"))}`,
+          `${percentEncode(p.name)}=${items.join(separatorFor(p.arraySeparator))}`,
         );
       }
     } else {
@@ -75,7 +85,23 @@ export function compose(
         `Header argument '${p.name}' cannot be null; omit it instead.`,
       );
     }
-    const formatted = formatScalar(value, p, "invalid_type");
+    let formatted: string;
+    if (p.isArray) {
+      if (!Array.isArray(value)) {
+        throw new SkMcpArgumentError(
+          "invalid_type",
+          `Header argument '${p.name}' must be an array.`,
+        );
+      }
+      if (value.length === 0) {
+        continue;
+      }
+      formatted = value
+        .map((item) => formatScalar(item, p, "invalid_type"))
+        .join(p.arraySeparator ?? ",");
+    } else {
+      formatted = formatScalar(value, p, "invalid_type");
+    }
     if (/[\r\n\0]/.test(formatted)) {
       throw new SkMcpArgumentError(
         "header_injection",
@@ -156,6 +182,17 @@ function rejectUnknown(
       `Unknown argument(s): ${unknown.join(", ")}. Allowed: ${allowed.join(", ")}.`,
     );
   }
+}
+
+/**
+ * Renders a delimiter for the query string. The caller appends the result raw,
+ * never through {@link percentEncode}: the two languages' encoders disagree on
+ * `,` (`encodeURIComponent` leaves it, `Uri.EscapeDataString` escapes it to
+ * `%2C`), so encoding the delimiter would make the two SDKs emit different byte
+ * strings for the same input. A literal space is illegal in a URL, hence `%20`.
+ */
+function separatorFor(delimiter: string): string {
+  return delimiter === " " ? "%20" : delimiter;
 }
 
 function percentEncode(value: string): string {

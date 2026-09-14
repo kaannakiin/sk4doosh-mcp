@@ -10,7 +10,8 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "check-types": "tsc -p tsconfig.test.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:seed": "node dist/seed.js"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.48",

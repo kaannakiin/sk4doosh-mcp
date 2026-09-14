@@ -13,6 +13,7 @@ const app = await NestFactory.create<NestExpressApplication>(AppModule);
 const config = app.get<ConfigService<AppConfig, true>>(ConfigService);
 const port = config.get("port", { infer: true });
 const trustProxyHops = config.get("trustProxyHops", { infer: true });
+const pathPrefix = config.get("pathPrefix", { infer: true });
 
 if (trustProxyHops > 0) {
   app.set("trust proxy", trustProxyHops);
@@ -25,6 +26,13 @@ if (trustProxyHops > 0) {
  */
 app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
 app.use(cookieParser());
+/**
+ * Guard: the prefix is mounted here rather than left to a proxy rewrite. The
+ * auth cookies are scoped to paths derived from it, and a rewrite that strips
+ * the prefix before express sees it leaves the browser holding cookies whose
+ * path can never match the url it requests.
+ */
+app.setGlobalPrefix(pathPrefix);
 app.enableShutdownHooks();
 /**
  * Guard: auth cookies are the only accepted session transport. The web dev server
@@ -37,4 +45,4 @@ app.enableCors({
 });
 
 await app.listen(port, "127.0.0.1");
-console.log(`chat api: http://127.0.0.1:${port}`);
+console.log(`chat api: http://127.0.0.1:${port}${pathPrefix}`);

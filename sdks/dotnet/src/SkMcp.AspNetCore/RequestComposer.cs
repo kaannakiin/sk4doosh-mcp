@@ -62,9 +62,23 @@ internal static class RequestComposer
                         SkMcpArgumentException.InvalidType,
                         $"Query argument '{p.Name}' must be an array.");
                 }
-                foreach (JsonElement item in element.EnumerateArray())
+                string[] items = [.. element.EnumerateArray()
+                    .Select(item => Uri.EscapeDataString(
+                        FormatScalar(item, p, SkMcpArgumentException.InvalidType)))];
+                if (items.Length == 0)
                 {
-                    AppendQuery(query, p.Name, FormatScalar(item, p, SkMcpArgumentException.InvalidType));
+                    continue;
+                }
+                if (p.ArraySeparator is null)
+                {
+                    foreach (string item in items)
+                    {
+                        AppendEncoded(query, p.Name, item);
+                    }
+                }
+                else
+                {
+                    AppendEncoded(query, p.Name, string.Join(SeparatorFor(p.ArraySeparator), items));
                 }
             }
             else
@@ -86,7 +100,27 @@ internal static class RequestComposer
                     SkMcpArgumentException.NullNotAllowed,
                     $"Header argument '{p.Name}' cannot be null; omit it instead.");
             }
-            string value = FormatScalar(element, p, SkMcpArgumentException.InvalidType);
+            string value;
+            if (p.IsArray)
+            {
+                if (element.ValueKind != JsonValueKind.Array)
+                {
+                    throw new SkMcpArgumentException(
+                        SkMcpArgumentException.InvalidType,
+                        $"Header argument '{p.Name}' must be an array.");
+                }
+                string[] items = [.. element.EnumerateArray()
+                    .Select(item => FormatScalar(item, p, SkMcpArgumentException.InvalidType))];
+                if (items.Length == 0)
+                {
+                    continue;
+                }
+                value = string.Join(p.ArraySeparator ?? ",", items);
+            }
+            else
+            {
+                value = FormatScalar(element, p, SkMcpArgumentException.InvalidType);
+            }
             if (value.AsSpan().IndexOfAny('\r', '\n', '\0') >= 0)
             {
                 throw new SkMcpArgumentException(
@@ -148,14 +182,26 @@ internal static class RequestComposer
         }
     }
 
-    private static void AppendQuery(StringBuilder query, string name, string value)
+    private static void AppendQuery(StringBuilder query, string name, string value) =>
+        AppendEncoded(query, name, Uri.EscapeDataString(value));
+
+    private static void AppendEncoded(StringBuilder query, string name, string encodedValue)
     {
         if (query.Length > 0)
         {
             query.Append('&');
         }
-        query.Append(Uri.EscapeDataString(name)).Append('=').Append(Uri.EscapeDataString(value));
+        query.Append(Uri.EscapeDataString(name)).Append('=').Append(encodedValue);
     }
+
+    /// <summary>
+    /// Renders a delimiter for the query string. The caller appends the result raw, never
+    /// through <see cref="Uri.EscapeDataString"/>: the two languages' encoders disagree on
+    /// <c>,</c> (EscapeDataString escapes it to <c>%2C</c>, encodeURIComponent leaves it), so
+    /// encoding the delimiter would make the two SDKs emit different byte strings for the same
+    /// input. A literal space is illegal in a URL, hence <c>%20</c>.
+    /// </summary>
+    private static string SeparatorFor(string delimiter) => delimiter == " " ? "%20" : delimiter;
 
     private static string FormatScalar(JsonElement element, ParameterBinding parameter, string errorCode)
     {

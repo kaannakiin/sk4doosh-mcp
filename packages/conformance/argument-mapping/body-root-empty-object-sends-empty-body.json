@@ -1,0 +1,16 @@
+{
+  "kind": "argument-mapping",
+  "description": "govde kokune acikca bos nesne verilirse {} telde gider; bu, argumanin hic verilmemesinden farklidir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders/cancel",
+      "bodyRoot": "body"
+    },
+    "arguments": { "body": {} }
+  },
+  "expected": {
+    "pathAndQuery": "/orders/cancel",
+    "bodyJson": {}
+  }
+}

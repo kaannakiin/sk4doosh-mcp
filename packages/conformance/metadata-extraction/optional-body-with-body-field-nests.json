@@ -1,0 +1,59 @@
+{
+  "kind": "metadata-extraction",
+  "description": "govdesinde 'body' adli bir alan tasiyan opsiyonel nesne govde iki kat yuvalanir: ust duzey 'body' argumaninin icinde yine 'body' alani durur",
+  "input": {
+    "operationId": "SendMessage",
+    "method": "POST",
+    "route": "/messages",
+    "description": "Mesaj gonderir.",
+    "requestBody": {
+      "required": false,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ]
+      }
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "send_message",
+    "description": "Mesaj gonderir.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "body"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

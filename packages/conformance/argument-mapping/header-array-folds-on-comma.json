@@ -1,0 +1,18 @@
+{
+  "kind": "argument-mapping",
+  "description": "header dizisi tek bir virgullu degere katlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "x-tag", "in": "header", "type": "string", "array": true, "style": "form", "explode": false }
+      ]
+    },
+    "arguments": { "x-tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": { "x-tag": "a,b" }
+  }
+}

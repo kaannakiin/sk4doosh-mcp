@@ -16,11 +16,16 @@ export type MessageRole = z.infer<typeof messageRoleSchema>;
  * Guard: `id` is the SDK's message id, not a uuid. Its own generator emits it,
  * and it is what makes a re-sent history idempotent — the client posts the whole
  * conversation again on every turn and on every tool approval.
+ *
+ * Guard: `parts` may be empty. A stream that dies before its first token settles
+ * an assistant turn that produced nothing, and requiring a part here makes that
+ * one row poison the response it sits in — the conversation stops parsing and the
+ * reader loses every answer above it too.
  */
 export const storedMessageSchema = z.object({
   id: z.string().min(1),
   role: messageRoleSchema,
-  parts: z.array(z.unknown()).min(1),
+  parts: z.array(z.unknown()),
   createdAt: z.iso.datetime(),
 });
 

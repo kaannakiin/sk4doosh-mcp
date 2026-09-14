@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos dizi repeat modunda hicbir anahtar yazmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true }
+      ]
+    },
+    "arguments": { "tag": [] }
+  },
+  "expected": {
+    "pathAndQuery": "/items"
+  }
+}

@@ -1,17 +1,23 @@
 import type { Locale } from "@chat/contracts/common/locale";
-import { apiErrorSchema, type ApiError } from "@chat/contracts/http/error";
+import { AUTH_PATHS } from "@chat/queries/auth/path";
 import type { ContractSchema } from "@chat/queries/client";
 
+import { unwrap } from "./api-response";
+import { refreshSession } from "./auth-refresh";
 import { env } from "./env";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-export class ApiRequestError extends Error {
-  constructor(readonly payload: ApiError) {
-    super(payload.message);
-    this.name = "ApiRequestError";
-  }
-}
+/**
+ * Guard: every call opts in, including the same-origin proxy shape where it is a
+ * no-op. `VITE_CHAT_API_URL` also accepts an absolute url for an api on its own
+ * host, and there the default `same-origin` mode sends no session cookie and
+ * keeps none the api returns — the app then runs as a permanent anonymous with
+ * no error to read.
+ */
+export const CREDENTIALS: RequestCredentials = "include";
+
+export { ApiRequestError } from "./api-response";
 
 export function chatEndpoint(path: string): string {
   return `${env.VITE_CHAT_API_URL}${path}`;
@@ -53,45 +59,82 @@ export async function requestNoContent(
   await send(path, options);
 }
 
+/**
+ * Guard: the 401 body is cancelled only once the retry is certain. A refusal to
+ * rotate ends with that first response being unwrapped, and a cancelled stream
+ * unwraps to `bad_request` instead of the `unauthorized`/`session_expired` the
+ * api sent — which is exactly the pair `currentUserOptions` reads to tell an
+ * anonymous reader from a failure.
+ */
 async function send(path: string, options: RequestOptions): Promise<unknown> {
-  const response = await fetch(chatEndpoint(path), {
+  const response = await dispatch(path, options);
+  if (response.status !== 401 || !isRefreshable(path)) {
+    return unwrap(response);
+  }
+  if (!(await refreshSession(options.locale))) {
+    return unwrap(response);
+  }
+  await response.body?.cancel();
+
+  return unwrap(await dispatch(path, options));
+}
+
+function dispatch(path: string, options: RequestOptions): Promise<Response> {
+  return fetch(chatEndpoint(path), {
     method: options.method ?? "GET",
     headers: headersFor(options),
     body: bodyFor(options.body),
+    credentials: CREDENTIALS,
     signal: abortFor(options),
   });
+}
 
-  if (
-    response.status === 204 ||
-    response.headers.get("content-length") === "0"
-  ) {
-    if (response.ok) {
-      return undefined;
-    }
-    throw new ApiRequestError({
-      code: codeFor(response.status),
-      message: response.statusText,
-    });
+/**
+ * Guard: the retry is keyed on the http status, never on the error code. A
+ * failed `AuthOriginGuard` check answers 403 and the filter rewrites it to
+ * `unauthorized` — the same code a lapsed cookie produces — so refreshing on the
+ * code would put a csrf rejection into a loop that never terminates.
+ *
+ * Guard: credential routes are excluded. `/auth/login/password` answers 401 with
+ * `invalid_credentials` for a wrong password, and rotating a perfectly good
+ * session in response to a typo is the opposite of what the reader asked for.
+ */
+function isRefreshable(path: string): boolean {
+  return path === AUTH_PATHS.me || !path.startsWith("/auth/");
+}
+
+/**
+ * Wraps `fetch` so the AI SDK's streaming turn survives a lapsed access cookie.
+ *
+ * Guard: the chat stream does not go through `request`, it is handed straight to
+ * the transport — which makes the longest-lived and most 401-prone call in the
+ * app the one call the retry above would otherwise miss. The SDK's body is a
+ * string, so replaying it is safe.
+ *
+ * Guard: the credentials mode is forced rather than read from `init`. The SDK
+ * copies it from `ChatClient.credentials`, so trusting the caller would make the
+ * stream the one request that silently drops the session cookie if that field is
+ * ever unset.
+ */
+export const authFetch: typeof fetch = async (input, init) => {
+  const credentialed = { ...init, credentials: CREDENTIALS };
+  const response = await fetch(input, credentialed);
+  if (response.status !== 401) {
+    return response;
   }
-
-  const raw: unknown = await response.json().catch(() => undefined);
-  if (response.ok) {
-    return raw;
+  const locale = localeOf(init);
+  if (locale === undefined || !(await refreshSession(locale))) {
+    return response;
   }
+  await response.body?.cancel();
 
-  /**
-   * Guard: the error body is parsed, not asserted. A proxy or a crashed process
-   * answers with html or with nothing at all, and casting that to `ApiError`
-   * produces an error object whose `message` is `undefined` — which surfaces to
-   * the user as a blank toast instead of something actionable.
-   */
-  const envelope = apiErrorSchema.safeParse(raw);
+  return fetch(input, credentialed);
+};
 
-  throw new ApiRequestError(
-    envelope.success
-      ? envelope.data
-      : { code: codeFor(response.status), message: response.statusText },
-  );
+function localeOf(init: RequestInit | undefined): Locale | undefined {
+  const header = new Headers(init?.headers).get("x-locale");
+
+  return header === null ? undefined : (header as Locale);
 }
 
 /**
@@ -123,8 +166,4 @@ function abortFor(options: RequestOptions): AbortSignal {
   return options.signal === undefined
     ? timeout
     : AbortSignal.any([timeout, options.signal]);
-}
-
-function codeFor(status: number): string {
-  return status >= 500 ? "internal_error" : "bad_request";
 }

@@ -103,6 +103,32 @@ synthetic argument named `body`. Its value becomes the whole HTTP body.
 The name goes through the same collision check as any other argument. A parameter already called
 `body` makes the endpoint fail with `argument_collision`.
 
+## Bodies that are optional
+
+Requiring a body and requiring the fields inside it are different statements. An endpoint may accept
+no body at all, yet insist that `reason` is present whenever one is sent. A descriptor says so with
+`requestBody.required: false`, and such a body is wrapped in the same synthetic `body` argument even
+when its root is an object — except that the argument is not listed in `required`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "body": {
+      "type": "object",
+      "properties": { "reason": { "type": "string" } },
+      "required": ["reason"]
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}
+```
+
+Flattening cannot express this. A flattened body has no wrapper left to leave out, so it always
+sends at least `{}` — often the one shape such an endpoint rejects. Through the `body` argument the
+two states stay distinct: omitting it sends no body at all, while `"body": {}` sends `{}`.
+
 ## When the shape cannot be read
 
 An unreadable shape is a warning, not a dropped endpoint. The schema becomes

@@ -5,6 +5,8 @@ export type SkMcpTemplateErrorCode =
   | "duplicate_argument"
   | "identity_carrier_argument"
   | "path_parameter_array"
+  | "header_parameter_array"
+  | "unsupported_array_style"
   | "argument_collision"
   | "route_placeholder_mismatch"
   | "schema_def_conflict";

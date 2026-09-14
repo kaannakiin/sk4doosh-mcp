@@ -267,6 +267,7 @@ internal static partial class EndpointCatalog
                     body = new RequestBody
                     {
                         Schema = JsonSchemaMapper.Map(parameter.Type ?? typeof(object), schema),
+                        Required = parameter.IsRequired,
                         Description = ParameterDescription(parameter),
                     };
                 }
@@ -290,11 +291,15 @@ internal static partial class EndpointCatalog
             });
         }
 
-        if (body is not null && RequestBodyShape.BodyRootOf(body.Schema) is { } rootArgument)
+        if (body is not null && RequestBodyShape.BodyRootOf(body) is { } rootArgument)
         {
-            diagnostics.Add(new CatalogDiagnostic(
-                DiagnosticCodes.SyntheticBodyArgument,
-                $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it is exposed as a single '{rootArgument}' argument whose value becomes the whole body."));
+            diagnostics.Add(body.Required == false
+                ? new CatalogDiagnostic(
+                    DiagnosticCodes.OptionalBodyArgument,
+                    $"{api.HttpMethod} {route} binds an optional request body; it is exposed as a single optional '{rootArgument}' argument, so omitting it sends no body at all.")
+                : new CatalogDiagnostic(
+                    DiagnosticCodes.SyntheticBodyArgument,
+                    $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it is exposed as a single '{rootArgument}' argument whose value becomes the whole body."));
         }
 
         Dictionary<string, ResponseBody> responses = new(StringComparer.Ordinal);
@@ -576,15 +581,18 @@ internal static partial class EndpointCatalog
                     parameter.Name,
                     Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true),
                     Kind(scalar),
-                    isArray));
+                    isArray,
+                    isArray
+                        ? RequestTemplate.ArraySeparatorFor(parameter.Style, parameter.Explode, parameter.Name)
+                        : null));
             }
 
             List<string>? bodyProperties = null;
             bool allowsAdditional = false;
             string? bodyRoot = null;
-            if (descriptor.RequestBody?.Schema is { } bodySchema)
+            if (descriptor.RequestBody is { Schema: { } bodySchema } requestBody)
             {
-                bodyRoot = RequestBodyShape.BodyRootOf(bodySchema);
+                bodyRoot = RequestBodyShape.BodyRootOf(requestBody);
                 if (bodyRoot is null)
                 {
                     if (bodySchema["properties"] is JsonObject properties)

@@ -97,6 +97,24 @@ class CollidingBody {
   item?: string;
 }
 
+class CancelBody {
+  @IsString()
+  reason!: string;
+}
+
+class MessageBody {
+  @IsString()
+  body!: string;
+}
+
+@Controller("messages")
+class MessagesController {
+  @Post()
+  @McpTool({ description: "Mesaj gonderir.", bodyRequired: false })
+  @UseGuards(AuthenticatedGuard)
+  sendMessage(@Body() _body: MessageBody): void {}
+}
+
 @Controller("import")
 class ImportController {
   @Post()
@@ -121,6 +139,11 @@ class OrdersController {
   @Patch(":id")
   @UseGuards(AuthenticatedGuard, OpaqueGuard)
   patchOrder(@Param("id", ParseIntPipe) _id: number): void {}
+
+  @Post("cancel")
+  @McpTool({ description: "Siparisi iptal eder.", bodyRequired: false })
+  @UseGuards(AuthenticatedGuard)
+  cancelOrder(@Body() _body: CancelBody): void {}
 }
 
 @Controller()
@@ -171,6 +194,14 @@ const hosts: Record<string, HostCase> = {
   "me-authenticated.json": { controller: RootController, handler: "me" },
   "patch-order.json": { controller: OrdersController, handler: "patchOrder" },
   "ping-anonymous.json": { controller: RootController, handler: "ping" },
+  "optional-object-body-becomes-body-argument.json": {
+    controller: OrdersController,
+    handler: "cancelOrder",
+  },
+  "optional-body-with-body-field-nests.json": {
+    controller: MessagesController,
+    handler: "sendMessage",
+  },
 };
 
 const unproducible: Record<string, string> = {

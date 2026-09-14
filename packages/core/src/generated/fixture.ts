@@ -91,6 +91,8 @@ export interface Parameter {
   in: "path" | "query" | "header";
   required: boolean;
   schema: JsonSchemaObject;
+  style?: "form" | "spaceDelimited" | "pipeDelimited";
+  explode?: boolean;
   description?: string;
 }
 export interface JsonSchemaObject {
@@ -140,6 +142,7 @@ export interface JsonSchemaObject {
 }
 export interface RequestBody {
   schema: JsonSchemaObject;
+  required?: boolean;
   description?: string;
 }
 export interface ResponseBody {
@@ -190,6 +193,8 @@ export interface TemplateParameter {
   in: "path" | "query" | "header";
   type: "string" | "integer" | "number" | "boolean";
   array?: boolean;
+  style?: "form" | "spaceDelimited" | "pipeDelimited";
+  explode?: boolean;
 }
 export interface ComposedRequestExpectation {
   pathAndQuery: string;

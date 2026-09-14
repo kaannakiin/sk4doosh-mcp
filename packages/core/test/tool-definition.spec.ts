@@ -116,6 +116,65 @@ describe("createToolDefinition", () => {
     });
   });
 
+  it("D6b: an optional object body stops flattening and is not required", () => {
+    const tool = createToolDefinition(
+      endpoint({
+        route: "/orders/cancel",
+        requestBody: {
+          required: false,
+          schema: {
+            type: "object",
+            properties: { reason: { type: "string" } },
+            required: ["reason"],
+          },
+        },
+      }),
+    );
+    expect(tool.inputSchema.properties).toEqual({
+      body: {
+        type: "object",
+        properties: { reason: { type: "string" } },
+        required: ["reason"],
+      },
+    });
+    expect(tool.inputSchema.required).toEqual([]);
+  });
+
+  it("D6c: the same body without required:false flattens and keeps its field required", () => {
+    const tool = createToolDefinition(
+      endpoint({
+        route: "/orders/cancel",
+        requestBody: {
+          schema: {
+            type: "object",
+            properties: { reason: { type: "string" } },
+            required: ["reason"],
+          },
+        },
+      }),
+    );
+    expect(tool.inputSchema.properties).toEqual({
+      reason: { type: "string" },
+    });
+    expect(tool.inputSchema.required).toEqual(["reason"]);
+  });
+
+  it("D6d: an optional non-object body is still wrapped but no longer required", () => {
+    const tool = createToolDefinition(
+      endpoint({
+        route: "/import",
+        requestBody: {
+          required: false,
+          schema: { type: "array", items: { type: "integer" } },
+        },
+      }),
+    );
+    expect(tool.inputSchema.required).toEqual([]);
+    expect(tool.inputSchema.properties).toEqual({
+      body: { type: "array", items: { type: "integer" } },
+    });
+  });
+
   it("D7: a required entry naming an undeclared property is ignored", () => {
     const tool = createToolDefinition(
       endpoint({

@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "spaceDelimited ayraci %20 olarak yazilir, ciplak bosluk degil",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "spaceDelimited", "explode": false }
+      ]
+    },
+    "arguments": { "tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a%20b"
+  }
+}

@@ -29,12 +29,15 @@ public sealed record Parameter
     public required string In { get; init; }
     public required bool Required { get; init; }
     public required JsonObject Schema { get; init; }
+    public string? Style { get; init; }
+    public bool? Explode { get; init; }
     public string? Description { get; init; }
 }
 
 public sealed record RequestBody
 {
     public required JsonObject Schema { get; init; }
+    public bool? Required { get; init; }
     public string? Description { get; init; }
 }
 

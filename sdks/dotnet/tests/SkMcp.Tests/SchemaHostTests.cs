@@ -127,6 +127,38 @@ public sealed class SchemaHostTests : IAsyncLifetime
     }
 
     [Fact]
+    public void J18_OptionalBody_StopsFlatteningAndIsNotRequired()
+    {
+        CatalogEntry required = Assert.Single(
+            _host.Catalog.Result.Entries,
+            candidate => candidate.Descriptor.Route.EndsWith("/schema/notes/{id}", StringComparison.Ordinal));
+        Assert.True(required.Descriptor.RequestBody!.Required);
+        Assert.Contains("text", ((JsonObject)required.Tool.InputSchema["properties"]!).Select(p => p.Key));
+
+        CatalogEntry optional = Assert.Single(
+            _host.Catalog.Result.Entries,
+            candidate => candidate.Descriptor.Route.EndsWith("/optional", StringComparison.Ordinal));
+        Assert.False(optional.Descriptor.RequestBody!.Required);
+
+        JsonObject properties = (JsonObject)optional.Tool.InputSchema["properties"]!;
+        Assert.Contains("body", properties.Select(p => p.Key));
+        Assert.DoesNotContain("text", properties.Select(p => p.Key));
+        Assert.DoesNotContain("body", optional.Tool.InputSchema["required"]!.AsArray()
+            .Select(node => node!.GetValue<string>()));
+        Assert.Contains(
+            _host.Catalog.Result.Diagnostics,
+            d => d.Code == "optional_body_argument");
+
+        ComposedRequest absent = RequestComposer.Compose(
+            optional.Template!, JsonDocument.Parse("""{"id":7}""").RootElement);
+        Assert.Null(absent.Body);
+
+        ComposedRequest empty = RequestComposer.Compose(
+            optional.Template!, JsonDocument.Parse("""{"id":7,"body":{}}""").RootElement);
+        Assert.Equal("{}", Encoding.UTF8.GetString(empty.Body!));
+    }
+
+    [Fact]
     public async Task J19_DiagnosticsDowngrade_KeepsEndpointListed()
     {
         await using SchemaHost lenient = await SchemaHost.StartAsync(

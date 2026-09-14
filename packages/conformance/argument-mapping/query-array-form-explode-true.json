@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "acikca bildirilen form + explode true repeat-key uretir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "form", "explode": true }
+      ]
+    },
+    "arguments": { "tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a&tag=b"
+  }
+}

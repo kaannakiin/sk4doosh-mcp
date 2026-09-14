@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos dizi ayracli modda da anahtar yazmaz, tag= uretmez",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "form", "explode": false }
+      ]
+    },
+    "arguments": { "tag": [] }
+  },
+  "expected": {
+    "pathAndQuery": "/items"
+  }
+}

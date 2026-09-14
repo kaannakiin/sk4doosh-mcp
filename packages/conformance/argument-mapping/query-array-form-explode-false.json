@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "form + explode false dizi elemanlarini virgulle birlestirir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "form", "explode": false }
+      ]
+    },
+    "arguments": { "tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a,b"
+  }
+}

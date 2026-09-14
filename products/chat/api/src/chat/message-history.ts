@@ -23,11 +23,20 @@ export function flatten(message: UIMessage): string {
  * allocator. That is what makes the write idempotent — a re-sent history lands
  * on the same numbers, and a regeneration that drops the tail leaves a gap the
  * reconcile deletes.
+ *
+ * Guard: a turn carrying no parts is left out. A stream that fails before its
+ * first token settles an empty assistant message, which stores a row that says
+ * nothing and is handed back to the model on every following turn. Omitting it
+ * also deletes the ones written before this, since the reconcile removes
+ * whatever the posted history does not name.
  */
 export function toInputs(messages: readonly UIMessage[]): MessageInput[] {
   const inputs: MessageInput[] = [];
   for (const [index, message] of messages.entries()) {
     if (message.role !== "user" && message.role !== "assistant") {
+      continue;
+    }
+    if (message.parts.length === 0) {
       continue;
     }
     inputs.push({

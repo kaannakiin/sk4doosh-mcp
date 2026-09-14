@@ -31,11 +31,22 @@ function describe(
 
 export const bodyRootArgument = "body";
 
+/**
+ * Decides whether the body travels as one synthetic argument instead of flattening.
+ *
+ * @param required the body-level `requestBody.required`; `false` forces root mode,
+ * because a flattened body has no wrapper left to omit and would always send `{}`.
+ * @returns the synthetic argument name, or `undefined` to flatten the body's fields.
+ */
 export function bodyRootOf(
   body: JsonSchemaObject | undefined,
+  required?: boolean,
 ): string | undefined {
   if (body === undefined) {
     return undefined;
+  }
+  if (required === false) {
+    return bodyRootArgument;
   }
   const type = typeOf(body);
   return type === undefined || type === "object" ? undefined : bodyRootArgument;
@@ -44,7 +55,8 @@ export function bodyRootOf(
 function buildInputSchema(endpoint: EndpointDescriptor): ObjectSchema {
   const parameters = endpoint.parameters ?? [];
   const body = endpoint.requestBody?.schema;
-  const root = bodyRootOf(body);
+  const bodyRequired = endpoint.requestBody?.required;
+  const root = bodyRootOf(body, bodyRequired);
   const flattened = root === undefined ? flattenableBody(body) : undefined;
 
   assertUniqueArgumentNames(
@@ -78,7 +90,9 @@ function buildInputSchema(endpoint: EndpointDescriptor): ObjectSchema {
 
   if (root !== undefined && body !== undefined) {
     properties[root] = structuredClone(body);
-    require(root);
+    if (bodyRequired !== false) {
+      require(root);
+    }
   }
 
   if (flattened !== undefined) {

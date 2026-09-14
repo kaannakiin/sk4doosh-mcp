@@ -17,8 +17,8 @@ A small, strict subset of OpenAPI. Not a new ontology; a narrowed form of a know
 | `method`          | yes      | `GET/HEAD/POST/PUT/PATCH/DELETE`                                                                                                                                   |
 | `route`           | yes      | A route template starting with `/`; path parameters in braces                                                                                                      |
 | `description`     | no       | A human-written description (C#: XML doc / `[Description]`; Nest: Swagger decorators)                                                                              |
-| `parameters`      | no       | `{name, in: path\|query\|header, required, schema, description?}`                                                                                                  |
-| `requestBody`     | no       | `{schema, description?}`                                                                                                                                           |
+| `parameters`      | no       | `{name, in: path\|query\|header, required, schema, style?, explode?, description?}`; `style`/`explode` describe how an array value is written ([argument-mapping.md](argument-mapping.md)) |
+| `requestBody`     | no       | `{schema, required?, description?}`; `required` is the body-level bit, distinct from the field-level `required` inside `schema`, and defaults to `true`             |
 | `responses`       | no       | Status code → `{schema?, description?}`                                                                                                                            |
 | `auth`            | yes      | See below                                                                                                                                                          |
 | `tags`            | no       | Grouping (C#: the controller name; Nest: the controller / `@ApiTags`)                                                                                              |
@@ -75,11 +75,11 @@ The case where both fields stay empty is legitimate and defined: on backends who
 - The root is always `type: object` and writes both `properties` and `required` **even when they are empty**. For deterministic comparison: a missing field and an empty field are not the same thing.
 - Every parameter is a property, and the property schema is that parameter's `schema`.
 - A parameter's `description` is added to the property schema only when **the schema does not carry its own `description`**. The schema source takes precedence; the parameter description is the fallback.
-- `requestBody.schema.properties` flatten to the top level; `requestBody.schema.required` entries are appended to the `required` list.
+- `requestBody.schema.properties` flatten to the top level and `requestBody.schema.required` entries are appended to the `required` list — **unless** the body itself is optional (`requestBody.required: false`) or its root is not an object, in which case the whole body becomes the single `body` property instead ([schema-conversion-rules.md](schema-conversion-rules.md) Table 6). That `body` property is listed in `required` only when the body is required.
 - The `inputSchema` root writes `additionalProperties`, whose value is derived from whether `requestBody.schema` is free-form (see [schema-conversion-rules.md](schema-conversion-rules.md) Table 6). It is not a constant `false`.
 - `required` MUST NOT carry duplicate entries and MUST NOT list a name absent from `properties`; a collision between a parameter name and a body field name stops tool production with `argument_collision`.
 - `requestBody.description` is deliberately dropped: because body fields flatten to the top level, there is no slot left for it.
-- `required` order: parameters first in declaration order, then body properties in declaration order. The order is normative — fixture comparison is sensitive to array order.
+- `required` order: parameters first in declaration order, then body properties in declaration order; in the synthetic-root form the body contributes the single name `body` in that same position. The order is normative — fixture comparison is sensitive to array order.
 - Body property names are the backend's **wire** names, not class member names: the name in the schema is the JSON key the backend actually accepts. The SDK reads this from the framework's serialization settings (C#: the `JsonOptions` naming policy plus `[JsonPropertyName]`); in a setup where it cannot be read (C#: Newtonsoft) it MUST NOT guess — it uses the class member name, emits a `naming_policy_unresolved` diagnostic, and the host declares a resolver.
 
 ## Method → annotation table

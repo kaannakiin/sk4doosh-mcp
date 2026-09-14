@@ -84,6 +84,13 @@
         "schema": {
           "$ref": "#/$defs/JsonSchemaObject"
         },
+        "style": {
+          "type": "string",
+          "enum": ["form", "spaceDelimited", "pipeDelimited"]
+        },
+        "explode": {
+          "type": "boolean"
+        },
         "description": {
           "type": "string"
         }
@@ -97,6 +104,9 @@
       "properties": {
         "schema": {
           "$ref": "#/$defs/JsonSchemaObject"
+        },
+        "required": {
+          "type": "boolean"
         },
         "description": {
           "type": "string"

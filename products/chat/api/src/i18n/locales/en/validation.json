@@ -14,10 +14,11 @@
     "root": "Request body"
   },
   "issues": {
-    "fallback": "{{field}} is invalid",
-    "invalid_type": "{{field}} has an invalid type",
-    "invalid_value": "{{field}} has an invalid value",
+    "required": "{{field}} is required",
+    "too_small": "{{field}} must be at least {{limit}} characters",
     "too_big": "{{field}} must be at most {{limit}} characters",
-    "too_small": "{{field}} must be at least {{limit}} characters"
+    "email": "Enter a valid email address",
+    "phone": "Enter a valid phone number",
+    "fallback": "{{field}} is invalid"
   }
 }

@@ -25,6 +25,7 @@ export interface AuthConfig {
   publicApiUrl: string;
   webRedirectUrl: string;
   cookieSecure: boolean;
+  cookieSameSite: "lax" | "none";
   google?: OAuthProviderConfig;
   github?: OAuthProviderConfig;
 }
@@ -79,6 +80,7 @@ export interface ReaderConfig {
 
 export interface AppConfig {
   port: number;
+  pathPrefix: string;
   environment: "development" | "test" | "production";
   corsOrigin: string;
   trustProxyHops: number;
@@ -139,6 +141,7 @@ export function loadConfig(): AppConfig {
 
   return {
     port: env.CHAT_API_PORT,
+    pathPrefix: env.CHAT_API_PATH_PREFIX,
     environment: env.NODE_ENV,
     corsOrigin: env.CHAT_CORS_ORIGIN,
     trustProxyHops: env.CHAT_TRUST_PROXY_HOPS,
@@ -154,11 +157,12 @@ export function loadConfig(): AppConfig {
     },
     auth: {
       secret: env.CHAT_AUTH_SECRET,
-      publicApiUrl: env.CHAT_AUTH_PUBLIC_API_URL,
+      publicApiUrl: env.CHAT_AUTH_PUBLIC_API_URL ?? env.CHAT_CORS_ORIGIN,
       webRedirectUrl:
         env.CHAT_AUTH_WEB_REDIRECT_URL ??
         new URL("/auth/callback", env.CHAT_CORS_ORIGIN).toString(),
       cookieSecure: env.CHAT_AUTH_COOKIE_SECURE,
+      cookieSameSite: env.CHAT_AUTH_COOKIE_SAMESITE,
       google,
       github,
     },

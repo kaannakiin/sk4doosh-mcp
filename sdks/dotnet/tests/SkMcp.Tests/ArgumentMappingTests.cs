@@ -268,6 +268,10 @@ public class ArgumentMappingTests
                         JsonNode.Parse(bodyJson.GetRawText()),
                         JsonNode.Parse(composed.Body)));
                 }
+                else
+                {
+                    Assert.Null(composed.Body);
+                }
             }
         }
     }
@@ -294,7 +298,13 @@ public class ArgumentMappingTests
                         "boolean" => ParameterKind.Boolean,
                         _ => ParameterKind.String,
                     },
-                    p.TryGetProperty("array", out JsonElement array) && array.GetBoolean()));
+                    p.TryGetProperty("array", out JsonElement array) && array.GetBoolean(),
+                    p.TryGetProperty("array", out JsonElement isArr) && isArr.GetBoolean()
+                        ? RequestTemplate.ArraySeparatorFor(
+                            p.TryGetProperty("style", out JsonElement style) ? style.GetString() : null,
+                            p.TryGetProperty("explode", out JsonElement explode) ? explode.GetBoolean() : null,
+                            p.GetProperty("name").GetString()!)
+                        : null));
             }
         }
 

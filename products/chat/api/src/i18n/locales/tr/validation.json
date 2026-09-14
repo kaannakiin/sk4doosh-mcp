@@ -14,10 +14,11 @@
     "root": "İstek gövdesi"
   },
   "issues": {
-    "fallback": "{{field}} geçersiz",
-    "invalid_type": "{{field}} tipi geçersiz",
-    "invalid_value": "{{field}} değeri geçersiz",
+    "required": "{{field}} gerekli",
+    "too_small": "{{field}} en az {{limit}} karakter olmalı",
     "too_big": "{{field}} en fazla {{limit}} karakter olabilir",
-    "too_small": "{{field}} en az {{limit}} karakter olmalı"
+    "email": "Geçerli bir e-posta adresi gir",
+    "phone": "Geçerli bir telefon numarası gir",
+    "fallback": "{{field}} geçersiz"
   }
 }

@@ -227,19 +227,35 @@ No SDK SHOULD rely on the budget's existence or on any default value for it.
 
 `inputSchema` is always a plain object; MCP tool arguments are a JSON object.
 
-| Body root schema                            | Behaviour                                                |
-| ------------------------------------------- | -------------------------------------------------------- |
-| `type: object` with `properties`            | fields flatten to the top level                          |
-| `type: object`, `additionalProperties` open | the body is free-form; unknown keys are forwarded        |
-| an array or scalar root                     | one synthetic argument `body`; `synthetic_body_argument` |
-| no `type` (host declaration)                | treated as an object                                     |
-| more than one body declaration              | the endpoint is **dropped**, `multiple_body_bindings`    |
+| Body root schema                                        | Behaviour                                                |
+| ------------------------------------------------------- | -------------------------------------------------------- |
+| `type: object` with `properties`, body required         | fields flatten to the top level                          |
+| `type: object`, `additionalProperties` open, required   | the body is free-form; unknown keys are forwarded        |
+| an array or scalar root                                 | one synthetic argument `body`; `synthetic_body_argument` |
+| any root with `requestBody.required: false`             | one synthetic argument `body`, **not** required; `optional_body_argument` |
+| no `type` (host declaration)                            | treated as an object                                     |
+| more than one body declaration                          | the endpoint is **dropped**, `multiple_body_bindings`    |
+
+`requestBody.required` is the body-level bit and is distinct from the field-level `required` entries
+inside `requestBody.schema`. Omitted, it means `true`. A body may be optional while a field inside it
+is mandatory — "you need not send a body; if you do, it must carry `reason`" — and the two
+requirednesses must not be collapsed into one.
 
 **Synthetic body root.** A non-object body root (`[FromBody] List<int>`, `[FromBody] string`) does
 not drop the endpoint. `inputSchema` carries a single `body` property whose schema is the root
 itself, and it is listed in `required`; `inputSchema.additionalProperties` is `false`. At call time
 the `body` argument's value is sent as **the entire body**; if `body` is absent no body is sent at
 all and the backend's model binder decides ([argument-mapping.md](argument-mapping.md)).
+
+**An optional body is never flattened.** A body declared `requestBody.required: false` takes the
+same synthetic `body` argument even when its root is an object, and that argument is **not** listed
+in `required`. The reason is mechanical rather than stylistic: flattening leaves no wrapper to omit,
+so field mode always emits at least `{}` — the one shape an optional-body endpoint often rejects.
+Routing the body through the root argument is what makes the two states distinguishable, and they
+are different requests: `body` absent sends nothing, `body: {}` sends `{}`. The cost is worth naming:
+the fields stop being top-level arguments, and an endpoint that also has a parameter named `body`
+now collides (`argument_collision`) where the flattened form did not, so flipping this one boolean
+can drop such an endpoint.
 
 The name goes through the same collision check as parameter names: if a parameter named `body`
 exists, `argument_collision` is emitted and the endpoint is dropped. A template MUST NOT declare
@@ -251,8 +267,10 @@ called at all," and it can be called now.
 `inputSchema.additionalProperties` is **derived** from whether the body is free-form; it is never
 written as a constant. The same predicate feeds both the schema and `RequestComposer`'s allow-list —
 if those diverged, the schema would declare a contract the composer does not honour. The body root
-follows the same discipline: a non-object root schema triggers both the `body` argument and the
-composer's second body mode.
+follows the same discipline: a root schema that triggers the `body` argument also triggers the
+composer's second body mode. In root mode the top-level `additionalProperties` is `false` even for a
+free-form body, and that is not a contradiction: the only top-level argument is `body`, and the body's
+own freedom is carried by the schema of that property.
 
 ## Table 7 — Diagnostics
 
@@ -265,6 +283,7 @@ composer's second body mode.
 | `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies        | the endpoint is dropped        |
 | `unresolved_query_shape`        | a whole-object query binding whose members cannot be read at all   | the endpoint is dropped        |
 | `synthetic_body_argument`       | a non-object body root was wrapped into a `body` argument          | warning                        |
+| `optional_body_argument`        | a body declared `required: false` was wrapped into an optional `body` argument | warning         |
 | `unbound_query_object`          | some members of a whole-object query binding are not expressible   | warning, those members dropped |
 | `unbound_header_object`         | a whole-object header binding                                      | warning, the binding dropped   |
 | `route_folded`                  | one operation was bound to several routes ([naming.md](naming.md)) | warning                        |

@@ -7,7 +7,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
  * has heard of it, and the url is what makes the conversation shareable,
  * reloadable and navigable with the back button.
  */
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   beforeLoad: () => {
     throw redirect({
       to: "/c/$sessionId",

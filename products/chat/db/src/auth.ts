@@ -241,6 +241,73 @@ export async function createPhoneRegistration(
   });
 }
 
+export type VerificationContact =
+  | { readonly email: string }
+  | { readonly phoneE164: string };
+
+/**
+ * Issues a fresh contact-verification challenge for an account that was created
+ * but never verified, consuming any challenge still open for it.
+ *
+ * @param cooldownStartedAfter challenges created after this instant block a new one
+ * @returns the pending challenge, or `undefined` when nothing may be issued
+ */
+export async function createVerificationChallenge(
+  db: Db,
+  contact: VerificationContact,
+  challenge: NewChallenge,
+  cooldownStartedAfter: Date,
+  now: Date,
+): Promise<PendingChallengeRow | undefined> {
+  const byEmail = "email" in contact;
+  const target = byEmail ? contact.email : contact.phoneE164;
+  const purpose = byEmail ? "verifyEmail" : "verifyPhone";
+
+  return db.$transaction(async (tx) => {
+    // One target can be requested from many IPs. The transaction-scoped advisory
+    // lock makes the cooldown check and insert atomic for that target.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${target}, 0))`;
+    const user = await tx.user.findFirst({
+      where: byEmail
+        ? { email: target, emailVerifiedAt: null, disabledAt: null }
+        : { phoneE164: target, phoneVerifiedAt: null, disabledAt: null },
+      select: { id: true },
+    });
+    if (user === null) {
+      return undefined;
+    }
+    const recent = await tx.authChallenge.findFirst({
+      where: { target, purpose, createdAt: { gt: cooldownStartedAfter } },
+      select: { id: true },
+    });
+    if (recent !== null) {
+      return undefined;
+    }
+    /**
+     * Guard: every open challenge for this target is consumed before the new one
+     * is written. Leaving them live would let a code the caller has already
+     * abandoned still open the account, and would widen the five-attempt budget
+     * to five per outstanding challenge.
+     */
+    await tx.authChallenge.updateMany({
+      where: { userId: user.id, purpose, consumedAt: null },
+      data: { consumedAt: now },
+    });
+
+    return toPending(
+      await tx.authChallenge.create({
+        data: {
+          userId: user.id,
+          purpose,
+          target,
+          secretHash: Buffer.from(challenge.secretHash),
+          expiresAt: challenge.expiresAt,
+        },
+      }),
+    );
+  });
+}
+
 export async function createPhoneLoginChallenge(
   db: Db,
   phoneE164: string,
@@ -629,4 +696,55 @@ export async function linkOAuthAccount(
       }),
     );
   });
+}
+
+/**
+ * Creates an email/password account already past contact verification, or resets
+ * an existing one to the given name and password.
+ *
+ * Guard: this is the one path that mints a verified account without an
+ * `AuthChallenge`, and on an address that already exists it overwrites the
+ * password credential. It exists for seeding a database an operator controls;
+ * never reach for it from a request handler, where the challenge flow is what
+ * proves the address belongs to the caller.
+ *
+ * @param now stamped as both the verification and the password-change instant
+ * @returns the account as the rest of the auth surface sees it
+ */
+export async function upsertVerifiedUser(
+  db: Db,
+  input: NewUserBase & {
+    readonly email: string;
+    readonly passwordHash: string;
+    readonly now: Date;
+  },
+): Promise<AuthUserRow> {
+  const row = await db.user.upsert({
+    where: { email: input.email },
+    create: {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      email: input.email,
+      emailVerifiedAt: input.now,
+      passwordCredential: { create: { passwordHash: input.passwordHash } },
+    },
+    update: {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      emailVerifiedAt: input.now,
+      disabledAt: null,
+      passwordCredential: {
+        upsert: {
+          create: { passwordHash: input.passwordHash },
+          update: {
+            passwordHash: input.passwordHash,
+            passwordChangedAt: input.now,
+          },
+        },
+      },
+    },
+    include: userInclude,
+  });
+
+  return toUser(row);
 }

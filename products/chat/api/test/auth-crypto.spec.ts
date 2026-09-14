@@ -26,6 +26,25 @@ async function createCrypto(): Promise<AuthCryptoService> {
 }
 
 describe("AuthCryptoService", () => {
+  it("mints decoy challenge ids that a real one cannot be told apart from", async () => {
+    const crypto = await createCrypto();
+    const now = new Date();
+    const decoy = crypto.decoyChallengeId(now);
+
+    /**
+     * Guard: postgres writes real challenge ids with `uuid(7)`. A v4 decoy is
+     * separated from a real answer by its version nibble alone, which turns the
+     * anti-enumeration response into the account oracle it exists to prevent.
+     */
+    expect(decoy).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+    );
+    expect(Number.parseInt(decoy.replaceAll("-", "").slice(0, 12), 16)).toBe(
+      now.getTime(),
+    );
+    expect(crypto.decoyChallengeId(now)).not.toBe(decoy);
+  });
+
   it("round-trips access-token identity and rejects tampering", async () => {
     const crypto = await createCrypto();
     const identity = {
@@ -53,11 +72,17 @@ describe("AuthCryptoService", () => {
 
   it("seals OAuth state for one audience only", async () => {
     const crypto = await createCrypto();
-    const token = await crypto.seal("oauth-state", { state: "secret-state" }, 60_000);
+    const token = await crypto.seal(
+      "oauth-state",
+      { state: "secret-state" },
+      60_000,
+    );
 
     await expect(crypto.unseal("oauth-state", token)).resolves.toMatchObject({
       state: "secret-state",
     });
-    await expect(crypto.unseal("oauth-pending", token)).resolves.toBeUndefined();
+    await expect(
+      crypto.unseal("oauth-pending", token),
+    ).resolves.toBeUndefined();
   });
 });

@@ -411,7 +411,7 @@ function describe(
     ...pathParameters,
     ...declared.filter((parameter) => parameter.in !== "path"),
     ...expanded.filter((parameter) => !claimed.has(parameter.name)),
-  ];
+  ].map((parameter) => applyParameterHints(parameter, hints));
 
   const descriptor: EndpointDescriptor = {
     operationId: handlerName,
@@ -423,7 +423,14 @@ function describe(
     ...(parameters.length === 0 ? {} : { parameters }),
     ...(bodySchema === undefined
       ? {}
-      : { requestBody: { schema: bodySchema } }),
+      : {
+          requestBody: {
+            schema: bodySchema,
+            ...(hints.bodyRequired === undefined
+              ? {}
+              : { required: hints.bodyRequired }),
+          },
+        }),
   };
 
   const description = descriptionOf(handler, hints);
@@ -597,6 +604,26 @@ function queryFor(
     });
   }
   return parameters;
+}
+
+type DescriptorParameter = NonNullable<EndpointDescriptor["parameters"]>[number];
+
+function applyParameterHints(
+  parameter: DescriptorParameter,
+  hints: McpToolOptions,
+): DescriptorParameter {
+  const hint = hints.parameters?.[parameter.name];
+  if (hint === undefined) {
+    return parameter;
+  }
+  return {
+    ...parameter,
+    ...(hint.required === undefined || parameter.in === "path"
+      ? {}
+      : { required: hint.required }),
+    ...(hint.style === undefined ? {} : { style: hint.style }),
+    ...(hint.explode === undefined ? {} : { explode: hint.explode }),
+  };
 }
 
 function nameOf(declaredType: unknown): string {

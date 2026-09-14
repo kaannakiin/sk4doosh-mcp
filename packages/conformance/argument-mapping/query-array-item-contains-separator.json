@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "ayraci iceren eleman kodlanir, ayracin kendisi ham kalir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "form", "explode": false }
+      ]
+    },
+    "arguments": { "tag": ["a,b", "c"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a%2Cb,c"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "kind": "metadata-extraction",
+  "description": "required false olan nesne govde duzlesmez: tek bir 'body' argumani uretilir ve required olmaz, boylece govdeyi hic gondermemek ifade edilebilir kalir",
+  "input": {
+    "operationId": "CancelOrder",
+    "method": "POST",
+    "route": "/orders/cancel",
+    "description": "Siparisi iptal eder.",
+    "requestBody": {
+      "required": false,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "cancel_order",
+    "description": "Siparisi iptal eder.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "reason"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

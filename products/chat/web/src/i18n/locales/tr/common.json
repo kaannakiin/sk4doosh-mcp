@@ -82,5 +82,167 @@
     "light": "Açık",
     "dark": "Koyu",
     "auto": "Sistemle aynı"
+  },
+  "auth": {
+    "brand": {
+      "tagline": "Dosyalarının gerçekte ne söylediğini okumak için sakin bir konsol."
+    },
+    "login": {
+      "title": "Tekrar hoş geldin",
+      "submit": "Giriş yap",
+      "createAccount": "Hesap oluştur",
+      "phoneLink": "Telefon numarasıyla gir"
+    },
+    "register": {
+      "title": "Hesap oluştur",
+      "submit": "Hesap oluştur",
+      "signIn": "Giriş yap",
+      "methodLabel": "Kayıt yöntemi",
+      "methodEmail": "E-posta",
+      "methodPhone": "Telefon",
+      "submitPhone": "Kod gönder"
+    },
+    "fields": {
+      "firstName": {
+        "label": "Ad"
+      },
+      "lastName": {
+        "label": "Soyad"
+      },
+      "email": {
+        "label": "E-posta"
+      },
+      "password": {
+        "label": "Parola",
+        "hint": "En az {{min}} karakter.",
+        "toggle": "Parolayı göster veya gizle"
+      },
+      "code": {
+        "label": "Doğrulama kodu",
+        "digit": "{{count}} haneden {{index}}. hane"
+      },
+      "phone": {
+        "label": "Telefon numarası",
+        "country": "Ülke",
+        "incomplete": "Numara eksik görünüyor.",
+        "unsupported": "Bu bir cep telefonu numarasına benzemiyor."
+      }
+    },
+    "otp": {
+      "title": "Kodu gir",
+      "sentEmail": "<target>{{target}}</target> adresine 6 haneli bir kod gönderdik.",
+      "submit": "Doğrula",
+      "expiresIn": "Süresi {{count}} dakika içinde doluyor.",
+      "expiresIn_other": "Süresi {{count}} dakika içinde doluyor.",
+      "expiresSoon": "Süresi bir dakikadan az sürede doluyor.",
+      "resend": "Yeni kod gönder",
+      "resendCountdown": "Yeni kod {{time}} sonra istenebilir",
+      "resendUnavailable": "Yeni kod istemek için biraz bekle",
+      "resendReady": "Artık yeni bir kod isteyebilirsin.",
+      "resent": "Yeni bir kod yolda.",
+      "attemptsLeft": "Bu kod geçersiz olmadan önce {{count}} deneme hakkın kaldı.",
+      "attemptsLeft_other": "Bu kod geçersiz olmadan önce {{count}} deneme hakkın kaldı.",
+      "startOver": "Baştan başla",
+      "sentPhone": "Bu numara kayıtlıysa, <target>{{target}}</target> numarasına 6 haneli bir kod yola çıktı."
+    },
+    "account": {
+      "menu": "Hesap işlemleri",
+      "signOut": "Çıkış yap"
+    },
+    "status": {
+      "submitting": "Gönderiliyor…",
+      "verifying": "Kodun kontrol ediliyor…",
+      "signedIn": "Giriş yapıldı. Sohbetlerine götürüyoruz…"
+    },
+    "actions": {
+      "backToSignIn": "Girişe dön"
+    },
+    "errors": {
+      "account_exists": {
+        "title": "Bu hesap zaten var",
+        "body": "{{target}} için zaten bir hesap var.",
+        "action": "Onun yerine giriş yap"
+      },
+      "invalid_credentials": {
+        "body": "Bu e-posta ve parola bir hesapla eşleşmiyor."
+      },
+      "verification_required": {
+        "title": "Bu hesap henüz doğrulanmadı",
+        "body": "Hesap var, ama oluşturulurken gönderdiğimiz kod hiç girilmemiş.",
+        "action": "Yeni kod gönder"
+      },
+      "challenge_wrong": {
+        "body": "Bu kod doğru değil. Kontrol edip tekrar dene."
+      },
+      "challenge_expired": {
+        "title": "Kodun süresi doldu",
+        "body": "Kodlar 10 dakika geçerli. Baştan başlaman gerekiyor."
+      },
+      "challenge_burned": {
+        "title": "Çok fazla yanlış kod",
+        "body": "Bu kod çok kez yanlış girildi. Yeni bir kod iste."
+      },
+      "too_many_requests": {
+        "title": "Biraz yavaşla",
+        "body": "Buradan çok fazla deneme yapıldı. Birkaç dakika sonra tekrar dene."
+      },
+      "unknown": {
+        "body": "Bir şeyler ters gitti. Tekrar dene."
+      },
+      "oauth_state_invalid": {
+        "title": "Giriş tamamlanamadı",
+        "body": "İsteğin süresi dolmuş ya da bozulmuş. Girişi baştan başlat."
+      },
+      "oauth_link_required": {
+        "title": "Önce giriş yap",
+        "body": "Bu e-postayı kullanan bir hesap zaten var. Önce ona giriş yap, sonra bu sağlayıcıyı hesabına bağla."
+      },
+      "oauth_account_conflict": {
+        "title": "Zaten bağlı",
+        "body": "Bu sağlayıcı hesabı buradaki başka bir hesaba bağlı."
+      },
+      "oauth_provider_unavailable": {
+        "title": "Kullanılamıyor",
+        "body": "Bu giriş sağlayıcısı bu sunucuda tanımlı değil."
+      }
+    },
+    "loginPhone": {
+      "title": "Telefonla giriş",
+      "submit": "Kod gönder",
+      "passwordLink": "Bunun yerine e-posta ve parolayla gir"
+    },
+    "oauth": {
+      "or": "veya",
+      "groupLabel": "Diğer giriş yolları",
+      "google": "Google ile devam et",
+      "github": "GitHub ile devam et",
+      "redirecting": "{{provider}} sayfasına götürüyoruz…",
+      "providerGoogle": "Google",
+      "providerGithub": "GitHub"
+    },
+    "complete": {
+      "title": "Son bir şey",
+      "submit": "Devam et"
+    }
+  },
+  "validation": {
+    "fields": {
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta",
+      "phoneE164": "Telefon numarası",
+      "password": "Parola",
+      "challengeId": "Doğrulama isteği",
+      "code": "Doğrulama kodu",
+      "root": "Form"
+    },
+    "issues": {
+      "required": "{{field}} gerekli",
+      "too_small": "{{field}} en az {{limit}} karakter olmalı",
+      "too_big": "{{field}} en fazla {{limit}} karakter olabilir",
+      "email": "Geçerli bir e-posta adresi gir",
+      "phone": "Geçerli bir telefon numarası gir",
+      "fallback": "{{field}} geçersiz"
+    }
   }
 }

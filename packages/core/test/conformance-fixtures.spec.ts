@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   compose,
   createCard,
+  arraySeparatorFor,
   createRequestTemplate,
   createToolDefinition,
   createToolNames,
@@ -67,12 +68,19 @@ function templateFrom(
   return createRequestTemplate({
     method: spec.method,
     route: spec.route,
-    parameters: (spec.parameters ?? []).map((p): ParameterBinding => ({
-      name: p.name,
-      location: p.in,
-      kind: p.type,
-      isArray: p.array === true,
-    })),
+    parameters: (spec.parameters ?? []).map((p): ParameterBinding => {
+      const isArray = p.array === true;
+      const arraySeparator = isArray
+        ? arraySeparatorFor(p.style, p.explode, p.name)
+        : undefined;
+      return {
+        name: p.name,
+        location: p.in,
+        kind: p.type,
+        isArray,
+        ...(arraySeparator === undefined ? {} : { arraySeparator }),
+      };
+    }),
     ...(spec.bodyRoot === undefined
       ? {
           bodyProperties: spec.body?.properties,

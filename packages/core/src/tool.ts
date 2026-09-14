@@ -2,7 +2,10 @@ import type { EndpointDescriptor } from "./generated/endpoint-descriptor.js";
 import type { ToolDefinition } from "./generated/tool-definition.js";
 import { allowsAdditional, flattenableBody, typeOf } from "./json-schema.js";
 import type { JsonSchemaType } from "./json-schema.js";
-import { createRequestTemplate } from "./request-template.js";
+import {
+  arraySeparatorFor,
+  createRequestTemplate,
+} from "./request-template.js";
 import type {
   ParameterBinding,
   ParameterKind,
@@ -30,17 +33,21 @@ export function createRequestTemplateFromEndpoint(
       const scalar = isArray
         ? typeOf(parameter.schema.items)
         : typeOf(parameter.schema);
+      const arraySeparator = isArray
+        ? arraySeparatorFor(parameter.style, parameter.explode, parameter.name)
+        : undefined;
       return {
         name: parameter.name,
         location: parameter.in,
         kind: kindOf(scalar),
         isArray,
+        ...(arraySeparator === undefined ? {} : { arraySeparator }),
       };
     },
   );
 
   const body = endpoint.requestBody?.schema;
-  const root = bodyRootOf(body);
+  const root = bodyRootOf(body, endpoint.requestBody?.required);
   if (root !== undefined) {
     return createRequestTemplate({
       method: endpoint.method,

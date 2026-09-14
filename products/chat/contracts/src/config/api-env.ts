@@ -28,6 +28,19 @@ import {
  * expansion and no injection surface; it also means a path containing a space
  * cannot be expressed, which is the accepted trade.
  */
+/**
+ * Guard: cookie paths are derived from this prefix, so it is part of the auth
+ * contract rather than a routing detail. `chat_refresh` is scoped to
+ * `<prefix>/auth` to keep the refresh token off every chat request, and a
+ * browser matches a cookie path against the url it requested — mount the api
+ * somewhere the prefix does not describe and the cookie is stored and never
+ * sent, which looks like the app working for fifteen minutes and then failing.
+ */
+const apiPathPrefixSchema = z
+  .string()
+  .trim()
+  .regex(/^\/[A-Za-z0-9\-._~/]*[A-Za-z0-9\-._~]$/u);
+
 const mcpCommandSchema = z.string().trim().min(1).optional();
 const redisUrlSchema = z.url().superRefine((value, ctx) => {
   const protocol = new URL(value).protocol;
@@ -64,6 +77,7 @@ export const apiEnvSchema = z.preprocess(
   z
     .object({
       CHAT_API_PORT: z.coerce.number().int().positive().default(5191),
+      CHAT_API_PATH_PREFIX: apiPathPrefixSchema.default("/api"),
       CHAT_CORS_ORIGIN: z.url().default("http://localhost:5190"),
       CHAT_TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
       NODE_ENV: z
@@ -75,9 +89,10 @@ export const apiEnvSchema = z.preprocess(
         .trim()
         .min(43, "must encode at least 32 bytes")
         .pipe(z.base64()),
-      CHAT_AUTH_PUBLIC_API_URL: z.url().default("http://localhost:5191"),
+      CHAT_AUTH_PUBLIC_API_URL: z.url().optional(),
       CHAT_AUTH_WEB_REDIRECT_URL: z.url().optional(),
       CHAT_AUTH_COOKIE_SECURE: z.stringbool().default(false),
+      CHAT_AUTH_COOKIE_SAMESITE: z.enum(["lax", "none"]).default("lax"),
 
       CHAT_AUTH_GOOGLE_CLIENT_ID: z.string().trim().min(1).optional(),
       CHAT_AUTH_GOOGLE_CLIENT_SECRET: z.string().trim().min(1).optional(),
@@ -257,6 +272,23 @@ export const apiEnvSchema = z.preprocess(
             message: `${provider.toLowerCase()} oauth configuration must be complete`,
           });
         }
+      }
+
+      /**
+       * Guard: a browser discards a `SameSite=None` cookie that is not also
+       * `Secure`, without an error either side can see. The sign-in would answer
+       * 200, no session cookie would be stored, and every request after it would
+       * be anonymous — so the pairing is refused at startup instead.
+       */
+      if (
+        env.CHAT_AUTH_COOKIE_SAMESITE === "none" &&
+        !env.CHAT_AUTH_COOKIE_SECURE
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["CHAT_AUTH_COOKIE_SECURE"],
+          message: "samesite=none auth cookies must be secure",
+        });
       }
 
       if (env.NODE_ENV === "production") {

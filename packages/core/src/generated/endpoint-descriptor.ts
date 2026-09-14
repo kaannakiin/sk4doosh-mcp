@@ -21,6 +21,8 @@ export interface Parameter {
   in: "path" | "query" | "header";
   required: boolean;
   schema: JsonSchemaObject;
+  style?: "form" | "spaceDelimited" | "pipeDelimited";
+  explode?: boolean;
   description?: string;
 }
 export interface JsonSchemaObject {
@@ -70,6 +72,7 @@ export interface JsonSchemaObject {
 }
 export interface RequestBody {
   schema: JsonSchemaObject;
+  required?: boolean;
   description?: string;
 }
 export interface ResponseBody {

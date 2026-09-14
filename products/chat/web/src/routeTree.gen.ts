@@ -9,68 +9,296 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CSessionIdRouteImport } from './routes/c.$sessionId'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
+import { Route as AuthenticatedCSessionIdRouteImport } from './routes/_authenticated.c.$sessionId'
+import { Route as AuthLoginPhoneRouteImport } from './routes/auth.login_.phone'
+import { Route as AuthRegisterPhoneRouteImport } from './routes/auth.register_.phone'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CSessionIdRoute = CSessionIdRouteImport.update({
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCompleteRoute = AuthCompleteRouteImport.update({
+  id: '/complete',
+  path: '/complete',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCSessionIdRoute = AuthenticatedCSessionIdRouteImport.update({
   id: '/c/$sessionId',
   path: '/c/$sessionId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthLoginPhoneRoute = AuthLoginPhoneRouteImport.update({
+  id: '/login_/phone',
+  path: '/login/phone',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterPhoneRoute = AuthRegisterPhoneRouteImport.update({
+  id: '/register_/phone',
+  path: '/register/phone',
+  getParentRoute: () => AuthRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/c/$sessionId': typeof CSessionIdRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/auth/complete': typeof AuthCompleteRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/': typeof AuthIndexRoute
+  '/c/$sessionId': typeof AuthenticatedCSessionIdRoute
+  '/auth/login/phone': typeof AuthLoginPhoneRoute
+  '/auth/register/phone': typeof AuthRegisterPhoneRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/c/$sessionId': typeof CSessionIdRoute
+  '/auth/complete': typeof AuthCompleteRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthIndexRoute
+  '/c/$sessionId': typeof AuthenticatedCSessionIdRoute
+  '/auth/login/phone': typeof AuthLoginPhoneRoute
+  '/auth/register/phone': typeof AuthRegisterPhoneRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/c/$sessionId': typeof CSessionIdRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
+  '/auth/complete': typeof AuthCompleteRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
+  '/auth_/callback': typeof AuthCallbackRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/auth/': typeof AuthIndexRoute
+  '/_authenticated/c/$sessionId': typeof AuthenticatedCSessionIdRoute
+  '/auth/login_/phone': typeof AuthLoginPhoneRoute
+  '/auth/register_/phone': typeof AuthRegisterPhoneRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/c/$sessionId'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/auth/complete'
+    | '/auth/login'
+    | '/auth/register'
+    | '/auth/verify'
+    | '/auth/callback'
+    | '/auth/'
+    | '/c/$sessionId'
+    | '/auth/login/phone'
+    | '/auth/register/phone'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/c/$sessionId'
-  id: '__root__' | '/' | '/c/$sessionId'
+  to:
+    | '/auth/complete'
+    | '/auth/login'
+    | '/auth/register'
+    | '/auth/verify'
+    | '/auth/callback'
+    | '/'
+    | '/auth'
+    | '/c/$sessionId'
+    | '/auth/login/phone'
+    | '/auth/register/phone'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/auth/complete'
+    | '/auth/login'
+    | '/auth/register'
+    | '/auth/verify'
+    | '/auth_/callback'
+    | '/_authenticated/'
+    | '/auth/'
+    | '/_authenticated/c/$sessionId'
+    | '/auth/login_/phone'
+    | '/auth/register_/phone'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CSessionIdRoute: typeof CSessionIdRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/c/$sessionId': {
-      id: '/c/$sessionId'
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/complete': {
+      id: '/auth/complete'
+      path: '/complete'
+      fullPath: '/auth/complete'
+      preLoaderRoute: typeof AuthCompleteRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/c/$sessionId': {
+      id: '/_authenticated/c/$sessionId'
       path: '/c/$sessionId'
       fullPath: '/c/$sessionId'
-      preLoaderRoute: typeof CSessionIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCSessionIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/login_/phone': {
+      id: '/auth/login_/phone'
+      path: '/login/phone'
+      fullPath: '/auth/login/phone'
+      preLoaderRoute: typeof AuthLoginPhoneRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/register_/phone': {
+      id: '/auth/register_/phone'
+      path: '/register/phone'
+      fullPath: '/auth/register/phone'
+      preLoaderRoute: typeof AuthRegisterPhoneRouteImport
+      parentRoute: typeof AuthRoute
     }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedCSessionIdRoute: typeof AuthenticatedCSessionIdRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCSessionIdRoute: AuthenticatedCSessionIdRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+interface AuthRouteChildren {
+  AuthCompleteRoute: typeof AuthCompleteRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+  AuthLoginPhoneRoute: typeof AuthLoginPhoneRoute
+  AuthRegisterPhoneRoute: typeof AuthRegisterPhoneRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCompleteRoute: AuthCompleteRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
+  AuthIndexRoute: AuthIndexRoute,
+  AuthLoginPhoneRoute: AuthLoginPhoneRoute,
+  AuthRegisterPhoneRoute: AuthRegisterPhoneRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  CSessionIdRoute: CSessionIdRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

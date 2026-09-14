@@ -6,7 +6,7 @@ import {
 } from "@chat/contracts/attachment/upload";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { Locale } from "@chat/contracts/common/locale";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import { chatKeys } from "../keys.ts";
 import { attachmentPath, withQuery } from "../path.ts";
@@ -23,7 +23,6 @@ import { inAddedOrder } from "./order.ts";
  */
 export function useUploadAttachment(sessionId: SessionId, locale: Locale) {
   const client = useChatClient();
-  const queryClient = useQueryClient();
 
   return useMutation<UploadResponse, Error, File>({
     mutationKey: chatKeys.attachmentUploads(sessionId),
@@ -41,7 +40,12 @@ export function useUploadAttachment(sessionId: SessionId, locale: Locale) {
         { method: "POST", locale, body: form },
       );
     },
-    onSuccess: ({ attachment }) => {
+    onSuccess: (
+      { attachment },
+      _file,
+      _onMutateResult,
+      { client: queryClient },
+    ) => {
       queryClient.setQueryData<readonly Attachment[]>(
         chatKeys.attachments(sessionId),
         (attachments) => inAddedOrder([...(attachments ?? []), attachment]),
@@ -52,7 +56,6 @@ export function useUploadAttachment(sessionId: SessionId, locale: Locale) {
 
 export function useRemoveAttachment(sessionId: SessionId, locale: Locale) {
   const client = useChatClient();
-  const queryClient = useQueryClient();
 
   return useMutation<readonly Attachment[], Error, string>({
     mutationFn: async (attachmentId) => {
@@ -64,7 +67,7 @@ export function useRemoveAttachment(sessionId: SessionId, locale: Locale) {
 
       return inAddedOrder(response.attachments);
     },
-    onSuccess: (attachments) => {
+    onSuccess: (attachments, _id, _onMutateResult, { client: queryClient }) => {
       queryClient.setQueryData(chatKeys.attachments(sessionId), attachments);
     },
   });

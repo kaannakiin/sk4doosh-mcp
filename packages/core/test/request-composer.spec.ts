@@ -160,3 +160,93 @@ describe("compose", () => {
     expect(compose(template, {}).bodyJson).toEqual({});
   });
 });
+
+function arrayQuery(separator?: string): RequestTemplate {
+  return createRequestTemplate({
+    method: "GET",
+    route: "/items",
+    parameters: [
+      {
+        name: "tag",
+        location: "query",
+        kind: "string",
+        isArray: true,
+        ...(separator === undefined ? {} : { arraySeparator: separator }),
+      },
+    ],
+  });
+}
+
+describe("compose array styles", () => {
+  it("repeats the key when no separator is declared", () => {
+    expect(compose(arrayQuery(), { tag: ["a", "b"] }).pathAndQuery).toBe(
+      "/items?tag=a&tag=b",
+    );
+  });
+
+  it("joins on the declared separator", () => {
+    expect(compose(arrayQuery(","), { tag: ["a", "b"] }).pathAndQuery).toBe(
+      "/items?tag=a,b",
+    );
+    expect(compose(arrayQuery("|"), { tag: ["a", "b"] }).pathAndQuery).toBe(
+      "/items?tag=a|b",
+    );
+    expect(compose(arrayQuery(" "), { tag: ["a", "b"] }).pathAndQuery).toBe(
+      "/items?tag=a%20b",
+    );
+  });
+
+  it("encodes an item that contains the separator", () => {
+    expect(compose(arrayQuery(","), { tag: ["a,b", "c"] }).pathAndQuery).toBe(
+      "/items?tag=a%2Cb,c",
+    );
+  });
+
+  it("writes no key for an empty array in every style", () => {
+    expect(compose(arrayQuery(), { tag: [] }).pathAndQuery).toBe("/items");
+    expect(compose(arrayQuery(","), { tag: [] }).pathAndQuery).toBe("/items");
+  });
+
+  it("folds a header array onto one value", () => {
+    const template = createRequestTemplate({
+      method: "GET",
+      route: "/items",
+      parameters: [
+        {
+          name: "x-tag",
+          location: "header",
+          kind: "string",
+          isArray: true,
+          arraySeparator: ",",
+        },
+      ],
+    });
+    expect(compose(template, { "x-tag": ["a", "b"] }).headers).toEqual({
+      "x-tag": "a,b",
+    });
+    expectError(
+      () => compose(template, { "x-tag": "a" }),
+      "invalid_type",
+    );
+  });
+
+  it("rejects a control character smuggled through a header array item", () => {
+    const template = createRequestTemplate({
+      method: "GET",
+      route: "/items",
+      parameters: [
+        {
+          name: "x-tag",
+          location: "header",
+          kind: "string",
+          isArray: true,
+          arraySeparator: ",",
+        },
+      ],
+    });
+    expectError(
+      () => compose(template, { "x-tag": ["a", "b\r\nx: y"] }),
+      "header_injection",
+    );
+  });
+});

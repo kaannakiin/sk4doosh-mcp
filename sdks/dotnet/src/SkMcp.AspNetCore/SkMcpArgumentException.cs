@@ -10,6 +10,8 @@ public sealed class SkMcpTemplateException(string code, string message) : Except
     public const string BodyNotAllowed = "body_not_allowed";
     public const string ConflictingBodyModes = "conflicting_body_modes";
     public const string PathParameterArray = "path_parameter_array";
+    public const string HeaderParameterArray = "header_parameter_array";
+    public const string UnsupportedArrayStyle = "unsupported_array_style";
     public const string RoutePlaceholderMismatch = "route_placeholder_mismatch";
 }
 

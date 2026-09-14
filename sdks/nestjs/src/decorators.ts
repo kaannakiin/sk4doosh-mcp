@@ -1,10 +1,31 @@
-import type { JsonSchemaObject } from "@sk-mcp/core";
+import type { EndpointDescriptor, JsonSchemaObject } from "@sk-mcp/core";
+
+type DescriptorParameter = NonNullable<EndpointDescriptor["parameters"]>[number];
+
+export interface McpParameterOptions {
+  readonly required?: boolean;
+  readonly style?: DescriptorParameter["style"];
+  readonly explode?: boolean;
+}
 
 export interface McpToolOptions {
   readonly name?: string;
   readonly prefix?: string;
   readonly description?: string;
   readonly body?: JsonSchemaObject;
+  /**
+   * Whether the backend requires a body at all, as distinct from requiring the
+   * fields inside it. `false` makes omitting the body expressible: the agent
+   * then sends no body rather than an empty object.
+   */
+  readonly bodyRequired?: boolean;
+  /**
+   * Per-parameter declarations keyed by parameter name. Nest exposes no runtime
+   * signal that proves a named `@Query`/`@Headers` is required, nor how an
+   * array-valued one is serialised, so both are declarations rather than
+   * inferences.
+   */
+  readonly parameters?: Readonly<Record<string, McpParameterOptions>>;
   readonly readOnly?: boolean;
   readonly destructive?: boolean;
   readonly idempotent?: boolean;

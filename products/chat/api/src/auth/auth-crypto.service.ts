@@ -19,14 +19,13 @@ import {
   type JWTPayload,
 } from "jose";
 
-import {
-  deriveSha256Key,
-  sha256Bytes,
-} from "../common/utils/crypto.utils.ts";
+import { deriveSha256Key, sha256Bytes } from "../common/utils/crypto.utils.ts";
 import type { AppConfig } from "../config/configuration.ts";
 
 const OTP_SALT_BYTES = 16;
 const OTP_DIGEST_BYTES = 32;
+const UUID_BYTES = 16;
+const UUID_TIMESTAMP_BYTES = 6;
 
 export interface AccessIdentity {
   readonly userPublicId: string;
@@ -129,6 +128,30 @@ export class AuthCryptoService {
     return sha256Bytes(token);
   }
 
+  /**
+   * Mints a challenge id for a decoy answer.
+   *
+   * Guard: uuid v7, not `randomUUID`. Postgres writes real challenge ids with
+   * `uuid(7)`, so a v4 decoy is told apart by its version nibble alone — the
+   * anti-enumeration answer would then announce, in its own id, that no account
+   * was found. The timestamp is the current one for the same reason.
+   */
+  decoyChallengeId(now: Date): string {
+    const bytes = randomBytes(UUID_BYTES);
+    bytes.writeUIntBE(now.getTime(), 0, UUID_TIMESTAMP_BYTES);
+    bytes.writeUInt8((bytes.readUInt8(6) & 0x0f) | 0x70, 6);
+    bytes.writeUInt8((bytes.readUInt8(8) & 0x3f) | 0x80, 8);
+    const hex = bytes.toString("hex");
+
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join("-");
+  }
+
   createOtp(): OtpMaterial {
     const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
     const salt = randomBytes(OTP_SALT_BYTES);
@@ -158,5 +181,4 @@ export class AuthCryptoService {
       .update(code, "utf8")
       .digest();
   }
-
 }

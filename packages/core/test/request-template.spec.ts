@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createRequestTemplate, SkMcpTemplateError } from "../src/index.js";
+import {
+  arraySeparatorFor,
+  createRequestTemplate,
+  SkMcpTemplateError,
+} from "../src/index.js";
 
 describe("createRequestTemplate", () => {
   it("strips route constraints from placeholders", () => {
@@ -85,5 +89,41 @@ describe("createRequestTemplate", () => {
     expect(() =>
       createRequestTemplate({ method: "GET", route: "/items/{id}" }),
     ).toThrow("has no declared path parameter");
+  });
+
+  it("rejects a header array that would have to repeat the key", () => {
+    expect(() =>
+      createRequestTemplate({
+        method: "GET",
+        route: "/items",
+        parameters: [
+          { name: "x-tag", location: "header", kind: "string", isArray: true },
+        ],
+      }),
+    ).toThrow("a header cannot carry");
+  });
+});
+
+describe("arraySeparatorFor", () => {
+  it("defaults to repeating the key", () => {
+    expect(arraySeparatorFor(undefined, undefined, "tag")).toBeUndefined();
+    expect(arraySeparatorFor("form", true, "tag")).toBeUndefined();
+  });
+
+  it("maps each style to its delimiter", () => {
+    expect(arraySeparatorFor("form", false, "tag")).toBe(",");
+    expect(arraySeparatorFor("spaceDelimited", false, "tag")).toBe(" ");
+    expect(arraySeparatorFor("pipeDelimited", false, "tag")).toBe("|");
+  });
+
+  it("rejects a delimited style that also explodes", () => {
+    for (const style of ["spaceDelimited", "pipeDelimited"] as const) {
+      expect(() => arraySeparatorFor(style, true, "tag")).toThrow(
+        SkMcpTemplateError,
+      );
+      expect(() => arraySeparatorFor(style, undefined, "tag")).toThrow(
+        "has no wire form",
+      );
+    }
   });
 });

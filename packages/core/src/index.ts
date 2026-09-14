@@ -11,11 +11,15 @@ export type {
   SkMcpCatalogErrorCode,
   SkMcpTemplateErrorCode,
 } from "./errors.js";
-export { createRequestTemplate } from "./request-template.js";
+export {
+  arraySeparatorFor,
+  createRequestTemplate,
+} from "./request-template.js";
 export type {
   ParameterBinding,
   ParameterKind,
   ParameterLocation,
+  ParameterStyle,
   RequestTemplate,
   RequestTemplateInput,
 } from "./request-template.js";

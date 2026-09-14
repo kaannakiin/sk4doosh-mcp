@@ -30,6 +30,7 @@ export {
   createPhoneLoginChallenge,
   createPhoneRegistration,
   createSession,
+  createVerificationChallenge,
   findActiveSession,
   findChallenge,
   findOAuthUser,
@@ -42,6 +43,7 @@ export {
   revokeSessionByRefreshToken,
   rotateRefreshToken,
   updatePasswordHash,
+  upsertVerifiedUser,
 } from "./auth.js";
 export type {
   AuthUserRow,
@@ -53,6 +55,7 @@ export type {
   SessionRow as AuthSessionRow,
   SessionSeed,
   UserId,
+  VerificationContact,
 } from "./auth.js";
 export { listMessages, reconcileTurn, settleTurn } from "./messages.js";
 export type { MessageInput, ReconcileParams } from "./messages.js";

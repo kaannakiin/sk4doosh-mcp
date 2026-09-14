@@ -6,17 +6,17 @@ import {
   MantineProvider,
   mantineHtmlProps,
 } from "@mantine/core";
-import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import {
   HeadContent,
+  Outlet,
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { I18nextProvider } from "react-i18next";
 
-import { AppShell } from "~/components/app/AppShell";
 import { useI18nRuntime } from "~/core/hooks/use-i18n-runtime";
-import { chatClient } from "~/lib/chat-client";
+import { authTransport } from "~/lib/auth-transport";
 import { resolveLocale } from "~/lib/locale";
 import appCss from "../styles/app.css?url";
 import { theme } from "~/theme";
@@ -52,7 +52,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
-  const { queryClient, locale } = Route.useRouteContext();
+  const { locale } = Route.useRouteContext();
   const i18n = useI18nRuntime(locale);
 
   return (
@@ -62,15 +62,13 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body>
-        <QueryClientProvider client={queryClient}>
-          <ChatClientProvider client={chatClient}>
-            <MantineProvider theme={theme} defaultColorScheme="auto">
-              <I18nextProvider i18n={i18n}>
-                <AppShell />
-              </I18nextProvider>
-            </MantineProvider>
-          </ChatClientProvider>
-        </QueryClientProvider>
+        <ChatClientProvider client={authTransport()}>
+          <MantineProvider theme={theme} defaultColorScheme="auto">
+            <I18nextProvider i18n={i18n}>
+              <Outlet />
+            </I18nextProvider>
+          </MantineProvider>
+        </ChatClientProvider>
         <Scripts />
       </body>
     </html>

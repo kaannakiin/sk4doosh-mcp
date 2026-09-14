@@ -7,7 +7,7 @@ import { ClientOnly, createFileRoute, notFound } from "@tanstack/react-router";
 import { ChatSurface } from "~/components/chat/ChatSurface";
 import { useLocale } from "~/core/hooks/use-locale";
 
-export const Route = createFileRoute("/c/$sessionId")({
+export const Route = createFileRoute("/_authenticated/c/$sessionId")({
   beforeLoad: ({ params }) => {
     if (!isSessionId(params.sessionId)) {
       throw notFound();

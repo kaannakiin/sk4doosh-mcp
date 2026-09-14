@@ -10,6 +10,12 @@ export const theme = createTheme({
   primaryColor: "verdigris",
   primaryShade: { light: 7, dark: 4 },
   defaultRadius: "md",
+  /**
+   * Guard: Mantine ships the reduced-motion rule but gates it on this flag, so
+   * without it every transition the library owns ignores the device setting no
+   * matter what the stylesheet says.
+   */
+  respectReducedMotion: true,
   fontFamily: SANS,
   fontFamilyMonospace: MONO,
   components: {

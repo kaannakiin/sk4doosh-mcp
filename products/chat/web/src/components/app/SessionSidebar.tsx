@@ -11,6 +11,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AccountMenu } from "./AccountMenu";
 import { useInfiniteSentinel } from "~/core/hooks/use-infinite-sentinel";
 import { useLocale } from "~/core/hooks/use-locale";
 import { LocaleSwitcher } from "~/components/LocaleSwitcher";
@@ -100,9 +101,12 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
         ) : null}
       </nav>
 
-      <div className="flex items-center justify-between gap-2 border-t border-hairline px-3.5 py-2.5">
-        <LocaleSwitcher />
-        <ThemeSwitcher />
+      <div className="border-t border-hairline px-3.5 py-2.5">
+        <AccountMenu />
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <LocaleSwitcher />
+          <ThemeSwitcher />
+        </div>
       </div>
 
       <Modal

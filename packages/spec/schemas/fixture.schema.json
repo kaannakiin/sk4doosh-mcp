@@ -389,6 +389,13 @@
         },
         "array": {
           "type": "boolean"
+        },
+        "style": {
+          "type": "string",
+          "enum": ["form", "spaceDelimited", "pipeDelimited"]
+        },
+        "explode": {
+          "type": "boolean"
         }
       }
     },

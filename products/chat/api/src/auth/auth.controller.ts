@@ -9,6 +9,7 @@ import {
   passwordLoginSchema,
   phoneLoginRequestSchema,
   phoneRegistrationSchema,
+  verificationRequestSchema,
   type AuthSessionResponse,
   type ChallengeConfirmation,
   type ChallengeResend,
@@ -21,6 +22,7 @@ import {
   type PendingChallenge,
   type PhoneLoginRequest,
   type PhoneRegistration,
+  type VerificationRequest,
 } from "@chat/contracts/auth/auth";
 import {
   Body,
@@ -92,10 +94,28 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthSessionResponse> {
-    const grant = await this.auth.confirmContact(body, request.get("user-agent"));
+    const grant = await this.auth.confirmContact(
+      body,
+      request.get("user-agent"),
+    );
     this.cookies.issue(response, grant);
 
     return grant.response;
+  }
+
+  /**
+   * Guard: this route is the only way out of an unverified account. The user row
+   * is written in the same transaction as the registration challenge, so once
+   * that challenge expires the account exists, cannot sign in, cannot be
+   * registered again and cannot resend — without this it is unreachable forever.
+   */
+  @Post("verification/request")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle(STRICT_AUTH_THROTTLE)
+  requestVerification(
+    @Body({ schema: verificationRequestSchema }) body: VerificationRequest,
+  ): Promise<PendingChallenge> {
+    return this.auth.requestVerification(body);
   }
 
   @Post("verification/resend")
@@ -115,7 +135,10 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthSessionResponse> {
-    const grant = await this.auth.loginPassword(body, request.get("user-agent"));
+    const grant = await this.auth.loginPassword(
+      body,
+      request.get("user-agent"),
+    );
     this.cookies.issue(response, grant);
 
     return grant.response;
@@ -156,10 +179,26 @@ export class AuthController {
     @Req() request: Request,
     @Res() response: Response,
   ): Promise<void> {
-    const principal = await this.sessions.optional(this.cookies.access(request));
-    const start = await this.oauth.start(params.provider, query.intent, principal);
-    this.cookies.setOAuthState(response, start.stateToken);
-    response.redirect(start.authorizationUrl);
+    /**
+     * Guard: a failure here redirects like the callback does rather than
+     * throwing. This route is a browser navigation, so an unhandled error puts a
+     * raw json envelope in the address bar instead of an unconfigured-provider
+     * message on the sign-in screen the reader just left.
+     */
+    try {
+      const principal = await this.sessions.optional(
+        this.cookies.access(request),
+      );
+      const start = await this.oauth.start(
+        params.provider,
+        query.intent,
+        principal,
+      );
+      this.cookies.setOAuthState(response, start.stateToken);
+      response.redirect(start.authorizationUrl);
+    } catch (error) {
+      response.redirect(this.oauth.redirectUrl(errorCode(error)));
+    }
   }
 
   @Get("oauth/:provider/callback")

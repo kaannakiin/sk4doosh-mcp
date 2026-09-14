@@ -97,6 +97,19 @@
       "dependsOn": [
         "^build"
       ]
+    },
+    "db:seed": {
+      "dependsOn": [
+        "build"
+      ],
+      "cache": false,
+      "passThroughEnv": [
+        "CHAT_DATABASE_URL",
+        "CHAT_SEED_EMAIL",
+        "CHAT_SEED_PASSWORD",
+        "CHAT_SEED_FIRST_NAME",
+        "CHAT_SEED_LAST_NAME"
+      ]
     }
   }
 }

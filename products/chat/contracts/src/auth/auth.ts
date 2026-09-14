@@ -48,6 +48,23 @@ export const challengeResendSchema = z.object({
 });
 export type ChallengeResend = z.infer<typeof challengeResendSchema>;
 
+/**
+ * Guard: exactly one contact, enforced here rather than by a union. Zod strips
+ * unknown keys, so a union of two object branches would accept a body carrying
+ * both and silently discard the second — the caller would ask to verify a phone
+ * and get an email challenge back.
+ */
+export const verificationRequestSchema = z
+  .object({
+    email: emailSchema.optional(),
+    phoneE164: phoneE164Schema.optional(),
+  })
+  .refine(
+    (value) => (value.email === undefined) !== (value.phoneE164 === undefined),
+    { message: "provide either an email or a phone number" },
+  );
+export type VerificationRequest = z.infer<typeof verificationRequestSchema>;
+
 export const passwordLoginSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
@@ -86,9 +103,21 @@ export type OAuthProfileCompletion = z.infer<
 export const authChannelSchema = z.enum(["email", "phone"]);
 export type AuthChannel = z.infer<typeof authChannelSchema>;
 
+/**
+ * Guard: the purpose, not the channel, selects the endpoint that confirms a
+ * challenge. Registering a phone and signing in with one both answer
+ * `channel: "phone"` while confirming at different routes, so a client reading
+ * only the channel would post a verification code to the login route and be told
+ * its perfectly good code is invalid.
+ */
+export const challengePurposeSchema = z.enum(["verifyContact", "phoneLogin"]);
+export type ChallengePurpose = z.infer<typeof challengePurposeSchema>;
+
 export const pendingChallengeSchema = z.object({
   challengeId: challengeIdSchema,
+  purpose: challengePurposeSchema,
   expiresAt: z.iso.datetime(),
+  resendAt: z.iso.datetime(),
   channel: authChannelSchema,
   maskedTarget: z.string(),
 });

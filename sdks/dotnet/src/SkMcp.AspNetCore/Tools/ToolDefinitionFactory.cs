@@ -49,7 +49,7 @@ internal static class ToolDefinitionFactory
 
         bool allowsAdditional = false;
         if (endpoint.RequestBody is not null
-            && RequestBodyShape.BodyRootOf(endpoint.RequestBody.Schema) is { } bodyRoot)
+            && RequestBodyShape.BodyRootOf(endpoint.RequestBody) is { } bodyRoot)
         {
             if (strictArguments && properties.ContainsKey(bodyRoot))
             {
@@ -58,7 +58,10 @@ internal static class ToolDefinitionFactory
                     $"Body root argument '{bodyRoot}' collides with a parameter name on {endpoint.Method} {endpoint.Route}; rename the parameter.");
             }
             properties[bodyRoot] = endpoint.RequestBody.Schema.DeepClone();
-            Require(bodyRoot);
+            if (endpoint.RequestBody.Required != false)
+            {
+                Require(bodyRoot);
+            }
         }
         else if (endpoint.RequestBody is not null)
         {

@@ -4,7 +4,7 @@ import {
   type SessionSummary,
 } from "@chat/contracts/chat/session-record";
 import type { Locale } from "@chat/contracts/common/locale";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import { chatKeys } from "../keys.ts";
 import { sessionPath } from "../path.ts";
@@ -19,7 +19,6 @@ import {
 
 export function useDeleteSession(locale: Locale) {
   const client = useChatClient();
-  const queryClient = useQueryClient();
 
   return useMutation<void, Error, SessionId, SessionListSnapshot>({
     mutationFn: (sessionId) =>
@@ -27,18 +26,24 @@ export function useDeleteSession(locale: Locale) {
         method: "DELETE",
         locale,
       }),
-    onMutate: (sessionId) => {
+    onMutate: (sessionId, { client: queryClient }) => {
       const snapshot = removeSessionFromLists(queryClient, sessionId);
       queryClient.removeQueries({ queryKey: chatKeys.session(sessionId) });
 
       return snapshot;
     },
-    onError: (_error, _sessionId, snapshot) => {
+    onError: (_error, _sessionId, snapshot, { client: queryClient }) => {
       if (snapshot !== undefined) {
         restoreSessionLists(queryClient, snapshot);
       }
     },
-    onSettled: () => {
+    onSettled: (
+      _data,
+      _error,
+      _sessionId,
+      _onMutateResult,
+      { client: queryClient },
+    ) => {
       void queryClient.invalidateQueries({ queryKey: chatKeys.sessionLists() });
     },
   });
@@ -51,7 +56,6 @@ export interface RenameSessionInput {
 
 export function useRenameSession(locale: Locale) {
   const client = useChatClient();
-  const queryClient = useQueryClient();
 
   return useMutation<
     SessionSummary,
@@ -65,7 +69,7 @@ export function useRenameSession(locale: Locale) {
         locale,
         body: { title },
       }),
-    onMutate: ({ sessionId, title }) => {
+    onMutate: ({ sessionId, title }, { client: queryClient }) => {
       const snapshot = patchSessionInLists(queryClient, sessionId, { title });
       queryClient.setQueryData<SessionView>(
         chatKeys.session(sessionId),
@@ -77,12 +81,12 @@ export function useRenameSession(locale: Locale) {
 
       return snapshot;
     },
-    onError: (_error, _input, snapshot) => {
+    onError: (_error, _input, snapshot, { client: queryClient }) => {
       if (snapshot !== undefined) {
         restoreSessionLists(queryClient, snapshot);
       }
     },
-    onSuccess: (session) => {
+    onSuccess: (session, _input, _onMutateResult, { client: queryClient }) => {
       patchSessionInLists(queryClient, session.id, session);
     },
   });

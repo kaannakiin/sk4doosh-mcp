@@ -82,5 +82,167 @@
     "light": "Light",
     "dark": "Dark",
     "auto": "Match system"
+  },
+  "auth": {
+    "brand": {
+      "tagline": "A quiet console for reading what your files actually say."
+    },
+    "login": {
+      "title": "Welcome back",
+      "submit": "Sign in",
+      "createAccount": "Create an account",
+      "phoneLink": "Sign in with a phone number"
+    },
+    "register": {
+      "title": "Create an account",
+      "submit": "Create account",
+      "signIn": "Sign in",
+      "methodLabel": "Sign-up method",
+      "methodEmail": "Email",
+      "methodPhone": "Phone",
+      "submitPhone": "Send code"
+    },
+    "fields": {
+      "firstName": {
+        "label": "First name"
+      },
+      "lastName": {
+        "label": "Last name"
+      },
+      "email": {
+        "label": "Email"
+      },
+      "password": {
+        "label": "Password",
+        "hint": "At least {{min}} characters.",
+        "toggle": "Show or hide password"
+      },
+      "code": {
+        "label": "Verification code",
+        "digit": "Digit {{index}} of {{count}}"
+      },
+      "phone": {
+        "label": "Phone number",
+        "country": "Country",
+        "incomplete": "That number looks incomplete.",
+        "unsupported": "That doesn't look like a mobile number."
+      }
+    },
+    "otp": {
+      "title": "Enter your code",
+      "sentEmail": "We sent a 6-digit code to <target>{{target}}</target>.",
+      "submit": "Verify",
+      "expiresIn": "Expires in {{count}} minute.",
+      "expiresIn_other": "Expires in {{count}} minutes.",
+      "expiresSoon": "Expires in under a minute.",
+      "resend": "Send a new code",
+      "resendCountdown": "New code available in {{time}}",
+      "resendUnavailable": "Wait before requesting a new code",
+      "resendReady": "You can request a new code now.",
+      "resent": "A new code is on its way.",
+      "attemptsLeft": "{{count}} attempt left before this code stops working.",
+      "attemptsLeft_other": "{{count}} attempts left before this code stops working.",
+      "startOver": "Start over",
+      "sentPhone": "If that number is registered, a 6-digit code is on its way to <target>{{target}}</target>."
+    },
+    "account": {
+      "menu": "Account actions",
+      "signOut": "Sign out"
+    },
+    "status": {
+      "submitting": "Sending…",
+      "verifying": "Checking your code…",
+      "signedIn": "Signed in. Taking you to your conversations…"
+    },
+    "actions": {
+      "backToSignIn": "Back to sign-in"
+    },
+    "errors": {
+      "account_exists": {
+        "title": "That account already exists",
+        "body": "There's already an account for {{target}}.",
+        "action": "Sign in instead"
+      },
+      "invalid_credentials": {
+        "body": "That email and password don't match an account."
+      },
+      "verification_required": {
+        "title": "This account isn't verified yet",
+        "body": "The account exists, but the code we sent when it was created was never entered.",
+        "action": "Send a new code"
+      },
+      "challenge_wrong": {
+        "body": "That code isn't right. Check it and try again."
+      },
+      "challenge_expired": {
+        "title": "This code has expired",
+        "body": "Codes last 10 minutes. You'll need to start again."
+      },
+      "challenge_burned": {
+        "title": "Too many wrong codes",
+        "body": "That code has been entered incorrectly too many times. Request a new one."
+      },
+      "too_many_requests": {
+        "title": "Slow down for a moment",
+        "body": "Too many attempts from here. Try again in a few minutes."
+      },
+      "unknown": {
+        "body": "Something went wrong. Try again."
+      },
+      "oauth_state_invalid": {
+        "title": "That sign-in didn't complete",
+        "body": "The request expired or didn't come back intact. Start the sign-in again."
+      },
+      "oauth_link_required": {
+        "title": "Sign in first",
+        "body": "There's already an account using that email. Sign in to it, then link this provider from your account."
+      },
+      "oauth_account_conflict": {
+        "title": "Already linked",
+        "body": "That provider account is connected to a different account here."
+      },
+      "oauth_provider_unavailable": {
+        "title": "Unavailable",
+        "body": "That sign-in provider isn't set up on this server."
+      }
+    },
+    "loginPhone": {
+      "title": "Sign in by phone",
+      "submit": "Send code",
+      "passwordLink": "Sign in with email and password instead"
+    },
+    "oauth": {
+      "or": "or",
+      "groupLabel": "Other ways to sign in",
+      "google": "Continue with Google",
+      "github": "Continue with GitHub",
+      "redirecting": "Taking you to {{provider}}…",
+      "providerGoogle": "Google",
+      "providerGithub": "GitHub"
+    },
+    "complete": {
+      "title": "One last thing",
+      "submit": "Continue"
+    }
+  },
+  "validation": {
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phoneE164": "Phone number",
+      "password": "Password",
+      "challengeId": "Verification request",
+      "code": "Verification code",
+      "root": "Form"
+    },
+    "issues": {
+      "required": "{{field}} is required",
+      "too_small": "{{field}} must be at least {{limit}} characters",
+      "too_big": "{{field}} must be at most {{limit}} characters",
+      "email": "Enter a valid email address",
+      "phone": "Enter a valid phone number",
+      "fallback": "{{field}} is invalid"
+    }
   }
 }

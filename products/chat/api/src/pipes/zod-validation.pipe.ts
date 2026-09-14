@@ -1,5 +1,10 @@
 import type { ApiError, ValidationIssue } from "@chat/contracts/http/error";
 import {
+  isBlankAt,
+  validationLimitOf,
+  validationRuleOf,
+} from "@chat/contracts/http/validation-rule";
+import {
   HttpException,
   HttpStatus,
   Injectable,
@@ -11,13 +16,6 @@ import type { $ZodIssue } from "zod/v4/core";
 
 import { I18nService } from "../i18n/i18n.service.ts";
 
-const TRANSLATED_CODES = new Set([
-  "invalid_type",
-  "invalid_value",
-  "too_big",
-  "too_small",
-]);
-
 function isZodSchema(schema: unknown): schema is ZodType {
   return (
     typeof schema === "object" &&
@@ -25,14 +23,6 @@ function isZodSchema(schema: unknown): schema is ZodType {
     "safeParse" in schema &&
     typeof (schema as ZodType).safeParse === "function"
   );
-}
-
-function limitOf(issue: $ZodIssue): number | bigint | undefined {
-  if ("minimum" in issue) {
-    return issue.minimum;
-  }
-
-  return "maximum" in issue ? issue.maximum : undefined;
 }
 
 /**
@@ -61,27 +51,28 @@ export class ZodValidationPipe implements PipeTransform {
     const body: ApiError = {
       code: "validation_failed",
       message: this.i18n.t("validation:failed"),
-      issues: result.error.issues.map((issue) => this.render(issue)),
+      issues: result.error.issues.map((issue) =>
+        this.render(issue, isBlankAt(value, issue.path)),
+      ),
     };
 
     throw new HttpException(body, HttpStatus.UNPROCESSABLE_ENTITY);
   }
 
-  private render(issue: $ZodIssue): ValidationIssue {
+  private render(issue: $ZodIssue, blank: boolean): ValidationIssue {
     const name = issue.path.at(-1);
     const fieldKey = typeof name === "string" ? name : "root";
-    const code = TRANSLATED_CODES.has(issue.code) ? issue.code : "fallback";
 
     return {
       path: issue.path.map((segment) =>
         typeof segment === "symbol" ? segment.toString() : segment,
       ),
       code: issue.code,
-      message: this.i18n.t(`validation:issues.${code}`, {
+      message: this.i18n.t(`validation:issues.${validationRuleOf(issue, blank)}`, {
         field: this.i18n.t(`validation:fields.${fieldKey}`, {
           defaultValue: fieldKey,
         }),
-        limit: limitOf(issue),
+        limit: validationLimitOf(issue),
       }),
     };
   }

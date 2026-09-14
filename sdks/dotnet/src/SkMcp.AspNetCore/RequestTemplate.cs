@@ -6,13 +6,53 @@ public enum ParameterLocation { Path, Query, Header }
 
 public enum ParameterKind { String, Integer, Number, Boolean }
 
+/// <param name="ArraySeparator">
+/// The delimiter that joins array items into one value; <c>null</c> repeats the key
+/// instead. Normalised from the descriptor's style/explode pair by
+/// <see cref="RequestTemplate.ArraySeparatorFor"/> so the invalid pairings cannot be represented.
+/// </param>
 public sealed record ParameterBinding(
-    string Name, ParameterLocation Location, ParameterKind Kind, bool IsArray = false);
+    string Name, ParameterLocation Location, ParameterKind Kind, bool IsArray = false,
+    string? ArraySeparator = null);
 
 public sealed partial class RequestTemplate
 {
     private static readonly HashSet<string> ReservedHeaderNames =
         new(StringComparer.OrdinalIgnoreCase) { "Authorization", "Cookie" };
+
+    private static readonly Dictionary<string, string> Delimiters = new(StringComparer.Ordinal)
+    {
+        ["form"] = ",",
+        ["spaceDelimited"] = " ",
+        ["pipeDelimited"] = "|",
+    };
+
+    /// <summary>Normalises an OpenAPI style/explode pair into a separator.</summary>
+    /// <returns>The delimiter to join array items with, or <c>null</c> to repeat the key.</returns>
+    /// <exception cref="SkMcpTemplateException">
+    /// <c>unsupported_array_style</c> for a pairing that has no wire form.
+    /// </exception>
+    public static string? ArraySeparatorFor(string? style, bool? explode, string parameterName)
+    {
+        string resolved = style ?? "form";
+        if (!Delimiters.TryGetValue(resolved, out string? delimiter))
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedArrayStyle,
+                $"Parameter '{parameterName}' declares an unknown style '{resolved}'.");
+        }
+        if (explode ?? true)
+        {
+            if (resolved != "form")
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.UnsupportedArrayStyle,
+                    $"Parameter '{parameterName}' declares style '{resolved}' with explode true, which has no wire form; set explode false.");
+            }
+            return null;
+        }
+        return delimiter;
+    }
 
     public HttpMethod Method { get; }
     public string RouteTemplate { get; }
@@ -83,6 +123,13 @@ public sealed partial class RequestTemplate
                 throw new SkMcpTemplateException(
                     SkMcpTemplateException.PathParameterArray,
                     $"Path parameter '{parameter.Name}' cannot be an array.");
+            }
+            if (parameter.Location == ParameterLocation.Header
+                && parameter.IsArray && parameter.ArraySeparator is null)
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.HeaderParameterArray,
+                    $"Header parameter '{parameter.Name}' is an array but repeats the key, which a header cannot carry; declare explode false.");
             }
         }
 
