@@ -16,23 +16,15 @@ import type {
 import type { UploadResponse } from "@chat/contracts/attachment/upload";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { ApiError } from "@chat/contracts/http/error";
-import {
-  createAttachment,
-  familiesFor,
-  findAttachment,
-  findBySandboxPath,
-  listAttachments,
-  softDeleteAttachment,
-  type AttachmentRow,
-  type UserId,
-} from "@chat/db";
+import type { AttachmentRow } from "@chat/db";
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createHash, randomUUID } from "node:crypto";
 
 import type { AppConfig, UploadConfig } from "../config/configuration.ts";
 import { errorMessage } from "../common/utils/error.utils.ts";
-import { DbService } from "../db/db.service.ts";
+import type { UserId } from "../db/ids.ts";
+import { AttachmentRepository } from "./attachment.repository.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import { detectMediaType, type DetectionFailure } from "./detect-media-type.ts";
 import { ObjectStorageService } from "./object-storage.service.ts";
@@ -64,7 +56,7 @@ export class AttachmentStoreService {
 
   constructor(
     config: ConfigService<AppConfig, true>,
-    private readonly db: DbService,
+    private readonly repository: AttachmentRepository,
     private readonly objects: ObjectStorageService,
     private readonly cache: SandboxCacheService,
     private readonly i18n: I18nService,
@@ -73,7 +65,7 @@ export class AttachmentStoreService {
   }
 
   async list(userId: UserId, session: SessionId): Promise<Attachment[]> {
-    return (await listAttachments(this.db.client, userId, session)).map(
+    return (await this.repository.listAttachments(userId, session)).map(
       toPublic,
     );
   }
@@ -82,7 +74,7 @@ export class AttachmentStoreService {
     userId: UserId,
     session: SessionId,
   ): Promise<ReadonlySet<ReaderFamily>> {
-    return new Set(await familiesFor(this.db.client, userId, session));
+    return new Set(await this.repository.familiesFor(userId, session));
   }
 
   /**
@@ -116,9 +108,7 @@ export class AttachmentStoreService {
     session: SessionId,
     attachmentId: string,
   ): Promise<boolean> {
-    const removed = await softDeleteAttachment(
-      this.db.client,
-      userId,
+    const removed = await this.repository.softDeleteAttachment(userId,
       session,
       attachmentId,
     );
@@ -151,9 +141,7 @@ export class AttachmentStoreService {
     session: SessionId,
     filePath: string,
   ): Promise<void> {
-    const record = await findBySandboxPath(
-      this.db.client,
-      userId,
+    const record = await this.repository.findBySandboxPath(userId,
       session,
       filePath,
     );
@@ -170,9 +158,7 @@ export class AttachmentStoreService {
     attachmentId: string,
     asked: PresignDisposition,
   ): Promise<PresignedUrlResponse | undefined> {
-    const record = await findAttachment(
-      this.db.client,
-      userId,
+    const record = await this.repository.findAttachment(userId,
       session,
       attachmentId,
     );
@@ -243,7 +229,7 @@ export class AttachmentStoreService {
       throw this.reject("storage_unavailable", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    const outcome = await createAttachment(this.db.client, {
+    const outcome = await this.repository.createAttachment({
       userId,
       sessionId: session,
       attachmentId,

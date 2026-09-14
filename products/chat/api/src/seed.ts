@@ -1,8 +1,13 @@
+import "reflect-metadata";
 import { emailRegistrationSchema } from "@chat/contracts/auth/auth";
-import { databaseUrlSchema } from "@chat/contracts/config/database";
-import { createDb, upsertVerifiedUser } from "@chat/db";
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { NestFactory } from "@nestjs/core";
 
+import { AuthRepository } from "./auth/auth.repository.ts";
+import { loadConfig } from "./config/configuration.ts";
 import { PasswordService } from "./auth/password.service.ts";
+import { DbModule } from "./db/db.module.ts";
 
 const USAGE = `usage: node dist/seed.js
   CHAT_SEED_EMAIL       required
@@ -11,16 +16,24 @@ const USAGE = `usage: node dist/seed.js
   CHAT_SEED_LAST_NAME   optional, defaults to "Account"`;
 
 /**
- * Guard: the same file `ConfigModule` reads, resolved the same way — relative to
- * the working directory, not to `dist`. A seed that sourced its connection string
- * from anywhere else would write a verified account into a database the server
- * never opens, and report success doing it.
+ * Guard: `AppModule` is deliberately not used. It pulls in S3, Redis and the LLM
+ * provider, none of which a seed touches and all of which refuse to boot without
+ * their own configuration — a machine that can reach the database would still be
+ * unable to seed it.
  */
-try {
-  process.loadEnvFile(".env");
-} catch {
-  /* exported in the environment, or not needed by this command */
-}
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      envFilePath: ".env",
+      load: [loadConfig],
+    }),
+    DbModule,
+  ],
+  providers: [AuthRepository],
+})
+class SeedModule {}
 
 function required(name: string): string {
   const raw = process.env[name];
@@ -44,13 +57,12 @@ const account = emailRegistrationSchema.parse({
   password: required("CHAT_SEED_PASSWORD"),
 });
 
-const db = createDb({
-  connectionString: databaseUrlSchema.parse(process.env["CHAT_DATABASE_URL"]),
-  poolMax: 1,
+const context = await NestFactory.createApplicationContext(SeedModule, {
+  logger: ["error", "warn"],
 });
 
 try {
-  const user = await upsertVerifiedUser(db, {
+  const user = await context.get(AuthRepository).upsertVerifiedUser({
     firstName: account.firstName,
     lastName: account.lastName,
     email: account.email,
@@ -59,5 +71,5 @@ try {
   });
   console.log(`seeded ${user.email} (${user.publicId})`);
 } finally {
-  await db.$disconnect();
+  await context.close();
 }

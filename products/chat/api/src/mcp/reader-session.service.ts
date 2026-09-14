@@ -3,7 +3,7 @@ import type { SessionId } from "@chat/contracts/chat/session";
 import type { Readiness } from "@chat/contracts/http/health";
 import { EXCEL_TOOL_SCHEMAS } from "@chat/contracts/tools/excel/catalog";
 import { XML_TOOL_SCHEMAS } from "@chat/contracts/tools/xml/catalog";
-import type { UserId } from "@chat/db";
+import type { UserId } from "../db/ids.ts";
 import { createMCPClient, type MCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";

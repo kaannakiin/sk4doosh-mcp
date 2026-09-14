@@ -3,21 +3,15 @@ import {
   type AuthSessionResponse,
   type PublicUser,
 } from "@chat/contracts/auth/auth";
-import {
-  createSession,
-  findActiveSession,
-  revokeSession,
-  revokeSessionByRefreshToken,
-  rotateRefreshToken,
-  type AuthSessionRow,
-  type AuthUserRow,
-} from "@chat/db";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { DbService } from "../db/db.service.ts";
+
 import { AuthCryptoService } from "./auth-crypto.service.ts";
 import { AuthErrorsService } from "./auth-errors.service.ts";
+import { AuthSessionRepository } from "./auth-session.repository.ts";
 import type {
   AuthPrincipal,
+  AuthSessionRow,
+  AuthUserRow,
   SessionGrant,
   SessionMaterial,
 } from "./auth.types.ts";
@@ -25,7 +19,7 @@ import type {
 @Injectable()
 export class AuthSessionService {
   constructor(
-    private readonly db: DbService,
+    private readonly repository: AuthSessionRepository,
     private readonly crypto: AuthCryptoService,
     private readonly errors: AuthErrorsService,
   ) {}
@@ -50,9 +44,7 @@ export class AuthSessionService {
     userAgent?: string,
   ): Promise<SessionGrant> {
     const material = this.createMaterial(userAgent);
-    const session = await createSession(
-      this.db.client,
-      userId,
+    const session = await this.repository.createSession(userId,
       material.seed,
     );
 
@@ -84,9 +76,7 @@ export class AuthSessionService {
     if (identity === undefined) {
       this.errors.fail("unauthorized", HttpStatus.UNAUTHORIZED);
     }
-    const session = await findActiveSession(
-      this.db.client,
-      identity.sessionPublicId,
+    const session = await this.repository.findActiveSession(identity.sessionPublicId,
       new Date(),
     );
     if (
@@ -107,9 +97,7 @@ export class AuthSessionService {
     if (identity === undefined) {
       return undefined;
     }
-    const session = await findActiveSession(
-      this.db.client,
-      identity.sessionPublicId,
+    const session = await this.repository.findActiveSession(identity.sessionPublicId,
       new Date(),
     );
 
@@ -123,9 +111,7 @@ export class AuthSessionService {
       this.errors.fail("session_expired", HttpStatus.UNAUTHORIZED);
     }
     const next = this.crypto.createRefresh();
-    const outcome = await rotateRefreshToken(
-      this.db.client,
-      this.crypto.hashRefresh(rawToken),
+    const outcome = await this.repository.rotateRefreshToken(this.crypto.hashRefresh(rawToken),
       next.hash,
       new Date(Date.now() + WEB_REFRESH_TTL_MS),
       new Date(),
@@ -138,7 +124,7 @@ export class AuthSessionService {
   }
 
   async logout(sessionPublicId: string): Promise<void> {
-    await revokeSession(this.db.client, sessionPublicId, new Date());
+    await this.repository.revokeSession(sessionPublicId, new Date());
   }
 
   async logoutCurrent(
@@ -152,9 +138,7 @@ export class AuthSessionService {
       return;
     }
     if (refreshToken !== undefined) {
-      await revokeSessionByRefreshToken(
-        this.db.client,
-        this.crypto.hashRefresh(refreshToken),
+      await this.repository.revokeSessionByRefreshToken(this.crypto.hashRefresh(refreshToken),
         new Date(),
       );
     }

@@ -8,15 +8,7 @@ import {
   type OAuthIntent,
   type OAuthProfileCompletion,
 } from "@chat/contracts/auth/auth";
-import {
-  createOAuthUserAndSession,
-  findActiveSession,
-  findOAuthUser,
-  findUserByVerifiedEmail,
-  isUniqueConstraintError,
-  linkOAuthAccount,
-  revokeSession,
-} from "@chat/db";
+import { isUniqueConstraintError } from "@chat/db";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as oauth from "oauth4webapi";
@@ -25,11 +17,12 @@ import type {
   AppConfig,
   OAuthProviderConfig,
 } from "../config/configuration.ts";
-import { DbService } from "../db/db.service.ts";
 import { AuthCryptoService } from "./auth-crypto.service.ts";
 import { AuthErrorsService } from "./auth-errors.service.ts";
+import { AuthSessionRepository } from "./auth-session.repository.ts";
 import { AuthSessionService } from "./auth-session.service.ts";
 import type { AuthPrincipal, SessionGrant } from "./auth.types.ts";
+import { OAuthRepository } from "./oauth.repository.ts";
 
 const OAUTH_ENVELOPE_TTL_MS = 10 * 60 * 1000;
 
@@ -73,7 +66,8 @@ export class OAuthService {
   private readonly authConfig: AppConfig["auth"];
 
   constructor(
-    private readonly db: DbService,
+    private readonly repository: OAuthRepository,
+    private readonly sessionRepository: AuthSessionRepository,
     private readonly crypto: AuthCryptoService,
     private readonly sessions: AuthSessionService,
     private readonly errors: AuthErrorsService,
@@ -156,9 +150,7 @@ export class OAuthService {
       parsed.data.verifier,
       parsed.data.nonce,
     );
-    const linked = await findOAuthUser(
-      this.db.client,
-      provider,
+    const linked = await this.repository.findOAuthUser(provider,
       profile.providerAccountId,
     );
 
@@ -169,9 +161,7 @@ export class OAuthService {
       ) {
         this.errors.fail("oauth_state_invalid", HttpStatus.UNAUTHORIZED);
       }
-      const activeSession = await findActiveSession(
-        this.db.client,
-        parsed.data.sessionPublicId,
+      const activeSession = await this.sessionRepository.findActiveSession(parsed.data.sessionPublicId,
         new Date(),
       );
       if (
@@ -185,9 +175,7 @@ export class OAuthService {
       }
       if (linked === undefined) {
         try {
-          await linkOAuthAccount(
-            this.db.client,
-            parsed.data.userId,
+          await this.repository.linkOAuthAccount(parsed.data.userId,
             provider,
             profile.providerAccountId,
           );
@@ -198,9 +186,7 @@ export class OAuthService {
           throw error;
         }
       }
-      await revokeSession(
-        this.db.client,
-        parsed.data.sessionPublicId,
+      await this.sessionRepository.revokeSession(parsed.data.sessionPublicId,
         new Date(),
       );
 
@@ -224,7 +210,7 @@ export class OAuthService {
     if (
       profile.email !== null &&
       profile.emailVerified &&
-      (await findUserByVerifiedEmail(this.db.client, profile.email)) !== undefined
+      (await this.repository.findUserByVerifiedEmail(profile.email)) !== undefined
     ) {
       return { kind: "link_required" };
     }
@@ -278,9 +264,7 @@ export class OAuthService {
     if (!parsed.success) {
       this.errors.fail("oauth_state_invalid", HttpStatus.UNAUTHORIZED);
     }
-    const existing = await findOAuthUser(
-      this.db.client,
-      parsed.data.provider,
+    const existing = await this.repository.findOAuthUser(parsed.data.provider,
       parsed.data.providerAccountId,
     );
     if (existing !== undefined) {
@@ -289,7 +273,7 @@ export class OAuthService {
     if (
       parsed.data.email !== null &&
       parsed.data.emailVerified &&
-      (await findUserByVerifiedEmail(this.db.client, parsed.data.email)) !== undefined
+      (await this.repository.findUserByVerifiedEmail(parsed.data.email)) !== undefined
     ) {
       this.errors.fail("oauth_link_required", HttpStatus.CONFLICT);
     }
@@ -321,9 +305,7 @@ export class OAuthService {
   ): Promise<SessionGrant> {
     const material = this.sessions.createMaterial(userAgent);
     try {
-      const session = await createOAuthUserAndSession(
-        this.db.client,
-        {
+      const session = await this.repository.createOAuthUserAndSession({
           provider,
           providerAccountId: profile.providerAccountId,
           email: profile.email,

@@ -8,11 +8,11 @@ import type { AppConfig } from "../config/configuration.ts";
 @Injectable()
 export class DbService implements OnModuleDestroy {
   /**
-   * Guard: every query goes through a function `@chat/db` exports, never through
-   * this client's model delegates. Those delegates return the tables' `bigint`
-   * surrogates, and `JSON.stringify` throws on a `bigint` — the row mappers in
-   * `@chat/db` are the only place that converts them, so reaching past them puts
-   * a value in scope that turns a successful query into a 500.
+   * Guard: every query belongs to a `*.repository.ts`, and nothing else reaches
+   * for this client. The delegates return the tables' `bigint` surrogates and
+   * `JSON.stringify` throws on a `bigint`; the repositories own the row mappers
+   * that convert them, so a query written anywhere else puts a value in scope
+   * that turns a successful read into a 500.
    */
   readonly client: Db;
 

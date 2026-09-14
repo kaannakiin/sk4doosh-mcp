@@ -1,5 +1,4 @@
 import { WEB_REFRESH_TTL_MS } from "@chat/contracts/auth/auth";
-import type { UserId } from "@chat/db";
 import type { INestApplication } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
@@ -7,6 +6,7 @@ import type { Request, Response } from "express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import type { UserId } from "../src/db/ids.ts";
 import {
   ACCESS_COOKIE_NAME,
   AuthCookieService,

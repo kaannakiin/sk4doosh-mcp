@@ -1,5 +1,7 @@
 import { SESSION_TITLE_MAX_LENGTH } from "@chat/contracts/chat/session-limits";
-import type { MessageInput, MessageRow } from "@chat/db";
+import type { MessageRow } from "@chat/db";
+
+import type { MessageInput } from "./message.repository.ts";
 import { validateUIMessages, type UIMessage } from "ai";
 
 /**

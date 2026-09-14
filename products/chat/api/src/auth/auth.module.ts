@@ -13,7 +13,10 @@ import { AuthGuard } from "./auth.guard.ts";
 import { AuthOriginGuard } from "./auth-origin.guard.ts";
 import { AuthSessionService } from "./auth-session.service.ts";
 import { AuthController } from "./auth.controller.ts";
+import { AuthSessionRepository } from "./auth-session.repository.ts";
+import { AuthRepository } from "./auth.repository.ts";
 import { AuthService } from "./auth.service.ts";
+import { OAuthRepository } from "./oauth.repository.ts";
 import { NoStoreInterceptor } from "./no-store.interceptor.ts";
 import {
   LoggingOtpDelivery,
@@ -58,6 +61,9 @@ import { PasswordService } from "./password.service.ts";
   ],
   controllers: [AuthController],
   providers: [
+    AuthRepository,
+    AuthSessionRepository,
+    OAuthRepository,
     AuthService,
     AuthSessionService,
     AuthCryptoService,

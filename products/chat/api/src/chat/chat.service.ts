@@ -2,7 +2,7 @@ import type { Locale } from "@chat/contracts/common/locale";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { StreamRequest } from "@chat/contracts/chat/stream-request";
 import type { ApiError } from "@chat/contracts/http/error";
-import type { UserId } from "@chat/db";
+import type { UserId } from "../db/ids.ts";
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { SystemModelMessage } from "ai";

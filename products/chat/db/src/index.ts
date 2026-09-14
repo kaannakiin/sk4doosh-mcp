@@ -9,64 +9,6 @@
  */
 export { createDb } from "./client.js";
 export { isUniqueConstraintError } from "./errors.js";
-export {
-  createAttachment,
-  familiesFor,
-  findAttachment,
-  findBySandboxPath,
-  listAttachments,
-  sessionUsage,
-  softDeleteAttachment,
-} from "./attachments.js";
-export type {
-  AttachmentOutcome,
-  AttachmentRefusal,
-  NewAttachment,
-} from "./attachments.js";
-export {
-  consumeChallengeAndCreateSession,
-  createEmailRegistration,
-  createOAuthUserAndSession,
-  createPhoneLoginChallenge,
-  createPhoneRegistration,
-  createSession,
-  createVerificationChallenge,
-  findActiveSession,
-  findChallenge,
-  findOAuthUser,
-  findPasswordLogin,
-  findUserByVerifiedEmail,
-  linkOAuthAccount,
-  recordChallengeFailure,
-  replaceChallenge,
-  revokeSession,
-  revokeSessionByRefreshToken,
-  rotateRefreshToken,
-  updatePasswordHash,
-  upsertVerifiedUser,
-} from "./auth.js";
-export type {
-  AuthUserRow,
-  ChallengePurpose,
-  ChallengeRow,
-  PasswordLoginRow,
-  PendingChallengeRow,
-  RefreshOutcome,
-  SessionRow as AuthSessionRow,
-  SessionSeed,
-  UserId,
-  VerificationContact,
-} from "./auth.js";
-export { listMessages, reconcileTurn, settleTurn } from "./messages.js";
-export type { MessageInput, ReconcileParams } from "./messages.js";
-export {
-  attachmentCounts,
-  findSession,
-  listSessions,
-  renameSession,
-  softDeleteSession,
-} from "./sessions.js";
-export type { SessionListQuery } from "./sessions.js";
 export type { Db, DbOptions } from "./client.js";
 export type {
   AttachmentRow,

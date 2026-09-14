@@ -26,7 +26,7 @@ import {
   type StreamRequest,
 } from "@chat/contracts/chat/stream-request";
 import type { ApiError } from "@chat/contracts/http/error";
-import type { UserId } from "@chat/db";
+import type { UserId } from "../db/ids.ts";
 import {
   Body,
   Controller,

@@ -11,36 +11,26 @@ import {
   type PhoneRegistration,
   type VerificationRequest,
 } from "@chat/contracts/auth/auth";
-import {
-  consumeChallengeAndCreateSession,
-  createEmailRegistration,
-  createPhoneLoginChallenge,
-  createPhoneRegistration,
-  createVerificationChallenge,
-  findChallenge,
-  findPasswordLogin,
-  isUniqueConstraintError,
-  recordChallengeFailure,
-  replaceChallenge,
-  updatePasswordHash,
-  type ChallengePurpose,
-  type PendingChallengeRow,
-  type VerificationContact,
-} from "@chat/db";
+import { isUniqueConstraintError } from "@chat/db";
 import { HttpStatus, Injectable } from "@nestjs/common";
 
-import { DbService } from "../db/db.service.ts";
 import { AuthCryptoService, type OtpMaterial } from "./auth-crypto.service.ts";
 import { AuthErrorsService } from "./auth-errors.service.ts";
 import { AuthSessionService } from "./auth-session.service.ts";
-import type { SessionGrant } from "./auth.types.ts";
+import { AuthRepository } from "./auth.repository.ts";
+import type {
+  ChallengePurpose,
+  PendingChallengeRow,
+  SessionGrant,
+  VerificationContact,
+} from "./auth.types.ts";
 import { InjectOtpDelivery, type OtpDelivery } from "./otp-delivery.ts";
 import { PasswordService } from "./password.service.ts";
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly db: DbService,
+    private readonly repository: AuthRepository,
     private readonly crypto: AuthCryptoService,
     private readonly passwords: PasswordService,
     private readonly sessions: AuthSessionService,
@@ -56,7 +46,7 @@ export class AuthService {
     const expiresAt = this.challengeExpiry();
 
     try {
-      const challenge = await createEmailRegistration(this.db.client, {
+      const challenge = await this.repository.createEmailRegistration({
         ...input,
         passwordHash,
         challenge: { secretHash: otp.encodedHash, expiresAt },
@@ -77,7 +67,7 @@ export class AuthService {
     const expiresAt = this.challengeExpiry();
 
     try {
-      const challenge = await createPhoneRegistration(this.db.client, {
+      const challenge = await this.repository.createPhoneRegistration({
         ...input,
         challenge: { secretHash: otp.encodedHash, expiresAt },
       });
@@ -102,9 +92,7 @@ export class AuthService {
   async requestPhoneLogin(phoneE164: string): Promise<PendingChallenge> {
     const otp = this.crypto.createOtp();
     const expiresAt = this.challengeExpiry();
-    const challenge = await createPhoneLoginChallenge(
-      this.db.client,
-      phoneE164,
+    const challenge = await this.repository.createPhoneLoginChallenge(phoneE164,
       { secretHash: otp.encodedHash, expiresAt },
       new Date(Date.now() - AUTH_CHALLENGE_RESEND_MS),
     );
@@ -140,9 +128,7 @@ export class AuthService {
     const contact = contactOf(input);
     const otp = this.crypto.createOtp();
     const now = new Date();
-    const challenge = await createVerificationChallenge(
-      this.db.client,
-      contact,
+    const challenge = await this.repository.createVerificationChallenge(contact,
       { secretHash: otp.encodedHash, expiresAt: this.challengeExpiry() },
       new Date(now.getTime() - AUTH_CHALLENGE_RESEND_MS),
       now,
@@ -169,7 +155,7 @@ export class AuthService {
   }
 
   async resend(challengeId: string): Promise<PendingChallenge> {
-    const previous = await findChallenge(this.db.client, challengeId);
+    const previous = await this.repository.findChallenge(challengeId);
     const now = new Date();
     if (
       previous === undefined ||
@@ -189,9 +175,7 @@ export class AuthService {
     }
 
     const otp = this.crypto.createOtp();
-    const next = await replaceChallenge(
-      this.db.client,
-      previous,
+    const next = await this.repository.replaceChallenge(previous,
       {
         secretHash: otp.encodedHash,
         expiresAt: this.challengeExpiry(),
@@ -213,7 +197,7 @@ export class AuthService {
     input: PasswordLogin,
     userAgent?: string,
   ): Promise<SessionGrant> {
-    const found = await findPasswordLogin(this.db.client, input.email);
+    const found = await this.repository.findPasswordLogin(input.email);
     if (found === undefined) {
       await this.passwords.burnDummy(input.password);
       this.errors.fail("invalid_credentials", HttpStatus.UNAUTHORIZED);
@@ -229,9 +213,7 @@ export class AuthService {
       this.errors.fail("verification_required", HttpStatus.FORBIDDEN);
     }
     if (this.passwords.needsRehash(found.passwordHash)) {
-      await updatePasswordHash(
-        this.db.client,
-        found.user.internalId,
+      await this.repository.updatePasswordHash(found.user.internalId,
         await this.passwords.hash(input.password),
       );
     }
@@ -244,7 +226,7 @@ export class AuthService {
     allowedPurposes: readonly ChallengePurpose[],
     userAgent?: string,
   ): Promise<SessionGrant> {
-    const challenge = await findChallenge(this.db.client, input.challengeId);
+    const challenge = await this.repository.findChallenge(input.challengeId);
     const now = new Date();
     if (
       challenge === undefined ||
@@ -259,7 +241,7 @@ export class AuthService {
       );
     }
     if (!this.crypto.verifyOtp(challenge.secretHash, input.code)) {
-      await recordChallengeFailure(this.db.client, challenge.internalId);
+      await this.repository.recordChallengeFailure(challenge.internalId);
       this.errors.fail(
         "invalid_or_expired_challenge",
         HttpStatus.UNPROCESSABLE_ENTITY,
@@ -267,9 +249,7 @@ export class AuthService {
     }
 
     const material = this.sessions.createMaterial(userAgent);
-    const session = await consumeChallengeAndCreateSession(
-      this.db.client,
-      challenge,
+    const session = await this.repository.consumeChallengeAndCreateSession(challenge,
       material.seed,
       now,
     );

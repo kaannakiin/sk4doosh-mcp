@@ -9,21 +9,12 @@ import type {
   SessionListResponse,
 } from "@chat/contracts/chat/session-page";
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
-import {
-  attachmentCounts,
-  findSession,
-  listMessages,
-  listSessions,
-  reconcileTurn,
-  renameSession,
-  settleTurn,
-  softDeleteSession,
-  type UserId,
-} from "@chat/db";
 import { Injectable, Logger } from "@nestjs/common";
 import type { UIMessage } from "ai";
 
-import { DbService } from "../db/db.service.ts";
+import type { UserId } from "../db/ids.ts";
+import { ChatSessionRepository } from "./chat-session.repository.ts";
+import { MessageRepository } from "./message.repository.ts";
 import { hydrate, titleFrom, toInputs } from "./message-history.ts";
 
 export interface TurnEnd {
@@ -37,7 +28,10 @@ export interface TurnEnd {
 export class ChatHistoryService {
   private readonly logger = new Logger(ChatHistoryService.name);
 
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly sessions: ChatSessionRepository,
+    private readonly messages: MessageRepository,
+  ) {}
 
   /**
    * Writes the posted history before the model is called.
@@ -54,7 +48,7 @@ export class ChatHistoryService {
     session: SessionId,
     messages: readonly UIMessage[],
   ): Promise<boolean> {
-    return reconcileTurn(this.db.client, {
+    return this.messages.reconcileTurn({
       userId,
       sessionId: session,
       messages: toInputs(messages),
@@ -75,7 +69,7 @@ export class ChatHistoryService {
     event: TurnEnd,
   ): Promise<void> {
     try {
-      const written = await reconcileTurn(this.db.client, {
+      const written = await this.messages.reconcileTurn({
         userId,
         sessionId: session,
         messages: toInputs(event.messages),
@@ -85,9 +79,7 @@ export class ChatHistoryService {
         return;
       }
 
-      await settleTurn(
-        this.db.client,
-        userId,
+      await this.messages.settleTurn(userId,
         session,
         event.responseMessage.id,
         outcomeOf(event.outcome.status),
@@ -110,16 +102,14 @@ export class ChatHistoryService {
         ? undefined
         : decodeSessionCursor(query.cursor);
 
-    const page = await listSessions(this.db.client, userId, {
+    const page = await this.sessions.listSessions(userId, {
       limit: query.limit,
       ...(cursor === undefined
         ? {}
         : { cursor: { updatedAt: new Date(cursor.updatedAt), id: cursor.id } }),
     });
 
-    const counts = await attachmentCounts(
-      this.db.client,
-      userId,
+    const counts = await this.sessions.attachmentCounts(userId,
       page.sessions.map((session) => session.id),
     );
 
@@ -153,12 +143,12 @@ export class ChatHistoryService {
     session: SessionId,
     limit: number,
   ): Promise<Omit<SessionDetailResponse, "attachments"> | undefined> {
-    const found = await findSessionOf(this.db, userId, session);
+    const found = await this.summaryOf(userId, session);
     if (found === undefined) {
       return undefined;
     }
 
-    const stored = await listMessages(this.db.client, userId, session, limit);
+    const stored = await this.messages.listMessages(userId, session, limit);
     const { messages, dropped } = await hydrate(stored.messages);
     if (dropped > 0) {
       this.logger.warn(
@@ -192,37 +182,36 @@ export class ChatHistoryService {
     session: SessionId,
     title: string,
   ): Promise<SessionSummary | undefined> {
-    const renamed = await renameSession(this.db.client, userId, session, title);
+    const renamed = await this.sessions.renameSession(userId, session, title);
 
     return renamed === undefined
       ? undefined
-      : findSessionOf(this.db, userId, session);
+      : this.summaryOf(userId, session);
   }
 
   async remove(userId: UserId, session: SessionId): Promise<boolean> {
-    return softDeleteSession(this.db.client, userId, session);
+    return this.sessions.softDeleteSession(userId, session);
   }
-}
 
-async function findSessionOf(
-  db: DbService,
-  userId: UserId,
-  session: SessionId,
-): Promise<SessionSummary | undefined> {
-  const row = await findSession(db.client, userId, session);
-  if (row === undefined) {
-    return undefined;
+  private async summaryOf(
+    userId: UserId,
+    session: SessionId,
+  ): Promise<SessionSummary | undefined> {
+    const row = await this.sessions.findSession(userId, session);
+    if (row === undefined) {
+      return undefined;
+    }
+    const counts = await this.sessions.attachmentCounts(userId, [session]);
+
+    return {
+      id: row.id,
+      title: row.title,
+      messageCount: row.messageCount,
+      attachmentCount: counts.get(session) ?? 0,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
   }
-  const counts = await attachmentCounts(db.client, userId, [session]);
-
-  return {
-    id: row.id,
-    title: row.title,
-    messageCount: row.messageCount,
-    attachmentCount: counts.get(session) ?? 0,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
 }
 
 function createdAtOf(

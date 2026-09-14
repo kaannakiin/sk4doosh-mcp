@@ -10,7 +10,9 @@ import { LlmModule } from "../llm/llm.module.ts";
 import { McpModule } from "../mcp/mcp.module.ts";
 import { ChatController } from "./chat.controller.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
+import { ChatSessionRepository } from "./chat-session.repository.ts";
 import { ChatService } from "./chat.service.ts";
+import { MessageRepository } from "./message.repository.ts";
 
 @Module({
   imports: [
@@ -56,6 +58,11 @@ import { ChatService } from "./chat.service.ts";
     }),
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatHistoryService],
+  providers: [
+    ChatSessionRepository,
+    MessageRepository,
+    ChatService,
+    ChatHistoryService,
+  ],
 })
 export class ChatModule {}

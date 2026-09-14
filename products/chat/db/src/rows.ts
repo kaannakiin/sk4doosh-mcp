@@ -1,11 +1,10 @@
 /**
  * The rows this package hands to its consumers.
  *
- * Guard: these are hand written and every exported function's signature
- * references only them, never a generated model. That is what keeps
- * `dist/index.d.ts` self contained, so `@chat/api` never opens a generated
- * declaration file, and what makes a later swap to hand written SQL a change
- * confined to this package.
+ * Guard: these are hand written rather than derived from a generated model, so
+ * the shape the application speaks is decided here instead of falling out of the
+ * schema. A renamed column is then a change to one mapper, and a later swap to
+ * hand written SQL leaves every consumer's types untouched.
  *
  * Guard: every `id` here is a public identifier, never the `BigInt` surrogate
  * the tables key on. Prisma maps `BigInt` to a JavaScript `bigint`, and
