@@ -24,6 +24,7 @@ public static class DiagnosticCodes
     public const string UnreadableShape = "unreadable_shape";
     public const string UnsupportedMethod = "unsupported_method";
     public const string UnsupportedBinding = "unsupported_binding";
+    public const string UnflattenableBodyRoot = "unflattenable_body_root";
     public const string UnsupportedDictionaryKey = "unsupported_dictionary_key";
 
     private static readonly Dictionary<string, CatalogSeverity> Defaults =

@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "spaceDelimited icin de explode varsayilani false; ayrac ham bosluk olarak yuzde kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "spaceDelimited" }
+      ]
+    },
+    "arguments": { "tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a%20b"
+  }
+}

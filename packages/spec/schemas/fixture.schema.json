@@ -232,7 +232,7 @@
               "properties": {
                 "error": {
                   "type": "string",
-                  "enum": ["argument_collision"]
+                  "enum": ["argument_collision", "schema_def_conflict"]
                 }
               }
             }

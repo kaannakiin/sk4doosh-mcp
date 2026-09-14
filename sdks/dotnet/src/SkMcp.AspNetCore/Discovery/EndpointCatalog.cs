@@ -229,6 +229,37 @@ internal static partial class EndpointCatalog
         };
     }
 
+    /// <summary>
+    /// The schema options a response body is written with.
+    /// </summary>
+    /// <remarks>
+    /// <c>DropReadOnlyProperties</c> is a policy for what the caller may <em>send</em>, so it is
+    /// forced off here regardless of the host's setting: a get-only member is a response field
+    /// precisely because it is read-only, and dropping it hides the field from the agent. The
+    /// two option instances share one <c>Report</c> target, so a DTO bound as both request and
+    /// response body would report every shape diagnostic twice; <paramref name="reportedBefore"/>
+    /// bounds the scan to this endpoint's own diagnostics so the second pass stays silent without
+    /// suppressing an identical message from another endpoint.
+    /// </remarks>
+    private static SchemaMapperOptions ResponseSchemaOf(
+        SchemaMapperOptions request,
+        List<CatalogDiagnostic> diagnostics,
+        int reportedBefore) => request with
+        {
+            DropReadOnlyProperties = false,
+            Report = diagnostic =>
+            {
+                for (int i = reportedBefore; i < diagnostics.Count; i += 1)
+                {
+                    if (diagnostics[i] == diagnostic)
+                    {
+                        return;
+                    }
+                }
+                diagnostics.Add(diagnostic);
+            },
+        };
+
     private static EndpointDescriptor? Describe(
         ApiDescription api,
         string route,
@@ -242,6 +273,7 @@ internal static partial class EndpointCatalog
     {
         List<Parameter> parameters = [];
         RequestBody? body = null;
+        int reportedBefore = diagnostics.Count;
         SchemaMapperOptions schema = (mapper ?? new SchemaMapperOptions
         {
             PropertyName = property => property.Name,
@@ -249,6 +281,7 @@ internal static partial class EndpointCatalog
         {
             Report = diagnostics.Add,
         };
+        SchemaMapperOptions responseSchema = ResponseSchemaOf(schema, diagnostics, reportedBefore);
 
         foreach (ApiParameterDescription parameter in api.ParameterDescriptions)
         {
@@ -291,15 +324,22 @@ internal static partial class EndpointCatalog
             });
         }
 
-        if (body is not null && RequestBodyShape.BodyRootOf(body) is { } rootArgument)
+        if (body is not null && RequestBodyShape.BodyRootReasonOf(body) is { } reason)
         {
-            diagnostics.Add(body.Required == false
-                ? new CatalogDiagnostic(
+            string rootArgument = RequestBodyShape.BodyRootArgument;
+            string key = RequestBodyShape.UnflattenableRootKey(body.Schema) ?? "no flattenable member";
+            diagnostics.Add(reason switch
+            {
+                "optional" => new CatalogDiagnostic(
                     DiagnosticCodes.OptionalBodyArgument,
-                    $"{api.HttpMethod} {route} binds an optional request body; it is exposed as a single optional '{rootArgument}' argument, so omitting it sends no body at all.")
-                : new CatalogDiagnostic(
+                    $"{api.HttpMethod} {route} binds an optional request body; it is exposed as a single optional '{rootArgument}' argument, so omitting it sends no body at all."),
+                "unflattenable_root" => new CatalogDiagnostic(
+                    DiagnosticCodes.UnflattenableBodyRoot,
+                    $"{api.HttpMethod} {route} binds a request body whose root carries '{key}', which flattening would discard; it is exposed as a single '{rootArgument}' argument that keeps the body schema whole."),
+                _ => new CatalogDiagnostic(
                     DiagnosticCodes.SyntheticBodyArgument,
-                    $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it is exposed as a single '{rootArgument}' argument whose value becomes the whole body."));
+                    $"{api.HttpMethod} {route} binds a request body that is not a JSON object; it is exposed as a single '{rootArgument}' argument whose value becomes the whole body."),
+            });
         }
 
         Dictionary<string, ResponseBody> responses = new(StringComparer.Ordinal);
@@ -313,7 +353,7 @@ internal static partial class EndpointCatalog
             bool hasSchema = response.Type is not null && response.Type != typeof(void);
             responses[status] = new ResponseBody
             {
-                Schema = hasSchema ? JsonSchemaMapper.Map(response.Type!, schema) : null,
+                Schema = hasSchema ? JsonSchemaMapper.Map(response.Type!, responseSchema) : null,
             };
         }
 

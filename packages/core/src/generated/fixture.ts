@@ -167,7 +167,7 @@ export interface ToolAnnotations {
   idempotentHint?: boolean;
 }
 export interface MetadataExtractionExpectedError {
-  error: "argument_collision";
+  error: "argument_collision" | "schema_def_conflict";
 }
 export interface ArgumentMappingFixture {
   kind: "argument-mapping";

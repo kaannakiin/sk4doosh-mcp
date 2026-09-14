@@ -1,0 +1,44 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Anahtarli sozluk govdesi root mode'a duser: deger semasi ve propertyNames birlikte korunur, cunku propertyNames tool kokunde path parametresini de reddederdi",
+  "input": {
+    "operationId": "RecordCounters",
+    "method": "POST",
+    "route": "/reports/{id}/counters",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": { "type": "integer" },
+        "propertyNames": { "type": "string", "pattern": "^-?[0-9]+$" }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "record_counters",
+    "description": "POST /reports/{id}/counters",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "body": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" },
+          "propertyNames": { "type": "string", "pattern": "^-?[0-9]+$" }
+        }
+      },
+      "required": ["id", "body"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

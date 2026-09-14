@@ -28,6 +28,9 @@ public sealed partial class RequestTemplate
     };
 
     /// <summary>Normalises an OpenAPI style/explode pair into a separator.</summary>
+    /// <param name="explode">
+    /// Defaults the way OpenAPI does: <c>true</c> for <c>form</c>, <c>false</c> for every other style.
+    /// </param>
     /// <returns>The delimiter to join array items with, or <c>null</c> to repeat the key.</returns>
     /// <exception cref="SkMcpTemplateException">
     /// <c>unsupported_array_style</c> for a pairing that has no wire form.
@@ -41,7 +44,7 @@ public sealed partial class RequestTemplate
                 SkMcpTemplateException.UnsupportedArrayStyle,
                 $"Parameter '{parameterName}' declares an unknown style '{resolved}'.");
         }
-        if (explode ?? true)
+        if (explode ?? resolved == "form")
         {
             if (resolved != "form")
             {

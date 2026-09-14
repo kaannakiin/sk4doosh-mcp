@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import type {
   Constraints,
+  EnumFacts,
   Member,
   ObjectType,
   ScalarKind,
@@ -153,6 +154,10 @@ export class NestTypeShapeBinder {
     reflected: unknown,
     property: string,
   ): TypeNode {
+    const enumFacts = enumFactsOf(entries);
+    if (enumFacts !== undefined) {
+      return { kind: "enum", enumFacts };
+    }
     for (const entry of entries) {
       const mapped = validatorScalar(entry.name);
       if (mapped !== undefined) {
@@ -166,6 +171,97 @@ export class NestTypeShapeBinder {
       `Member '${property}' has no readable type; add a class-validator type decorator or @Type(() => X).`,
     );
   }
+}
+
+/**
+ * Reads the members a `@IsEnum` or `@IsIn` decorator allows.
+ *
+ * @returns the allowed values, or `undefined` when the decorator declares none this layer can read.
+ */
+function enumValuesOf(entry: ValidationEntry): readonly unknown[] | undefined {
+  if (entry.name === "isIn") {
+    const values = entry.constraints?.[0];
+    return Array.isArray(values) ? (values as readonly unknown[]) : undefined;
+  }
+  if (entry.name !== "isEnum") {
+    return undefined;
+  }
+  const declared = entry.constraints?.[1];
+  if (Array.isArray(declared)) {
+    return declared as readonly unknown[];
+  }
+  return memberEntriesOf(entry)?.map(([, value]) => value);
+}
+
+function memberEntriesOf(
+  entry: ValidationEntry,
+): [string, unknown][] | undefined {
+  const entity = entry.constraints?.[0];
+  if (typeof entity !== "object" || entity === null) {
+    return undefined;
+  }
+  return Object.entries(entity).filter(([key]) =>
+    Number.isNaN(Number.parseInt(key, 10)),
+  );
+}
+
+/**
+ * Derives {@link EnumFacts} from the first readable enum-shaped validator on a member.
+ *
+ * class-validator hands `@IsEnum` the enum object in `constraints[0]` and the already
+ * reverse-mapping-filtered value list in `constraints[1]`; the second is what the schema needs, and
+ * recomputing it from the first is only a fallback for a class-validator that predates it.
+ *
+ * A numeric enum resolves to the **integer** wire form even though `isEnum` also accepts the member
+ * name at runtime (it validates against `Object.keys(entity).map(k => entity[k])`, which on a
+ * numeric enum contains the names too). Reporting `unresolved` would publish an `anyOf` that invites
+ * the agent to send `"Active"`, which passes validation and then compares unequal to `Status.Active`
+ * everywhere in the handler. The narrower form is the honest one.
+ *
+ * @returns the facts, or `undefined` when no member list is readable or a value is not a string or
+ * an integer — a float or an object cannot be written as a JSON Schema `enum` of a single type.
+ */
+function enumFactsOf(
+  entries: readonly ValidationEntry[],
+): EnumFacts | undefined {
+  for (const entry of entries) {
+    const values = enumValuesOf(entry);
+    if (values === undefined || values.length === 0) {
+      continue;
+    }
+    const names = new Set<string>();
+    const numbers = new Set<number>();
+    let readable = true;
+    for (const value of values) {
+      if (typeof value === "string") {
+        names.add(value);
+      } else if (typeof value === "number" && Number.isInteger(value)) {
+        numbers.add(value);
+      } else {
+        readable = false;
+        break;
+      }
+    }
+    if (!readable) {
+      continue;
+    }
+    if (names.size > 0 && numbers.size > 0) {
+      return {
+        wireForm: "unresolved",
+        names: [...names],
+        numbers: [...numbers],
+      };
+    }
+    if (numbers.size > 0) {
+      return {
+        wireForm: "integer",
+        names: memberEntriesOf(entry)?.map(([key]) => key) ?? [],
+        numbers: [...numbers],
+      };
+    }
+    return { wireForm: "string", names: [...names], numbers: [] };
+  }
+  return undefined;
 }
 
 function validatorScalar(name: string | undefined): TypeNode | undefined {

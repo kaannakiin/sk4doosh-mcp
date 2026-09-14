@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,19 @@ public sealed class CollidingPayload
 
 public sealed record NotePayload([Required][property: Description("Not metni")] string Text);
 
+public sealed class AuditKey
+{
+    public int Value { get; set; }
+}
+
+public sealed class AuditedPayload
+{
+    public string First { get; set; } = string.Empty;
+    public string Last { get; set; } = string.Empty;
+    public string FullName => $"{First} {Last}";
+    public Dictionary<AuditKey, string> Tags { get; set; } = [];
+}
+
 [ApiController]
 [Route("/schema")]
 public sealed class SchemaBodiesController : ControllerBase
@@ -55,6 +69,10 @@ public sealed class SchemaBodiesController : ControllerBase
     [HttpPost("notes/{id:int}/optional")]
     public IActionResult AddOptionalNote(int id, [FromBody] NotePayload? payload) =>
         Ok(new { id, payload });
+
+    [HttpPut("audited")]
+    [ProducesResponseType(typeof(AuditedPayload), StatusCodes.Status200OK)]
+    public IActionResult Audited([FromBody] AuditedPayload payload) => Ok(payload);
 }
 
 public sealed class SchemaHost : IAsyncDisposable

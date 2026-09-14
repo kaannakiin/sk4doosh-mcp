@@ -1,0 +1,43 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Govde ek anahtarlarinin tipini bildiriyorsa tool kokunde deger semasi korunur, boolean'a indirgenmez",
+  "input": {
+    "operationId": "RecordCounters",
+    "method": "POST",
+    "route": "/reports/{id}/counters",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "note": { "type": "string" }
+        },
+        "required": ["note"],
+        "additionalProperties": { "type": "integer" }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "record_counters",
+    "description": "POST /reports/{id}/counters",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["id", "note"],
+      "additionalProperties": { "type": "integer" }
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

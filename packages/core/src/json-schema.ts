@@ -39,6 +39,25 @@ export function allowsAdditional(
   return additional !== undefined;
 }
 
+/**
+ * Reads a body's `additionalProperties` as the tool root should write it.
+ *
+ * A body that types its extra keys (`{"additionalProperties":{"type":"integer"}}`) says more than
+ * "extra keys are allowed", and the tool root can carry that verbatim: `additionalProperties`
+ * constrains only keys absent from `properties`, and every parameter is named there, so lifting the
+ * rule cannot reach them. The result is cloned because it lands in a schema the caller owns.
+ *
+ * @returns the value schema, or the boolean {@link allowsAdditional} reports.
+ */
+export function additionalPropertiesOf(
+  schema: JsonSchemaObject | undefined,
+): boolean | JsonSchemaObject {
+  const additional = schema?.additionalProperties;
+  return typeof additional === "object" && additional !== null
+    ? structuredClone(additional)
+    : allowsAdditional(schema);
+}
+
 export interface FlattenableBody {
   readonly properties: Readonly<Record<string, JsonSchemaObject>>;
   readonly required: readonly string[];

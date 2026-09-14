@@ -1,0 +1,41 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Ciplak $ref kokü duzlesirse hicbir alan ilan edilmez ve composer govdeyi hic gondermez; sarmalanir ve $defs torbasi koke cikar",
+  "input": {
+    "operationId": "MoveAddress",
+    "method": "POST",
+    "route": "/addresses/move",
+    "requestBody": {
+      "schema": {
+        "$ref": "#/$defs/Address",
+        "$defs": {
+          "Address": {
+            "type": "object",
+            "properties": { "street": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "move_address",
+    "description": "POST /addresses/move",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": { "$ref": "#/$defs/Address" }
+      },
+      "required": ["body"],
+      "additionalProperties": false,
+      "$defs": {
+        "Address": {
+          "type": "object",
+          "properties": { "street": { "type": "string" } }
+        }
+      }
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

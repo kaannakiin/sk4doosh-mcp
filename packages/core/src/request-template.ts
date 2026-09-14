@@ -30,6 +30,7 @@ const delimiters: Readonly<Record<ParameterStyle, string>> = {
 /**
  * Normalises an OpenAPI `style`/`explode` pair into a separator.
  *
+ * @param explode defaults the way OpenAPI does: `true` for `form`, `false` for every other style.
  * @returns the delimiter to join array items with, or `undefined` to repeat the key.
  * @throws SkMcpTemplateError `unsupported_array_style` for a pairing that has no wire form.
  */
@@ -39,7 +40,7 @@ export function arraySeparatorFor(
   parameterName: string,
 ): string | undefined {
   const resolved = style ?? "form";
-  if (explode ?? true) {
+  if (explode ?? resolved === "form") {
     if (resolved !== "form") {
       throw new SkMcpTemplateError(
         "unsupported_array_style",

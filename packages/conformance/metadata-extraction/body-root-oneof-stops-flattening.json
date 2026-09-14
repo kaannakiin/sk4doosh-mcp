@@ -1,0 +1,54 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Govde kokundeki oneOf duzlestirmeyi durdurur: alanlar ust seviyeye cikmaz, kural sarmalanan govdenin icinde aynen kalir",
+  "input": {
+    "operationId": "CreateCustomer",
+    "method": "POST",
+    "route": "/tenants/{tenantId}/customers",
+    "parameters": [
+      {
+        "name": "tenantId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "kimlikNo": { "type": "string" },
+          "vergiNo": { "type": "string" }
+        },
+        "required": ["name"],
+        "oneOf": [{ "required": ["kimlikNo"] }, { "required": ["vergiNo"] }]
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "create_customer",
+    "description": "POST /tenants/{tenantId}/customers",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "tenantId": { "type": "string" },
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "kimlikNo": { "type": "string" },
+            "vergiNo": { "type": "string" }
+          },
+          "required": ["name"],
+          "oneOf": [{ "required": ["kimlikNo"] }, { "required": ["vergiNo"] }]
+        }
+      },
+      "required": ["tenantId", "body"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

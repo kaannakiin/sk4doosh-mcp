@@ -116,14 +116,21 @@ describe("arraySeparatorFor", () => {
     expect(arraySeparatorFor("pipeDelimited", false, "tag")).toBe("|");
   });
 
-  it("rejects a delimited style that also explodes", () => {
+  it("rejects a delimited style that explicitly explodes", () => {
     for (const style of ["spaceDelimited", "pipeDelimited"] as const) {
       expect(() => arraySeparatorFor(style, true, "tag")).toThrow(
         SkMcpTemplateError,
       );
-      expect(() => arraySeparatorFor(style, undefined, "tag")).toThrow(
+      expect(() => arraySeparatorFor(style, true, "tag")).toThrow(
         "has no wire form",
       );
     }
+  });
+
+  it("defaults explode per style, the way OpenAPI does", () => {
+    expect(arraySeparatorFor("spaceDelimited", undefined, "tag")).toBe(" ");
+    expect(arraySeparatorFor("pipeDelimited", undefined, "tag")).toBe("|");
+    expect(arraySeparatorFor("form", undefined, "tag")).toBeUndefined();
+    expect(arraySeparatorFor(undefined, undefined, "tag")).toBeUndefined();
   });
 });

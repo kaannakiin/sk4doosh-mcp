@@ -207,6 +207,22 @@ const hosts: Record<string, HostCase> = {
 const unproducible: Record<string, string> = {
   "body-with-shared-type-lifts-defs.json":
     "A query parameter whose schema is an object with $defs has no Nest binding: a named @Query('x') binds a scalar, and a whole @Query() object reports unbound_query_object.",
+  "body-root-defs-conflict-drops-endpoint.json":
+    "Same as above: the conflicting bag lives on a query parameter, which Nest cannot bind as an object with $defs.",
+  "body-root-defs-are-merged.json":
+    "The body root's $defs holds a single-use type; hoisting only fires for a type used more than once or in a cycle, so the binder inlines it instead.",
+  "body-root-oneof-stops-flattening.json":
+    "A body root carrying oneOf: the type-shape binder writes object roots with properties and required only, and class-validator has no discriminated-union decorator. Reachable through options.schema.typeShape alone.",
+  "body-root-property-names-stops-flattening.json":
+    "An integer-keyed dictionary body: @Body() over a Record gives the binder no readable key type, so it never emits propertyNames.",
+  "body-root-nullable-type-stops-flattening.json":
+    "type as [\"object\",\"null\"]: TypeScript has no runtime nullability, so the IR carries no nullable node (schema-conversion-rules.md, Unpinned areas).",
+  "body-root-ref-only-is-wrapped.json":
+    "A bare $ref body root: simplifySchema always writes the root inline, so no SDK emits one. It exists to pin the rule for hand-written descriptors and host schema hooks.",
+  "body-root-annotations-still-flatten.json":
+    "$schema and title on a body root: the binder writes neither, so only a host-supplied verbatim schema carries them.",
+  "typed-additional-properties-survive.json":
+    "A body with both properties and a typed additionalProperties: a decorated DTO yields the first and a Record yields the second, never both in one root.",
   "get-order-policy.json":
     "The parameter carries a description; Nest exposes no metadata source for parameter descriptions.",
   "post-order-note-with-body.json":

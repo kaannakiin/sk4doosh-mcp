@@ -1,0 +1,44 @@
+{
+  "kind": "metadata-extraction",
+  "description": "title ve $schema gibi anlatim anahtarlari kisit tasimaz; govde duzlesmeye devam eder",
+  "input": {
+    "operationId": "AddNote",
+    "method": "POST",
+    "route": "/orders/{id}/notes",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "NoteDto",
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" }
+        },
+        "required": ["text"]
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "add_note",
+    "description": "POST /orders/{id}/notes",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "text": { "type": "string" }
+      },
+      "required": ["id", "text"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

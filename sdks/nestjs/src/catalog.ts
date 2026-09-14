@@ -5,6 +5,8 @@ import {
   ModulesContainer,
 } from "@nestjs/core";
 import {
+  bodyRootArgument,
+  bodyRootReasonOf,
   combineMarkers,
   createRequestTemplateFromEndpoint,
   createToolDefinition,
@@ -14,6 +16,7 @@ import {
   SkMcpCatalogError,
   SkMcpTemplateError,
   ToolIndex,
+  unflattenableRootKey,
   type EndpointDescriptor,
   type RequestTemplate,
   type ToolDefinition,
@@ -224,6 +227,7 @@ export class SkMcpCatalog {
           message: `Tool name '${name}' is ${String(name.length)} characters; long names cost agent context and weaken search.`,
         });
       }
+      reportBodyRoot(descriptor, report);
       let tool: ToolDefinition;
       let template: RequestTemplate | undefined;
       try {
@@ -319,4 +323,35 @@ export class SkMcpCatalog {
       ...(hints.prefix === undefined ? {} : { containerPrefix: hints.prefix }),
     };
   }
+}
+
+function reportBodyRoot(
+  descriptor: EndpointDescriptor,
+  report: (diagnostic: CatalogDiagnostic) => void,
+): void {
+  const body = descriptor.requestBody;
+  const reason = bodyRootReasonOf(body?.schema, body?.required);
+  if (reason === undefined || body === undefined) {
+    return;
+  }
+  const where = `${descriptor.method} ${descriptor.route}`;
+  if (reason === "optional") {
+    report({
+      code: "optional_body_argument",
+      message: `${where} binds an optional request body; it is exposed as a single optional '${bodyRootArgument}' argument, so omitting it sends no body at all.`,
+    });
+    return;
+  }
+  if (reason === "non_object") {
+    report({
+      code: "synthetic_body_argument",
+      message: `${where} binds a request body that is not a JSON object; it is exposed as a single '${bodyRootArgument}' argument whose value becomes the whole body.`,
+    });
+    return;
+  }
+  const key = unflattenableRootKey(body.schema) ?? "no flattenable member";
+  report({
+    code: "unflattenable_body_root",
+    message: `${where} binds a request body whose root carries '${key}', which flattening would discard; it is exposed as a single '${bodyRootArgument}' argument that keeps the body schema whole.`,
+  });
 }

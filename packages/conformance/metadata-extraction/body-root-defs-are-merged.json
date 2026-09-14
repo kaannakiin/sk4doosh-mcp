@@ -1,0 +1,58 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Duzlestirilen govdenin kendi kok $defs torbasi da inputSchema kokune tasinir; hicbir parametre ayni tanimi tasimasa bile $ref cozulur kalir",
+  "input": {
+    "operationId": "MoveCustomer",
+    "method": "POST",
+    "route": "/customers/{id}/move",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "to": { "$ref": "#/$defs/Address" }
+        },
+        "required": ["to"],
+        "$defs": {
+          "Address": {
+            "type": "object",
+            "properties": {
+              "street": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "move_customer",
+    "description": "POST /customers/{id}/move",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "to": { "$ref": "#/$defs/Address" }
+      },
+      "required": ["id", "to"],
+      "additionalProperties": false,
+      "$defs": {
+        "Address": {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" }
+          }
+        }
+      }
+    },
+    "annotations": { "destructiveHint": false },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

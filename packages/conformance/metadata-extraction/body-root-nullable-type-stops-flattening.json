@@ -1,0 +1,48 @@
+{
+  "kind": "metadata-extraction",
+  "description": "type dizisi olarak yazilmissa 'JSON null govde kabul edilir' bilgisi duzlestirmede kaybolur; govde sarmalanir",
+  "input": {
+    "operationId": "ReplaceProfile",
+    "method": "PUT",
+    "route": "/profiles/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": ["object", "null"],
+        "properties": {
+          "nickname": { "type": "string" }
+        },
+        "required": ["nickname"]
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": {
+    "name": "replace_profile",
+    "description": "PUT /profiles/{id}",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "body": {
+          "type": ["object", "null"],
+          "properties": {
+            "nickname": { "type": "string" }
+          },
+          "required": ["nickname"]
+        }
+      },
+      "required": ["id", "body"],
+      "additionalProperties": false
+    },
+    "annotations": { "destructiveHint": true, "idempotentHint": true },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  }
+}

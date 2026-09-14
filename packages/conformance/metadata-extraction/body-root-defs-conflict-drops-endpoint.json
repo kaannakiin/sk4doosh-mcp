@@ -1,0 +1,42 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Parametre ve govde kokü ayni $defs anahtarini farkli tanimlarsa endpoint dusurulur",
+  "input": {
+    "operationId": "MoveCustomer",
+    "method": "POST",
+    "route": "/customers/move",
+    "parameters": [
+      {
+        "name": "from",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "$ref": "#/$defs/Address",
+          "$defs": {
+            "Address": {
+              "type": "object",
+              "properties": { "street": { "type": "string" } }
+            }
+          }
+        }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "to": { "$ref": "#/$defs/Address" }
+        },
+        "required": ["to"],
+        "$defs": {
+          "Address": {
+            "type": "object",
+            "properties": { "city": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "auth": { "anonymous": "no", "policies": [], "imperative": false }
+  },
+  "expected": { "error": "schema_def_conflict" }
+}

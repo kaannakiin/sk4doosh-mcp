@@ -47,9 +47,12 @@ internal static class ToolDefinitionFactory
             }
         }
 
-        bool allowsAdditional = false;
-        if (endpoint.RequestBody is not null
-            && RequestBodyShape.BodyRootOf(endpoint.RequestBody) is { } bodyRoot)
+        JsonNode additionalProperties = false;
+        string? root = endpoint.RequestBody is null
+            ? null
+            : RequestBodyShape.BodyRootOf(endpoint.RequestBody);
+        JsonObject? seed = null;
+        if (endpoint.RequestBody is not null && root is { } bodyRoot)
         {
             if (strictArguments && properties.ContainsKey(bodyRoot))
             {
@@ -66,7 +69,8 @@ internal static class ToolDefinitionFactory
         else if (endpoint.RequestBody is not null)
         {
             JsonObject body = endpoint.RequestBody.Schema;
-            allowsAdditional = RequestBodyShape.AllowsAdditional(body);
+            additionalProperties = RequestBodyShape.AdditionalPropertiesOf(body);
+            seed = body["$defs"] as JsonObject;
 
             if (body["properties"] is JsonObject bodyProperties)
             {
@@ -98,18 +102,52 @@ internal static class ToolDefinitionFactory
             ["type"] = "object",
             ["properties"] = properties,
             ["required"] = required,
-            ["additionalProperties"] = allowsAdditional,
+            ["additionalProperties"] = additionalProperties,
         };
-        if (LiftDefs(properties, endpoint) is { } defs)
+        if (LiftDefs(properties, seed, endpoint) is { } defs)
         {
             result["$defs"] = defs;
         }
         return result;
     }
 
-    private static JsonObject? LiftDefs(JsonObject properties, EndpointDescriptor endpoint)
+    /// <summary>Merges every <c>$defs</c> bag reachable from the tool's own root into one.</summary>
+    /// <param name="seed">
+    /// The flattened body's own root bag. A flattened body contributes its properties to
+    /// <paramref name="properties"/> but its root — and so its bag — is never emitted, so without
+    /// this the <c>$ref</c>s lifted out of it would point at nothing. Its entries are cloned and the
+    /// bag itself is never detached: the descriptor is shared across the catalog snapshot, and
+    /// stripping <c>$defs</c> from it would break every tool built after the first.
+    /// </param>
+    /// <exception cref="SkMcpTemplateException">
+    /// <c>schema_def_conflict</c> when one key carries two different schemas.
+    /// </exception>
+    private static JsonObject? LiftDefs(
+        JsonObject properties, JsonObject? seed, EndpointDescriptor endpoint)
     {
         SortedDictionary<string, JsonNode> merged = new(StringComparer.Ordinal);
+        void Take(string name, JsonNode body)
+        {
+            if (merged.TryGetValue(name, out JsonNode? existing))
+            {
+                if (!JsonNode.DeepEquals(existing, body))
+                {
+                    throw new SkMcpTemplateException(
+                        DiagnosticCodes.SchemaDefConflict,
+                        $"Two schemas on {endpoint.Method} {endpoint.Route} define '{name}' differently; the tool cannot be built.");
+                }
+                return;
+            }
+            merged[name] = body.DeepClone();
+        }
+
+        foreach ((string name, JsonNode? body) in seed ?? [])
+        {
+            if (body is not null)
+            {
+                Take(name, body);
+            }
+        }
         foreach ((string _, JsonNode? node) in properties)
         {
             if (node is not JsonObject owner || owner["$defs"] is not JsonObject own)
@@ -119,21 +157,10 @@ internal static class ToolDefinitionFactory
             owner.Remove("$defs");
             foreach ((string name, JsonNode? body) in own)
             {
-                if (body is null)
+                if (body is not null)
                 {
-                    continue;
+                    Take(name, body);
                 }
-                if (merged.TryGetValue(name, out JsonNode? existing))
-                {
-                    if (!JsonNode.DeepEquals(existing, body))
-                    {
-                        throw new SkMcpTemplateException(
-                            DiagnosticCodes.SchemaDefConflict,
-                            $"Two schemas on {endpoint.Method} {endpoint.Route} define '{name}' differently; the tool cannot be built.");
-                    }
-                    continue;
-                }
-                merged[name] = body.DeepClone();
             }
         }
         if (merged.Count == 0)

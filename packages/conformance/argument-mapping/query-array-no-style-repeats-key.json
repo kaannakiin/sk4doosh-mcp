@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "style de explode da yoksa form + explode true: anahtar tekrarlanir, eski davranis korunur",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true }
+      ]
+    },
+    "arguments": { "tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a&tag=b"
+  }
+}

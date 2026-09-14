@@ -105,6 +105,14 @@ dropped. For a host that cannot be read, `anyOf` is not a dodge but the correct 
 accepts both the name and the number. Which is also why `anyOf` is **not a universal fallback** — a
 host whose policy can be read accepts only one form.
 
+**`unresolved` means the measurement failed, not that the validator is lenient.** A binding layer
+whose enum check happens to accept both forms MUST still report the form the handler compares
+against. The concrete case is class-validator's `@IsEnum`, which validates against the enum object's
+values and therefore also accepts a numeric enum's *member name*; a handler comparing
+`x === Status.Active` then takes the wrong branch for an input that passed validation. Reporting
+`unresolved` there would publish an `anyOf` inviting exactly that call, so a numeric enum resolves to
+`integer`. Reserve `unresolved` for a host whose serializer genuinely could not be read.
+
 ## Table 4 — Member rules
 
 The IR carries three binding facts on every member: `readOnly`, `constructorBound`, and the
@@ -123,6 +131,15 @@ the schema and therefore out of `RequestComposer`'s allow-list, turning a workin
 
 Dropping can be disabled with `dropReadOnlyProperties` (on by default); indexers and unreadable
 members never enter the IR at all, so they are not the rule's concern.
+
+**Table 4 governs schemas the caller sends, never schemas it reads.** `dropReadOnlyProperties` is a
+statement about arguments — a server-computed field is noise in an input schema because the caller
+cannot set it. In a **response** schema the same field is the payload: a member is read-only
+*because* it is something the server reports. So a `responses[*].schema` MUST be written with
+dropping off, whatever the host set `dropReadOnlyProperties` to; the host knob narrows inputs only.
+An SDK that writes both from one options instance inverts the rule exactly where it costs most, and
+because both directions of one DTO then pass through the same diagnostic sink, it MUST NOT report a
+shape diagnostic twice for one endpoint.
 
 Member order: base-type members first, then the derived type's; within each type, declaration order.
 The order is normative — the `required` array and fixture comparison are order-sensitive, while
@@ -198,6 +215,21 @@ root. While `inputSchema` is being produced, the bags from the parameter schemas
 are merged by key: same key plus same body → one survives; same key plus a different body →
 `schema_def_conflict`, and the endpoint is dropped.
 
+**A flattened body contributes its bag even though its root is discarded.** Flattening lifts the
+body's properties to the top level and emits nothing of the root itself, so the root's `$defs` has no
+carrier; but a `$ref` is a **document-root-relative** pointer, and a lifted property still spells it
+`#/$defs/<name>` — which now addresses the `inputSchema` root. Merging that bag is therefore what
+keeps the pointers resolvable, and skipping it does not weaken the schema, it emits an **invalid**
+one. (In root mode the whole body becomes the `body` property, so its bag rides along and is lifted
+from there; the two modes must agree.) The merge MUST NOT detach the bag from the descriptor: the
+descriptor is shared for the life of a catalog snapshot, so an implementation that strips `$defs`
+while reading it produces correct output for the first tool built and dangling `$ref`s for every one
+after.
+
+"Same body" is compared **without regard to key order**. Two SDKs serialize an identical type into
+different key orders routinely, and a comparison that sees those as two schemas drops the endpoint in
+one implementation while the other builds the tool.
+
 **`$defs` key order is ascending ordinal.** Discovery order would depend on walk order and would
 require matching two SDKs' traversals exactly; since `$defs` is a bag, sorting it is semantically
 free. The order is pinned explicitly in the fixture with `defsOrder`, because neither runner's deep
@@ -230,7 +262,9 @@ No SDK SHOULD rely on the budget's existence or on any default value for it.
 | Body root schema                                        | Behaviour                                                |
 | ------------------------------------------------------- | -------------------------------------------------------- |
 | `type: object` with `properties`, body required         | fields flatten to the top level                          |
-| `type: object`, `additionalProperties` open, required   | the body is free-form; unknown keys are forwarded        |
+| `type: object`, `additionalProperties` open, required   | the body is free-form; unknown keys are forwarded, and a **typed** `additionalProperties` is carried to the root as a schema, not flattened to `true` |
+| any root carrying a key outside the flattenable set     | one synthetic argument `body`; `unflattenable_body_root` |
+| `type: object` with neither `properties` nor open `additionalProperties` | one synthetic argument `body`; `unflattenable_body_root` |
 | an array or scalar root                                 | one synthetic argument `body`; `synthetic_body_argument` |
 | any root with `requestBody.required: false`             | one synthetic argument `body`, **not** required; `optional_body_argument` |
 | no `type` (host declaration)                            | treated as an object                                     |
@@ -240,6 +274,52 @@ No SDK SHOULD rely on the budget's existence or on any default value for it.
 inside `requestBody.schema`. Omitted, it means `true`. A body may be optional while a field inside it
 is mandatory — "you need not send a body; if you do, it must carry `reason`" — and the two
 requirednesses must not be collapsed into one.
+
+**Flattening is a two-keyword whitelist, so it is allowed only where nothing else is at stake.**
+Flattening emits the body's `properties` at the top level and `required` into the root's list; the
+body root itself is never written. Anything else the root carried is therefore gone. Rather than
+enumerate what may be lost — 2020-12 has some forty keywords and its vocabularies are extensible, so
+a keyword nobody listed would default to silently-wrong — the rule flattens only a root whose **every
+key** is one of:
+
+`type`, `properties`, `required`, `$defs`, `additionalProperties`, `description`
+
+plus these keys, which annotate without constraining and MUST NOT force the root argument:
+
+`title`, `$schema`, `$id`, `$anchor`, `$comment`, `example`, `examples`, `default`, `deprecated`,
+`readOnly`, `writeOnly`, and any key beginning `x-`
+
+The annotation list is normative and has to stay generous, because root mode is not free: an endpoint
+that already has a parameter named `body` is **dropped** with `argument_collision`, so a key wrongly
+read as a constraint turns a working tool into a missing one. `$schema` earns its place by being
+written by default by `zod-to-json-schema` and by any standalone schema serialization.
+
+`type` is the one safe key whose **value** is checked as well: flattening requires it to be absent or
+exactly the string `"object"`. The array form (`["object","null"]`) says a JSON `null` body is
+accepted, which flattening cannot express.
+
+The two keywords that show why this is not stylistic are `minProperties` and `propertyNames`: both
+apply to *every* key of the instance, and after flattening the tool root's keys include the path and
+query parameters. `minProperties: 1` would start counting `tenantId`; an integer-keyed dictionary's
+`propertyNames: {"pattern":"^-?[0-9]+$"}` would reject it outright. `additionalProperties` is the
+opposite case and is safe to carry, because it applies only to keys absent from `properties` and
+every parameter is named there. (A string-keyed dictionary constrains no key names and so still
+flattens as the free-form row above; only a key-constrained one takes the root argument.)
+
+The direction is chosen for its failure mode, not its frequency. Dropping a keyword publishes a
+contract the backend does not honour — the agent composes a call the backend rejects, and the schema
+never said why. Taking the root argument keeps the body schema **complete and verbatim** under
+`properties.body`; the cost is one nesting level and N arguments becoming one. A complete schema that
+is less convenient beats an incomplete one that looks convenient.
+
+`unflattenable_body_root` is a warning: the tool is fully callable.
+
+**No flattenable surface.** A root that is neither `properties`-bearing nor open to additional keys
+takes the root argument too, and this one is a correctness fix rather than a fidelity fix. A bare
+`{"$ref": …}` or a bare `{"type":"object"}` used to flatten into *nothing*: no body field was
+declared, the template's `hasBody` came out `false`, and the request went out **with no body at all**.
+Note that `{"type":"object","properties":{}}` is a different thing and still flattens — it declares
+an object with no fields and sends `{}`.
 
 **Synthetic body root.** A non-object body root (`[FromBody] List<int>`, `[FromBody] string`) does
 not drop the endpoint. `inputSchema` carries a single `body` property whose schema is the root
@@ -283,6 +363,7 @@ own freedom is carried by the schema of that property.
 | `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies        | the endpoint is dropped        |
 | `unresolved_query_shape`        | a whole-object query binding whose members cannot be read at all   | the endpoint is dropped        |
 | `synthetic_body_argument`       | a non-object body root was wrapped into a `body` argument          | warning                        |
+| `unflattenable_body_root`       | a body root carried a keyword flattening would discard, or offered nothing to flatten | warning, the body is wrapped |
 | `optional_body_argument`        | a body declared `required: false` was wrapped into an optional `body` argument | warning         |
 | `unbound_query_object`          | some members of a whole-object query binding are not expressible   | warning, those members dropped |
 | `unbound_header_object`         | a whole-object header binding                                      | warning, the binding dropped   |

@@ -38,10 +38,14 @@ export type { SelectionDefault, SelectionMarker } from "./selection.js";
 export {
   bodyRootArgument,
   bodyRootOf,
+  bodyRootReasonOf,
+  unflattenableRootKey,
   createToolDefinition,
 } from "./tool-definition.js";
+export type { BodyRootReason } from "./tool-definition.js";
 export { assertUniqueArgumentNames } from "./argument-names.js";
 export {
+  additionalPropertiesOf,
   allowsAdditional,
   flattenableBody,
   isObjectSchema,

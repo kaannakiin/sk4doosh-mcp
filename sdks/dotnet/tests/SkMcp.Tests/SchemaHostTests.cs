@@ -159,6 +159,30 @@ public sealed class SchemaHostTests : IAsyncLifetime
     }
 
     [Fact]
+    public void J20_ResponseSchema_KeepsReadOnlyMembersTheInputDrops()
+    {
+        CatalogEntry entry = _host.Entry("schema_bodies_audited");
+
+        JsonObject input = (JsonObject)entry.Tool.InputSchema["properties"]!;
+        Assert.Contains("first", input.Select(p => p.Key));
+        Assert.Contains("last", input.Select(p => p.Key));
+        Assert.DoesNotContain("fullName", input.Select(p => p.Key));
+
+        JsonObject response = (JsonObject)entry.Descriptor.Responses!["200"].Schema!["properties"]!;
+        Assert.Contains("fullName", response.Select(p => p.Key));
+        Assert.Contains("first", response.Select(p => p.Key));
+    }
+
+    [Fact]
+    public void J21_ResponseSchema_DoesNotRepeatTheRequestBodyDiagnostic()
+    {
+        Assert.Single(
+            _host.Catalog.Result.Diagnostics,
+            d => d.Code == "unsupported_dictionary_key"
+                && d.Message.Contains("AuditKey", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task J19_DiagnosticsDowngrade_KeepsEndpointListed()
     {
         await using SchemaHost lenient = await SchemaHost.StartAsync(

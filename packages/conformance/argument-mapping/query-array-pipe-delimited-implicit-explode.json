@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "explode yazilmamissa varsayilan style'a bagli: pipeDelimited icin false, yani ayrac ile birlesir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "pipeDelimited" }
+      ]
+    },
+    "arguments": { "tag": ["a", "b"] }
+  },
+  "expected": {
+    "pathAndQuery": "/items?tag=a|b"
+  }
+}

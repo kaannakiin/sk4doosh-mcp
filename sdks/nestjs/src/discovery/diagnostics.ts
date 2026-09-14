@@ -18,6 +18,9 @@ const defaults: Readonly<Record<string, CatalogSeverity>> = {
   template_rejected: "endpointDropped",
   unresolved_query_shape: "endpointDropped",
   route_folded: "warning",
+  optional_body_argument: "warning",
+  synthetic_body_argument: "warning",
+  unflattenable_body_root: "warning",
   unbound_query_object: "warning",
   unbound_header_object: "warning",
 };
