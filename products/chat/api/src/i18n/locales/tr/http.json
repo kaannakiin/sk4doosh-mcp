@@ -16,5 +16,10 @@
   "oauth_link_required": "Bu sağlayıcıyı bağlamadan önce mevcut hesaba giriş yapın.",
   "oauth_account_conflict": "Bu sağlayıcı hesabı zaten bağlı.",
   "too_many_requests": "Çok fazla deneme yapıldı. Daha sonra tekrar deneyin.",
+  "connection_required": "Bu aracı kullanmak için bir hesap bağlayın.",
+  "connection_revoked": "Bu bağlantı kaldırılmış.",
+  "insufficient_connection_scope": "Bu bağlantı bu işleme izin vermiyor.",
+  "reauth_required": "Bu bağlantıyı kullanmaya devam etmek için yeniden giriş yapın.",
+  "provider_unavailable": "Bu servise ulaşılamadı.",
   "internal_error": "Sunucuda bir şeyler ters gitti."
 }

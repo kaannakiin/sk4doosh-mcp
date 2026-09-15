@@ -9,6 +9,7 @@ import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 import { AttachmentsModule } from "./attachments/attachments.module.ts";
 import { AuthModule } from "./auth/auth.module.ts";
 import { ChatModule } from "./chat/chat.module.ts";
+import { ConnectionsModule } from "./connections/connections.module.ts";
 import { DbModule } from "./db/db.module.ts";
 import { loadConfig } from "./config/configuration.ts";
 import { ApiErrorFilter } from "./filters/api-error.filter.ts";
@@ -30,6 +31,7 @@ import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
     I18nModule,
     DbModule,
     AuthModule,
+    ConnectionsModule,
     AttachmentsModule,
     LlmModule,
     McpModule,

@@ -16,5 +16,10 @@
   "oauth_link_required": "Sign in to the existing account before linking this provider.",
   "oauth_account_conflict": "That provider account is already linked.",
   "too_many_requests": "Too many attempts. Try again later.",
+  "connection_required": "Connect an account to use this tool.",
+  "connection_revoked": "That connection was disconnected.",
+  "insufficient_connection_scope": "That connection does not permit this action.",
+  "reauth_required": "Sign in again to continue using that connection.",
+  "provider_unavailable": "That service could not be reached.",
   "internal_error": "Something went wrong on the server."
 }

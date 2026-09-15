@@ -14,13 +14,21 @@
  */
 import type { ReaderFamily } from "@chat/contracts/attachment/media-type";
 import type { MessageRole } from "@chat/contracts/chat/message";
+import type { ConnectionStatus } from "@chat/contracts/integration/connection-status";
+import type { IntegrationOrigin } from "@chat/contracts/integration/integration";
 import type {
+  ConnectionEventKind,
+  ConnectionStatus as SchemaConnectionStatus,
+  IntegrationOrigin as SchemaIntegrationOrigin,
+  IntegrationStatus,
   MessageRole as SchemaMessageRole,
   ReaderFamily as SchemaReaderFamily,
   TurnOutcome as SchemaTurnOutcome,
 } from "./generated/enums.js";
 
-export type { MessageRole, ReaderFamily };
+export type { ConnectionStatus, IntegrationOrigin, MessageRole, ReaderFamily };
+
+export type { ConnectionEventKind, IntegrationStatus };
 
 export type TurnOutcome = "completed" | "failed" | "aborted" | "unknown";
 
@@ -46,7 +54,9 @@ type Assert<T extends true> = T;
 export type EnumParity =
   | Assert<Exact<MessageRole, SchemaMessageRole>>
   | Assert<Exact<ReaderFamily, SchemaReaderFamily>>
-  | Assert<Exact<TurnOutcome, SchemaTurnOutcome>>;
+  | Assert<Exact<TurnOutcome, SchemaTurnOutcome>>
+  | Assert<Exact<IntegrationOrigin, SchemaIntegrationOrigin>>
+  | Assert<Exact<ConnectionStatus, SchemaConnectionStatus>>;
 
 export interface SessionRow {
   readonly id: string;

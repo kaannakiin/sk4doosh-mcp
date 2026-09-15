@@ -1,0 +1,58 @@
+/// One user's authorized link to one integration.
+///
+/// Guard: a user holds at most one row per integration, ever. Reconnecting
+/// updates this row rather than inserting beside it, so the lookup the invoke
+/// path performs — by owner and integration — can never find two rows and pick
+/// one arbitrarily. What the row lost by being reused is carried by
+/// `ConnectionEvent`.
+model Connection {
+  id              BigInt           @id @default(autoincrement())
+  publicId        String           @unique @default(uuid(7)) @map("public_id") @db.Uuid
+  userId          BigInt           @map("user_id")
+  integrationId   BigInt           @map("integration_id")
+  providerSubject String?          @map("provider_subject")
+  providerTenant  String?          @map("provider_tenant")
+  status          ConnectionStatus @default(active)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  lastUsedAt      DateTime?        @map("last_used_at") @db.Timestamptz
+  revokedAt       DateTime?        @map("revoked_at") @db.Timestamptz
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration       @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  scopes      ConnectionScope[]
+  events      ConnectionEvent[]
+
+  @@unique([userId, integrationId], map: "connection_user_integration_key")
+  @@index([integrationId], map: "connection_integration_idx")
+  @@map("connection")
+}
+
+/// What the user consented to hand this product, one row per scope.
+///
+/// Guard: this is the consent, never the partner's own authorization answer.
+/// Copying the partner's policy result here would create a stale mirror that
+/// keeps granting access after the partner has taken it away.
+model ConnectionScope {
+  connectionId BigInt   @map("connection_id")
+  scope        String
+  grantedAt    DateTime @default(now()) @map("granted_at") @db.Timestamptz
+
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@id([connectionId, scope])
+  @@map("connection_scope")
+}
+
+/// Append-only lifecycle record. The connection row carries current state only,
+/// so this is what answers when access was granted and when it was withdrawn.
+model ConnectionEvent {
+  id           BigInt              @id @default(autoincrement())
+  connectionId BigInt              @map("connection_id")
+  kind         ConnectionEventKind
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz
+
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId, createdAt(sort: Desc)], map: "connection_event_connection_created_idx")
+  @@map("connection_event")
+}

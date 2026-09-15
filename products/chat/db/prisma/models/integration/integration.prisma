@@ -1,0 +1,48 @@
+/// A remote MCP server this platform can reach. A `partner` integration is
+/// onboarded once and offered to everyone; a `user` integration is a server one
+/// person pointed the product at and is visible only to its owner.
+///
+/// Guard: `origin` decides whether an invocation is scope checked, so it is a
+/// stored column and never inferred from whether tool scopes are present. An
+/// integration whose manifest failed to load has no scope rows either, and
+/// reading that as "declares no scopes, therefore unrestricted" would authorize
+/// every tool on a real partner backend.
+model Integration {
+  id              BigInt            @id @default(autoincrement())
+  publicId        String            @unique @default(uuid(7)) @map("public_id") @db.Uuid
+  origin          IntegrationOrigin
+  ownerId         BigInt?           @map("owner_id")
+  slug            String?           @unique
+  displayName     String            @map("display_name")
+  mcpUrl          String            @map("mcp_url")
+  manifestVersion Int               @default(0) @map("manifest_version")
+  status          IntegrationStatus @default(active)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  owner       User?                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  toolScopes  IntegrationToolScope[]
+  connections Connection[]
+
+  @@index([ownerId], map: "integration_owner_idx")
+  @@map("integration")
+}
+
+/// The scope a partner tool requires, as the partner published it.
+///
+/// Guard: the primary key is the tool, not the pair, so two scopes cannot claim
+/// one tool. Resolving such a tool at invoke time would have to choose, and
+/// choosing the narrower scope widens the grant while choosing the wider one
+/// breaks the user who consented to the narrower — here the manifest is refused
+/// at ingest instead.
+model IntegrationToolScope {
+  integrationId BigInt @map("integration_id")
+  toolName      String @map("tool_name")
+  scope         String
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([integrationId, toolName])
+  @@index([integrationId, scope], map: "integration_tool_scope_scope_idx")
+  @@map("integration_tool_scope")
+}

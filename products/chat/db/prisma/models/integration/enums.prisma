@@ -1,0 +1,22 @@
+enum IntegrationOrigin {
+  partner
+  user
+}
+
+enum IntegrationStatus {
+  active
+  disabled
+}
+
+enum ConnectionStatus {
+  active
+  revoked
+  reauth_required
+}
+
+enum ConnectionEventKind {
+  connected
+  reconnected
+  revoked
+  reauth_required
+}

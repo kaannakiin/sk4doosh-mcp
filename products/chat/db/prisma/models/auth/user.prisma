@@ -18,6 +18,8 @@ model User {
   sessions           AuthSession[]
   challenges         AuthChallenge[]
   chatSessions       ChatSession[]
+  integrations       Integration[]
+  connections        Connection[]
 
   @@map("app_user")
 }
