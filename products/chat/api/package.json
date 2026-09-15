@@ -8,7 +8,7 @@
     "dev": "node --watch --watch-preserve-output dist/main.js",
     "dev:types": "tsc --watch --preserveWatchOutput",
     "start": "node dist/main.js",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "check-types": "tsc -p tsconfig.test.json",
     "test": "vitest run",
     "db:seed": "node dist/seed.js"

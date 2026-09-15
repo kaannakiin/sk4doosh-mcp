@@ -13,9 +13,6 @@ import {
 const app = await NestFactory.create(AppModule);
 app.useGlobalPipes(new ValidationPipe({ transform: true }));
 app.use(hostHeaderValidation(["localhost", "127.0.0.1"]));
-
-await app.init();
-
 app.use(
   mcpAuthRouter({
     provider: app.get(DemoOAuthProvider),
@@ -23,5 +20,7 @@ app.use(
     resourceServerUrl: demoResourceUrl,
   }),
 );
+await app.init();
+
 await app.listen(3000);
 console.log("demo-api: http://localhost:3000 (MCP endpoint: POST /mcp)");

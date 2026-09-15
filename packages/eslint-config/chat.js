@@ -62,3 +62,56 @@ export const chatApp = [
     },
   },
 ];
+
+/**
+ * Guard: inside the module that talks to registrant-supplied addresses, the only
+ * way out is the guarded transport. `fetch` resolves a host and opens the socket
+ * in one step with no hook between them, so a single bare call reaches the
+ * deployment's own private network on request — the SSRF the guarded lookup
+ * exists to refuse. `guarded-http.ts` is exempt because it is what wraps
+ * `node:https`.
+ *
+ * The rule covers the directories named here and nothing else: an outbound
+ * client added elsewhere is outside it until its directory is added.
+ */
+export const chatUntrustedHttp = [
+  {
+    files: ["src/connections/**/*.ts"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "fetch",
+          message:
+            "Use guardedRequest from ./guarded-http.ts: it validates the resolved address inside the connector's lookup.",
+        },
+      ],
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "undici",
+              message:
+                "Use guardedRequest from ./guarded-http.ts rather than a second http client.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["node:http", "node:https", "node:net", "node:dns"],
+              message:
+                "Only guarded-http.ts opens sockets here; use guardedRequest from ./guarded-http.ts.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/connections/guarded-http.ts"],
+    rules: {
+      "no-restricted-globals": "off",
+      "@typescript-eslint/no-restricted-imports": "off",
+    },
+  },
+];
