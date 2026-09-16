@@ -15,10 +15,16 @@
 import type { ReaderFamily } from "@chat/contracts/attachment/media-type";
 import type { MessageRole } from "@chat/contracts/chat/message";
 import type { ConnectionStatus } from "@chat/contracts/integration/connection-status";
-import type { IntegrationOrigin } from "@chat/contracts/integration/integration";
+import type { DiscoveryFailure } from "@chat/contracts/integration/discovery-failure";
+import type {
+  IntegrationAuthMode,
+  IntegrationOrigin,
+} from "@chat/contracts/integration/integration";
 import type {
   ConnectionEventKind,
   ConnectionStatus as SchemaConnectionStatus,
+  DiscoveryFailure as SchemaDiscoveryFailure,
+  IntegrationAuthMode as SchemaIntegrationAuthMode,
   IntegrationOrigin as SchemaIntegrationOrigin,
   IntegrationStatus,
   MessageRole as SchemaMessageRole,
@@ -26,7 +32,14 @@ import type {
   TurnOutcome as SchemaTurnOutcome,
 } from "./generated/enums.js";
 
-export type { ConnectionStatus, IntegrationOrigin, MessageRole, ReaderFamily };
+export type {
+  ConnectionStatus,
+  DiscoveryFailure,
+  IntegrationAuthMode,
+  IntegrationOrigin,
+  MessageRole,
+  ReaderFamily,
+};
 
 export type { ConnectionEventKind, IntegrationStatus };
 
@@ -56,7 +69,9 @@ export type EnumParity =
   | Assert<Exact<ReaderFamily, SchemaReaderFamily>>
   | Assert<Exact<TurnOutcome, SchemaTurnOutcome>>
   | Assert<Exact<IntegrationOrigin, SchemaIntegrationOrigin>>
-  | Assert<Exact<ConnectionStatus, SchemaConnectionStatus>>;
+  | Assert<Exact<IntegrationAuthMode, SchemaIntegrationAuthMode>>
+  | Assert<Exact<ConnectionStatus, SchemaConnectionStatus>>
+  | Assert<Exact<DiscoveryFailure, SchemaDiscoveryFailure>>;
 
 export interface SessionRow {
   readonly id: string;

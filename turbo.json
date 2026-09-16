@@ -7,7 +7,9 @@
     "SKMCP_AUTH",
     "SKMCP_TOKEN",
     "CHAT_RUN_DB_TESTS",
-    "CHAT_TEST_DATABASE_URL"
+    "CHAT_TEST_DATABASE_URL",
+    "CHAT_E2E_MCP_URL",
+    "CHAT_E2E_PUBLIC_MCP_URL"
   ],
   "tasks": {
     "build": {

@@ -1,0 +1,24 @@
+/// A tool the remote server listed, as it listed it.
+///
+/// Guard: the primary key is the tool name, so one server cannot announce the
+/// same name twice. The name is how an invocation resolves a tool, and a second
+/// row would make that resolution pick one arbitrarily — the trap
+/// `IntegrationToolScope` already documents, for the same reason.
+///
+/// Guard: `inputSchema` is stored as written and never executed or trusted. It
+/// is a document from a server this platform has not met; asserting a shape for
+/// it here would turn a server that later publishes a different one into a
+/// silent failure rather than a visible tool.
+model IntegrationTool {
+  integrationId BigInt   @map("integration_id")
+  name          String
+  title         String?
+  description   String?
+  inputSchema   Json     @map("input_schema")
+  discoveredAt  DateTime @default(now()) @map("discovered_at") @db.Timestamptz
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([integrationId, name])
+  @@map("integration_tool")
+}

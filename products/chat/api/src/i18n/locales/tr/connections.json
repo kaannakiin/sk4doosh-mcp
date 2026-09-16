@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "integration_url_invalid": "Bu adres kullanılamaz. MCP sunucusuna https üzerinden erişilebilmeli.",
+    "integration_duplicate": "Bu sunucuyu zaten eklemişsiniz.",
+    "integration_unreachable": "Sunucu cevap vermedi.",
+    "integration_not_mcp": "Bu adres bir MCP sunucusuna benzemiyor.",
+    "integration_auth_unsupported": "Bu sunucu, bu ürünün yapabildiği yetkilendirmeyi desteklemiyor.",
+    "integration_not_found": "Böyle bir entegrasyon yok."
+  }
+}

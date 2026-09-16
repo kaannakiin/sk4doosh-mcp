@@ -244,5 +244,54 @@
       "phone": "Geçerli bir telefon numarası gir",
       "fallback": "{{field}} geçersiz"
     }
+  },
+  "connections": {
+    "title": "Entegrasyonlar",
+    "subtitle": "Bir MCP sunucusu bağlayın, araçları sohbette kullanılabilir olsun.",
+    "empty": "Henüz entegrasyon yok.",
+    "add": {
+      "label": "MCP sunucu adresi",
+      "placeholder": "https://ornek.com/mcp",
+      "submit": "Ekle",
+      "hint": "Sunucuya hemen bağlanılır, bu birkaç saniye sürebilir."
+    },
+    "status": {
+      "disconnected": "Bağlı değil",
+      "active": "Bağlı",
+      "revoked": "Bağlantı koparıldı",
+      "reauth_required": "Yetkilendirme gerekiyor",
+      "open": "Açık sunucu"
+    },
+    "tools": {
+      "count_one": "{{count}} araç",
+      "count_other": "{{count}} araç"
+    },
+    "actions": {
+      "connect": "Bağlan",
+      "reconnect": "Yeniden bağlan",
+      "disconnect": "Kopar",
+      "remove": "Kaldır",
+      "refreshTools": "Araçları yenile"
+    },
+    "confirm": {
+      "removeTitle": "Bu entegrasyon kaldırılsın mı?",
+      "removeBody": "Bağlantı sağlayıcı tarafında iptal edilir ve sunucu listenizden kalkar."
+    },
+    "outcome": {
+      "connected": "Bağlandı.",
+      "attempt_invalid": "Bu yetkilendirme, bu tarayıcıdan yapılan bir istekle eşleştirilemedi.",
+      "integration_unavailable": "Bu entegrasyon artık kullanılamıyor.",
+      "access_denied": "Yetkilendirmeyi reddettiniz.",
+      "provider_unavailable": "Sunucuya ulaşılamadı.",
+      "connection_failed": "Bağlantı tamamlanamadı."
+    },
+    "errors": {
+      "integration_url_invalid": "Bu adres kullanılamaz. MCP sunucusuna https üzerinden erişilebilmeli.",
+      "integration_duplicate": "Bu sunucuyu zaten eklemişsiniz.",
+      "integration_unreachable": "Sunucu cevap vermedi.",
+      "integration_not_mcp": "Bu adres bir MCP sunucusuna benzemiyor.",
+      "integration_auth_unsupported": "Bu sunucu, bu ürünün yapabildiği yetkilendirmeyi desteklemiyor.",
+      "integration_not_found": "Böyle bir entegrasyon yok."
+    }
   }
 }

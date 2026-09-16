@@ -5,6 +5,23 @@
 /// path performs — by owner and integration — can never find two rows and pick
 /// one arbitrarily. What the row lost by being reused is carried by
 /// `ConnectionEvent`.
+///
+/// Guard: only an `active` connection holds tokens. A row driven to
+/// `reauth_required` or `revoked` has them cleared in the same statement, so a
+/// token belonging to an authorization server this integration no longer points
+/// at cannot outlive the reason it was invalidated. The column constraint
+/// refuses any other combination.
+///
+/// Guard: `refreshLeaseUntil` is a claim on refreshing this row, taken by a
+/// conditional update rather than a lock. Two concurrent refreshes would spend
+/// the same refresh token twice, and a server that rotates them answers the
+/// second with `invalid_grant` — which reads as "the user must authorize again"
+/// when nothing was actually wrong.
+///
+/// Guard: `providerScope` is the grant the authorization server returned, and is
+/// never read as `ConnectionScope`. Those carry this product's own dotted
+/// vocabulary and are constrained to it; a remote server's scope is RFC 6749
+/// `scope-token` and legitimately looks like a url.
 model Connection {
   id              BigInt           @id @default(autoincrement())
   publicId        String           @unique @default(uuid(7)) @map("public_id") @db.Uuid
@@ -12,7 +29,14 @@ model Connection {
   integrationId   BigInt           @map("integration_id")
   providerSubject String?          @map("provider_subject")
   providerTenant  String?          @map("provider_tenant")
+  providerScope   String?          @map("provider_scope")
   status          ConnectionStatus @default(active)
+  accessToken     String?          @map("access_token")
+  refreshToken    String?          @map("refresh_token")
+  tokenExpiresAt  DateTime?        @map("token_expires_at") @db.Timestamptz
+  tokenKeyVersion Int?             @map("token_key_version") @db.SmallInt
+  refreshLeaseUntil DateTime?      @map("refresh_lease_until") @db.Timestamptz
+  authorizedAt    DateTime?        @map("authorized_at") @db.Timestamptz
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
   lastUsedAt      DateTime?        @map("last_used_at") @db.Timestamptz
   revokedAt       DateTime?        @map("revoked_at") @db.Timestamptz
@@ -55,4 +79,45 @@ model ConnectionEvent {
 
   @@index([connectionId, createdAt(sort: Desc)], map: "connection_event_connection_created_idx")
   @@map("connection_event")
+}
+
+/// One authorization request in flight, from the redirect out to the callback
+/// back.
+///
+/// Guard: `issuer` and `tokenEndpoint` are copied here when the request is made,
+/// not read from `IntegrationAuthorization` when the callback arrives. A refresh
+/// can rewrite that row while the user is still at the authorization server, and
+/// a code exchange that read the current row would send the authorization code
+/// and the client secret to whatever endpoint the refresh had just written.
+///
+/// Guard: `stateHash` is a digest, `codeVerifier` is a ciphertext. The state is
+/// only ever compared, so nothing needs to read it back; the verifier has to be
+/// replayed to the token endpoint, so it cannot be hashed.
+///
+/// Guard: `consumedAt` makes the attempt single use. An authorization code
+/// replayed against a still-open attempt would mint a second token for the same
+/// grant, and the code is visible in the browser's history and referrer.
+model ConnectionAttempt {
+  id            BigInt    @id @default(autoincrement())
+  userId        BigInt    @map("user_id")
+  integrationId BigInt    @map("integration_id")
+  stateHash     Bytes     @unique @map("state_hash")
+  codeVerifier  String    @map("code_verifier")
+  keyVersion    Int       @map("key_version") @db.SmallInt
+  issuer        String
+  tokenEndpoint String    @map("token_endpoint")
+  clientId      String    @map("client_id")
+  redirectUri   String    @map("redirect_uri")
+  resource      String
+  scope         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt    DateTime? @map("consumed_at") @db.Timestamptz
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt], map: "connection_attempt_expires_idx")
+  @@index([integrationId], map: "connection_attempt_integration_idx")
+  @@map("connection_attempt")
 }

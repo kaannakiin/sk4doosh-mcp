@@ -1,0 +1,208 @@
+import type { ConnectionOutcome } from "@chat/contracts/integration/connect";
+import {
+  createIntegrationSchema,
+  type CreateIntegration,
+  type IntegrationSummary,
+} from "@chat/contracts/integration/registration";
+import { errorCodeOf } from "@chat/queries/client";
+import { useIntegrationList } from "@chat/queries/connections/list";
+import {
+  useAddIntegration,
+  useDisconnect,
+  useRefreshTools,
+  useRemoveIntegration,
+} from "@chat/queries/connections/mutations";
+import { connectHref } from "@chat/queries/connections/path";
+import { Alert, Button, Loader, Modal, TextInput } from "@mantine/core";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+
+import { IntegrationCard } from "~/components/connections/IntegrationCard";
+import { applyServerIssues } from "~/core/forms/apply-server-issues";
+import { contractResolver } from "~/core/forms/contract-resolver";
+import { useLocale } from "~/core/hooks/use-locale";
+import { authTransport } from "~/lib/auth-transport";
+
+export const Route = createFileRoute("/_authenticated/connections")({
+  /**
+   * Guard: `notice` is declared optional rather than always present. A link into
+   * this page from anywhere else carries no outcome, and a required parameter
+   * would make every one of them name a value it has nothing to say about.
+   */
+  validateSearch: (search: Record<string, unknown>): { notice?: string } =>
+    typeof search.notice === "string" ? { notice: search.notice } : {},
+  component: ConnectionsRoute,
+});
+
+const NOTICE_TONE: Record<ConnectionOutcome, "green" | "red"> = {
+  connected: "green",
+  attempt_invalid: "red",
+  integration_unavailable: "red",
+  access_denied: "red",
+  provider_unavailable: "red",
+  connection_failed: "red",
+};
+
+function isOutcome(value: string): value is ConnectionOutcome {
+  return Object.hasOwn(NOTICE_TONE, value);
+}
+
+function ConnectionsRoute() {
+  const { t } = useTranslation();
+  const locale = useLocale();
+  const { notice } = Route.useSearch();
+  const list = useIntegrationList(locale);
+  const add = useAddIntegration(locale);
+  const disconnect = useDisconnect(locale);
+  const remove = useRemoveIntegration(locale);
+  const refresh = useRefreshTools(locale);
+
+  const [failure, setFailure] = useState<string | undefined>(undefined);
+  const [removing, setRemoving] = useState<IntegrationSummary | undefined>(
+    undefined,
+  );
+
+  const form = useForm<CreateIntegration>({
+    resolver: contractResolver(createIntegrationSchema, t),
+    defaultValues: { mcpUrl: "" },
+    mode: "onTouched",
+  });
+  const { errors, isSubmitting } = form.formState;
+
+  const submit = form.handleSubmit(async (values) => {
+    setFailure(undefined);
+    try {
+      await add.mutateAsync(values);
+      form.reset({ mcpUrl: "" });
+    } catch (error) {
+      if (applyServerIssues(error, form.setError) === "form") {
+        setFailure(errorCodeOf(error) ?? "integration_unreachable");
+      }
+    }
+  });
+
+  /**
+   * Guard: a full page assignment, not a router navigation. The api answers this
+   * url with a `302` to the authorization server, which is a different origin —
+   * the router would try to resolve it as an internal route and go nowhere.
+   */
+  const connect = (integration: IntegrationSummary): void => {
+    window.location.assign(connectHref(authTransport(), integration.id));
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+      <h1 className="text-xl font-medium">{t("connections.title")}</h1>
+      <p className="mt-1 text-sm text-ink-dim">{t("connections.subtitle")}</p>
+
+      {notice !== undefined && isOutcome(notice) ? (
+        <Alert
+          className="mt-6"
+          color={`var(--color-${NOTICE_TONE[notice]})`}
+          variant="light"
+          title={t(`connections.outcome.${notice}`)}
+        />
+      ) : null}
+
+      {failure === undefined ? null : (
+        <Alert
+          className="mt-6"
+          color="var(--color-red)"
+          variant="light"
+          title={t(`connections.errors.${failure}`, {
+            defaultValue: t("connections.errors.integration_unreachable"),
+          })}
+        />
+      )}
+
+      <form onSubmit={submit} noValidate aria-busy={isSubmitting} className="mt-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <TextInput
+            {...form.register("mcpUrl")}
+            className="grow"
+            size="md"
+            radius="md"
+            type="url"
+            inputMode="url"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder={t("connections.add.placeholder")}
+            label={t("connections.add.label")}
+            error={errors.mcpUrl?.message}
+          />
+          <Button
+            type="submit"
+            size="md"
+            radius="md"
+            className="sm:mt-[1.65rem]"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            {t("connections.add.submit")}
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-ink-dim">{t("connections.add.hint")}</p>
+      </form>
+
+      <div className="mt-8 flex flex-col gap-3">
+        {list.isPending ? <Loader size="sm" /> : null}
+        {list.data?.length === 0 ? (
+          <p className="text-sm text-ink-dim">{t("connections.empty")}</p>
+        ) : null}
+        {list.data?.map((integration) => (
+          <IntegrationCard
+            key={integration.id}
+            integration={integration}
+            busy={
+              disconnect.isPending || remove.isPending || refresh.isPending
+            }
+            onConnect={() => {
+              connect(integration);
+            }}
+            onDisconnect={() => {
+              void disconnect.mutateAsync(integration.id);
+            }}
+            onRefresh={() => {
+              void refresh.mutateAsync(integration.id);
+            }}
+            onRemove={() => {
+              setRemoving(integration);
+            }}
+          />
+        ))}
+      </div>
+
+      <Modal
+        opened={removing !== undefined}
+        onClose={() => {
+          setRemoving(undefined);
+        }}
+        title={t("connections.confirm.removeTitle")}
+        centered
+      >
+        <p className="text-sm text-ink-dim">
+          {t("connections.confirm.removeBody")}
+        </p>
+        <Button
+          color="var(--color-red)"
+          radius="md"
+          className="mt-4"
+          loading={remove.isPending}
+          onClick={() => {
+            const target = removing;
+            setRemoving(undefined);
+            if (target !== undefined) {
+              void remove.mutateAsync(target.id);
+            }
+          }}
+        >
+          {t("connections.actions.remove")}
+        </Button>
+      </Modal>
+    </div>
+  );
+}

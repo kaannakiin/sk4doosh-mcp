@@ -6,6 +6,12 @@ const GLOBAL_OMIT = {
   userPasswordCredential: { passwordHash: true },
   authRefreshToken: { tokenHash: true },
   authChallenge: { secretHash: true },
+  integrationAuthorization: {
+    clientSecret: true,
+    registrationAccessToken: true,
+  },
+  connection: { accessToken: true, refreshToken: true },
+  connectionAttempt: { stateHash: true, codeVerifier: true },
 } as const satisfies Prisma.GlobalOmitConfig;
 
 export interface DbOptions {

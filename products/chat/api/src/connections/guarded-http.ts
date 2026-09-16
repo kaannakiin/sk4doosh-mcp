@@ -2,9 +2,15 @@ import {
   isLoopbackHost,
   isPrivateAddress,
 } from "@chat/contracts/common/network-address";
-import type { EndpointPolicy } from "@chat/contracts/integration/discovery";
+import {
+  isSecureEndpoint,
+  type EndpointPolicy,
+} from "@chat/contracts/integration/discovery";
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
-import { request as httpRequest } from "node:http";
+import {
+  request as httpRequest,
+  type IncomingHttpHeaders,
+} from "node:http";
 import { request as httpsRequest } from "node:https";
 import type { LookupFunction } from "node:net";
 
@@ -13,14 +19,14 @@ export interface GuardedRequest {
   readonly method?: string;
   readonly headers?: Record<string, string>;
   readonly body?: string;
+  readonly signal?: AbortSignal;
   readonly timeoutMs: number;
   readonly maxBytes: number;
 }
 
 export interface GuardedResponse {
   readonly status: number;
-  readonly location: string | undefined;
-  readonly challenge: string | undefined;
+  readonly headers: Record<string, string>;
   readonly body: string;
 }
 
@@ -28,6 +34,10 @@ export type GuardedOutcome =
   | { readonly kind: "response"; readonly response: GuardedResponse }
   | { readonly kind: "refused"; readonly reason: string }
   | { readonly kind: "failed" };
+
+export interface GuardedFollow extends GuardedRequest {
+  readonly maxRedirects: number;
+}
 
 export class RefusedAddressError extends Error {}
 
@@ -91,11 +101,34 @@ export function publicOnlyLookup(policy: EndpointPolicy): LookupFunction {
 }
 
 /**
+ * Guard: `set-cookie` is dropped rather than folded. This platform holds no
+ * session against a registrant-supplied server, so a cookie it sets has no
+ * legitimate reader here — and carrying one into the response object hands it
+ * to every later caller that sees the response.
+ *
+ * Guard: the record is built through a `Map` and `Object.fromEntries`, so a
+ * header literally named `__proto__` becomes an own property instead of
+ * reaching the object's prototype.
+ */
+function foldHeaders(raw: IncomingHttpHeaders): Record<string, string> {
+  const folded = new Map<string, string>();
+  for (const [name, value] of Object.entries(raw)) {
+    if (value === undefined || name === "set-cookie") {
+      continue;
+    }
+
+    folded.set(name, Array.isArray(value) ? value.join(", ") : value);
+  }
+
+  return Object.fromEntries(folded);
+}
+
+/**
  * Makes one request to a url this platform does not control.
  *
  * Guard: redirects are never followed here. `http.request` does not follow them
- * on its own, and the caller re-validates each hop instead, so a server that
- * passed every check cannot answer `302` to an address that would not have.
+ * on its own, and `guardedFollow` re-validates each hop instead, so a server
+ * that passed every check cannot answer `302` to an address that would not have.
  *
  * Guard: a refusal is reported apart from a failure. Both end the request, but
  * one is this platform blocking an address and the other is a server being
@@ -111,6 +144,11 @@ export async function guardedRequest(
 ): Promise<GuardedOutcome> {
   const url = new URL(options.url);
   const send = url.protocol === "https:" ? httpsRequest : httpRequest;
+  const deadline = AbortSignal.timeout(options.timeoutMs);
+  const signal =
+    options.signal === undefined
+      ? deadline
+      : AbortSignal.any([deadline, options.signal]);
 
   return new Promise((resolve) => {
     let settled = false;
@@ -127,7 +165,7 @@ export async function guardedRequest(
         method: options.method ?? "GET",
         headers: options.headers,
         lookup: publicOnlyLookup(policy),
-        signal: AbortSignal.timeout(options.timeoutMs),
+        signal,
       },
       (res) => {
         let body = "";
@@ -150,8 +188,7 @@ export async function guardedRequest(
                   kind: "response",
                   response: {
                     status: res.statusCode ?? 0,
-                    location: res.headers.location,
-                    challenge: res.headers["www-authenticate"],
+                    headers: foldHeaders(res.headers),
                     body,
                   },
                 },
@@ -173,4 +210,57 @@ export async function guardedRequest(
     }
     req.end();
   });
+}
+
+/**
+ * Makes a request and follows up to `maxRedirects` hops.
+ *
+ * Guard: each hop is re-validated rather than followed. A server that passed
+ * every check on its own address would otherwise answer `302` to one that would
+ * not have, and the platform would follow it without another word.
+ *
+ * Guard: the hop budget is the caller's, and a request carrying a credential
+ * passes zero. A redirected `POST` to a token or registration endpoint replays
+ * the client secret to whatever host the response named.
+ *
+ * @param options the request plus how many hops this caller permits
+ * @param policy whether loopback is reachable for this caller
+ * @returns the final response, the address refusal, or a plain failure
+ */
+export async function guardedFollow(
+  options: GuardedFollow,
+  policy: EndpointPolicy,
+): Promise<GuardedOutcome> {
+  let target = options.url;
+  for (let hop = 0; hop <= options.maxRedirects; hop += 1) {
+    if (!isSecureEndpoint(target, policy)) {
+      return {
+        kind: "refused",
+        reason: `${target} is not an endpoint this platform will request`,
+      };
+    }
+
+    const outcome = await guardedRequest({ ...options, url: target }, policy);
+    if (outcome.kind !== "response") {
+      return outcome;
+    }
+
+    const { response } = outcome;
+    const location = response.headers["location"];
+    if (
+      response.status < 300 ||
+      response.status >= 400 ||
+      location === undefined
+    ) {
+      return outcome;
+    }
+
+    try {
+      target = new URL(location, target).href;
+    } catch {
+      return { kind: "failed" };
+    }
+  }
+
+  return { kind: "failed" };
 }

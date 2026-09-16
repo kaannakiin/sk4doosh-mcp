@@ -1289,7 +1289,173 @@ Açık bir boşluk, kapatılması bir veri modeli kararı. Partner `cancel_order
 
 ---
 
-## 29. Teknik referanslar
+## 29. F3 ile kesinleşen kararlar
+
+Yetkilendirme sunucusu metadata'sı ve istemci kaydı şeması (`integration_authorization`) yazılırken çıkan, bu belgenin önceki bölümlerini bağlayan kararlar.
+
+### 29.1 `ConnectionAttempt`, `issuer` ve `token_endpoint`'i anlık kopyalamalı
+
+Bölüm 15'teki `ConnectionAttempt` alanları yeterli değil. Tarayıcıya verilen yetkilendirme isteği ile callback arasında dakikalar geçiyor, ve bu sürede `integration_authorization` satırı yenilenmiş olabilir — muhtemelen saldırganın yerleştirdiği bir `token_endpoint`'e.
+
+Kod değişimi güncel satırdan okursa, yetkilendirme kodu **ve client secret** o yeni adrese gider.
+
+Attempt kaydı başlangıçta `issuer` ve `token_endpoint`'i saklamalı; callback saklı satırın `issuer`'ı ile karşılaştırmalı ve uyuşmazsa akışı reddetmeli. Kullanıcı yeniden başlatır.
+
+### 29.2 `Integration.mcpUrl` değişmez sayılmalı
+
+Keşif belirli bir `mcpUrl`'e karşı koştu ve `verifyProtectedResource` ile ona bağlandı. Url düzenlenirse satır artık başka bir kaynağın metadata'sını tarif eder: token eski kaynağa `aud` bağlı üretilir, yeni kaynağa sunulur.
+
+`integration_authorization.resource` bunu saklıyor ve okuma predikatı `resource = mcp_url` şartını taşıyor, yani eşleşmeyen satır hiç dönmüyor. Ama asıl çözüm yapısal: **yeniden yönlendirilen bir MCP sunucusu yeni bir entegrasyondur, bir düzenleme değil.** Bölüm 20 invariant 10'un veri modeli karşılığı.
+
+### 29.3 Issuer değişimi tüm bağlantıları `reauth_required`'a çekmeli
+
+`client_id` bir yetkilendirme sunucusu tarafından verilir ve başkasında hiçbir anlamı yoktur. Veritabanı artık `client_issuer = issuer` kontrolüyle tutarsız bir satırı imkânsız kılıyor: `issuer`'ı güncelleyip client kolonlarına dokunmayan bir UPDATE reddediliyor.
+
+Ama kayıt düştüğünde o entegrasyona ait mevcut bağlantılar da geçersizleşir — elde tuttukları token eski sunucunun ürünü. Yenileme yolu aynı işlemde bütün `connection` satırlarını `reauth_required` durumuna çekmeli. Enum değeri ve olay türü zaten mevcut; eksik olan yazma yolu.
+
+### 29.4 Anahtar rotasyonu mümkün, ama yapılmıyor
+
+`integration_authorization.key_version` taşınıyor ve bugün her satırda `1`. `CHAT_AUTH_SECRET` tek değer, arkasında keyring yok — rotasyon şu an mümkün değil.
+
+Bedelin neden buraya özgü olduğu önemli: oturumlar için anahtar değişiminin bedeli "herkes yeniden giriş yapar". Saklanan credential'lar için bedeli **her kullanıcı her entegrasyonu yeniden bağlar**. Sürüm kolonu olmadan hangi satırın eski anahtarla yazıldığı da bilinemez.
+
+Gerçek rotasyon, config'in geçerli + önceki kökü taşımasını gerektiriyor. O gelene kadar kolon provizyondur.
+
+---
+
+## 30. F4 ile kesinleşen kararlar
+
+### 30.1 `oauth4webapi` tek bir dosyadan import edilir
+
+Kütüphanenin her isteği `(options[customFetch] || fetch)` yazıyor. Seçeneği geçirmeyi unutan bir çağrı yeri düz `fetch`'e düşüyor: DNS doğrulaması yok, SSRF koruması yok, hata da yok. Disiplinle kapatılacak bir şey değil.
+
+`src/connections/oauth-client.ts` kütüphaneyi adıyla anan tek dosya; her çağrıyı taşıyıcı bağlı halde sarıyor. `chatUntrustedHttp` lint kuralı `src/connections/**` içinde `oauth4webapi` importunu yasaklıyor, muafiyet yalnız o dosya.
+
+### 30.2 Yönlendirme, isteğin ne taşıdığına göre
+
+`GET /.well-known/...` gizli bir şey taşımıyor; 302 izlemek yalnızca dokümanı başka yerden okumak demek. `POST /register` ve ileride `POST /token` client secret ve authorization code taşıyor; yönlendirme izlemek o bilgiyi yeni adrese teslim etmek demek.
+
+`guardedFollow` hop bütçesini çağırandan alıyor: metadata okumaları 3, kimlik bilgisi taşıyan istekler 0. MCP `initialize` probe'u POST ama kimlik bilgisi taşımıyor, o yüzden 3 ile koşuyor.
+
+### 30.3 İstemcinin nasıl doğrulandığı ve nereye döneceği saklanır
+
+`token_endpoint_auth_method`: RFC 7591 sunucunun istenenden başka bir yöntemle kayıt açmasına izin veriyor. Token isteğinde tahmin etmek her istekte kimlik doğrulama hatası demek, ve hata sunucuda oluştuğu için yerelde sebebi görünmüyor. Kolon `client_secret_basic`, `client_secret_post`, `none` ile sınırlı — `private_key_jwt` taşıyan bir satır hiç kullanılamayacak bir kayıt olurdu.
+
+`registered_redirect_uri`: yetkilendirme isteği kayıtlıdan farklı bir uri verirse sunucu iki değeri de adlandırmayan bir hatayla reddediyor. Kayıt anındakini saklamak, uyuşmazlığı kullanıcı tarayıcıya gönderilmeden yakalayıp yeniden kayıtla cevaplamayı mümkün kılıyor.
+
+### 30.4 Zaman damgaları tek saatten yazılır
+
+`integration_authorization_timestamps_check` `verified_at >= discovered_at` istiyor. `discovered_at` kolonun DEFAULT'undan (veritabanı sunucusunun saati), `verified_at` uygulamadan (bu makinenin saati) gelirse, veritabanı başka bir hostta olduğu için saat farkı doğrudan reddedilen bir INSERT'e dönüşüyor. İkisi de `saveDiscovery` içinde aynı `new Date()`'ten yazılıyor.
+
+## 31. F5 ile kesinleşen kararlar
+
+### 31.1 Denemenin anlık kopyası zorunlu
+
+`ConnectionAttempt` tarayıcı gönderilirken `issuer` ve `tokenEndpoint`'i yazıyor; callback bunlara karşı takas yapıyor. §29.1'in gereksinimi buydu. Yeniden keşif kullanıcı hâlâ yetkilendirme sunucusundayken satırı değiştirebilir, ve güncel satırdan okuyan bir callback yetkilendirme kodunu ve client secret'ı yenilemenin gösterdiği yere yollar.
+
+İstemci sırrı yine de **güncel** satırdan okunuyor, ama `issuer` + `clientId` ile kapılı: issuer değiştiyse o kolonlar zaten temizlenmiş, sorgu boş dönüyor ve bağlanma başarısız oluyor. Doğru davranış — yanlış sunucuya sır göndermektense bağlanmamak.
+
+### 31.2 Deneme tek kullanımlık
+
+`consume` `updateMany`'i `consumedAt: null` ve `expiresAt > now()` ile filtreleyip `count === 1` arıyor. Önce okuyup sonra kontrol etmek iki çağrının da süresi dolmamış satırı okuduğu pencereyi bırakır. Yetkilendirme kodu tarayıcı geçmişinde ve referrer'da görünür; aynı state ile gelen ikinci callback takas edecek bir şey bulamıyor.
+
+### 31.3 Token yalnız `active` bağlantıda durur
+
+`connection_token_state_check`: `reauth_required` veya `revoked` bir satır token tutamaz. Issuer değişimi hem durumu hem token kolonlarını aynı statement'ta temizliyor. Bağlanma sırasında satır token yazılana kadar `reauth_required` kalıyor — bağlantının `publicId`'si şifrelemenin bağlama değeri olduğu için satırın önce var olması gerekiyor, ve o pencerede `active` duran bir satır sunacak token'ı olmayan bir çağrıyı yetkilendirirdi.
+
+### 31.4 Şifreleme öznesi amaçtan türetilir
+
+`CredentialCipherService` artık `client_secret`, `registration_access_token`, `code_verifier`, `access_token`, `refresh_token` taşıyor. Özne (`integration` / `attempt` / `connection`) `SUBJECT_OF` ile amaçtan türetiliyor, çağıran seçmiyor. Çağıran iki yarıyı da seçseydi, bir bağlantının token'ını entegrasyon altında mühürlemek o entegrasyonun **her kullanıcısı** için açılan bir başlık üretirdi.
+
+### 31.5 Tarayıcıya kapalı bir kelime döner
+
+Callback web'e `?status=<ConnectionOutcome>` ile dönüyor; liste `@chat/contracts`'ta sabit. Uzak sunucunun `error_description`'ı saldırganın yazdığı metin, ve onu bu ürünün kendi origin'inin adres çubuğuna yansıtmak o metnin bu ürünün sözü gibi okunma yolu.
+
+**Açık kalan (F6'da kapandı):** `@chat/web` tarafında `/connections/callback` sayfası henüz yok. Bu dilim yalnız sunucu tarafı.
+
+## 32. F6 ile kesinleşen kararlar
+
+### 32.1 MCP çağrısı SDK ile değil, guarded transport ile yapılır
+
+`@modelcontextprotocol/sdk`'nın streamable http taşıması çıplak `fetch` kullanıyor. `fetch` adı çözmeyi ve soketi açmayı tek adımda yapıyor, arada kanca yok — yani `guarded-http.ts`'in var olma sebebi olan SSRF/DNS-rebinding korumasını bütünüyle atlıyor. `remote-mcp.client.ts` el sıkışmayı (`initialize` → `notifications/initialized` → `tools/list`), `mcp-session-id` taşımayı ve `text/event-stream` gövdesini `guardedFollow` üstünde kendisi yapıyor. SDK eklenmedi.
+
+Bu istekler bearer token taşıdığı için `maxRedirects: 0`. Keşif probe'unun 3 hop'u, o isteğin hiçbir kimlik bilgisi taşımamasından geliyordu.
+
+### 32.2 Yetkilendirme isteğinin `scope`'u kaynağa göre seçilir
+
+`IntegrationToolScope` bir partner manifestosunun scope haritası ve kullanıcının eklediği sunucu için boş. Boş kalınca istek scope'suz gidiyor ve scope zorunlu kılan AS'ler reddediyor — hem de kullanıcı tarayıcıdan ayrıldıktan sonra. `origin: "user"` yolunda scope artık PRM'in `scopes_supported` alanından (`IntegrationAuthorization.scopesSupported`) okunuyor; `partner` yolu değişmedi.
+
+### 32.3 Keşif ekleme anında koşar, başarısızsa satır silinir
+
+`POST /integrations` probe + PRM + AS metadata + DCR'ı senkron yapıyor. `IntegrationAuthorization` `integration_id`'ye kapılı olduğu için satır **önce** yazılmak zorunda; `ensureClient` `ready` dönmezse satır siliniyor. İstemcisi olmayan bir entegrasyon, connect akışının ancak reddedebileceği bir satır, ve onu listede bırakmak kullanıcıya hiç çalışmayacak bir düğme sunmak olurdu.
+
+Satırın yazılmasıyla silinmesi arasında süreç ölürse yarım bir satır kalıyor. Bu pencere kapatılamaz — uzak çağrılar bir transaction içinde tutulamaz — ama sonucu kapatılabilir, ve `"duplicate"` dalı bunu yapıyor: ikinci ekleme pes etmek yerine o satırı okuyup `ensureClient`'ı tekrar deniyor. Tamamlanırsa satır artık sağlam ve cevap `integration_duplicate`; tamamlanamazsa satır siliniyor ve kullanıcı **gerçek** sebebi görüyor. Böylece hiçbir durum kullanıcıyı kilitlemiyor.
+
+Geri alma yalnız **hiç bağlantısı olmayan** satıra uygulanıyor (`loadReclaimable`). Tekrar denemek tamamlayamadığını siliyor, ve birinin yetkilendirdiği bir entegrasyonu oraya sokmak o kullanıcının grant'ini beraberinde götürürdü.
+
+### 32.4 Aynı sunucu bir sahibe iki kez eklenemez
+
+`integration (owner_id, mcp_url) WHERE origin = 'user'` kısmi tekil indeksi. Olmadan ikinci ekleme ikinci bir yetkilendirme satırı ve aynı AS'ye ikinci bir dinamik istemci kaydı doğuruyor, kullanıcı da hangi bağlantının hangisine ait olduğunu ayırt edemediği iki özdeş kart görüyor. Yarışı indeks karara bağlıyor: `create` `P2002`'yi yakalayıp `"duplicate"` diyor, okuma-sonra-yazma penceresi yok.
+
+### 32.5 Yenileme tek uçuşlu, kilitle değil kirayla
+
+`connection.refresh_lease_until` kolonu, koşullu bir `updateMany` ile alınıyor ve `count`'a bakılıyor. Prisma havuzunda oturum ömürlü `pg_advisory_lock` güvenli değil (kilit ve serbest bırakma farklı bağlantıya düşebilir), işlem ömürlü olanı ise bir HTTP çağrısı boyunca havuz bağlantısını tutar. Kira, bu repoda `consume` ve `saveRegistration`'da zaten kullanılan desenin aynısı.
+
+Neden gerekli: refresh token döndüren bir AS, aynı token'ın ikinci harcanmasını `invalid_grant` ile cevaplıyor, ve o cevap kullanıcının gerçekten iptal ettiği bir grant'ten ayırt edilemiyor. Kirayı kaybeden çağıran yenilemiyor, tutanı bekliyor.
+
+Yenilemenin sonuçları ayrık: **sunucunun kendi reddi** (`invalid_grant`) bağlantıyı `reauth_required` yapıyor; **taşıma hatası** satıra hiç dokunmuyor. Sağlayıcıdaki geçici bir kesinti, o sağlayıcıyı kullanan herkesi yeniden yetkilendirmeye zorlamamalı.
+
+`resource` yenilemede de gönderiliyor. RFC 8707 token'ı tek kaynağa bağlıyor; atlanırsa yenileme her turda kapsamı sessizce genişletirdi.
+
+### 32.6 Koparma önce refresh token'ı iptal eder
+
+RFC 7009 sırası `refresh_token` → `access_token`. Ters sırada, access iptal edilip refresh hâlâ geçerliyken süreç ölürse grant'in yenilenebilir yarısı hayatta kalıyor. Uzak iptal başarısız olsa da yerel satır temizleniyor: iptal isteğine `200` almak grant'in gittiğinin kanıtı değil (RFC 7009 tanımadığı token'a da `200` diyor), ama koparma düğmesine basan kullanıcının koparılmış olması gerekiyor.
+
+### 32.7 Bağlantı sonrası `tools/list` bağlantıyı geçersiz kılmaz
+
+Callback tokenları yazdıktan sonra araçları çekip `integration_tool`'a yazıyor. Bu çağrı başarısız olursa bağlantı yine `"connected"` dönüyor — token gerçekten alındı ve mühürlendi, ve boş bir araç listesi hiçbir şey göstermeyen bir sayfa demek; oysa `connection_failed` demek kullanıcının tamamladığı yetkilendirmeyi çöpe atmak olurdu.
+
+## 33. F7 ile kesinleşen kararlar
+
+### 33.1 MCP ekosisteminin yarısı OAuth konuşmuyor
+
+F6 her MCP sunucusunun OAuth konuştuğu varsayımıyla yazıldı. Varsayım yanlış ve gerçek bir sunucuda kırıldı — `https://mcp.solana.com/mcp` token'sız `initialize`'a `200`, token'sız `tools/list`'e beş araç döndürüyor ve `.well-known/oauth-protected-resource` yayınlamıyor. Bizim keşif buna `unreachable` diyordu, yani kullanıcı cevap veren bir sunucu için "Sunucu cevap vermedi" görüyordu.
+
+### 33.2 Probe dört durumu ayırıyor
+
+Eski `probe()` cevabın status'unu hiç okumuyordu ve `GuardedOutcome`'ın `"response"` ile `"failed"` dallarını birleştiriyordu. Dört ayrı gerçek — açık sunucu, çıplak `Bearer` challenge'ı, çerçeveyi reddeden sunucu, hiç cevap vermeyen adres — tek değere çöküyordu. `probeAuthorization` bunları ayırıyor.
+
+Challenge'ın **varlığı** karar veriyor, ayrıştırılan url değil: `resourceMetadataUrlFrom` yalnız `resource_metadata="..."` yakalıyor, yani çıplak bir `Bearer` de `undefined` veriyor ve onu "challenge yok" diye okumak, korumalı bir sunucuya token'sız gitmek demekti.
+
+Gövde ayrıştırılmıyor. `200` dönen rastgele bir web sunucusu burada `open` sınıflanıp bir adım sonra `tools/list` araç üretemediği için reddediliyor — bir url'in MCP sunucusu olup olmadığına tek yer karar veriyor.
+
+### 33.3 Açık kayıt atomik, OAuth kaydı olamaz
+
+Açık sunucuda pazarlık edilecek bir şey yok, dolayısıyla bütün uzak çağrılar ilk satır yazılmadan bitiyor: `integration` + `connection` + araçlar **tek transaction**. F6'nın OAuth yolundaki "yarım satır" penceresi burada hiç yok.
+
+Açık sunucu için token'sız `active` bir `Connection` açılıyor. `authorizeInvocation` `origin: "user"` yolunda yalnız varlık, sahip, entegrasyon eşleşmesi ve `status === "active"` bakıyor; scope'a, araca, token'a hiç bakmıyor. Böylece 25 testi olan güvenlik fonksiyonuna ve `STRATEGY_BY_ORIGIN`'e hiç dokunulmadı.
+
+### 33.4 Açıklık iddiası araçlar listelenerek kanıtlanıyor
+
+`initialize`'ı herkese cevaplayıp araçlarını koruyan bir sunucu açık değil. `registerOpen` önce token'sız `tools/list` deniyor; `unauthorized` gelirse kayıt OAuth yoluna düşüyor. Sunucunun kendi davranışı karar veriyor, probe'un tek bir cevabı değil.
+
+### 33.5 Kullanımdaki kopya ağa çıkılmadan reddediliyor
+
+`findOwnedByUrl` sahibin satırını ve **kullanımda olup olmadığını** birlikte döndürüyor. Kullanımdaki bir satır probe'dan önce `integration_duplicate` ile reddediliyor: tekrar deneme yolu tamamlayamadığını siliyor ve oraya birinin yetkilendirdiği bir entegrasyonun girmesi o grant'i de götürürdü. Ayrıca zaten reddedilecek bir url için bu sürecin dışarı bağlantı açmasının sebebi yok.
+
+### 33.6 Kapanan sunucu yerinde yükseltiliyor
+
+`POST /integrations/:id/tools` araç listesini tazeliyor. Açık bir entegrasyon `unauthorized` alırsa keşif + DCR koşuyor, `auth_mode` `oauth` oluyor ve bağlantı aynı transaction'da `reauth_required`'a düşüyor. Kullanıcı entegrasyonu ve geçmişini kaybetmiyor, bir kez yetkilendiriyor.
+
+İstemci **önce** kaydediliyor, mod sonra çevriliyor. Ters sıra, ne açık kullanılabilen ne yetkilendirilebilen bir entegrasyon bırakırdı; yükseltme başarısızsa satıra hiç dokunulmuyor.
+
+### 33.7 İki saat, bir kısıt — ikinci kez
+
+`connection_token_state_check` `authorized_at >= created_at` istiyor. `created_at` kolon varsayılanından (veritabanı sunucusunun saati), `authorizedAt` `new Date()`'ten (bu host) geliyordu. Açık kayıt testi bunu **kesikli olarak** kırdı: aynı kod bir koşuda geçti, bir koşuda `23514` aldı.
+
+Bu F4'te `discovered_at`/`verified_at` ile yakalanan tuzağın aynısı. `createOpen` ikisini de tek `new Date()`'ten yazıyor; `beginAuthorization`'daki aynı gizli hata da (satırı DB saatiyle yaratıp `completeAuthorization`'da uygulama saatiyle işaretlemek) birlikte kapatıldı.
+
+## 34. Teknik referanslar
 
 - Model Context Protocol — 2026-07-28 specification release and authorization hardening:  
   https://blog.modelcontextprotocol.io/posts/2026-07-28/

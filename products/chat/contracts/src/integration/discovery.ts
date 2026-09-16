@@ -1,20 +1,12 @@
 import { isLoopbackHost, isPrivateAddress } from "../common/network-address.ts";
-import type {
-  AuthorizationServerMetadata,
-  ProtectedResourceMetadata,
-} from "./authorization-metadata.ts";
+import type { DiscoveryFailure } from "./discovery-failure.ts";
+import type { AuthorizationServerMetadata } from "./authorization-metadata.ts";
 
 export interface EndpointPolicy {
   readonly allowLoopback: boolean;
 }
 
 const PUBLIC_ONLY: EndpointPolicy = { allowLoopback: false };
-
-export type DiscoveryFailure =
-  | "resource_mismatch"
-  | "issuer_mismatch"
-  | "insecure_transport"
-  | "pkce_unsupported";
 
 export interface AuthorizationServer {
   readonly issuer: string;
@@ -24,6 +16,8 @@ export interface AuthorizationServer {
   readonly revocationEndpoint: string | undefined;
   readonly scopesSupported: readonly string[];
 }
+
+export type { DiscoveryFailure };
 
 export type DiscoveryResult =
   | { readonly ok: true; readonly server: AuthorizationServer }
@@ -76,20 +70,6 @@ export function resourceMetadataUrlFrom(
 }
 
 /**
- * Guard: RFC 9728 inserts the well-known segment after the host and keeps the
- * resource's own path as a suffix, so a server mounted at `/mcp` publishes at
- * `/.well-known/oauth-protected-resource/mcp`. Appending the segment to the
- * path instead resolves to a document that belongs to a different resource.
- */
-export function defaultResourceMetadataUrl(mcpUrl: string): string {
-  const url = new URL(mcpUrl);
-  const suffix = url.pathname === "/" ? "" : url.pathname;
-
-  return new URL(`/.well-known/oauth-protected-resource${suffix}`, url.origin)
-    .href;
-}
-
-/**
  * The urls an authorization server's metadata may be published at, in the order
  * RFC 8414 and OpenID Discovery expect them to be tried.
  *
@@ -118,18 +98,6 @@ function sameUrl(left: string, right: string): boolean {
   } catch {
     return false;
   }
-}
-
-/**
- * Guard: the document must claim the very resource that was asked about. A
- * server that answers with another resource's metadata would send this platform
- * to an authorization server that mints tokens for somewhere else.
- */
-export function verifyProtectedResource(
-  mcpUrl: string,
-  metadata: ProtectedResourceMetadata,
-): boolean {
-  return sameUrl(metadata.resource, mcpUrl);
 }
 
 /**
@@ -175,7 +143,16 @@ export function verifyAuthorizationServer(
   return {
     ok: true,
     server: {
-      issuer: new URL(metadata.issuer).href,
+      /**
+       * Guard: the issuer is carried exactly as the document wrote it, never
+       * through `new URL().href`. That normalization appends a trailing slash to
+       * an issuer that has no path, and RFC 8414 makes the issuer an exact
+       * string while RFC 9207 requires the `iss` a callback carries to be
+       * identical to it. A normalized copy compares unequal to every `iss` such
+       * a server sends, and the authorization is refused at the last step with
+       * nothing in the message to say why.
+       */
+      issuer: metadata.issuer,
       authorizationEndpoint: metadata.authorization_endpoint,
       tokenEndpoint: metadata.token_endpoint,
       registrationEndpoint: metadata.registration_endpoint,

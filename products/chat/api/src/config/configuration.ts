@@ -24,6 +24,7 @@ export interface AuthConfig {
   secret: string;
   publicApiUrl: string;
   webRedirectUrl: string;
+  connectionsRedirectUrl: string;
   cookieSecure: boolean;
   cookieSameSite: "lax" | "none";
   google?: OAuthProviderConfig;
@@ -161,6 +162,9 @@ export function loadConfig(): AppConfig {
       webRedirectUrl:
         env.CHAT_AUTH_WEB_REDIRECT_URL ??
         new URL("/auth/callback", env.CHAT_CORS_ORIGIN).toString(),
+      connectionsRedirectUrl:
+        env.CHAT_CONNECTIONS_WEB_REDIRECT_URL ??
+        new URL("/connections/callback", env.CHAT_CORS_ORIGIN).toString(),
       cookieSecure: env.CHAT_AUTH_COOKIE_SECURE,
       cookieSameSite: env.CHAT_AUTH_COOKIE_SAMESITE,
       google,

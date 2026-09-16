@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "integration_url_invalid": "That address cannot be used. An MCP server must be reachable over https.",
+    "integration_duplicate": "You have already added this server.",
+    "integration_unreachable": "That server did not answer.",
+    "integration_not_mcp": "That address does not look like an MCP server.",
+    "integration_auth_unsupported": "That server does not support the authorization this product can perform.",
+    "integration_not_found": "No such integration."
+  }
+}

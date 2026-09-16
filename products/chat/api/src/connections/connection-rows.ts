@@ -3,7 +3,10 @@ import type {
   InvocationIntegration,
 } from "@chat/contracts/integration/authorize-invocation";
 import type { ConnectionStatus } from "@chat/contracts/integration/connection-status";
-import type { IntegrationOrigin } from "@chat/contracts/integration/integration";
+import type {
+  IntegrationId,
+  IntegrationOrigin,
+} from "@chat/contracts/integration/integration";
 import type { IntegrationScopeMap } from "@chat/contracts/integration/scope-map";
 
 import type { UserId } from "../db/ids.ts";
@@ -30,6 +33,26 @@ interface IntegrationShape {
 export interface InvocationContext {
   readonly integration: InvocationIntegration;
   readonly connection: InvocationConnection<UserId> | undefined;
+}
+
+/**
+ * The rows a user may see: every partner integration, plus the ones they added.
+ *
+ * Guard: one definition, called by every path that resolves an integration by
+ * its public id. A path that filtered differently would let a caller naming a
+ * `user` integration they do not own learn that it exists, which is the whole of
+ * what a private server's registration discloses.
+ *
+ * @param userId the subject of the trusted session
+ * @param integrationId the public id to narrow to, when there is one
+ * @returns a Prisma `where` over `Integration`
+ */
+export function visibleToUser(userId: UserId, integrationId?: IntegrationId) {
+  return {
+    ...(integrationId === undefined ? {} : { publicId: integrationId }),
+    status: "active" as const,
+    OR: [{ origin: "partner" as const }, { ownerId: BigInt(userId) }],
+  };
 }
 
 /**

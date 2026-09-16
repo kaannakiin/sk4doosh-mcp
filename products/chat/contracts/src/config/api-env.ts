@@ -91,6 +91,7 @@ export const apiEnvSchema = z.preprocess(
         .pipe(z.base64()),
       CHAT_AUTH_PUBLIC_API_URL: z.url().optional(),
       CHAT_AUTH_WEB_REDIRECT_URL: z.url().optional(),
+      CHAT_CONNECTIONS_WEB_REDIRECT_URL: z.url().optional(),
       CHAT_AUTH_COOKIE_SECURE: z.stringbool().default(false),
       CHAT_AUTH_COOKIE_SAMESITE: z.enum(["lax", "none"]).default("lax"),
 

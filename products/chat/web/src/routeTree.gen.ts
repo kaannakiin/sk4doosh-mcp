@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedConnectionsRouteImport } from './routes/_authenticated.connections'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -19,6 +20,7 @@ import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AuthenticatedCSessionIdRouteImport } from './routes/_authenticated.c.$sessionId'
+import { Route as AuthenticatedConnectionsCallbackRouteImport } from './routes/_authenticated.connections.callback'
 import { Route as AuthLoginPhoneRouteImport } from './routes/auth.login_.phone'
 import { Route as AuthRegisterPhoneRouteImport } from './routes/auth.register_.phone'
 
@@ -36,6 +38,12 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedConnectionsRoute =
+  AuthenticatedConnectionsRouteImport.update({
+    id: '/connections',
+    path: '/connections',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -71,6 +79,12 @@ const AuthenticatedCSessionIdRoute = AuthenticatedCSessionIdRouteImport.update({
   path: '/c/$sessionId',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedConnectionsCallbackRoute =
+  AuthenticatedConnectionsCallbackRouteImport.update({
+    id: '/callback',
+    path: '/callback',
+    getParentRoute: () => AuthenticatedConnectionsRoute,
+  } as any)
 const AuthLoginPhoneRoute = AuthLoginPhoneRouteImport.update({
   id: '/login_/phone',
   path: '/login/phone',
@@ -85,6 +99,7 @@ const AuthRegisterPhoneRoute = AuthRegisterPhoneRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/connections': typeof AuthenticatedConnectionsRouteWithChildren
   '/auth/complete': typeof AuthCompleteRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -92,10 +107,12 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/': typeof AuthIndexRoute
   '/c/$sessionId': typeof AuthenticatedCSessionIdRoute
+  '/connections/callback': typeof AuthenticatedConnectionsCallbackRoute
   '/auth/login/phone': typeof AuthLoginPhoneRoute
   '/auth/register/phone': typeof AuthRegisterPhoneRoute
 }
 export interface FileRoutesByTo {
+  '/connections': typeof AuthenticatedConnectionsRouteWithChildren
   '/auth/complete': typeof AuthCompleteRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -104,6 +121,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthIndexRoute
   '/c/$sessionId': typeof AuthenticatedCSessionIdRoute
+  '/connections/callback': typeof AuthenticatedConnectionsCallbackRoute
   '/auth/login/phone': typeof AuthLoginPhoneRoute
   '/auth/register/phone': typeof AuthRegisterPhoneRoute
 }
@@ -111,6 +129,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/_authenticated/connections': typeof AuthenticatedConnectionsRouteWithChildren
   '/auth/complete': typeof AuthCompleteRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
@@ -119,6 +138,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/c/$sessionId': typeof AuthenticatedCSessionIdRoute
+  '/_authenticated/connections/callback': typeof AuthenticatedConnectionsCallbackRoute
   '/auth/login_/phone': typeof AuthLoginPhoneRoute
   '/auth/register_/phone': typeof AuthRegisterPhoneRoute
 }
@@ -127,6 +147,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/connections'
     | '/auth/complete'
     | '/auth/login'
     | '/auth/register'
@@ -134,10 +155,12 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/auth/'
     | '/c/$sessionId'
+    | '/connections/callback'
     | '/auth/login/phone'
     | '/auth/register/phone'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/connections'
     | '/auth/complete'
     | '/auth/login'
     | '/auth/register'
@@ -146,12 +169,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/c/$sessionId'
+    | '/connections/callback'
     | '/auth/login/phone'
     | '/auth/register/phone'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/connections'
     | '/auth/complete'
     | '/auth/login'
     | '/auth/register'
@@ -160,6 +185,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/auth/'
     | '/_authenticated/c/$sessionId'
+    | '/_authenticated/connections/callback'
     | '/auth/login_/phone'
     | '/auth/register_/phone'
   fileRoutesById: FileRoutesById
@@ -191,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/connections': {
+      id: '/_authenticated/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof AuthenticatedConnectionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/auth/': {
@@ -242,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCSessionIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/connections/callback': {
+      id: '/_authenticated/connections/callback'
+      path: '/callback'
+      fullPath: '/connections/callback'
+      preLoaderRoute: typeof AuthenticatedConnectionsCallbackRouteImport
+      parentRoute: typeof AuthenticatedConnectionsRoute
+    }
     '/auth/login_/phone': {
       id: '/auth/login_/phone'
       path: '/login/phone'
@@ -259,12 +299,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedConnectionsRouteChildren {
+  AuthenticatedConnectionsCallbackRoute: typeof AuthenticatedConnectionsCallbackRoute
+}
+
+const AuthenticatedConnectionsRouteChildren: AuthenticatedConnectionsRouteChildren =
+  {
+    AuthenticatedConnectionsCallbackRoute:
+      AuthenticatedConnectionsCallbackRoute,
+  }
+
+const AuthenticatedConnectionsRouteWithChildren =
+  AuthenticatedConnectionsRoute._addFileChildren(
+    AuthenticatedConnectionsRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
+  AuthenticatedConnectionsRoute: typeof AuthenticatedConnectionsRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedCSessionIdRoute: typeof AuthenticatedCSessionIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedConnectionsRoute: AuthenticatedConnectionsRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedCSessionIdRoute: AuthenticatedCSessionIdRoute,
 }

@@ -1,0 +1,64 @@
+/// The authorization server this integration's resource named, and the client
+/// this platform registered there. Every column but the timestamps came from a
+/// server this platform has not met.
+///
+/// Guard: `clientIssuer` repeats `issuer` so the two cannot disagree. A
+/// `clientId` is issued by one authorization server and means nothing at
+/// another, so a refresh that re-identifies the server must drop the
+/// registration. The check refuses the update rather than trusting whoever
+/// writes the upsert to null the client columns in the same statement.
+///
+/// Guard: `resource` is the `mcpUrl` discovery actually ran against, not a copy
+/// for convenience. A row that outlived an edit to `Integration.mcpUrl`
+/// describes a different resource, and the token minted from it is bound to the
+/// old one while being presented to the new.
+///
+/// Guard: `tokenEndpointAuthMethod` is the server's answer, not this platform's
+/// request. RFC 7591 lets the server register a method other than the one asked
+/// for, and guessing it at token time is an authentication failure on every
+/// request. The column is constrained to the three methods this platform can
+/// perform, so a registration it could never use is refused at write time.
+///
+/// Guard: `registeredRedirectUri` records what was sent at registration. An
+/// authorization request naming a different uri is refused by the server with an
+/// error that names neither value; storing it lets the mismatch be caught before
+/// the user leaves, and answered by registering again.
+///
+/// Guard: an empty `scopesSupported` means the server declared none, never that
+/// it supports none. RFC 8414 makes the field optional and a Prisma scalar list
+/// is never nullable, so the distinction cannot be carried here — narrowing a
+/// request on that reading is the mistake `Integration` already documents for
+/// tool scopes, inverted.
+model IntegrationAuthorization {
+  integrationId           BigInt            @id @map("integration_id")
+  resource                String
+  metadataUrl             String            @map("metadata_url")
+  issuer                  String
+  authorizationEndpoint   String            @map("authorization_endpoint")
+  tokenEndpoint           String            @map("token_endpoint")
+  registrationEndpoint    String?           @map("registration_endpoint")
+  revocationEndpoint      String?           @map("revocation_endpoint")
+  scopesSupported         String[]          @default([]) @map("scopes_supported")
+  clientIssuer            String?           @map("client_issuer")
+  clientId                String?           @map("client_id")
+  clientSecret            String?           @map("client_secret")
+  registrationAccessToken String?           @map("registration_access_token")
+  registrationClientUri   String?           @map("registration_client_uri")
+  tokenEndpointAuthMethod String?           @map("token_endpoint_auth_method")
+  registeredRedirectUri   String?           @map("registered_redirect_uri")
+  keyVersion              Int?              @map("key_version") @db.SmallInt
+  clientSecretExpiresAt   DateTime?         @map("client_secret_expires_at") @db.Timestamptz
+  registeredAt            DateTime?         @map("registered_at") @db.Timestamptz
+  discoveredAt            DateTime          @default(now()) @map("discovered_at") @db.Timestamptz
+  verifiedAt              DateTime          @default(now()) @map("verified_at") @db.Timestamptz
+  staleAfter              DateTime          @map("stale_after") @db.Timestamptz
+  refreshFailedAt         DateTime?         @map("refresh_failed_at") @db.Timestamptz
+  refreshFailure          DiscoveryFailure? @map("refresh_failure")
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([staleAfter], map: "integration_authorization_stale_idx")
+  @@map("integration_authorization")
+}

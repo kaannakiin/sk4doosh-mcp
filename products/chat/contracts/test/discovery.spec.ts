@@ -3,11 +3,9 @@ import { describe, expect, it } from "vitest";
 import { authorizationServerMetadataSchema } from "../src/integration/authorization-metadata.ts";
 import {
   authorizationServerMetadataUrls,
-  defaultResourceMetadataUrl,
   isSecureEndpoint,
   resourceMetadataUrlFrom,
   verifyAuthorizationServer,
-  verifyProtectedResource,
 } from "../src/integration/discovery.ts";
 
 const metadata = authorizationServerMetadataSchema.parse({
@@ -65,20 +63,6 @@ describe("resourceMetadataUrlFrom", () => {
   });
 });
 
-describe("defaultResourceMetadataUrl", () => {
-  it("inserts the well-known segment after the host and keeps the path as a suffix", () => {
-    expect(defaultResourceMetadataUrl("https://partner.example/mcp")).toBe(
-      "https://partner.example/.well-known/oauth-protected-resource/mcp",
-    );
-  });
-
-  it("omits the suffix for a resource mounted at the root", () => {
-    expect(defaultResourceMetadataUrl("https://partner.example/")).toBe(
-      "https://partner.example/.well-known/oauth-protected-resource",
-    );
-  });
-});
-
 describe("authorizationServerMetadataUrls", () => {
   it("tries the oauth document before the openid one", () => {
     expect(authorizationServerMetadataUrls("https://partner.example/")).toEqual([
@@ -98,27 +82,25 @@ describe("authorizationServerMetadataUrls", () => {
   });
 });
 
-describe("verifyProtectedResource", () => {
-  it("accepts a document that claims the resource that was asked about", () => {
-    expect(
-      verifyProtectedResource("https://partner.example/mcp", {
-        resource: "https://partner.example/mcp",
-        authorization_servers: ["https://partner.example/"],
-      }),
-    ).toBe(true);
-  });
-
-  it("refuses a document that claims a different resource", () => {
-    expect(
-      verifyProtectedResource("https://partner.example/mcp", {
-        resource: "https://elsewhere.example/mcp",
-        authorization_servers: ["https://elsewhere.example/"],
-      }),
-    ).toBe(false);
-  });
-});
-
 describe("verifyAuthorizationServer", () => {
+  /**
+   * Guard: `https://mcp.cloudflare.com` publishes its issuer with no trailing
+   * slash and sends that exact string back as RFC 9207 `iss`. Normalizing it
+   * through `new URL().href` made the stored issuer compare unequal to every
+   * callback, and the authorization was refused at the last step.
+   */
+  it("carries an issuer that has no trailing slash exactly as written", () => {
+    const result = verifyAuthorizationServer("https://partner.example", {
+      ...metadata,
+      issuer: "https://partner.example",
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      server: { issuer: "https://partner.example" },
+    });
+  });
+
   it("accepts a server whose issuer matches where the document came from", () => {
     const result = verifyAuthorizationServer("https://partner.example/", metadata);
 

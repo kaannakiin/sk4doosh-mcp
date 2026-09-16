@@ -4,20 +4,24 @@ import {
 } from "@chat/contracts/integration/authorization-metadata";
 import {
   authorizationServerMetadataUrls,
-  defaultResourceMetadataUrl,
   isSecureEndpoint,
   resourceMetadataUrlFrom,
   verifyAuthorizationServer,
-  verifyProtectedResource,
   type AuthorizationServer,
   type DiscoveryFailure,
   type EndpointPolicy,
 } from "@chat/contracts/integration/discovery";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import type { AppConfig } from "../config/configuration.ts";
-import { guardedRequest, type GuardedResponse } from "./guarded-http.ts";
+import { guardedFollow } from "./guarded-http.ts";
+import {
+  readAuthorizationServerMetadata,
+  readResourceMetadata,
+  type MetadataFailure,
+  type OauthTransport,
+} from "./oauth-client.ts";
 
 const REQUEST_TIMEOUT_MS = 5_000;
 
@@ -36,26 +40,51 @@ const PROBE_BODY = JSON.stringify({
   },
 });
 
-type FetchOutcome =
-  | { readonly kind: "ok"; readonly response: GuardedResponse }
-  | { readonly kind: "blocked" }
-  | { readonly kind: "failed" };
+/**
+ * Guard: an identity mismatch means a different thing in each document, and the
+ * two maps keep the distinction. A resource naming somewhere else is a resource
+ * that cannot be trusted to say where its tokens come from; an issuer naming
+ * somewhere else is a host claiming to be an authorization server it is not.
+ */
+const RESOURCE_FAILURE: Record<MetadataFailure, DiscoveryFailure> = {
+  blocked_address: "blocked_address",
+  unreachable: "unreachable",
+  malformed: "malformed",
+  identity_mismatch: "resource_mismatch",
+};
 
-type JsonOutcome =
-  | { readonly kind: "ok"; readonly value: unknown }
-  | { readonly kind: "blocked" }
-  | { readonly kind: "failed" };
+const SERVER_FAILURE: Record<MetadataFailure, DiscoveryFailure> = {
+  blocked_address: "blocked_address",
+  unreachable: "unreachable",
+  malformed: "malformed",
+  identity_mismatch: "issuer_mismatch",
+};
+
+/**
+ * What an MCP endpoint said about who guards it.
+ *
+ * Guard: four situations that used to collapse into one value. A public server
+ * answering `200`, a `401` carrying a bare `Bearer` challenge, a refusal with
+ * some other status and a request that never got an answer are different facts,
+ * and a caller that cannot tell them apart cannot register a server that needs
+ * no authorization at all.
+ */
+export type AuthorizationProbe =
+  | { readonly kind: "open" }
+  | { readonly kind: "challenged"; readonly metadataUrl: string | undefined }
+  | { readonly kind: "unanswered" }
+  | { readonly kind: "blocked" };
 
 export type DiscoveryOutcome =
   | {
       readonly ok: true;
       readonly server: AuthorizationServer;
+      readonly metadataUrl: string;
       readonly resourceScopes: readonly string[];
     }
   | {
       readonly ok: false;
-      readonly failure:
-        DiscoveryFailure | "blocked_address" | "unreachable" | "malformed";
+      readonly failure: DiscoveryFailure;
     };
 
 @Injectable()
@@ -64,16 +93,25 @@ export class AuthorizationDiscoveryService {
 
   private readonly policy: EndpointPolicy;
 
+  private readonly transport: OauthTransport;
+
   /**
    * Guard: loopback is reachable only outside production, where the in-repo demo
    * backend is the discovery target. In production the registrant's url is
    * forwarded verbatim, and a process that will fetch its own loopback on
    * request reaches admin surfaces no client can.
    */
-  constructor(config: ConfigService<AppConfig, true>) {
+  constructor(
+    @Inject(ConfigService) config: ConfigService<AppConfig, true>,
+  ) {
     this.policy = {
       allowLoopback:
         config.get("environment", { infer: true }) !== "production",
+    };
+    this.transport = {
+      endpoint: this.policy,
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      maxBytes: MAX_METADATA_BYTES,
     };
   }
 
@@ -88,31 +126,41 @@ export class AuthorizationDiscoveryService {
       return { ok: false, failure: "insecure_transport" };
     }
 
-    const metadata = await this.resourceMetadataUrl(mcpUrl);
-    if (metadata.kind === "blocked") {
+    const challenge = await this.probeAuthorization(mcpUrl);
+    if (challenge.kind === "blocked") {
       return { ok: false, failure: "blocked_address" };
     }
 
-    if (!isSecureEndpoint(metadata.url, this.policy)) {
+    /**
+     * Guard: a server that named no metadata url is still asked at the default
+     * well-known path. Discovery's job is to find an authorization server, so a
+     * probe that produced no challenge is not a reason to stop looking — the
+     * caller that cares whether the server is open asks `probeAuthorization`
+     * itself.
+     */
+    const metadataUrl =
+      challenge.kind === "challenged" ? challenge.metadataUrl : undefined;
+
+    if (
+      metadataUrl !== undefined &&
+      !isSecureEndpoint(metadataUrl, this.policy)
+    ) {
       return { ok: false, failure: "insecure_transport" };
     }
 
-    const document = await this.readJson(metadata.url);
-    if (document.kind === "blocked") {
-      return { ok: false, failure: "blocked_address" };
-    }
+    const document = await readResourceMetadata(
+      mcpUrl,
+      metadataUrl,
+      this.transport,
+    );
 
     if (document.kind === "failed") {
-      return { ok: false, failure: "unreachable" };
+      return { ok: false, failure: RESOURCE_FAILURE[document.failure] };
     }
 
     const resource = protectedResourceMetadataSchema.safeParse(document.value);
     if (!resource.success) {
       return { ok: false, failure: "malformed" };
-    }
-
-    if (!verifyProtectedResource(mcpUrl, resource.data)) {
-      return { ok: false, failure: "resource_mismatch" };
     }
 
     const [issuer] = resource.data.authorization_servers;
@@ -121,13 +169,18 @@ export class AuthorizationDiscoveryService {
     }
 
     for (const candidate of authorizationServerMetadataUrls(issuer)) {
-      const raw = await this.readJson(candidate);
-      if (raw.kind === "blocked") {
-        return { ok: false, failure: "blocked_address" };
-      }
+      const raw = await readAuthorizationServerMetadata(
+        issuer,
+        candidate,
+        this.transport,
+      );
 
       if (raw.kind === "failed") {
-        continue;
+        if (raw.failure === "unreachable") {
+          continue;
+        }
+
+        return { ok: false, failure: SERVER_FAILURE[raw.failure] };
       }
 
       const parsed = authorizationServerMetadataSchema.safeParse(raw.value);
@@ -145,6 +198,7 @@ export class AuthorizationDiscoveryService {
         ? {
             ok: true,
             server: verified.server,
+            metadataUrl: candidate,
             resourceScopes: resource.data.scopes_supported ?? [],
           }
         : { ok: false, failure: verified.failure };
@@ -154,106 +208,66 @@ export class AuthorizationDiscoveryService {
   }
 
   /**
-   * Guard: each redirect hop is re-validated rather than followed. A server that
-   * passed every check on its own address would otherwise answer `302` to one
-   * that would not have, and the platform would follow it without another word.
+   * Asks the MCP endpoint who guards it, if anyone.
+   *
+   * Guard: this `POST` follows redirects while the token and registration ones
+   * do not. It carries an `initialize` frame and no credential, so a redirected
+   * hop has nothing to replay; the same hop on a token request would hand the
+   * client secret to whatever host the response named.
+   *
+   * Guard: the presence of `www-authenticate` decides, not the url parsed out of
+   * it. A bare `Bearer` challenge names no `resource_metadata` and parses to
+   * `undefined`, and reading that as "no challenge" would present a guarded
+   * server's tools to this platform with no token at all.
+   *
+   * Guard: the body is not parsed. A web server answering `200` to anything is
+   * reported open here and refused a step later, when `tools/list` fails to
+   * produce a tool — one place decides whether a url is an MCP server, and it is
+   * not this one.
+   *
+   * @param mcpUrl the endpoint the integration named
+   * @returns whether it is open, what it challenged with, or why there was no
+   * answer
    */
-  private async follow(
-    url: string,
-    method: "GET" | "POST",
-    headers: Record<string, string>,
-    body?: string,
-  ): Promise<FetchOutcome> {
-    let target = url;
-    for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-      if (!isSecureEndpoint(target, this.policy)) {
-        return { kind: "blocked" };
-      }
-
-      const outcome = await guardedRequest(
-        {
-          url: target,
-          method,
-          headers,
-          body,
-          timeoutMs: REQUEST_TIMEOUT_MS,
-          maxBytes: MAX_METADATA_BYTES,
-        },
-        this.policy,
-      );
-
-      if (outcome.kind === "refused") {
-        this.logger.warn(
-          `refused an address outside the public internet: ${outcome.reason}`,
-        );
-
-        return { kind: "blocked" };
-      }
-
-      if (outcome.kind === "failed") {
-        return { kind: "failed" };
-      }
-
-      const { response } = outcome;
-      if (
-        response.status < 300 ||
-        response.status >= 400 ||
-        response.location === undefined
-      ) {
-        return { kind: "ok", response };
-      }
-
-      target = new URL(response.location, target).href;
-    }
-
-    return { kind: "failed" };
-  }
-
-  private async resourceMetadataUrl(
-    mcpUrl: string,
-  ): Promise<
-    { readonly kind: "blocked" } | { readonly kind: "ok"; readonly url: string }
-  > {
-    const outcome = await this.follow(
-      mcpUrl,
-      "POST",
+  async probeAuthorization(mcpUrl: string): Promise<AuthorizationProbe> {
+    const outcome = await guardedFollow(
       {
-        "content-type": "application/json",
-        accept: "application/json, text/event-stream",
+        url: mcpUrl,
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+        },
+        body: PROBE_BODY,
+        timeoutMs: REQUEST_TIMEOUT_MS,
+        maxBytes: MAX_METADATA_BYTES,
+        maxRedirects: MAX_REDIRECTS,
       },
-      PROBE_BODY,
+      this.policy,
     );
 
-    if (outcome.kind === "blocked") {
+    if (outcome.kind === "refused") {
+      this.logger.warn(
+        `refused an address outside the public internet: ${outcome.reason}`,
+      );
+
       return { kind: "blocked" };
     }
 
-    const named =
-      outcome.kind === "ok"
-        ? resourceMetadataUrlFrom(outcome.response.challenge)
-        : undefined;
-
-    return { kind: "ok", url: named ?? defaultResourceMetadataUrl(mcpUrl) };
-  }
-
-  private async readJson(url: string): Promise<JsonOutcome> {
-    const outcome = await this.follow(url, "GET", {
-      accept: "application/json",
-    });
-    if (outcome.kind !== "ok") {
-      return outcome;
+    if (outcome.kind === "failed") {
+      return { kind: "unanswered" };
     }
 
-    if (outcome.response.status !== 200) {
-      return { kind: "failed" };
+    const { headers, status } = outcome.response;
+    const challenge = headers["www-authenticate"];
+
+    if (challenge === undefined && status >= 200 && status < 300) {
+      return { kind: "open" };
     }
 
-    try {
-      return { kind: "ok", value: JSON.parse(outcome.response.body) };
-    } catch {
-      this.logger.debug(`metadata was not json (${url})`);
-
-      return { kind: "failed" };
-    }
+    return {
+      kind: "challenged",
+      metadataUrl: resourceMetadataUrlFrom(challenge),
+    };
   }
 }

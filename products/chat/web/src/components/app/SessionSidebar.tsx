@@ -6,7 +6,7 @@ import {
 } from "@chat/queries/sessions/mutations";
 import { useSessionList } from "@chat/queries/sessions/list";
 import { Button, Loader, Modal, Text, TextInput } from "@mantine/core";
-import { IconPencilPlus } from "@tabler/icons-react";
+import { IconPencilPlus, IconPlug } from "@tabler/icons-react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -102,6 +102,14 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
       </nav>
 
       <div className="border-t border-hairline px-3.5 py-2.5">
+        <Link
+          to="/connections"
+          onClick={onNavigate}
+          className="mb-1.5 flex items-center gap-2 rounded-md px-1 py-1.5 text-sm text-ink-dim hover:bg-accent-soft"
+        >
+          <IconPlug size={15} />
+          {t("connections.title")}
+        </Link>
         <AccountMenu />
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <LocaleSwitcher />

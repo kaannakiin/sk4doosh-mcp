@@ -74,36 +74,66 @@ export const chatApp = [
  * The rule covers the directories named here and nothing else: an outbound
  * client added elsewhere is outside it until its directory is added.
  */
+const socketPatterns = [
+  {
+    group: ["node:http", "node:https", "node:net", "node:dns"],
+    message:
+      "Only guarded-http.ts opens sockets here; use guardedRequest from ./guarded-http.ts.",
+  },
+];
+
+const undiciPath = {
+  name: "undici",
+  message:
+    "Use guardedRequest from ./guarded-http.ts rather than a second http client.",
+};
+
+const oauthPath = {
+  name: "oauth4webapi",
+  message:
+    "Import the wrappers from ./oauth-client.ts: they bind the guarded transport as customFetch.",
+};
+
+const fetchGlobal = {
+  name: "fetch",
+  message:
+    "Use guardedRequest from ./guarded-http.ts: it validates the resolved address inside the connector's lookup.",
+};
+
+/**
+ * Guard: inside the module that talks to registrant-supplied addresses, the only
+ * way out is the guarded transport. `fetch` resolves a host and opens the socket
+ * in one step with no hook between them, so a single bare call reaches the
+ * deployment's own private network on request — the SSRF the guarded lookup
+ * exists to refuse.
+ *
+ * `oauth4webapi` is restricted for the same reason and a sharper one: every one
+ * of its requests reads `(options[customFetch] || fetch)`, so a call site that
+ * omits the option falls back to the bare global silently, with no error and no
+ * sign in the response. `oauth-client.ts` is the one file that may name the
+ * library, and it binds the transport on every call.
+ *
+ * `guarded-http.ts` is exempt from the socket rules because it is what wraps
+ * `node:https`. The rule covers the directories named here and nothing else: an
+ * outbound client added elsewhere is outside it until its directory is added.
+ */
 export const chatUntrustedHttp = [
   {
     files: ["src/connections/**/*.ts"],
     rules: {
-      "no-restricted-globals": [
-        "error",
-        {
-          name: "fetch",
-          message:
-            "Use guardedRequest from ./guarded-http.ts: it validates the resolved address inside the connector's lookup.",
-        },
-      ],
+      "no-restricted-globals": ["error", fetchGlobal],
       "@typescript-eslint/no-restricted-imports": [
         "error",
-        {
-          paths: [
-            {
-              name: "undici",
-              message:
-                "Use guardedRequest from ./guarded-http.ts rather than a second http client.",
-            },
-          ],
-          patterns: [
-            {
-              group: ["node:http", "node:https", "node:net", "node:dns"],
-              message:
-                "Only guarded-http.ts opens sockets here; use guardedRequest from ./guarded-http.ts.",
-            },
-          ],
-        },
+        { paths: [undiciPath, oauthPath], patterns: socketPatterns },
+      ],
+    },
+  },
+  {
+    files: ["src/connections/oauth-client.ts"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        { paths: [undiciPath], patterns: socketPatterns },
       ],
     },
   },

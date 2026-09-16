@@ -244,5 +244,54 @@
       "phone": "Enter a valid phone number",
       "fallback": "{{field}} is invalid"
     }
+  },
+  "connections": {
+    "title": "Integrations",
+    "subtitle": "Connect an MCP server and its tools become available in chat.",
+    "empty": "No integrations yet.",
+    "add": {
+      "label": "MCP server address",
+      "placeholder": "https://example.com/mcp",
+      "submit": "Add",
+      "hint": "The server is contacted straight away, so this can take a few seconds."
+    },
+    "status": {
+      "disconnected": "Not connected",
+      "active": "Connected",
+      "revoked": "Disconnected",
+      "reauth_required": "Needs authorization",
+      "open": "Public server"
+    },
+    "tools": {
+      "count_one": "{{count}} tool",
+      "count_other": "{{count}} tools"
+    },
+    "actions": {
+      "connect": "Connect",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "remove": "Remove",
+      "refreshTools": "Refresh tools"
+    },
+    "confirm": {
+      "removeTitle": "Remove this integration?",
+      "removeBody": "The connection is withdrawn at the provider and the server is removed from your list."
+    },
+    "outcome": {
+      "connected": "Connected.",
+      "attempt_invalid": "That authorization could not be matched to a request from this browser.",
+      "integration_unavailable": "That integration is no longer available.",
+      "access_denied": "You declined the authorization.",
+      "provider_unavailable": "The server could not be reached.",
+      "connection_failed": "The connection could not be completed."
+    },
+    "errors": {
+      "integration_url_invalid": "That address cannot be used. An MCP server must be reachable over https.",
+      "integration_duplicate": "You have already added this server.",
+      "integration_unreachable": "That server did not answer.",
+      "integration_not_mcp": "That address does not look like an MCP server.",
+      "integration_auth_unsupported": "That server does not support the authorization this product can perform.",
+      "integration_not_found": "No such integration."
+    }
   }
 }

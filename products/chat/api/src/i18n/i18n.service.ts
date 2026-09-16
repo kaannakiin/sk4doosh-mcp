@@ -8,15 +8,17 @@ import i18next, { type i18n } from "i18next";
 
 import enChat from "./locales/en/chat.json" with { type: "json" };
 import enCommon from "./locales/en/common.json" with { type: "json" };
+import enConnections from "./locales/en/connections.json" with { type: "json" };
 import enHttp from "./locales/en/http.json" with { type: "json" };
 import enValidation from "./locales/en/validation.json" with { type: "json" };
 import trChat from "./locales/tr/chat.json" with { type: "json" };
 import trCommon from "./locales/tr/common.json" with { type: "json" };
+import trConnections from "./locales/tr/connections.json" with { type: "json" };
 import trHttp from "./locales/tr/http.json" with { type: "json" };
 import trValidation from "./locales/tr/validation.json" with { type: "json" };
 import { currentLocale } from "./locale.store.ts";
 
-const NAMESPACES = ["common", "validation", "chat", "http"];
+const NAMESPACES = ["common", "validation", "chat", "http", "connections"];
 
 @Injectable()
 export class I18nService implements OnModuleInit {
@@ -34,12 +36,14 @@ export class I18nService implements OnModuleInit {
           validation: enValidation,
           chat: enChat,
           http: enHttp,
+          connections: enConnections,
         },
         tr: {
           common: trCommon,
           validation: trValidation,
           chat: trChat,
           http: trHttp,
+          connections: trConnections,
         },
       },
       fallbackLng: DEFAULT_LOCALE,

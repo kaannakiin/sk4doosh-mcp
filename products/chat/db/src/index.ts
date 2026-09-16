@@ -10,6 +10,7 @@
 export { createDb } from "./client.js";
 export { isUniqueConstraintError } from "./errors.js";
 export type { Db, DbOptions } from "./client.js";
+export type { Prisma } from "./generated/client.js";
 export type {
   AttachmentRow,
   MessageRole,

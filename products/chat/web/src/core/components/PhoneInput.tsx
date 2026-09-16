@@ -371,13 +371,24 @@ export function PhoneInput({
           error={error !== undefined}
           leftSection={<CountryFlag iso={country} />}
           comboboxProps={{ width: 320, position: "bottom-start" }}
+          /**
+           * Guard: the option list scrolls natively. Mantine's `ScrollArea`
+           * wraps the options in a `display: table` element, and a table is
+           * sized to its max-content: the percentage width below counts as
+           * `auto` there and the country name, held on one line by `truncate`,
+           * contributes its full width. The list then grows to the longest name
+           * in the reader's locale, overflows the dropdown and clips whatever
+           * sits at the end of the row — the calling code.
+           */
+          withScrollArea={false}
+          styles={{ options: { maxHeight: "17.5rem", overflowY: "auto" } }}
           renderOption={({ option }) => (
             <div className="flex w-full items-center gap-2.5">
               <CountryFlag iso={option.value} />
-              <span className="flex-1 truncate">
+              <span className="min-w-0 flex-1 truncate">
                 {nameOf.get(option.value) ?? option.value}
               </span>
-              <span className="text-ink-dim text-xs tabular-nums">
+              <span className="text-ink-dim shrink-0 text-xs tabular-nums">
                 {option.label}
               </span>
             </div>
