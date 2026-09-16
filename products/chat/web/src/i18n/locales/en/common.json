@@ -66,7 +66,9 @@
       "read_node": "read_node",
       "select_xpath": "select_xpath",
       "project_records": "project_records"
-    }
+    },
+    "remember": "Don't ask again for this tool",
+    "rememberHint": "Applies to this server only, until you forget it on the Integrations page."
   },
   "errors": {
     "network": "The API could not be reached",
@@ -291,7 +293,30 @@
       "integration_unreachable": "That server did not answer.",
       "integration_not_mcp": "That address does not look like an MCP server.",
       "integration_auth_unsupported": "That server does not support the authorization this product can perform.",
-      "integration_not_found": "No such integration."
+      "integration_not_found": "No such integration.",
+      "integration_too_large": "That server's answer was larger than this product will read."
+    },
+    "approvals": {
+      "show": "Remembered tools",
+      "hide": "Hide",
+      "empty": "Nothing remembered for this server yet.",
+      "loading": "Loading remembered tools…",
+      "grantedAt": "Approved {{when}}",
+      "changed": "Definition changed",
+      "withdrawn": "No longer offered",
+      "destructive": "Always asks",
+      "forget": "Forget",
+      "count_one": "{{count}} remembered",
+      "count_other": "{{count}} remembered"
+    },
+    "mode": {
+      "label": "Tool approval",
+      "remember": "Remember my choices",
+      "always_ask": "Ask every time",
+      "hint": {
+        "remember": "A tool you have approved runs without asking again, unless its definition changes or the server says it can modify data.",
+        "always_ask": "Every tool call is asked for. Your remembered choices are kept but not used."
+      }
     }
   }
 }

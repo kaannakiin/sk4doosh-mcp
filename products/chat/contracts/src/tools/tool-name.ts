@@ -14,9 +14,12 @@ export const XML_TOOL_NAMES = [
   "project_records",
 ] as const;
 
+export const DISCOVERY_TOOL_NAMES = ["find_tools"] as const;
+
 export const chatToolNameSchema = z.enum([
   ...EXCEL_TOOL_NAMES,
   ...XML_TOOL_NAMES,
+  ...DISCOVERY_TOOL_NAMES,
 ]);
 
 export type ChatToolName = z.infer<typeof chatToolNameSchema>;

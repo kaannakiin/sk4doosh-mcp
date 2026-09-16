@@ -10,6 +10,7 @@ model User {
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz
   phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz
   disabledAt      DateTime? @map("disabled_at") @db.Timestamptz
+  toolApprovalMode ToolApprovalMode @default(remember) @map("tool_approval_mode")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -21,6 +22,7 @@ model User {
   integrations       Integration[]
   connections        Connection[]
   connectionAttempts ConnectionAttempt[]
+  toolApprovals      ToolApproval[]
 
   @@map("app_user")
 }

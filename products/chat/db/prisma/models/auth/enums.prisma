@@ -12,3 +12,8 @@ enum AuthChallengePurpose {
   phoneLogin
   passwordReset
 }
+
+enum ToolApprovalMode {
+  always_ask
+  remember
+}

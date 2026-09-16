@@ -1,4 +1,5 @@
 import type { AuthProvider } from "@chat/contracts/auth/auth";
+import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 import type { Db } from "@chat/db";
 
 import type { UserId } from "../db/ids.ts";
@@ -23,6 +24,7 @@ interface UserShape {
   readonly phoneVerifiedAt: Date | null;
   readonly disabledAt: Date | null;
   readonly createdAt: Date;
+  readonly toolApprovalMode: ToolApprovalMode;
   readonly oauthAccounts: readonly { readonly provider: string }[];
 }
 
@@ -54,6 +56,7 @@ export function toUser(row: UserShape): AuthUserRow {
     phoneVerifiedAt: row.phoneVerifiedAt,
     disabledAt: row.disabledAt,
     createdAt: row.createdAt,
+    toolApprovalMode: row.toolApprovalMode,
     providers: row.oauthAccounts
       .map(({ provider }) => providerOf(provider))
       .filter((provider): provider is AuthProvider => provider !== undefined),

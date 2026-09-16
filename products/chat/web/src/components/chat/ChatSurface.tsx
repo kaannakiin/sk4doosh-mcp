@@ -1,6 +1,7 @@
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { Locale } from "@chat/contracts/common/locale";
 import { useUploadAttachment } from "@chat/queries/attachments/mutations";
+import { useRememberTool } from "@chat/queries/connections/mutations";
 import { useAttachments } from "@chat/queries/attachments/list";
 import { usePendingUploads } from "@chat/queries/attachments/pending";
 import {
@@ -13,6 +14,7 @@ import { Alert } from "@mantine/core";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { ToolDecision } from "./parts/ToolPart";
 import { AttachmentStrip } from "./AttachmentStrip";
 import { Composer } from "./Composer";
 import { EmptyState } from "./EmptyState";
@@ -34,6 +36,7 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
   const attachments = useAttachments(sessionId, locale, view.attachments);
   const pending = usePendingUploads(sessionId);
   const upload = useUploadAttachment(sessionId, locale);
+  const { mutate: rememberTool } = useRememberTool(locale);
 
   const { messages, sendMessage, status, stop, error, clearError, addToolApprovalResponse } =
     useChatSession({
@@ -63,11 +66,25 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
     [upload],
   );
 
+  /**
+   * Guard: the grant is fired and not awaited. The AI SDK's approval response
+   * carries nothing but the id and the verdict, so remembering has to be a
+   * second request — and holding the tool behind it would make every approval
+   * wait on a round trip whose only job is to save the reader a click next time.
+   *
+   * Guard: `mutate` is destructured out and the callback depends on that, never
+   * on the mutation object. `useMutation` returns a new object on every status
+   * change, so depending on it would rebuild this callback mid-stream and break
+   * `memo` on every tool card in the list.
+   */
   const onDecision = useCallback(
-    (id: string, approved: boolean) => {
-      void addToolApprovalResponse({ id, approved });
+    ({ approvalId, approved, rememberAs }: ToolDecision) => {
+      if (rememberAs !== undefined) {
+        rememberTool(rememberAs);
+      }
+      void addToolApprovalResponse({ id: approvalId, approved });
     },
-    [addToolApprovalResponse],
+    [addToolApprovalResponse, rememberTool],
   );
 
   /**

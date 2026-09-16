@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useLocale } from "~/core/hooks/use-locale";
 
 import { AttachmentStrip } from "./AttachmentStrip";
+import type { ToolDecision } from "./parts/ToolPart";
 import { FilePart } from "./parts/FilePart";
 import { ReasoningPart } from "./parts/ReasoningPart";
 import { TextPart } from "./parts/TextPart";
@@ -22,7 +23,7 @@ export interface MessageBubbleProps {
   readonly sessionId: SessionId;
   readonly message: UIMessage;
   readonly streaming: boolean;
-  readonly onDecision: (approvalId: string, approved: boolean) => void;
+  readonly onDecision: (decision: ToolDecision) => void;
 }
 
 /**

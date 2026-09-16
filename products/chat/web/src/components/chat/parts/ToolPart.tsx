@@ -1,20 +1,28 @@
-import { Button } from "@mantine/core";
+import { Button, Checkbox } from "@mantine/core";
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import { getToolName } from "ai";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { formatToolInput, formatToolOutput } from "~/lib/tool-output";
 
 export type ReaderToolPart = ToolUIPart | DynamicToolUIPart;
 
+export interface ToolDecision {
+  readonly approvalId: string;
+  readonly approved: boolean;
+  /** The tool name to stop asking about, when the reader asked for that. */
+  readonly rememberAs: string | undefined;
+}
+
 export interface ToolPartProps {
   readonly part: ReaderToolPart;
-  readonly onDecision: (approvalId: string, approved: boolean) => void;
+  readonly onDecision: (decision: ToolDecision) => void;
 }
 
 function ToolPartComponent({ part, onDecision }: ToolPartProps) {
   const { t } = useTranslation();
+  const [remember, setRemember] = useState(false);
   const name = getToolName(part);
   const args = formatToolInput(part.input);
   const approvalId = part.approval?.id;
@@ -50,24 +58,50 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
       )}
 
       {part.state === "approval-requested" && approvalId !== undefined ? (
-        <div className="mt-3 flex gap-2">
-          <Button
-            size="xs"
-            onClick={() => {
-              onDecision(approvalId, true);
-            }}
-          >
-            {t("tool.approve")}
-          </Button>
-          <Button
-            size="xs"
-            variant="default"
-            onClick={() => {
-              onDecision(approvalId, false);
-            }}
-          >
-            {t("tool.deny")}
-          </Button>
+        <div className="mt-3 flex flex-col gap-2.5">
+          {/*
+            The checkbox is offered only for a discovered tool. The reader tools
+            this product ships are decided by an allowlist, so remembering one
+            would change nothing and say otherwise.
+          */}
+          {part.type === "dynamic-tool" ? (
+            <Checkbox
+              size="xs"
+              checked={remember}
+              label={t("tool.remember")}
+              description={t("tool.rememberHint")}
+              onChange={(event) => {
+                setRemember(event.currentTarget.checked);
+              }}
+            />
+          ) : null}
+          <div className="flex gap-2">
+            <Button
+              size="xs"
+              onClick={() => {
+                onDecision({
+                  approvalId,
+                  approved: true,
+                  rememberAs: remember ? name : undefined,
+                });
+              }}
+            >
+              {t("tool.approve")}
+            </Button>
+            <Button
+              size="xs"
+              variant="default"
+              onClick={() => {
+                onDecision({
+                  approvalId,
+                  approved: false,
+                  rememberAs: undefined,
+                });
+              }}
+            >
+              {t("tool.deny")}
+            </Button>
+          </div>
         </div>
       ) : null}
 

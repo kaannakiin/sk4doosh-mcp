@@ -1,5 +1,6 @@
 import { isUniqueConstraintError, type Prisma } from "@chat/db";
 import type { RemoteTool } from "@chat/contracts/integration/remote-tool";
+import { isDeclaredDestructive } from "@chat/contracts/integration/tool-annotations";
 import type {
   IntegrationAuthMode,
   IntegrationId,
@@ -10,6 +11,7 @@ import { Injectable } from "@nestjs/common";
 import { DbService } from "../db/db.service.ts";
 import type { UserId } from "../db/ids.ts";
 import { visibleToUser } from "./connection-rows.ts";
+import { toolDefinitionDigest } from "./tool-digest.ts";
 
 export interface IntegrationDraft {
   readonly ownerId: bigint;
@@ -42,6 +44,8 @@ function toolRows(integrationId: bigint, tools: readonly RemoteTool[]) {
     title: tool.title ?? null,
     description: tool.description ?? null,
     inputSchema: tool.inputSchema as Prisma.InputJsonObject,
+    definitionDigest: Buffer.from(toolDefinitionDigest(tool)),
+    destructive: isDeclaredDestructive(tool.annotations),
   }));
 }
 
@@ -109,6 +113,7 @@ export class IntegrationRepository {
             ownerId: input.ownerId,
             mcpUrl: input.mcpUrl,
             displayName: input.displayName,
+            toolsRefreshedAt: new Date(),
           },
           select: { id: true, publicId: true, mcpUrl: true, authMode: true },
         });
@@ -335,12 +340,20 @@ export class IntegrationRepository {
   ): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
       await tx.integrationTool.deleteMany({ where: { integrationId } });
-      if (tools.length === 0) {
-        return;
+      if (tools.length > 0) {
+        await tx.integrationTool.createMany({
+          data: toolRows(integrationId, tools),
+        });
       }
 
-      await tx.integrationTool.createMany({
-        data: toolRows(integrationId, tools),
+      /**
+       * Guard: the staleness clock is stamped here because this is the only
+       * place a tool list is written. Stamping it at each caller instead would
+       * leave whichever one was forgotten re-reading the same list on every turn.
+       */
+      await tx.integration.update({
+        where: { id: integrationId },
+        data: { toolsRefreshedAt: new Date(), toolsRefreshFailedAt: null },
       });
     });
   }

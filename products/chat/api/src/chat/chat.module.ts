@@ -4,6 +4,7 @@ import { MulterModule } from "@nestjs/platform-express";
 
 import { AttachmentsModule } from "../attachments/attachments.module.ts";
 import { AuthModule } from "../auth/auth.module.ts";
+import { ConnectionsModule } from "../connections/connections.module.ts";
 import type { AppConfig } from "../config/configuration.ts";
 import { DbModule } from "../db/db.module.ts";
 import { LlmModule } from "../llm/llm.module.ts";
@@ -12,12 +13,22 @@ import { ChatController } from "./chat.controller.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
 import { ChatSessionRepository } from "./chat-session.repository.ts";
 import { ChatService } from "./chat.service.ts";
+import { RemoteToolApprovalService } from "./remote-tool-approval.service.ts";
+import { RemoteToolInvoker } from "./remote-tool-invoker.ts";
+import { RemoteToolSetService } from "./remote-tool-set.service.ts";
 import { MessageRepository } from "./message.repository.ts";
 
 @Module({
   imports: [
     AttachmentsModule,
     AuthModule,
+    /**
+     * Guard: the dependency runs this way and never the other. `McpModule` owns
+     * the local readers and must not learn about connected servers — a chat
+     * concern reaching into `connections/` is what keeps the invocation rules in
+     * one place.
+     */
+    ConnectionsModule,
     DbModule,
     LlmModule,
     McpModule,
@@ -63,6 +74,9 @@ import { MessageRepository } from "./message.repository.ts";
     MessageRepository,
     ChatService,
     ChatHistoryService,
+    RemoteToolApprovalService,
+    RemoteToolInvoker,
+    RemoteToolSetService,
   ],
 })
 export class ChatModule {}

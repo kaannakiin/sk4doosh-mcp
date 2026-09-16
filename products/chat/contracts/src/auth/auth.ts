@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { toolApprovalModeSchema } from "../integration/tool-approval-mode.ts";
+
 export const WEB_SESSION_ISSUER = "sk-mcp-auth";
 export const WEB_SESSION_AUDIENCE = "sk-mcp-web";
 export const WEB_ACCESS_TTL_MS = 15 * 60 * 1000;
@@ -132,6 +134,7 @@ export const publicUserSchema = z.object({
   emailVerified: z.boolean(),
   phoneVerified: z.boolean(),
   providers: z.array(authProviderSchema),
+  toolApprovalMode: toolApprovalModeSchema,
   createdAt: z.iso.datetime(),
 });
 export type PublicUser = z.infer<typeof publicUserSchema>;

@@ -2,6 +2,7 @@ import type {
   AuthProvider,
   AuthSessionResponse,
 } from "@chat/contracts/auth/auth";
+import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 
 import type { UserId } from "../db/ids.ts";
 
@@ -18,6 +19,7 @@ export interface AuthUserRow {
   readonly phoneVerifiedAt: Date | null;
   readonly disabledAt: Date | null;
   readonly createdAt: Date;
+  readonly toolApprovalMode: ToolApprovalMode;
   readonly providers: readonly AuthProvider[];
 }
 

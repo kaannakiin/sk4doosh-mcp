@@ -73,6 +73,7 @@ export const registrationFailureSchema = z.enum([
   "integration_duplicate",
   "integration_unreachable",
   "integration_not_mcp",
+  "integration_too_large",
   "integration_auth_unsupported",
 ]);
 

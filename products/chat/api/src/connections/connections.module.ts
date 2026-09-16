@@ -15,9 +15,15 @@ import { ConnectionsController } from "./connections.controller.ts";
 import { CredentialCipherService } from "./credential-cipher.service.ts";
 import { IntegrationAuthorizationRepository } from "./integration-authorization.repository.ts";
 import { IntegrationAuthorizationService } from "./integration-authorization.service.ts";
+import { IntegrationCatalogService } from "./integration-catalog.service.ts";
 import { IntegrationRegistrationService } from "./integration-registration.service.ts";
 import { IntegrationRepository } from "./integration.repository.ts";
+import { IntegrationToolRepository } from "./integration-tool.repository.ts";
 import { IntegrationToolsService } from "./integration-tools.service.ts";
+import { RemoteMcpSessionService } from "./remote-mcp-session.service.ts";
+import { ToolApprovalRepository } from "./tool-approval.repository.ts";
+import { ToolApprovalService } from "./tool-approval.service.ts";
+import { ToolApprovalsController } from "./tool-approvals.controller.ts";
 import { IntegrationsController } from "./integrations.controller.ts";
 
 const providers = [
@@ -31,14 +37,23 @@ const providers = [
   CredentialCipherService,
   IntegrationAuthorizationRepository,
   IntegrationAuthorizationService,
+  IntegrationCatalogService,
   IntegrationRegistrationService,
   IntegrationRepository,
+  IntegrationToolRepository,
   IntegrationToolsService,
+  RemoteMcpSessionService,
+  ToolApprovalRepository,
+  ToolApprovalService,
 ];
 
 @Module({
   imports: [DbModule, AuthModule, I18nModule],
-  controllers: [ConnectionsController, IntegrationsController],
+  controllers: [
+    ConnectionsController,
+    IntegrationsController,
+    ToolApprovalsController,
+  ],
   providers: [...providers, NoStoreInterceptor],
   exports: providers,
 })

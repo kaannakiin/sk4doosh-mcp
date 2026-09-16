@@ -15,7 +15,7 @@ export interface ContractSchema<TOutput> {
 }
 
 export interface ChatRequestInit {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   locale: Locale;
   body?: unknown;
   signal?: AbortSignal;

@@ -5,6 +5,8 @@
     "integration_unreachable": "Sunucu cevap vermedi.",
     "integration_not_mcp": "Bu adres bir MCP sunucusuna benzemiyor.",
     "integration_auth_unsupported": "Bu sunucu, bu ürünün yapabildiği yetkilendirmeyi desteklemiyor.",
-    "integration_not_found": "Böyle bir entegrasyon yok."
+    "integration_not_found": "Böyle bir entegrasyon yok.",
+    "integration_too_large": "Bu sunucunun cevabı, bu ürünün okuyacağından büyük.",
+    "tool_not_offered": "Bu sunucu böyle bir araç sunmuyor."
   }
 }

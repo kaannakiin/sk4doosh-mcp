@@ -1,0 +1,31 @@
+/// A tool one reader decided not to be asked about again.
+///
+/// Guard: there is no relation to `IntegrationTool`. That table is rewritten
+/// wholesale on every refresh, so a foreign key would cascade these rows away
+/// hourly, and a server answering with an empty list during an outage would
+/// erase consent the reader gave permanently. A tool the server no longer offers
+/// is reported as unavailable by the read path instead.
+///
+/// Guard: the digest is stored beside the grant and compared on every call. The
+/// consent was given for the definition the reader read, not for the name — a
+/// server that keeps a name and rewrites what the tool does must ask again.
+///
+/// Guard: the digest is not part of the key. Approvals are permanent, so a key
+/// that changed with the definition would leave a dead row behind every time a
+/// server edited a description, with nothing to reap them and three rows for one
+/// tool on the reader's page.
+model ToolApproval {
+  userId           BigInt   @map("user_id")
+  integrationId    BigInt   @map("integration_id")
+  toolName         String   @map("tool_name")
+  definitionDigest Bytes    @map("definition_digest")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, integrationId, toolName])
+  @@index([integrationId], map: "tool_approval_integration_idx")
+  @@map("tool_approval")
+}

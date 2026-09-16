@@ -5,6 +5,7 @@ import {
   type IntegrationSummary,
 } from "@chat/contracts/integration/registration";
 import { errorCodeOf } from "@chat/queries/client";
+import { useCurrentUser } from "@chat/queries/auth/current-user";
 import { useIntegrationList } from "@chat/queries/connections/list";
 import {
   useAddIntegration,
@@ -19,6 +20,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
+import { ApprovalModeField } from "~/components/connections/ApprovalModeField";
 import { IntegrationCard } from "~/components/connections/IntegrationCard";
 import { applyServerIssues } from "~/core/forms/apply-server-issues";
 import { contractResolver } from "~/core/forms/contract-resolver";
@@ -53,6 +55,7 @@ function ConnectionsRoute() {
   const { t } = useTranslation();
   const locale = useLocale();
   const { notice } = Route.useSearch();
+  const me = useCurrentUser(locale);
   const list = useIntegrationList(locale);
   const add = useAddIntegration(locale);
   const disconnect = useDisconnect(locale);
@@ -60,6 +63,7 @@ function ConnectionsRoute() {
   const refresh = useRefreshTools(locale);
 
   const [failure, setFailure] = useState<string | undefined>(undefined);
+  const [expanded, setExpanded] = useState<string | undefined>(undefined);
   const [removing, setRemoving] = useState<IntegrationSummary | undefined>(
     undefined,
   );
@@ -96,6 +100,12 @@ function ConnectionsRoute() {
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
       <h1 className="text-xl font-medium">{t("connections.title")}</h1>
       <p className="mt-1 text-sm text-ink-dim">{t("connections.subtitle")}</p>
+
+      {me.data === undefined || me.data === null ? null : (
+        <div className="mt-6 rounded-lg border border-hairline px-4 py-3">
+          <ApprovalModeField mode={me.data.toolApprovalMode} locale={locale} />
+        </div>
+      )}
 
       {notice !== undefined && isOutcome(notice) ? (
         <Alert
@@ -160,6 +170,13 @@ function ConnectionsRoute() {
             busy={
               disconnect.isPending || remove.isPending || refresh.isPending
             }
+            locale={locale}
+            expanded={expanded === integration.id}
+            onToggleApprovals={() => {
+              setExpanded((open) =>
+                open === integration.id ? undefined : integration.id,
+              );
+            }}
             onConnect={() => {
               connect(integration);
             }}

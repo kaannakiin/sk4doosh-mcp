@@ -158,6 +158,7 @@ export class AuthSessionService {
       emailVerified: user.emailVerifiedAt !== null,
       phoneVerified: user.phoneVerifiedAt !== null,
       providers: [...user.providers],
+      toolApprovalMode: user.toolApprovalMode,
       createdAt: user.createdAt.toISOString(),
     };
   }

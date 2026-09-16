@@ -21,12 +21,17 @@ model Integration {
   createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
+  toolsRefreshedAt       DateTime? @map("tools_refreshed_at") @db.Timestamptz
+  toolsRefreshLeaseUntil DateTime? @map("tools_refresh_lease_until") @db.Timestamptz
+  toolsRefreshFailedAt   DateTime? @map("tools_refresh_failed_at") @db.Timestamptz
+
   owner       User?                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   toolScopes  IntegrationToolScope[]
   tools       IntegrationTool[]
   authorization IntegrationAuthorization?
   connections Connection[]
   attempts    ConnectionAttempt[]
+  approvals   ToolApproval[]
 
   @@index([ownerId], map: "integration_owner_idx")
   @@map("integration")

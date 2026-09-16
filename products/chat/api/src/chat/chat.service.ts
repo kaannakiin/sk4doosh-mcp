@@ -27,6 +27,8 @@ import { ReaderSessionService } from "../mcp/reader-session.service.ts";
 import { approvalFor } from "../mcp/tool-approval.ts";
 import { attachmentManifest } from "./attachment-manifest.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
+import { RemoteToolApprovalService } from "./remote-tool-approval.service.ts";
+import { RemoteToolSetService } from "./remote-tool-set.service.ts";
 
 /**
  * One step is one model generation. A read that needs describe, then read, then
@@ -38,6 +40,8 @@ import { ChatHistoryService } from "./chat-history.service.ts";
  * 20-step default belongs to `ToolLoopAgent`, not here.
  */
 const STEP_LIMIT = 8;
+
+const REMOTE_STEP_LIMIT = 12;
 
 /**
  * Guard: without this the SDK leaves the response message's id empty, because it
@@ -63,6 +67,8 @@ export class ChatService {
     private readonly i18n: I18nService,
     private readonly llm: LlmService,
     private readonly history: ChatHistoryService,
+    private readonly remote: RemoteToolSetService,
+    private readonly approvals: RemoteToolApprovalService,
   ) {
     this.approvalSecret = config.get("toolApprovalSecret", { infer: true });
   }
@@ -94,6 +100,17 @@ export class ChatService {
     const abort = abortOnDisconnect(response);
 
     const manifest = await this.manifest(userId, request.sessionId, locale);
+    const history = await convertToModelMessages(messages);
+    const [local, surface] = await Promise.all([
+      this.readers.toolsFor(userId, request.sessionId),
+      this.remote.surfaceFor(userId, history, locale),
+    ]);
+    const gate = await this.approvals.gateFor(
+      userId,
+      surface.byExposedName,
+      locale,
+    );
+    const localNames = Object.keys(local);
 
     const result = await streamText({
       model: this.llm.model(),
@@ -103,15 +120,42 @@ export class ChatService {
           content: this.i18n.t("chat:system.instructions", {}, locale),
         },
         manifest,
+        ...(surface.instructions === undefined
+          ? []
+          : [{ role: "system" as const, content: surface.instructions }]),
       ],
-      messages: await convertToModelMessages(messages),
-      tools: await this.readers.toolsFor(userId, request.sessionId),
-      stopWhen: isStepCount(STEP_LIMIT),
+      messages: history,
+      tools: { ...local, ...surface.tools },
+      /**
+       * Guard: only the tools `find_tools` has surfaced, plus the ones the
+       * conversation already used, are handed to the provider. `activeTools` is
+       * what the SDK serializes, so a reader with sixty connected tools pays for
+       * the ones the model asked for rather than for all of them.
+       */
+      activeTools: surface.activeToolsFor(localNames),
+      prepareStep: () => ({
+        activeTools: surface.activeToolsFor(localNames),
+      }),
+      /**
+       * Guard: a turn that can reach a connected server needs room for the
+       * search step as well as the call and the answer. Eight leaves a model
+       * that searched twice with nothing to spend.
+       */
+      stopWhen: isStepCount(
+        surface.byExposedName.size === 0 ? STEP_LIMIT : REMOTE_STEP_LIMIT,
+      ),
       timeout: this.llm.timeout,
       abortSignal: abort.signal,
       experimental_toolApprovalSecret: this.approvalSecret,
       experimental_transform: smoothStream(),
+      /**
+       * Guard: the remote gate answers first and only for names it minted. A
+       * local reader tool still goes through `approvalFor`'s allowlist, so the
+       * closed surface this product ships keeps deciding by name at compile
+       * time and only discovered tools are decided at run time.
+       */
       toolApproval: ({ toolCall }) =>
+        gate(toolCall.toolName) ??
         approvalFor(
           { toolName: toolCall.toolName, dynamic: toolCall.dynamic === true },
           (key) => this.i18n.t(key, {}, locale),

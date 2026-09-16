@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { remoteToolNameSchema } from "./remote-tool-name.ts";
+import { toolAnnotationsSchema } from "./tool-annotations.ts";
 
 /**
  * A tool as the remote server described it.
@@ -16,6 +17,7 @@ export const remoteToolSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(8192).optional(),
   inputSchema: z.looseObject({}),
+  annotations: toolAnnotationsSchema.optional(),
 });
 
 export type RemoteTool = z.infer<typeof remoteToolSchema>;

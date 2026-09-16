@@ -30,10 +30,18 @@ export interface GuardedResponse {
   readonly body: string;
 }
 
+/**
+ * Guard: an answer refused for its size is reported apart from one that never
+ * arrived. Collapsing the two tells a reader that a server did not respond when
+ * in fact it responded with more than this platform agreed to read, and no
+ * amount of retrying will change that.
+ */
+export type TransportFailure = "transport" | "oversized";
+
 export type GuardedOutcome =
   | { readonly kind: "response"; readonly response: GuardedResponse }
   | { readonly kind: "refused"; readonly reason: string }
-  | { readonly kind: "failed" };
+  | { readonly kind: "failed"; readonly reason: TransportFailure };
 
 export interface GuardedFollow extends GuardedRequest {
   readonly maxRedirects: number;
@@ -183,7 +191,7 @@ export async function guardedRequest(
         res.on("end", () => {
           finish(
             overran
-              ? { kind: "failed" }
+              ? { kind: "failed", reason: "oversized" }
               : {
                   kind: "response",
                   response: {
@@ -194,7 +202,17 @@ export async function guardedRequest(
                 },
           );
         });
-        res.on("error", () => finish({ kind: "failed" }));
+        res.on("close", () => {
+          if (overran) {
+            finish({ kind: "failed", reason: "oversized" });
+          }
+        });
+        res.on("error", () =>
+          finish({
+            kind: "failed",
+            reason: overran ? "oversized" : "transport",
+          }),
+        );
       },
     );
 
@@ -202,7 +220,7 @@ export async function guardedRequest(
       finish(
         cause instanceof RefusedAddressError
           ? { kind: "refused", reason: cause.message }
-          : { kind: "failed" },
+          : { kind: "failed", reason: "transport" },
       );
     });
     if (options.body !== undefined) {
@@ -258,9 +276,9 @@ export async function guardedFollow(
     try {
       target = new URL(location, target).href;
     } catch {
-      return { kind: "failed" };
+      return { kind: "failed", reason: "transport" };
     }
   }
 
-  return { kind: "failed" };
+  return { kind: "failed", reason: "transport" };
 }

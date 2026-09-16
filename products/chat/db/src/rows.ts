@@ -20,6 +20,7 @@ import type {
   IntegrationAuthMode,
   IntegrationOrigin,
 } from "@chat/contracts/integration/integration";
+import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 import type {
   ConnectionEventKind,
   ConnectionStatus as SchemaConnectionStatus,
@@ -28,6 +29,7 @@ import type {
   IntegrationOrigin as SchemaIntegrationOrigin,
   IntegrationStatus,
   MessageRole as SchemaMessageRole,
+  ToolApprovalMode as SchemaToolApprovalMode,
   ReaderFamily as SchemaReaderFamily,
   TurnOutcome as SchemaTurnOutcome,
 } from "./generated/enums.js";
@@ -39,6 +41,7 @@ export type {
   IntegrationOrigin,
   MessageRole,
   ReaderFamily,
+  ToolApprovalMode,
 };
 
 export type { ConnectionEventKind, IntegrationStatus };
@@ -71,7 +74,8 @@ export type EnumParity =
   | Assert<Exact<IntegrationOrigin, SchemaIntegrationOrigin>>
   | Assert<Exact<IntegrationAuthMode, SchemaIntegrationAuthMode>>
   | Assert<Exact<ConnectionStatus, SchemaConnectionStatus>>
-  | Assert<Exact<DiscoveryFailure, SchemaDiscoveryFailure>>;
+  | Assert<Exact<DiscoveryFailure, SchemaDiscoveryFailure>>
+  | Assert<Exact<ToolApprovalMode, SchemaToolApprovalMode>>;
 
 export interface SessionRow {
   readonly id: string;

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 
 import { useStickToBottom } from "~/core/hooks/use-stick-to-bottom";
 import { MessageBubble } from "./MessageBubble";
+import type { ToolDecision } from "./parts/ToolPart";
 
 export interface MessageListProps {
   readonly sessionId: SessionId;
@@ -13,7 +14,7 @@ export interface MessageListProps {
   readonly streaming: boolean;
   readonly pending: boolean;
   readonly truncated: boolean;
-  readonly onDecision: (approvalId: string, approved: boolean) => void;
+  readonly onDecision: (decision: ToolDecision) => void;
 }
 
 export function MessageList({

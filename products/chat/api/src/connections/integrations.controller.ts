@@ -3,6 +3,7 @@ import {
   connectParamsSchema,
   type ConnectParams,
 } from "@chat/contracts/integration/connect";
+import type { ApprovedToolListResponse } from "@chat/contracts/integration/tool-approval";
 import {
   createIntegrationSchema,
   type CreateIntegration,
@@ -35,6 +36,7 @@ import { ConnectionRevocationService } from "./connection-revocation.service.ts"
 import { IntegrationRepository } from "./integration.repository.ts";
 import { IntegrationRegistrationService } from "./integration-registration.service.ts";
 import { IntegrationToolsService } from "./integration-tools.service.ts";
+import { ToolApprovalService } from "./tool-approval.service.ts";
 
 /**
  * Guard: registering is rate limited far below the rest of this controller
@@ -56,6 +58,7 @@ export class IntegrationsController {
     private readonly revocation: ConnectionRevocationService,
     private readonly integrations: IntegrationRepository,
     private readonly tools: IntegrationToolsService,
+    private readonly toolApprovals: ToolApprovalService,
     private readonly i18n: I18nService,
   ) {}
 
@@ -108,6 +111,23 @@ export class IntegrationsController {
     }
 
     return { integrations: [...(await this.integrations.listFor(userId))] };
+  }
+
+  @Get(":integrationId/approvals")
+  async approvals(
+    @Param({ schema: connectParamsSchema }) params: ConnectParams,
+    @Req() request: RequestWithAuth,
+  ): Promise<ApprovedToolListResponse> {
+    const approvals = await this.toolApprovals.listFor(
+      this.userIdOf(request),
+      params.integrationId,
+    );
+
+    if (approvals === undefined) {
+      throw this.fail("integration_not_found", HttpStatus.NOT_FOUND);
+    }
+
+    return { approvals: [...approvals] };
   }
 
   /**

@@ -7,4 +7,7 @@
 export const connectionKeys = {
   all: ["connections"] as const,
   integrations: () => [...connectionKeys.all, "integrations"] as const,
+  approvalsAll: () => [...connectionKeys.all, "approvals"] as const,
+  approvals: (integrationId: string) =>
+    [...connectionKeys.approvalsAll(), integrationId] as const,
 } as const;

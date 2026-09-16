@@ -9,12 +9,20 @@
 /// is a document from a server this platform has not met; asserting a shape for
 /// it here would turn a server that later publishes a different one into a
 /// silent failure rather than a visible tool.
+///
+/// Guard: `definitionDigest` is written at ingest, from the definition the
+/// server sent, and never recomputed from this row. A digest taken from the
+/// stored jsonb would depend on key order surviving Postgres, the driver and
+/// `JSON.parse` unchanged, and V8 reorders integer-like keys — every remembered
+/// approval would fall the day any of those changed.
 model IntegrationTool {
   integrationId BigInt   @map("integration_id")
   name          String
   title         String?
   description   String?
   inputSchema   Json     @map("input_schema")
+  definitionDigest Bytes @map("definition_digest")
+  destructive   Boolean  @default(false)
   discoveredAt  DateTime @default(now()) @map("discovered_at") @db.Timestamptz
 
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)

@@ -4,6 +4,7 @@ export interface StubTool {
   readonly name: string;
   readonly description?: string;
   readonly inputSchema?: Record<string, unknown>;
+  readonly annotations?: Record<string, unknown>;
 }
 
 export interface McpStubOptions {
@@ -16,6 +17,12 @@ export interface McpStubOptions {
   readonly eventStream?: boolean;
   readonly refreshRejected?: boolean;
   readonly pageSize?: number;
+  /** Answers every `tools/call` with `isError`, the way a tool that refused would. */
+  readonly callIsError?: boolean;
+  /** Pads the call result so it overruns the caller's byte ceiling. */
+  readonly callBodyBytes?: number;
+  /** Answers `404` once to a request that presents a session id, then behaves. */
+  readonly sessionExpires?: boolean;
 }
 
 export interface StubState {
@@ -24,6 +31,8 @@ export interface StubState {
   readonly grants: { grantType: string; resource: string | undefined }[];
   readonly revocations: { token: string; hint: string | undefined }[];
   readonly toolListings: { cursor: string | undefined }[];
+  readonly calls: { name: string; args: unknown }[];
+  readonly handshakes: { sessionId: string | undefined }[];
   registrations: number;
 }
 
@@ -85,9 +94,12 @@ export function mcpStub(options: McpStubOptions = {}): McpStub {
     grants: [],
     revocations: [],
     toolListings: [],
+    calls: [],
+    handshakes: [],
     registrations: 0,
   };
   let issued = 0;
+  let expired = false;
 
   const issue = (grantType: string, resource: string | undefined): StubReply => {
     issued += 1;
@@ -122,10 +134,24 @@ export function mcpStub(options: McpStubOptions = {}): McpStub {
     const request = JSON.parse(call.body) as {
       id?: unknown;
       method: string;
-      params?: { cursor?: string };
+      params?: { cursor?: string; name?: string; arguments?: unknown };
     };
 
+    const presented = call.headers["mcp-session-id"];
+    if (
+      options.sessionExpires === true &&
+      presented !== undefined &&
+      request.id !== undefined &&
+      !expired
+    ) {
+      expired = true;
+
+      return { status: 404 };
+    }
+
     if (request.method === "initialize") {
+      state.handshakes.push({ sessionId: presented });
+
       return frame(
         request.id,
         {
@@ -155,8 +181,32 @@ export function mcpStub(options: McpStubOptions = {}): McpStub {
             name: tool.name,
             description: tool.description,
             inputSchema: tool.inputSchema ?? { type: "object" },
+            ...(tool.annotations === undefined
+              ? {}
+              : { annotations: tool.annotations }),
           })),
           ...(next < tools.length ? { nextCursor: String(next) } : {}),
+        },
+        options.eventStream === true,
+      );
+    }
+
+    if (request.method === "tools/call") {
+      state.calls.push({
+        name: request.params?.name ?? "",
+        args: request.params?.arguments,
+      });
+
+      const padding =
+        options.callBodyBytes === undefined
+          ? ""
+          : "x".repeat(options.callBodyBytes);
+
+      return frame(
+        request.id,
+        {
+          content: [{ type: "text", text: `ran ${request.params?.name}${padding}` }],
+          ...(options.callIsError === true ? { isError: true } : {}),
         },
         options.eventStream === true,
       );

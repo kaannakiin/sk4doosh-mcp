@@ -66,7 +66,9 @@
       "read_node": "read_node",
       "select_xpath": "select_xpath",
       "project_records": "project_records"
-    }
+    },
+    "remember": "Bu araç için bir daha sorma",
+    "rememberHint": "Yalnızca bu sunucu için geçerli; Entegrasyonlar sayfasından unutturana kadar sürer."
   },
   "errors": {
     "network": "API'ye ulaşılamadı",
@@ -291,7 +293,30 @@
       "integration_unreachable": "Sunucu cevap vermedi.",
       "integration_not_mcp": "Bu adres bir MCP sunucusuna benzemiyor.",
       "integration_auth_unsupported": "Bu sunucu, bu ürünün yapabildiği yetkilendirmeyi desteklemiyor.",
-      "integration_not_found": "Böyle bir entegrasyon yok."
+      "integration_not_found": "Böyle bir entegrasyon yok.",
+      "integration_too_large": "Bu sunucunun cevabı, bu ürünün okuyacağından büyük."
+    },
+    "approvals": {
+      "show": "Hatırlanan araçlar",
+      "hide": "Gizle",
+      "empty": "Bu sunucu için henüz hiçbir şey hatırlanmıyor.",
+      "loading": "Hatırlanan araçlar yükleniyor…",
+      "grantedAt": "{{when}} onaylandı",
+      "changed": "Tanım değişti",
+      "withdrawn": "Artık sunulmuyor",
+      "destructive": "Her zaman sorar",
+      "forget": "Unut",
+      "count_one": "{{count}} hatırlanan",
+      "count_other": "{{count}} hatırlanan"
+    },
+    "mode": {
+      "label": "Araç onayı",
+      "remember": "Seçimlerimi hatırla",
+      "always_ask": "Her seferinde sor",
+      "hint": {
+        "remember": "Onayladığınız bir araç, tanımı değişmediği veya sunucu veri değiştirebileceğini söylemediği sürece yeniden sorulmadan çalışır.",
+        "always_ask": "Her araç çağrısı için onay istenir. Hatırlanan seçimleriniz saklanır ama kullanılmaz."
+      }
     }
   }
 }

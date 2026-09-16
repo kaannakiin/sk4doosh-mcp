@@ -1,10 +1,16 @@
+import type { Locale } from "@chat/contracts/common/locale";
 import type { IntegrationSummary } from "@chat/contracts/integration/registration";
 import { Badge, Button } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
+import { ApprovedToolList } from "./ApprovedToolList";
+
 interface IntegrationCardProps {
   readonly integration: IntegrationSummary;
   readonly busy: boolean;
+  readonly locale: Locale;
+  readonly expanded: boolean;
+  readonly onToggleApprovals: () => void;
   readonly onConnect: () => void;
   readonly onDisconnect: () => void;
   readonly onRefresh: () => void;
@@ -22,6 +28,9 @@ function hostOf(mcpUrl: string): string {
 export function IntegrationCard({
   integration,
   busy,
+  locale,
+  expanded,
+  onToggleApprovals,
   onConnect,
   onDisconnect,
   onRefresh,
@@ -67,6 +76,18 @@ export function IntegrationCard({
           size="xs"
           radius="md"
           variant="subtle"
+          onClick={onToggleApprovals}
+        >
+          {t(
+            expanded
+              ? "connections.approvals.hide"
+              : "connections.approvals.show",
+          )}
+        </Button>
+        <Button
+          size="xs"
+          radius="md"
+          variant="subtle"
           disabled={busy}
           onClick={onRefresh}
         >
@@ -104,6 +125,17 @@ export function IntegrationCard({
           </Button>
         ) : null}
       </div>
+
+      {/*
+        Mounted only while open: the list is a second request per card, and a
+        reader with a dozen servers would otherwise pay for a dozen of them to
+        render a page where every list is collapsed.
+      */}
+      {expanded ? (
+        <div className="w-full border-t border-hairline pt-1">
+          <ApprovedToolList integrationId={integration.id} locale={locale} />
+        </div>
+      ) : null}
     </div>
   );
 }

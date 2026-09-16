@@ -74,6 +74,7 @@ const LISTING_FAILURE: Record<
 > = {
   blocked_address: "integration_unreachable",
   unreachable: "integration_unreachable",
+  too_large: "integration_too_large",
   malformed: "integration_not_mcp",
   rejected: "integration_not_mcp",
 };

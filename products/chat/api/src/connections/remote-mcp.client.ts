@@ -3,8 +3,16 @@ import {
   remoteToolSchema,
   type RemoteTool,
 } from "@chat/contracts/integration/remote-tool";
+import {
+  readToolCallResult,
+  type ToolCallOutcome,
+} from "@chat/contracts/integration/tool-result";
 
-import { guardedFollow, type GuardedOutcome } from "./guarded-http.ts";
+import {
+  guardedFollow,
+  type GuardedOutcome,
+  type TransportFailure,
+} from "./guarded-http.ts";
 
 const PROTOCOL_VERSION = "2025-06-18";
 
@@ -19,6 +27,7 @@ export type McpFailure =
   | "unauthorized"
   | "blocked_address"
   | "unreachable"
+  | "too_large"
   | "malformed"
   | "rejected";
 
@@ -60,8 +69,22 @@ function frameFrom(headers: Record<string, string>, body: string): unknown {
   throw new SyntaxError("the event stream carried no data line");
 }
 
-function failureOf(outcome: GuardedOutcome): McpFailure {
-  return outcome.kind === "refused" ? "blocked_address" : "unreachable";
+/**
+ * Guard: total over the outcomes that are not a response, so a new transport
+ * reason has to declare how a reader is told about it rather than silently
+ * becoming "the server did not answer".
+ */
+const FAILURE_BY_TRANSPORT: Record<TransportFailure, McpFailure> = {
+  transport: "unreachable",
+  oversized: "too_large",
+};
+
+function failureOf(
+  outcome: Exclude<GuardedOutcome, { readonly kind: "response" }>,
+): McpFailure {
+  return outcome.kind === "refused"
+    ? "blocked_address"
+    : FAILURE_BY_TRANSPORT[outcome.reason];
 }
 
 /**
@@ -72,14 +95,85 @@ function failureOf(outcome: GuardedOutcome): McpFailure {
  * requests — a `302` would replay that token to whatever host the response
  * named.
  */
-class McpSession {
+export class McpSession {
   private sessionId: string | undefined;
+
+  private ready = false;
 
   private nextId = 1;
 
   constructor(private readonly target: McpTarget) {}
 
+  /**
+   * Guard: the handshake is performed lazily and repaired here rather than by
+   * the caller. A server may drop a session at any time and answers `404` to the
+   * id it no longer knows; a caller that had to notice that itself would either
+   * retry blindly — replaying the reader's bearer — or report a working server
+   * as broken.
+   *
+   * Guard: exactly one repair. Re-handshaking in a loop is how a server that
+   * answers `404` to everything turns one tool call into an unbounded replay of
+   * the token.
+   *
+   * @param method the JSON-RPC method
+   * @param params its params member
+   * @returns the `result` member, or why the server did not give one
+   */
   async call(method: string, params: unknown): Promise<McpOutcome<unknown>> {
+    const prepared = await this.prepare();
+    if (prepared !== undefined) {
+      return prepared;
+    }
+
+    const first = await this.send(method, params);
+    if (first.kind !== "expired") {
+      return first;
+    }
+
+    this.sessionId = undefined;
+    this.ready = false;
+
+    const repaired = await this.prepare();
+    if (repaired !== undefined) {
+      return repaired;
+    }
+
+    const second = await this.send(method, params);
+
+    return second.kind === "expired"
+      ? { kind: "failed", failure: "rejected" }
+      : second;
+  }
+
+  private async prepare(): Promise<McpOutcome<never> | undefined> {
+    if (this.ready) {
+      return undefined;
+    }
+
+    const initialized = await this.send("initialize", {
+      protocolVersion: PROTOCOL_VERSION,
+      capabilities: {},
+      clientInfo: { name: "sk4doosh", version: "0" },
+    });
+
+    if (initialized.kind === "failed") {
+      return initialized;
+    }
+
+    if (initialized.kind === "expired") {
+      return { kind: "failed", failure: "rejected" };
+    }
+
+    this.ready = true;
+    await this.notify("notifications/initialized");
+
+    return undefined;
+  }
+
+  private async send(
+    method: string,
+    params: unknown,
+  ): Promise<McpOutcome<unknown> | { readonly kind: "expired" }> {
     const id = this.nextId;
     this.nextId += 1;
 
@@ -103,6 +197,16 @@ class McpSession {
     const { response } = outcome;
     if (response.status === 401 || response.status === 403) {
       return { kind: "failed", failure: "unauthorized" };
+    }
+
+    /**
+     * Guard: read before the `>= 400` collapse. A `404` answered to a request
+     * that presented an `mcp-session-id` is the spec's way of saying the session
+     * is gone, and reading it as a plain rejection would end a conversation a
+     * fresh handshake could have continued.
+     */
+    if (response.status === 404 && this.sessionId !== undefined) {
+      return { kind: "expired" };
     }
 
     if (response.status >= 400) {
@@ -133,7 +237,7 @@ class McpSession {
    * body, so it is sent apart from `call` rather than through it. Reading a
    * frame out of an empty body would report a conforming server as malformed.
    */
-  async notify(method: string): Promise<void> {
+  private async notify(method: string): Promise<void> {
     await guardedFollow(
       {
         url: this.target.url,
@@ -189,19 +293,6 @@ export async function listTools(
   target: McpTarget,
 ): Promise<McpOutcome<RemoteToolList>> {
   const session = new McpSession(target);
-
-  const initialized = await session.call("initialize", {
-    protocolVersion: PROTOCOL_VERSION,
-    capabilities: {},
-    clientInfo: { name: "sk4doosh", version: "0" },
-  });
-
-  if (initialized.kind === "failed") {
-    return initialized;
-  }
-
-  await session.notify("notifications/initialized");
-
   const tools: RemoteTool[] = [];
   let cursor: string | undefined;
 
@@ -244,4 +335,38 @@ export async function listTools(
   }
 
   return { kind: "failed", failure: "malformed" };
+}
+
+/**
+ * Runs one remote tool over an established session.
+ *
+ * Guard: `isError` is carried back rather than raised. It is the server's own
+ * account of why the call did not work, and the model can act on that — a throw
+ * would replace it with this platform's error formatting and leave the model
+ * with nothing to correct.
+ *
+ * @param session a session for this reader and this integration
+ * @param name the tool name as the remote server publishes it, never the exposed one
+ * @param args the arguments the model produced
+ * @returns what the tool returned, or why the server could not run it
+ */
+export async function callTool(
+  session: McpSession,
+  name: string,
+  args: unknown,
+): Promise<McpOutcome<ToolCallOutcome>> {
+  const called = await session.call("tools/call", {
+    name,
+    arguments: args ?? {},
+  });
+
+  if (called.kind === "failed") {
+    return called;
+  }
+
+  const outcome = readToolCallResult(called.value);
+
+  return outcome === undefined
+    ? { kind: "failed", failure: "malformed" }
+    : { kind: "ok", value: outcome };
 }
