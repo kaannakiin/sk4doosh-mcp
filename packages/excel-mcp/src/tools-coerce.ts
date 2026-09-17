@@ -3,9 +3,9 @@ import {
   declaredHeaderRow,
   scanHeaderRow,
   type HeaderRowSource,
-} from "./header.js";
-import { formatRange, resolveRange } from "./range.js";
-import { requireSheetBounds } from "./sheet.js";
+} from "./grid/header.js";
+import { formatRange, resolveRange } from "./grid/range.js";
+import { requireSheetBounds } from "./grid/sheet.js";
 
 export function resolveHeaderRow(
   loaded: LoadedDocument,

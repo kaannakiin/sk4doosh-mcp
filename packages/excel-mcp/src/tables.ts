@@ -1,7 +1,7 @@
 import { limits } from "./platform/limits.js";
 import type { OoxmlTable, OoxmlTableColumn } from "./ooxml/tables.js";
-import { columnToLetters, parseCellRef } from "./range.js";
-import type { DeclaredTable } from "./sheet.js";
+import { columnToLetters, parseCellRef } from "./grid/range.js";
+import type { DeclaredTable } from "./grid/sheet.js";
 
 export interface TableColumnDetail {
   readonly name: string | null;

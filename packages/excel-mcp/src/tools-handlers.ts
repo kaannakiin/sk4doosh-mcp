@@ -5,7 +5,7 @@ import {
   resolveWorkbookPath,
   type WorkbookRoot,
 } from "./platform/paths.js";
-import { findInSheet, readSheet } from "./read-sheet.js";
+import { findInSheet, readSheet } from "./grid/read-sheet.js";
 import { collectConditionalFormats } from "./conditional-formats.js";
 import { collectImages } from "./images.js";
 import { collectTables } from "./tables.js";
@@ -18,10 +18,10 @@ import {
   documentSheet,
   sheetSource,
 } from "./document.js";
-import { aggregateSheet } from "./aggregate.js";
+import { aggregateSheet } from "./grid/aggregate.js";
 import type { CsvReport } from "./csv.js";
 import type { DelimiterName, EncodingName } from "./platform/delimited.js";
-import { inheritCursorOptions, decodeCursor } from "./cursor.js";
+import { inheritCursorOptions, decodeCursor } from "./grid/cursor.js";
 import type { ToolHandlers } from "./tools-definitions.js";
 import { guard } from "./tools-guard.js";
 import {

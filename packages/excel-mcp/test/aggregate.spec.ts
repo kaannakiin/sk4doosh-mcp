@@ -1,8 +1,8 @@
 import { describe, expect, inject, it } from "vitest";
-import { aggregateSheet, type AggregateOptions } from "../src/aggregate.js";
+import { aggregateSheet, type AggregateOptions } from "../src/grid/aggregate.js";
 import { loadDocument, sheetSource } from "../src/document.js";
-import type { SheetSource } from "../src/sheet.js";
-import { readSheet } from "../src/read-sheet.js";
+import type { SheetSource } from "../src/grid/sheet.js";
+import { readSheet } from "../src/grid/read-sheet.js";
 import type { SkMcpExcelError } from "../src/platform/errors.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/platform/paths.js";
 import { largeRowCount } from "./fixtures/build.js";

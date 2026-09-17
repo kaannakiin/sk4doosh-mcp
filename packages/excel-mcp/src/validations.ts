@@ -1,5 +1,5 @@
 import type { OoxmlValidations, ValidationFormula } from "./ooxml/validations.js";
-import { formatRectangle, parseCellRef } from "./range.js";
+import { formatRectangle, parseCellRef } from "./grid/range.js";
 
 interface RowRun {
   readonly top: number;

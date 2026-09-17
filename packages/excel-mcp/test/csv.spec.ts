@@ -2,7 +2,7 @@ import { describe, expect, inject, it } from "vitest";
 import { loadDocument, sheetSource, type LoadedCsv } from "../src/document.js";
 import type { SkMcpExcelError } from "../src/platform/errors.js";
 import { createWorkbookRoot, resolveWorkbookPath } from "../src/platform/paths.js";
-import { readSheet, type ReadSheetOptions } from "../src/read-sheet.js";
+import { readSheet, type ReadSheetOptions } from "../src/grid/read-sheet.js";
 
 const base: ReadSheetOptions = {
   maxCells: 2000,

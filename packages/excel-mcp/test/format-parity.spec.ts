@@ -5,7 +5,7 @@ import {
   findInSheet,
   readSheet,
   type ReadSheetOptions,
-} from "../src/read-sheet.js";
+} from "../src/grid/read-sheet.js";
 
 const base: ReadSheetOptions = {
   maxCells: 2000,

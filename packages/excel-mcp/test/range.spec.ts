@@ -8,7 +8,7 @@ import {
   parseCellRef,
   resolveRange,
   type GridBounds,
-} from "../src/range.js";
+} from "../src/grid/range.js";
 
 const used: GridBounds = { top: 1, left: 1, bottom: 100, right: 10 };
 

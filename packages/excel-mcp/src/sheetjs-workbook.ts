@@ -27,9 +27,9 @@ import {
   formatRange,
   parseCellRef,
   type GridBounds,
-} from "./range.js";
+} from "./grid/range.js";
 import { sheetjsSnapshot, type SheetJsCell } from "./sheetjs-cell.js";
-import type { DeclaredTable, RowView, SheetView } from "./sheet.js";
+import type { DeclaredTable, RowView, SheetView } from "./grid/sheet.js";
 import type {
   DocumentMeta,
   SheetSummary,

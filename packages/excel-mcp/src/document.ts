@@ -19,7 +19,7 @@ import { SkMcpExcelError, fail } from "./platform/errors.js";
 import { formats, type DocumentFormat } from "./platform/formats.js";
 import { limits, modePolicy } from "./platform/limits.js";
 import { assertReadableFormat } from "./platform/paths.js";
-import type { SheetSource, SheetView } from "./sheet.js";
+import type { SheetSource, SheetView } from "./grid/sheet.js";
 import { vocabulary } from "./platform/vocabulary.js";
 import {
   describeSheetJs,

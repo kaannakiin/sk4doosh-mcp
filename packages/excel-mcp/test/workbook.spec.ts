@@ -6,7 +6,7 @@ import {
   type SandboxedPath,
 } from "../src/platform/paths.js";
 import { selectSheetName } from "../src/sheetjs-workbook.js";
-import { requireSheetBounds } from "../src/sheet.js";
+import { requireSheetBounds } from "../src/grid/sheet.js";
 import {
   clearDocumentCache,
   describeDocument,

@@ -1,10 +1,10 @@
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
-import { truncate, type CellSnapshot } from "./cell-value.js";
+import { truncate, type CellSnapshot } from "./grid/cell-value.js";
 import { SkMcpExcelError } from "./platform/errors.js";
 import { limits } from "./platform/limits.js";
-import { columnToLetters, type GridBounds } from "./range.js";
-import type { RowView, SheetView } from "./sheet.js";
+import { columnToLetters, type GridBounds } from "./grid/range.js";
+import type { RowView, SheetView } from "./grid/sheet.js";
 import type { DocumentMeta, WorkbookDescription } from "./types.js";
 import {
   delimiterNames,

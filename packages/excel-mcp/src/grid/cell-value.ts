@@ -1,6 +1,6 @@
 import { truncateWellFormed } from "@sk-mcp/file-core";
 import type { MergePolicy, ValueMode } from "./cursor.js";
-import { limits } from "./platform/limits.js";
+import { limits } from "../platform/limits.js";
 
 export interface CellError {
   readonly error: string;

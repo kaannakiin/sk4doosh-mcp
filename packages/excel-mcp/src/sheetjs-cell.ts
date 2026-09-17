@@ -1,4 +1,4 @@
-import { truncate, type CellFacts, type CellSnapshot } from "./cell-value.js";
+import { truncate, type CellFacts, type CellSnapshot } from "./grid/cell-value.js";
 import { SkMcpExcelError } from "./platform/errors.js";
 
 export interface SheetJsCell {

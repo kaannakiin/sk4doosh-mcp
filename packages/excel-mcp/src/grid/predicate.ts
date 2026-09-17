@@ -1,6 +1,6 @@
 import { fold } from "@sk-mcp/file-core";
 import type { CellScalar } from "./cell-value.js";
-import { SkMcpExcelError } from "./platform/errors.js";
+import { SkMcpExcelError } from "../platform/errors.js";
 
 export type CellKind =
   "number" | "date" | "text" | "boolean" | "error" | "empty";

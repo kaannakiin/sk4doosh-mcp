@@ -6,9 +6,9 @@ import {
   findInSheet,
   readSheet,
   type ReadSheetOptions,
-} from "../src/read-sheet.js";
+} from "../src/grid/read-sheet.js";
 import { loadDocument, sheetSource } from "../src/document.js";
-import type { SheetSource } from "../src/sheet.js";
+import type { SheetSource } from "../src/grid/sheet.js";
 import { largeRowCount } from "./fixtures/build.js";
 
 const loneSurrogate =

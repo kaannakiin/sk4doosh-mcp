@@ -25,25 +25,25 @@ export {
   lettersToColumn,
   parseCellRef,
   resolveRange,
-} from "./range.js";
-export type { CellRef, GridBounds } from "./range.js";
+} from "./grid/range.js";
+export type { CellRef, GridBounds } from "./grid/range.js";
 export {
   assertFresh,
   decodeCursor,
   encodeCursor,
   fingerprint,
-} from "./cursor.js";
-export type { MergePolicy, SheetCursor, ValueMode } from "./cursor.js";
-export { normalizeCell } from "./cell-value.js";
+} from "./grid/cursor.js";
+export type { MergePolicy, SheetCursor, ValueMode } from "./grid/cursor.js";
+export { normalizeCell } from "./grid/cell-value.js";
 export type {
   CellNote,
   CellScalar,
   CellFacts,
   CellSnapshot,
   NormalizedCell,
-} from "./cell-value.js";
-export { buildColumnIndex, resolveColumn } from "./columns.js";
-export type { ColumnIndex, ColumnMode } from "./columns.js";
+} from "./grid/cell-value.js";
+export { buildColumnIndex, resolveColumn } from "./grid/columns.js";
+export type { ColumnIndex, ColumnMode } from "./grid/columns.js";
 export {
   classify,
   compareWithin,
@@ -51,7 +51,7 @@ export {
   evaluate,
   majorityKind,
   validateCondition,
-} from "./predicate.js";
+} from "./grid/predicate.js";
 export type {
   CellKind,
   Census,
@@ -59,7 +59,7 @@ export type {
   Condition,
   Operator,
   PredicateOptions,
-} from "./predicate.js";
+} from "./grid/predicate.js";
 export {
   collectTables,
   declaredTablesOf,
@@ -69,22 +69,22 @@ export type {
   TableColumnDetail,
   TableReport,
 } from "./tables.js";
-export { requireSheetBounds } from "./sheet.js";
+export { requireSheetBounds } from "./grid/sheet.js";
 export type {
   BoundedSheet,
   DeclaredTable,
   RowView,
   SheetSource,
   SheetView,
-} from "./sheet.js";
-export { aggregateSheet } from "./aggregate.js";
+} from "./grid/sheet.js";
+export { aggregateSheet } from "./grid/aggregate.js";
 export type {
   AggregateColumn,
   AggregateOptions,
   AggregateResult,
   MetricFunction,
   MetricRequest,
-} from "./aggregate.js";
+} from "./grid/aggregate.js";
 export { capabilities, capabilitiesFor } from "./platform/capabilities.js";
 export type { FormatCapabilities } from "./platform/capabilities.js";
 export {
@@ -139,12 +139,12 @@ export { collectImages } from "./images.js";
 export type { ImageReport, MediaEntry, SheetImage } from "./images.js";
 export { collectValidations, compressAddresses } from "./validations.js";
 export type { ValidationReport, ValidationRule } from "./validations.js";
-export { findInSheet, readSheet } from "./read-sheet.js";
+export { findInSheet, readSheet } from "./grid/read-sheet.js";
 export type {
   FindResult,
   ReadSheetOptions,
   ReadSheetResult,
-} from "./read-sheet.js";
+} from "./grid/read-sheet.js";
 export { closeRegexWorkers, withRegex } from "./platform/regex.js";
 export { createHandlers, toolDefinitions, toolNames } from "./tools.js";
 export type { ToolHandlers, ToolName } from "./tools.js";
