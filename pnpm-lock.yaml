@@ -183,12 +183,12 @@ importers:
       '@sk-mcp/file-core':
         specifier: workspace:^
         version: link:../file-core
+      '@sk-mcp/ooxml-core':
+        specifier: workspace:^
+        version: link:../ooxml-core
       csv-parse:
         specifier: ^7.0.2
         version: 7.0.2
-      saxes:
-        specifier: ^6.0.0
-        version: 6.0.0
       zod:
         specifier: ^4.5.4
         version: 4.5.4
