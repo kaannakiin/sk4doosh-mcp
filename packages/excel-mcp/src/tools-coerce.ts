@@ -1,0 +1,45 @@
+import { documentSheet, type LoadedDocument } from "./document.js";
+import {
+  declaredHeaderRow,
+  scanHeaderRow,
+  type HeaderRowSource,
+} from "./header.js";
+import { formatRange, resolveRange } from "./range.js";
+import { requireSheetBounds } from "./sheet.js";
+
+export function resolveHeaderRow(
+  loaded: LoadedDocument,
+  args: {
+    readonly headerScan?: boolean;
+    readonly headerRow?: number;
+    readonly sheetName?: string;
+    readonly range?: string;
+    readonly mergedCells?: "master" | "repeat";
+  },
+): { headerRow: number; headerRowSource: HeaderRowSource } {
+  if (args.headerScan !== true) {
+    return {
+      headerRow: args.headerRow ?? 1,
+      headerRowSource: args.headerRow === undefined ? "default" : "explicit",
+    };
+  }
+  const sheet = documentSheet(loaded, args.sheetName);
+  const bounds = resolveRange(requireSheetBounds(sheet), args.range);
+  const declared = declaredHeaderRow(
+    sheet,
+    bounds,
+    args.mergedCells ?? "master",
+  );
+  if (declared !== undefined) {
+    return { headerRow: declared.row, headerRowSource: "declared" };
+  }
+  return {
+    headerRow: scanHeaderRow(
+      sheet,
+      bounds,
+      args.mergedCells ?? "master",
+      `${sheet.name}!${formatRange(bounds)}`,
+    ),
+    headerRowSource: "scanned",
+  };
+}
