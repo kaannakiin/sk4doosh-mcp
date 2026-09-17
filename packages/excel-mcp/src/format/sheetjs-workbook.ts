@@ -15,7 +15,10 @@ import {
   type OoxmlImage,
   type OoxmlPanes,
 } from "../metadata/spreadsheetml/images.js";
-import { readTables, type OoxmlTable } from "../metadata/spreadsheetml/tables.js";
+import {
+  readTables,
+  type OoxmlTable,
+} from "../metadata/spreadsheetml/tables.js";
 import {
   readValidations,
   type OoxmlValidations,
@@ -115,7 +118,10 @@ export function parseSheetJs(bytes: Buffer, path: string): SheetJsWorkbook {
   const date1904 = book.Workbook?.WBProps?.date1904 === true;
   const validations = new Map<string, OoxmlValidations>();
   const tables = new Map<string, readonly OoxmlTable[]>();
-  const conditionalFormats = new Map<string, readonly OoxmlConditionalBlock[]>();
+  const conditionalFormats = new Map<
+    string,
+    readonly OoxmlConditionalBlock[]
+  >();
   const images = new Map<string, readonly OoxmlImage[]>();
   const panes = new Map<string, OoxmlPanes>();
   const media = new Map<string, MediaEntry>();
@@ -264,8 +270,7 @@ function boundsOf(sheet: XLSX.WorkSheet): GridBounds | undefined {
       if (columnNumber > right) right = columnNumber;
     }
   }
-  const bounds =
-    top === 0 ? undefined : { top, left, bottom, right };
+  const bounds = top === 0 ? undefined : { top, left, bottom, right };
   boundsCache.set(sheet, { bounds });
   return bounds;
 }

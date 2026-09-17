@@ -115,8 +115,9 @@ describe("the OOXML conditional format reader agrees with ExcelJS", () => {
     );
 
     const order = (rows: readonly { priority?: unknown }[]) =>
-      [...rows].sort((left, right) =>
-        Number(left.priority ?? 0) - Number(right.priority ?? 0),
+      [...rows].sort(
+        (left, right) =>
+          Number(left.priority ?? 0) - Number(right.priority ?? 0),
       );
     expect(order(actual)).toEqual(order(expected));
   });

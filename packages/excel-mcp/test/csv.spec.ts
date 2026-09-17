@@ -1,7 +1,14 @@
 import { describe, expect, inject, it } from "vitest";
-import { loadDocument, sheetSource, type LoadedCsv } from "../src/format/document.js";
+import {
+  loadDocument,
+  sheetSource,
+  type LoadedCsv,
+} from "../src/format/document.js";
 import type { SkMcpExcelError } from "../src/platform/errors.js";
-import { createWorkbookRoot, resolveWorkbookPath } from "../src/platform/paths.js";
+import {
+  createWorkbookRoot,
+  resolveWorkbookPath,
+} from "../src/platform/paths.js";
 import { readSheet, type ReadSheetOptions } from "../src/grid/read-sheet.js";
 
 const base: ReadSheetOptions = {

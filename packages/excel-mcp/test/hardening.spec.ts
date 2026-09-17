@@ -481,10 +481,7 @@ describe("snapshot and cursor contracts (#26 #27 #28 #33)", () => {
     );
     expect(loaded.format).toBe("xlsx");
     if (loaded.format !== "xlsx") throw new Error("wrong format");
-    expect(loaded.workbook.sheetNames).toEqual([
-      "Caf\u00e9",
-      "Cafe\u0301",
-    ]);
+    expect(loaded.workbook.sheetNames).toEqual(["Caf\u00e9", "Cafe\u0301"]);
     for (const name of ["Caf\u00e9", "Cafe\u0301"]) {
       expect(() => selectSheetName(loaded.workbook, name)).toThrow(
         expect.objectContaining({ code: "ambiguous_sheet" }),

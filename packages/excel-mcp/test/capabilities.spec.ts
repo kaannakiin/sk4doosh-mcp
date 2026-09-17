@@ -1,6 +1,9 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { capabilities, type FormatCapabilities } from "../src/platform/capabilities.js";
+import {
+  capabilities,
+  type FormatCapabilities,
+} from "../src/platform/capabilities.js";
 import { createWorkbookRoot } from "../src/platform/paths.js";
 import type { ToolHandlers } from "../src/tools/definitions.js";
 import { createHandlers } from "../src/tools/handlers.js";

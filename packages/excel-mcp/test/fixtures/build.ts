@@ -535,12 +535,11 @@ async function buildFacets(path: string): Promise<void> {
   await workbook.xlsx.writeFile(path);
 }
 
-
 const sharedStringValues = ["Ürün", "Adet", "Kalem", "Defter", "Toplam"];
 
 function opcParts(prefix: string, sheetPart: string): Record<string, string> {
   const q = prefix === "" ? "" : `${prefix}:`;
-  const xmlns = prefix === "" ? 'xmlns=' : `xmlns:${prefix}=`;
+  const xmlns = prefix === "" ? "xmlns=" : `xmlns:${prefix}=`;
   const main = `${xmlns}"http://schemas.openxmlformats.org/spreadsheetml/2006/main"`;
   const strings = sharedStringValues
     .map((text) => `<${q}si><${q}t>${text}</${q}t></${q}si>`)
@@ -567,8 +566,7 @@ function opcParts(prefix: string, sheetPart: string): Record<string, string> {
       '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="/xl/sharedStrings.xml" Id="rIdStrings" />' +
       '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="/xl/styles.xml" Id="rIdStyles" />' +
       "</Relationships>",
-    "xl/sharedStrings.xml":
-      `<?xml version="1.0" encoding="utf-8"?><${q}sst ${main} count="${sharedStringValues.length}" uniqueCount="${sharedStringValues.length}">${strings}</${q}sst>`,
+    "xl/sharedStrings.xml": `<?xml version="1.0" encoding="utf-8"?><${q}sst ${main} count="${sharedStringValues.length}" uniqueCount="${sharedStringValues.length}">${strings}</${q}sst>`,
     "xl/styles.xml":
       `<?xml version="1.0" encoding="utf-8"?><${q}styleSheet ${main}>` +
       `<${q}fonts count="1"><${q}font /></${q}fonts><${q}fills count="1"><${q}fill /></${q}fills>` +

@@ -50,7 +50,9 @@ async function bothSources(path: string) {
 describe.each(workbookKeys)("%s.xlsx reads the same both ways", (key) => {
   it("indexes the same parts at the same sizes", async () => {
     const { viaSheetJs, viaZip } = await bothSources(fixtures()[key]);
-    const shape = (source: { entries: readonly { path: string; sizeBytes: number }[] }) =>
+    const shape = (source: {
+      entries: readonly { path: string; sizeBytes: number }[];
+    }) =>
       [...source.entries]
         .map((entry) => `${entry.path}:${String(entry.sizeBytes)}`)
         .sort();

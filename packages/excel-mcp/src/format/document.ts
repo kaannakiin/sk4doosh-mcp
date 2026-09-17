@@ -5,7 +5,10 @@ import {
   type ParseContext,
   type SandboxedPath,
 } from "@sk-mcp/file-core";
-import { capabilitiesFor, type FormatCapabilities } from "../platform/capabilities.js";
+import {
+  capabilitiesFor,
+  type FormatCapabilities,
+} from "../platform/capabilities.js";
 import {
   csvSheetName,
   csvSheetView,
@@ -28,7 +31,10 @@ import {
   sheetjsSheetView,
   type SheetJsWorkbook,
 } from "./sheetjs-workbook.js";
-import type { DocumentMeta, WorkbookDescription } from "../metadata/description.js";
+import type {
+  DocumentMeta,
+  WorkbookDescription,
+} from "../metadata/description.js";
 import { declaredTablesOf } from "../metadata/tables.js";
 
 interface XlsxBody {

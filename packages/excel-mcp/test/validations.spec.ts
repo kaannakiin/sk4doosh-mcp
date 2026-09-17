@@ -4,11 +4,11 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/platform/paths.js";
-import { collectValidations, compressAddresses } from "../src/metadata/validations.js";
 import {
-  loadDocument,
-  type LoadedWorkbook,
-} from "../src/format/document.js";
+  collectValidations,
+  compressAddresses,
+} from "../src/metadata/validations.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 
 function addresses(column: string, from: number, to: number): string[] {
   const list: string[] = [];

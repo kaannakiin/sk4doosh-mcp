@@ -1,6 +1,9 @@
 import { describe, expect, inject, it } from "vitest";
 import { loadDocument, sheetSource } from "../src/format/document.js";
-import { createWorkbookRoot, resolveWorkbookPath } from "../src/platform/paths.js";
+import {
+  createWorkbookRoot,
+  resolveWorkbookPath,
+} from "../src/platform/paths.js";
 import {
   findInSheet,
   readSheet,

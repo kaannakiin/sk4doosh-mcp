@@ -60,10 +60,7 @@ export type {
   Operator,
   PredicateOptions,
 } from "./grid/predicate.js";
-export {
-  collectTables,
-  declaredTablesOf,
-} from "./metadata/tables.js";
+export { collectTables, declaredTablesOf } from "./metadata/tables.js";
 export type {
   DeclaredTableDetail,
   TableColumnDetail,
@@ -137,8 +134,14 @@ export type {
 } from "./metadata/conditional-formats.js";
 export { collectImages } from "./metadata/images.js";
 export type { ImageReport, MediaEntry, SheetImage } from "./metadata/images.js";
-export { collectValidations, compressAddresses } from "./metadata/validations.js";
-export type { ValidationReport, ValidationRule } from "./metadata/validations.js";
+export {
+  collectValidations,
+  compressAddresses,
+} from "./metadata/validations.js";
+export type {
+  ValidationReport,
+  ValidationRule,
+} from "./metadata/validations.js";
 export { findInSheet, readSheet } from "./grid/read-sheet.js";
 export type {
   FindResult,

@@ -200,8 +200,9 @@ describe("validations no longer need the ExcelJS metadata reader", () => {
       );
       const capabilities = body["capabilities"] as Record<string, boolean>;
       expect(capabilities["dataValidations"]).toBe(true);
-      expect((await loadXlsx(file)).workbook.validations.get("Veri")?.rules)
-        .toHaveLength(1);
+      expect(
+        (await loadXlsx(file)).workbook.validations.get("Veri")?.rules,
+      ).toHaveLength(1);
     });
   }
 });
