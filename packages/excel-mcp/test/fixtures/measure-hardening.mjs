@@ -55,7 +55,10 @@ start = performance.now();
 const parsed = parseSheetJs(xlsx, "validation.xlsx");
 const describeOptions = { includeDefinedNames: false };
 report.validationParseMs = performance.now() - start;
-const validations = collectValidations("Validation", parsed.validations.get("Validation"));
+const validations = collectValidations(
+  "Validation",
+  parsed.validations.get("Validation"),
+);
 assert.equal(validations.count, 1);
 assert.equal(validations.coveredCellCount, 5001);
 report.validationCoveredCells = validations.coveredCellCount;
