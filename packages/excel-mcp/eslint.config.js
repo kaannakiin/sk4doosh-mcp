@@ -1,29 +1,50 @@
 import { config } from "@sk-mcp/eslint-config/base";
 import { casing } from "@sk-mcp/eslint-config/casing";
 
-const gridLayer = [
-  "src/aggregate.ts",
-  "src/cell-value.ts",
-  "src/columns.ts",
-  "src/header.ts",
-  "src/predicate.ts",
-  "src/range.ts",
-  "src/read-sheet.ts",
-  "src/sheet.ts",
+const platformMessage =
+  "The platform layer is the @sk-mcp/file-core and node boundary; it may not import a layer above it.";
+const gridMessage =
+  "The grid layer sees sheets only through SheetView; it must not reach a format adapter, a metadata reader or the tool surface.";
+const metadataMessage =
+  "The metadata layer reads SpreadsheetML parts and shapes reports; the adapter that opened the package is above it.";
+const formatMessage =
+  "A format adapter turns bytes into a SheetView; it never reaches the tool surface.";
+const workerMessage =
+  "The regex worker entry stays free of the server surface; it answers over the message port and the main side builds the error.";
+
+const parserPackages = ["@e965/xlsx", "csv-parse", "csv-parse/sync"];
+
+/**
+ * Guard: the platform layer may name the container reader, because sniffing the
+ * leading bytes decides whether a file is readable at all and that is a
+ * precondition of reading, not an adapter concern. No layer above platform may.
+ */
+const containerPackages = ["@sk-mcp/ooxml-core"];
+
+const formatPackages = [...parserPackages, ...containerPackages];
+const serverPackages = [
+  "@sk-mcp/file-core",
+  "@modelcontextprotocol/sdk",
+  "zod",
 ];
 
-const formatAdapters = [
-  "./conditional-formats.js",
-  "./csv.js",
-  "./document.js",
-  "./images.js",
-  "./tables.js",
-  "./validations.js",
-  "./workbook.js",
-  "csv-parse",
-  "csv-parse/sync",
-  "exceljs",
-];
+/**
+ * Guard: the entrypoints are listed alongside the folder globs because
+ * no-restricted-imports matches the specifier string, not the resolved module.
+ * Without them a layer could reach anything through ../index.js and the rule
+ * would never fire.
+ */
+const entrypoints = ["**/index.js", "**/server.js", "**/cli.js"];
+
+const restrict = (message, { paths = [], folders = [] }) => ({
+  "no-restricted-imports": [
+    "error",
+    {
+      paths: paths.map((name) => ({ name, message })),
+      patterns: [{ group: [...folders, ...entrypoints], message }],
+    },
+  ],
+});
 
 export default [
   ...config,
@@ -41,18 +62,43 @@ export default [
     },
   },
   {
-    files: gridLayer,
+    files: ["src/platform/**/*.ts"],
+    rules: restrict(platformMessage, {
+      paths: parserPackages,
+      folders: ["**/grid/**", "**/metadata/**", "**/format/**", "**/tools/**"],
+    }),
+  },
+  {
+    files: ["src/grid/**/*.ts"],
+    rules: restrict(gridMessage, {
+      paths: formatPackages,
+      folders: ["**/metadata/**", "**/format/**", "**/tools/**"],
+    }),
+  },
+  {
+    files: ["src/metadata/**/*.ts"],
+    rules: restrict(metadataMessage, {
+      folders: ["**/format/**", "**/tools/**"],
+    }),
+  },
+  {
+    files: ["src/format/**/*.ts"],
+    rules: restrict(formatMessage, { folders: ["**/tools/**"] }),
+  },
+  {
+    files: ["src/regex-worker.ts"],
     rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: formatAdapters.map((name) => ({
-            name,
-            message:
-              "The grid layer sees sheets only through SheetView; it must not reach a format adapter.",
-          })),
-        },
-      ],
+      "no-console": "error",
+      ...restrict(workerMessage, {
+        paths: [...serverPackages, ...formatPackages],
+        folders: [
+          "**/platform/**",
+          "**/grid/**",
+          "**/metadata/**",
+          "**/format/**",
+          "**/tools/**",
+        ],
+      }),
     },
   },
 ];
