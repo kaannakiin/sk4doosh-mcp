@@ -1,4 +1,6 @@
 import type { RemoteTool } from "@chat/contracts/integration/remote-tool";
+import { CHAT_TOOL_DEFINITIONS } from "@chat/contracts/tools/tool-fingerprint";
+import type { ChatToolName } from "@chat/contracts/tools/tool-name";
 
 import { sha256Bytes } from "../common/utils/crypto.utils.ts";
 
@@ -9,6 +11,15 @@ import { sha256Bytes } from "../common/utils/crypto.utils.ts";
  * `deriveSha256Key` takes a label.
  */
 const DOMAIN = "mcp-tool-v1\n";
+
+/**
+ * Guard: a label of its own, so the two families cannot be compared by accident.
+ * A first-party fingerprint covers a different shape than a remote one — no
+ * annotations, and no tool-level description, because that text is read out of
+ * the locale files and a digest carrying it would drop every grant the day the
+ * reader switched language.
+ */
+const CHAT_DOMAIN = "chat-tool-v1\n";
 
 /**
  * Guard: keys are sorted by code unit and arrays keep their order. Sorting makes
@@ -70,4 +81,21 @@ export function toolDefinitionDigest(tool: RemoteTool): Buffer {
         inputSchema: tool.inputSchema,
       }),
   );
+}
+
+/**
+ * The fingerprint a first-party grant is bound to.
+ *
+ * Guard: computed from the JSON Schema `@chat/contracts` exports, through the
+ * same canonical serializer the remote path uses. The field descriptions that
+ * `.describe()` puts into that schema are in it deliberately: they are English
+ * literals in the contract layer and they are what the model is told each
+ * argument means, so an edit to one is a change of meaning exactly as it is for
+ * a discovered tool.
+ *
+ * @param toolName a tool this product ships
+ * @returns the 32-byte digest stored beside each grant for it
+ */
+export function chatToolDigest(toolName: ChatToolName): Buffer {
+  return sha256Bytes(CHAT_DOMAIN + canonical(CHAT_TOOL_DEFINITIONS[toolName]));
 }

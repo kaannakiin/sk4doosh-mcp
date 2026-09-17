@@ -11,6 +11,7 @@ model User {
   phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz
   disabledAt      DateTime? @map("disabled_at") @db.Timestamptz
   toolApprovalMode ToolApprovalMode @default(remember) @map("tool_approval_mode")
+  grantTtl         GrantTtl         @default(never) @map("grant_ttl")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 

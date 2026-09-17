@@ -20,11 +20,13 @@ import type {
   IntegrationAuthMode,
   IntegrationOrigin,
 } from "@chat/contracts/integration/integration";
+import type { GrantTtl } from "@chat/contracts/integration/grant-scope";
 import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 import type {
   ConnectionEventKind,
   ConnectionStatus as SchemaConnectionStatus,
   DiscoveryFailure as SchemaDiscoveryFailure,
+  GrantTtl as SchemaGrantTtl,
   IntegrationAuthMode as SchemaIntegrationAuthMode,
   IntegrationOrigin as SchemaIntegrationOrigin,
   IntegrationStatus,
@@ -37,6 +39,7 @@ import type {
 export type {
   ConnectionStatus,
   DiscoveryFailure,
+  GrantTtl,
   IntegrationAuthMode,
   IntegrationOrigin,
   MessageRole,
@@ -75,7 +78,8 @@ export type EnumParity =
   | Assert<Exact<IntegrationAuthMode, SchemaIntegrationAuthMode>>
   | Assert<Exact<ConnectionStatus, SchemaConnectionStatus>>
   | Assert<Exact<DiscoveryFailure, SchemaDiscoveryFailure>>
-  | Assert<Exact<ToolApprovalMode, SchemaToolApprovalMode>>;
+  | Assert<Exact<ToolApprovalMode, SchemaToolApprovalMode>>
+  | Assert<Exact<GrantTtl, SchemaGrantTtl>>;
 
 export interface SessionRow {
   readonly id: string;

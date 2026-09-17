@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Okuyucu Konsolu",
-    "subtitle": "Bir hesap tablosu veya XML belgesi hakkında soru sor. Her okuma senin onayını bekler."
+    "subtitle": "Dosyaların ve bağladığın sistemler hakkında soru sor."
   },
   "sessions": {
     "title": "Sohbetler",
@@ -16,7 +16,7 @@
     "titleLabel": "Sohbet başlığı"
   },
   "composer": {
-    "placeholder": "Ekli dosyalar hakkında sor",
+    "placeholder": "Bir soru sor",
     "hint": "Enter gönderir · Shift+Enter yeni satır",
     "send": "Gönder",
     "stop": "Durdur",
@@ -24,8 +24,8 @@
     "collapse": "Girdiyi küçült"
   },
   "conversation": {
-    "empty": "Bir dosya ekle, sonra soru sor.",
-    "you": "Senin mesajın",
+    "empty": "Bir dosya ekle ya da bir sunucu bağla, sonra sor.",
+    "you": "Mesajın",
     "assistant": "Asistan yanıtı",
     "thinking": "Düşünüyor",
     "reasoning": "Akıl yürütme",
@@ -40,8 +40,8 @@
     "download": "{{name}} indir",
     "title": "Ek dosyalar",
     "uploading": "Yükleniyor…",
-    "more": "+{{count}} tane daha",
-    "more_other": "+{{count}} tane daha",
+    "more": "+{{count}} daha",
+    "more_other": "+{{count}} daha",
     "less": "Daha az göster"
   },
   "tool": {
@@ -69,11 +69,10 @@
       "project_records": "project_records",
       "codex_task": "codex_task"
     },
-    "remember": "Bu araç için bir daha sorma",
-    "rememberHint": "Yalnızca bu sunucu için geçerli; Entegrasyonlar sayfasından unutturana kadar sürer.",
+    "remember": "Bir daha sorma",
     "codex": {
       "starting": "Başlıyor",
-      "truncated": "Sonucun bir bölümü burada gösterilemeyecek kadar uzundu.",
+      "truncated": "Sonucun bir bölümü gösterilemeyecek kadar uzundu.",
       "commands_one": "{{count}} komut",
       "commands_other": "{{count}} komut",
       "changes_one": "{{count}} dosya değişti",
@@ -87,6 +86,10 @@
         "codex_aborted": "Kodlama ajanı bitirmeden durduruldu.",
         "codex_failed": "Kodlama ajanı görevi tamamlayamadı."
       }
+    },
+    "rememberScope": {
+      "session": "Bu sohbette",
+      "global": "Her yerde"
     }
   },
   "errors": {
@@ -106,7 +109,7 @@
   },
   "auth": {
     "brand": {
-      "tagline": "Dosyalarının gerçekte ne söylediğini okumak için sakin bir konsol."
+      "tagline": "Verilerinin gerçekte ne söylediğini sormak için sakin bir konsol."
     },
     "login": {
       "title": "Tekrar hoş geldin",
@@ -155,7 +158,7 @@
       "submit": "Doğrula",
       "expiresIn": "Süresi {{count}} dakika içinde doluyor.",
       "expiresIn_other": "Süresi {{count}} dakika içinde doluyor.",
-      "expiresSoon": "Süresi bir dakikadan az sürede doluyor.",
+      "expiresSoon": "Bir dakikadan az kaldı.",
       "resend": "Yeni kod gönder",
       "resendCountdown": "Yeni kod {{time}} sonra istenebilir",
       "resendUnavailable": "Yeni kod istemek için biraz bekle",
@@ -268,20 +271,20 @@
   },
   "connections": {
     "title": "Entegrasyonlar",
-    "subtitle": "Bir MCP sunucusu bağlayın, araçları sohbette kullanılabilir olsun.",
+    "subtitle": "Bir MCP sunucusu bağla; araçları sohbette kullanılabilir olur.",
     "empty": "Henüz entegrasyon yok.",
     "add": {
       "label": "MCP sunucu adresi",
       "placeholder": "https://ornek.com/mcp",
       "submit": "Ekle",
-      "hint": "Sunucuya hemen bağlanılır, bu birkaç saniye sürebilir."
+      "hint": "Sunucuya hemen bağlanılır; birkaç saniye sürebilir."
     },
     "status": {
       "disconnected": "Bağlı değil",
       "active": "Bağlı",
-      "revoked": "Bağlantı koparıldı",
+      "revoked": "Bağlantı kesildi",
       "reauth_required": "Yetkilendirme gerekiyor",
-      "open": "Açık sunucu"
+      "open": "Herkese açık"
     },
     "tools": {
       "count_one": "{{count}} araç",
@@ -290,51 +293,70 @@
     "actions": {
       "connect": "Bağlan",
       "reconnect": "Yeniden bağlan",
-      "disconnect": "Kopar",
+      "disconnect": "Bağlantıyı kes",
       "remove": "Kaldır",
       "refreshTools": "Araçları yenile"
     },
     "confirm": {
       "removeTitle": "Bu entegrasyon kaldırılsın mı?",
-      "removeBody": "Bağlantı sağlayıcı tarafında iptal edilir ve sunucu listenizden kalkar."
+      "removeBody": "Bağlantı sağlayıcı tarafında iptal edilir ve sunucu listenden kalkar."
     },
     "outcome": {
       "connected": "Bağlandı.",
       "attempt_invalid": "Bu yetkilendirme, bu tarayıcıdan yapılan bir istekle eşleştirilemedi.",
       "integration_unavailable": "Bu entegrasyon artık kullanılamıyor.",
-      "access_denied": "Yetkilendirmeyi reddettiniz.",
+      "access_denied": "Yetkilendirmeyi reddettin.",
       "provider_unavailable": "Sunucuya ulaşılamadı.",
       "connection_failed": "Bağlantı tamamlanamadı."
     },
     "errors": {
       "integration_url_invalid": "Bu adres kullanılamaz. MCP sunucusuna https üzerinden erişilebilmeli.",
-      "integration_duplicate": "Bu sunucuyu zaten eklemişsiniz.",
+      "integration_duplicate": "Bu sunucuyu zaten eklemişsin.",
       "integration_unreachable": "Sunucu cevap vermedi.",
       "integration_not_mcp": "Bu adres bir MCP sunucusuna benzemiyor.",
       "integration_auth_unsupported": "Bu sunucu, bu ürünün yapabildiği yetkilendirmeyi desteklemiyor.",
       "integration_not_found": "Böyle bir entegrasyon yok.",
-      "integration_too_large": "Bu sunucunun cevabı, bu ürünün okuyacağından büyük."
+      "integration_too_large": "Sunucunun yanıtı, bu ürünün okuyacağı boyuttan büyük."
     },
     "approvals": {
       "show": "Hatırlanan araçlar",
       "hide": "Gizle",
-      "empty": "Bu sunucu için henüz hiçbir şey hatırlanmıyor.",
-      "loading": "Hatırlanan araçlar yükleniyor…",
+      "empty": "Bu sunucu için hatırlanan onay yok.",
+      "loading": "Hatırlanan onaylar yükleniyor…",
       "grantedAt": "{{when}} onaylandı",
       "changed": "Tanım değişti",
       "withdrawn": "Artık sunulmuyor",
       "destructive": "Her zaman sorar",
       "forget": "Unut",
-      "count_one": "{{count}} hatırlanan",
-      "count_other": "{{count}} hatırlanan"
+      "count_one": "{{count}} onay hatırlanıyor",
+      "count_other": "{{count}} onay hatırlanıyor",
+      "scope": {
+        "session": "Bu sohbet",
+        "global": "Her yer"
+      },
+      "expired": "Düştü",
+      "expiresAt": "{{when}} düşer",
+      "chatTitle": "Bu ürünün kendi araçları",
+      "chatEmpty": "Hatırlanan onay yok."
     },
     "mode": {
       "label": "Araç onayı",
       "remember": "Seçimlerimi hatırla",
       "always_ask": "Her seferinde sor",
       "hint": {
-        "remember": "Onayladığınız bir araç, tanımı değişmediği veya sunucu veri değiştirebileceğini söylemediği sürece yeniden sorulmadan çalışır.",
-        "always_ask": "Her araç çağrısı için onay istenir. Hatırlanan seçimleriniz saklanır ama kullanılmaz."
+        "remember": "Onayladığın bir araç, tanımı değişmediği ya da sunucu veri değiştirebileceğini bildirmediği sürece yeniden sorulmaz.",
+        "always_ask": "Verilerini okuyan ya da değiştiren her araç, her seferinde sorulur. Hatırlanan onayların saklanır ama kullanılmaz."
+      }
+    },
+    "ttl": {
+      "label": "Hatırlanan onayların düşmesi",
+      "day": "Bir gün sonra",
+      "week": "Bir hafta sonra",
+      "never": "Hiçbir zaman",
+      "hint": {
+        "day": "Bundan sonra vereceğin onay, verdikten bir gün sonra düşer. Daha önce verdiklerin kendi koşullarında kalır.",
+        "week": "Bundan sonra vereceğin onay, verdikten bir hafta sonra düşer. Daha önce verdiklerin kendi koşullarında kalır.",
+        "never": "Verdiğin onay, sen unutana kadar kalır."
       }
     }
   }

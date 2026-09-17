@@ -1,22 +1,26 @@
 import type { Locale } from "@chat/contracts/common/locale";
-import { useIntegrationApprovals } from "@chat/queries/connections/approvals";
+import { useChatToolApprovals } from "@chat/queries/connections/approvals";
 import { useForgetTool } from "@chat/queries/connections/mutations";
 import { Badge, Button, Loader } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { formatRelative } from "~/lib/relative-time";
 
-interface ApprovedToolListProps {
-  readonly integrationId: string;
+interface ChatToolApprovalListProps {
   readonly locale: Locale;
 }
 
-export function ApprovedToolList({
-  integrationId,
-  locale,
-}: ApprovedToolListProps) {
+/**
+ * The grants a reader holds for the tools this product ships.
+ *
+ * Guard: a section of its own rather than a row on some integration's card.
+ * These tools belong to no server, and for as long as the only listing was
+ * per-integration there was nowhere to withdraw one — which is half the reason
+ * they could not be remembered in the first place.
+ */
+export function ChatToolApprovalList({ locale }: ChatToolApprovalListProps) {
   const { t } = useTranslation();
-  const approvals = useIntegrationApprovals(integrationId, locale, true);
+  const approvals = useChatToolApprovals(locale, true);
   const forget = useForgetTool(locale);
 
   if (approvals.isPending) {
@@ -31,7 +35,7 @@ export function ApprovedToolList({
   if (approvals.data === undefined || approvals.data.length === 0) {
     return (
       <p className="px-1 py-2 text-xs text-ink-dim">
-        {t("connections.approvals.empty")}
+        {t("connections.approvals.chatEmpty")}
       </p>
     );
   }
@@ -40,11 +44,13 @@ export function ApprovedToolList({
     <ul className="w-full divide-y divide-hairline">
       {approvals.data.map((approval) => (
         <li
-          key={approval.toolName}
+          key={approval.subjectKey}
           className="flex flex-wrap items-center gap-2 py-2"
         >
           <span className="min-w-0 grow truncate font-mono text-xs">
-            {approval.toolName}
+            {t(`tool.names.${approval.toolName}`, {
+              defaultValue: approval.toolName,
+            })}
           </span>
           <Badge size="xs" variant="light" color="var(--color-ink-dim)">
             {approval.scope === "session"
@@ -54,11 +60,6 @@ export function ApprovedToolList({
           {approval.expired ? (
             <Badge size="xs" variant="light" color="var(--color-ink-dim)">
               {t("connections.approvals.expired")}
-            </Badge>
-          ) : null}
-          {approval.destructive ? (
-            <Badge size="xs" variant="light" color="var(--color-amber)">
-              {t("connections.approvals.destructive")}
             </Badge>
           ) : null}
           {approval.definitionChanged ? (

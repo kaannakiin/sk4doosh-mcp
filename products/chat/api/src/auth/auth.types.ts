@@ -2,6 +2,7 @@ import type {
   AuthProvider,
   AuthSessionResponse,
 } from "@chat/contracts/auth/auth";
+import type { GrantTtl } from "@chat/contracts/integration/grant-scope";
 import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 
 import type { UserId } from "../db/ids.ts";
@@ -20,6 +21,7 @@ export interface AuthUserRow {
   readonly disabledAt: Date | null;
   readonly createdAt: Date;
   readonly toolApprovalMode: ToolApprovalMode;
+  readonly grantTtl: GrantTtl;
   readonly providers: readonly AuthProvider[];
 }
 

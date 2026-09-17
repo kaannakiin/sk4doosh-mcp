@@ -8,7 +8,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import type { ChatClient } from "../client.ts";
 import { useChatClient } from "../provider.tsx";
 import { connectionKeys } from "./keys.ts";
-import { integrationPath } from "./path.ts";
+import { INTEGRATION_PATHS, integrationPath } from "./path.ts";
 
 export function integrationApprovalsOptions(
   client: ChatClient,
@@ -41,6 +41,36 @@ export function useIntegrationApprovals(
 ) {
   return useQuery({
     ...integrationApprovalsOptions(useChatClient(), locale, integrationId),
+    enabled,
+  });
+}
+
+/**
+ * The reader's grants for the tools this product ships.
+ *
+ * Guard: keyed apart from the per-integration lists but under the same prefix,
+ * so remembering or forgetting anything sweeps both. A first-party grant has no
+ * integration to be listed under, which is why it needs a query of its own — and
+ * why for as long as it had none, there was nowhere to withdraw one.
+ */
+export function chatToolApprovalsOptions(client: ChatClient, locale: Locale) {
+  return queryOptions({
+    queryKey: connectionKeys.chatToolApprovals(),
+    queryFn: async ({ signal }): Promise<readonly ApprovedTool[]> => {
+      const { approvals } = await client.request(
+        INTEGRATION_PATHS.approvals,
+        approvedToolListResponseSchema,
+        { locale, signal },
+      );
+
+      return approvals;
+    },
+  });
+}
+
+export function useChatToolApprovals(locale: Locale, enabled: boolean) {
+  return useQuery({
+    ...chatToolApprovalsOptions(useChatClient(), locale),
     enabled,
   });
 }

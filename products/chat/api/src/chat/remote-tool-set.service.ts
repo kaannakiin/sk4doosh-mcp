@@ -1,4 +1,5 @@
 import type { Locale } from "@chat/contracts/common/locale";
+import { sanitizeToolDescription } from "@chat/contracts/integration/tool-description";
 import { sanitizeToolInputSchema } from "@chat/contracts/integration/tool-input-schema";
 import { findToolsInputSchema } from "@chat/contracts/tools/discovery/find-tools";
 import { Injectable, Logger } from "@nestjs/common";
@@ -41,7 +42,25 @@ const EMPTY: RemoteToolSurface = {
 };
 
 function summarize(entry: CatalogTool): string {
-  return [entry.title, entry.description].filter((part) => part !== null && part !== "").join(" — ");
+  return sanitizeToolDescription(entry.title, entry.description);
+}
+
+/**
+ * Guard: search reads what the server wrote, not what the model is shown.
+ * `summarize` bounds its output at a length that would drop the tail of a long
+ * description, and a term that only appears there is still the reader's best
+ * handle on the tool they are looking for.
+ */
+function searchable(entry: CatalogTool): string {
+  return [
+    entry.remoteName,
+    entry.title,
+    entry.description,
+    entry.integrationName,
+  ]
+    .filter((part) => part !== null && part !== "")
+    .join(" ")
+    .toLowerCase();
 }
 
 @Injectable()
@@ -111,6 +130,7 @@ export class RemoteToolSetService {
 
     for (const [exposed, entry] of byExposedName) {
       tools[exposed] = tool({
+        metadata: { policy: entry.destructive ? "always" : "askable" },
         description: summarize(entry),
         inputSchema: jsonSchema(
           sanitizeToolInputSchema(entry.inputSchema) as Record<string, unknown>,
@@ -144,6 +164,7 @@ export class RemoteToolSetService {
     locale: Locale,
   ) {
     return tool({
+      metadata: { policy: "auto" },
       description: this.i18n.t("chat:tools.find.description", {}, locale),
       inputSchema: findToolsInputSchema,
       execute: ({ query }: { query: string }) => {
@@ -151,11 +172,8 @@ export class RemoteToolSetService {
         const scored = catalog
           .map((entry) => ({
             entry,
-            hits: terms.filter((term) =>
-              `${entry.remoteName} ${summarize(entry)} ${entry.integrationName}`
-                .toLowerCase()
-                .includes(term),
-            ).length,
+            hits: terms.filter((term) => searchable(entry).includes(term))
+              .length,
           }))
           .filter(({ hits }) => hits > 0)
           .sort((left, right) => right.hits - left.hits)

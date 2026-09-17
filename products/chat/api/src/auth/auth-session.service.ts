@@ -159,6 +159,7 @@ export class AuthSessionService {
       phoneVerified: user.phoneVerifiedAt !== null,
       providers: [...user.providers],
       toolApprovalMode: user.toolApprovalMode,
+      grantTtl: user.grantTtl,
       createdAt: user.createdAt.toISOString(),
     };
   }

@@ -1,4 +1,5 @@
-import { Button, Checkbox } from "@mantine/core";
+import type { GrantScope } from "@chat/contracts/integration/grant-scope";
+import { Button, Checkbox, Radio } from "@mantine/core";
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import { getToolName } from "ai";
 import { memo, useState } from "react";
@@ -15,6 +16,20 @@ export interface ToolDecision {
   readonly approved: boolean;
   /** The tool name to stop asking about, when the reader asked for that. */
   readonly rememberAs: string | undefined;
+  /** How far that grant reaches. Meaningless when nothing is remembered. */
+  readonly scope: GrantScope;
+}
+
+/**
+ * Guard: read from the part rather than derived from the name. The server puts
+ * each tool's posture in `metadata`, which the sdk copies here — a page that
+ * guessed instead would offer to remember a tool the server refuses to remember,
+ * which is what it used to do for every destructive one.
+ */
+function rememberable(part: ReaderToolPart): boolean {
+  const policy = (part.toolMetadata as { policy?: unknown } | undefined)?.policy;
+
+  return policy !== "always";
 }
 
 export interface ToolPartProps {
@@ -25,6 +40,7 @@ export interface ToolPartProps {
 function ToolPartComponent({ part, onDecision }: ToolPartProps) {
   const { t } = useTranslation();
   const [remember, setRemember] = useState(false);
+  const [scope, setScope] = useState<GrantScope>("session");
   const name = getToolName(part);
   const args = formatToolInput(part.input);
   const approvalId = part.approval?.id;
@@ -73,20 +89,44 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
       {part.state === "approval-requested" && approvalId !== undefined ? (
         <div className="mt-3 flex flex-col gap-2.5">
           {/*
-            The checkbox is offered only for a discovered tool. The reader tools
-            this product ships are decided by an allowlist, so remembering one
-            would change nothing and say otherwise.
+            The narrow grant is the one that is selected, and widening it is a
+            second, deliberate click. A single checkbox meaning "forever and
+            everywhere" made the widest thing a reader can give the easiest thing
+            to give.
           */}
-          {part.type === "dynamic-tool" ? (
-            <Checkbox
-              size="xs"
-              checked={remember}
-              label={t("tool.remember")}
-              description={t("tool.rememberHint")}
-              onChange={(event) => {
-                setRemember(event.currentTarget.checked);
-              }}
-            />
+          {rememberable(part) ? (
+            <div className="flex flex-col gap-1.5">
+              <Checkbox
+                size="xs"
+                checked={remember}
+                label={t("tool.remember")}
+                onChange={(event) => {
+                  setRemember(event.currentTarget.checked);
+                }}
+              />
+              {remember ? (
+                <Radio.Group
+                  size="xs"
+                  value={scope}
+                  onChange={(value) => {
+                    setScope(value === "global" ? "global" : "session");
+                  }}
+                >
+                  <div className="ms-6 flex flex-col gap-1">
+                    <Radio
+                      size="xs"
+                      value="session"
+                      label={t("tool.rememberScope.session")}
+                    />
+                    <Radio
+                      size="xs"
+                      value="global"
+                      label={t("tool.rememberScope.global")}
+                    />
+                  </div>
+                </Radio.Group>
+              ) : null}
+            </div>
           ) : null}
           <div className="flex gap-2">
             <Button
@@ -96,6 +136,7 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
                   approvalId,
                   approved: true,
                   rememberAs: remember ? name : undefined,
+                  scope,
                 });
               }}
             >
@@ -109,6 +150,7 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
                   approvalId,
                   approved: false,
                   rememberAs: undefined,
+                  scope,
                 });
               }}
             >

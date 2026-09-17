@@ -14,10 +14,11 @@ import { ChatController } from "./chat.controller.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
 import { ChatSessionRepository } from "./chat-session.repository.ts";
 import { ChatService } from "./chat.service.ts";
-import { RemoteToolApprovalService } from "./remote-tool-approval.service.ts";
+import { ToolApprovalGateService } from "./tool-approval-gate.service.ts";
 import { RemoteToolInvoker } from "./remote-tool-invoker.ts";
 import { RemoteToolSetService } from "./remote-tool-set.service.ts";
 import { MessageRepository } from "./message.repository.ts";
+import { SystemPromptService } from "./system-prompt.service.ts";
 
 @Module({
   imports: [
@@ -76,9 +77,10 @@ import { MessageRepository } from "./message.repository.ts";
     MessageRepository,
     ChatService,
     ChatHistoryService,
-    RemoteToolApprovalService,
+    ToolApprovalGateService,
     RemoteToolInvoker,
     RemoteToolSetService,
+    SystemPromptService,
   ],
 })
 export class ChatModule {}

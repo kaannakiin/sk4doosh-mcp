@@ -6,6 +6,7 @@ import {
   type IntegrationListResponse,
   type IntegrationSummary,
 } from "@chat/contracts/integration/registration";
+import type { GrantScope, GrantTtl } from "@chat/contracts/integration/grant-scope";
 import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 import { useMutation } from "@tanstack/react-query";
 
@@ -98,21 +99,30 @@ export function useRefreshTools(locale: Locale) {
   });
 }
 
+export interface RememberToolInput {
+  readonly exposedName: string;
+  readonly scope: GrantScope;
+  /** Required for a conversation-scoped grant, refused for a global one. */
+  readonly sessionId?: string;
+}
+
 /**
- * Guard: the request carries no digest. The api reads the definition it is
- * remembering out of its own tool row — a digest the page could choose would let
- * it record consent for a definition the server never published.
+ * Guard: the request carries no digest and no expiry. The api reads the
+ * definition it is remembering out of its own records, and computes the lapse
+ * from the reader's own preference — either one chosen by the page would let it
+ * record consent on terms the reader never set.
  */
 export function useRememberTool(locale: Locale) {
   const client = useChatClient();
 
-  return useMutation<void, Error, string>({
-    mutationFn: (exposedName) =>
+  return useMutation<void, Error, RememberToolInput>({
+    mutationFn: ({ exposedName, scope, sessionId }) =>
       client.requestNoContent(toolApprovalPath(exposedName), {
         method: "PUT",
         locale,
+        body: scope === "session" ? { scope, sessionId } : { scope },
       }),
-    onSettled: (_data, _error, _name, _context, { client: queryClient }) =>
+    onSettled: (_data, _error, _input, _context, { client: queryClient }) =>
       void queryClient.invalidateQueries({
         queryKey: connectionKeys.approvalsAll(),
       }),
@@ -140,6 +150,26 @@ export function useForgetTool(locale: Locale) {
  * mode rides on `/auth/me`, because it is a property of the reader and not of
  * any one server.
  */
+/**
+ * Guard: invalidates the identity query for the same reason the mode does. The
+ * duration is a property of the reader, not of any one server, and it rides back
+ * on `/auth/me`.
+ */
+export function useSetGrantTtl(locale: Locale) {
+  const client = useChatClient();
+
+  return useMutation<void, Error, GrantTtl>({
+    mutationFn: (ttl) =>
+      client.requestNoContent(`${INTEGRATION_PATHS.approvals}/ttl`, {
+        method: "PATCH",
+        locale,
+        body: { ttl },
+      }),
+    onSettled: (_data, _error, _ttl, _context, { client: queryClient }) =>
+      void queryClient.invalidateQueries({ queryKey: authKeys.currentUser() }),
+  });
+}
+
 export function useSetToolApprovalMode(locale: Locale) {
   const client = useChatClient();
 

@@ -21,6 +21,8 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { ApprovalModeField } from "~/components/connections/ApprovalModeField";
+import { ChatToolApprovalList } from "~/components/connections/ChatToolApprovalList";
+import { GrantTtlField } from "~/components/connections/GrantTtlField";
 import { IntegrationCard } from "~/components/connections/IntegrationCard";
 import { applyServerIssues } from "~/core/forms/apply-server-issues";
 import { contractResolver } from "~/core/forms/contract-resolver";
@@ -102,10 +104,18 @@ function ConnectionsRoute() {
       <p className="mt-1 text-sm text-ink-dim">{t("connections.subtitle")}</p>
 
       {me.data === undefined || me.data === null ? null : (
-        <div className="mt-6 rounded-lg border border-hairline px-4 py-3">
+        <div className="mt-6 flex flex-col gap-4 rounded-lg border border-hairline px-4 py-3">
           <ApprovalModeField mode={me.data.toolApprovalMode} locale={locale} />
+          <GrantTtlField ttl={me.data.grantTtl} locale={locale} />
         </div>
       )}
+
+      <section className="mt-6 rounded-lg border border-hairline px-4 py-3">
+        <h2 className="text-sm font-medium">
+          {t("connections.approvals.chatTitle")}
+        </h2>
+        <ChatToolApprovalList locale={locale} />
+      </section>
 
       {notice !== undefined && isOutcome(notice) ? (
         <Alert

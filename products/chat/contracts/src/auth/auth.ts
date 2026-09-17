@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { grantTtlSchema } from "../integration/grant-scope.ts";
 import { toolApprovalModeSchema } from "../integration/tool-approval-mode.ts";
 
 export const WEB_SESSION_ISSUER = "sk-mcp-auth";
@@ -135,6 +136,7 @@ export const publicUserSchema = z.object({
   phoneVerified: z.boolean(),
   providers: z.array(authProviderSchema),
   toolApprovalMode: toolApprovalModeSchema,
+  grantTtl: grantTtlSchema,
   createdAt: z.iso.datetime(),
 });
 export type PublicUser = z.infer<typeof publicUserSchema>;

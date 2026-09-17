@@ -1,14 +1,20 @@
 import type { ApiError } from "@chat/contracts/http/error";
 import {
+  rememberToolSchema,
   toolApprovalParamsSchema,
+  updateGrantTtlSchema,
   updateToolApprovalModeSchema,
+  type ApprovedToolListResponse,
+  type RememberTool,
   type ToolApprovalParams,
+  type UpdateGrantTtl,
   type UpdateToolApprovalMode,
 } from "@chat/contracts/integration/tool-approval";
 import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpException,
   HttpStatus,
@@ -27,7 +33,10 @@ import { NoStoreInterceptor } from "../auth/no-store.interceptor.ts";
 import { requireAuth, type RequestWithAuth } from "../auth/request-auth.ts";
 import type { UserId } from "../db/ids.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
-import { ToolApprovalRepository } from "./tool-approval.repository.ts";
+import {
+  scopeKeyFor,
+  ToolApprovalRepository,
+} from "./tool-approval.repository.ts";
 import { ToolApprovalService } from "./tool-approval.service.ts";
 
 /**
@@ -61,6 +70,31 @@ export class ToolApprovalsController {
    * already imports `AuthModule`, so the reverse would be a cycle; the mode is
    * read back through `/auth/me`, which needs no module dependency at all.
    */
+  /**
+   * Guard: declared before `:exposedName` for the same reason `mode` is. Nothing
+   * this platform mints is named by a bare verb, but route order is what makes
+   * that a fact rather than a coincidence.
+   */
+  @Get()
+  async list(
+    @Req() request: RequestWithAuth,
+  ): Promise<ApprovedToolListResponse> {
+    const approvals = await this.approvals.listChatTools(
+      this.userIdOf(request),
+    );
+
+    return { approvals: [...approvals] };
+  }
+
+  @Patch("ttl")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setTtl(
+    @Body({ schema: updateGrantTtlSchema }) body: UpdateGrantTtl,
+    @Req() request: RequestWithAuth,
+  ): Promise<void> {
+    await this.modes.setTtl(this.userIdOf(request), body.ttl);
+  }
+
   @Patch("mode")
   @HttpCode(HttpStatus.NO_CONTENT)
   async setMode(
@@ -72,18 +106,25 @@ export class ToolApprovalsController {
   }
 
   /**
-   * Guard: `PUT`, and the body is empty. Remembering the same tool twice is not
-   * an error, and the digest is read from the stored tool rather than sent — a
-   * client-supplied digest would be a client-supplied grant.
+   * Guard: `PUT`, and the body names only the scope. Remembering the same tool
+   * twice is not an error, and the digest is read from the stored definition
+   * rather than sent — a client-supplied digest would be a client-supplied
+   * grant. The expiry is computed here from the reader's own preference for the
+   * same reason.
    */
   @Put(":exposedName")
   @HttpCode(HttpStatus.NO_CONTENT)
   async remember(
     @Param({ schema: toolApprovalParamsSchema }) params: ToolApprovalParams,
+    @Body({ schema: rememberToolSchema }) body: RememberTool,
     @Req() request: RequestWithAuth,
   ): Promise<void> {
     await this.settle(
-      await this.approvals.remember(this.userIdOf(request), params.exposedName),
+      await this.approvals.remember(
+        this.userIdOf(request),
+        params.exposedName,
+        scopeKeyFor(body.scope, body.sessionId),
+      ),
     );
   }
 

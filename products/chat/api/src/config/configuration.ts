@@ -1,6 +1,6 @@
 import { apiEnvSchema } from "@chat/contracts/config/api-env";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 export interface DatabaseConfig {
   url: string;
@@ -225,7 +225,17 @@ export function loadConfig(): AppConfig {
       documentCommand: env.CHAT_MCP_XML_CMD,
     },
     codex: {
-      home: env.CHAT_CODEX_HOME,
+      /**
+       * Guard: resolved against the process's working directory once, here. The
+       * value is handed to a child process that is told to run somewhere else
+       * entirely (`--cd <workspace>`), so a relative path only works for as long
+       * as nothing changes where the server was started from — and the failure
+       * it produces is an agent that says it has no credentials.
+       */
+      home:
+        env.CHAT_CODEX_HOME === undefined
+          ? undefined
+          : resolve(env.CHAT_CODEX_HOME),
       binary: env.CHAT_CODEX_BIN,
       baseUrl: env.CHAT_CODEX_BASE_URL,
       model: env.CHAT_CODEX_MODEL,

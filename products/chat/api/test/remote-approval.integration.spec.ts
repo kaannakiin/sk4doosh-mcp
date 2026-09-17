@@ -2,7 +2,7 @@ import type { ConfigService } from "@nestjs/config";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import type { AppConfig } from "../src/config/configuration.ts";
-import { RemoteToolApprovalService } from "../src/chat/remote-tool-approval.service.ts";
+import { ToolApprovalGateService } from "../src/chat/tool-approval-gate.service.ts";
 import { AuthorizationDiscoveryService } from "../src/connections/authorization-discovery.service.ts";
 import { ClientRegistrationService } from "../src/connections/client-registration.service.ts";
 import { CredentialCipherService } from "../src/connections/credential-cipher.service.ts";
@@ -18,7 +18,10 @@ import { exposedToolNameFor } from "../src/connections/remote-tool-names.ts";
 import { ToolApprovalRepository } from "../src/connections/tool-approval.repository.ts";
 import { ToolApprovalService } from "../src/connections/tool-approval.service.ts";
 import { DbService } from "../src/db/db.service.ts";
+import type { SessionId } from "@chat/contracts/chat/session";
+
 import type { UserId } from "../src/db/ids.ts";
+import { GLOBAL_SCOPE } from "../src/connections/tool-approval.repository.ts";
 import { I18nService } from "../src/i18n/i18n.service.ts";
 import { mcpStub, type StubTool } from "./mcp-stub.ts";
 import { startStub, type Stub } from "./oauth-stub.ts";
@@ -50,7 +53,7 @@ withDatabase("remote tool approvals", () => {
   let toolRows: IntegrationToolRepository;
   let approvalRows: ToolApprovalRepository;
   let approvals: ToolApprovalService;
-  let gates: RemoteToolApprovalService;
+  let gates: ToolApprovalGateService;
   let registration: IntegrationRegistrationService;
   let stub: Stub | undefined;
   const users: bigint[] = [];
@@ -62,7 +65,7 @@ withDatabase("remote tool approvals", () => {
     toolRows = new IntegrationToolRepository(db);
     approvalRows = new ToolApprovalRepository(db);
     approvals = new ToolApprovalService(approvalRows, toolRows);
-    gates = new RemoteToolApprovalService(approvalRows, new I18nService());
+    gates = new ToolApprovalGateService(approvalRows, new I18nService());
     const discovery = new AuthorizationDiscoveryService(config);
     registration = new IntegrationRegistrationService(
       integrations,
@@ -126,9 +129,16 @@ withDatabase("remote tool approvals", () => {
     );
   }
 
+  const SCOPED_SESSION = "00000000-0000-7000-8000-000000000001" as SessionId;
+
   async function ask(userId: UserId, exposedName: string): Promise<boolean> {
-    const gate = await gates.gateFor(userId, await catalogMap(userId), "en");
-    const status = gate(exposedName);
+    const gate = await gates.gateFor(
+      userId,
+      SCOPED_SESSION,
+      await catalogMap(userId),
+      "en",
+    );
+    const status = gate(exposedName, false);
 
     return typeof status === "object" && status.type === "user-approval";
   }
@@ -139,7 +149,7 @@ withDatabase("remote tool approvals", () => {
     const exposed = exposedToolNameFor(integration.id, "list_zones");
 
     expect(await ask(userId, exposed)).toBe(true);
-    expect(await approvals.remember(userId, exposed)).toBe("changed");
+    expect(await approvals.remember(userId, exposed, GLOBAL_SCOPE)).toBe("changed");
     expect(await ask(userId, exposed)).toBe(false);
 
     const rows = await db.client.toolApproval.count({
@@ -154,7 +164,7 @@ withDatabase("remote tool approvals", () => {
       { name: "list_zones", description: "Lists zones." },
     ]);
     const exposed = exposedToolNameFor(integration.id, "list_zones");
-    await approvals.remember(userId, exposed);
+    await approvals.remember(userId, exposed, GLOBAL_SCOPE);
     expect(await ask(userId, exposed)).toBe(false);
 
     await integrations.replaceTools(
@@ -180,7 +190,7 @@ withDatabase("remote tool approvals", () => {
     const userId = await owner();
     const integration = await connect(userId, [{ name: "list_zones" }]);
     const exposed = exposedToolNameFor(integration.id, "list_zones");
-    await approvals.remember(userId, exposed);
+    await approvals.remember(userId, exposed, GLOBAL_SCOPE);
 
     expect(await approvals.forget(userId, exposed)).toBe("changed");
     expect(await ask(userId, exposed)).toBe(true);
@@ -193,7 +203,7 @@ withDatabase("remote tool approvals", () => {
     ]);
     const exposed = exposedToolNameFor(integration.id, "delete_zone");
 
-    expect(await approvals.remember(userId, exposed)).toBe("changed");
+    expect(await approvals.remember(userId, exposed, GLOBAL_SCOPE)).toBe("changed");
     expect(await ask(userId, exposed)).toBe(true);
   });
 
@@ -212,7 +222,7 @@ withDatabase("remote tool approvals", () => {
     const userId = await owner();
     const integration = await connect(userId, [{ name: "list_zones" }]);
     const exposed = exposedToolNameFor(integration.id, "list_zones");
-    await approvals.remember(userId, exposed);
+    await approvals.remember(userId, exposed, GLOBAL_SCOPE);
 
     await approvalRows.setMode(userId, "always_ask");
     expect(await ask(userId, exposed)).toBe(true);
@@ -232,6 +242,7 @@ withDatabase("remote tool approvals", () => {
       await approvals.remember(
         userId,
         exposedToolNameFor(integration.id, "delete_everything"),
+        GLOBAL_SCOPE,
       ),
     ).toBe("unknown_tool");
   });
@@ -242,6 +253,7 @@ withDatabase("remote tool approvals", () => {
     await approvals.remember(
       userId,
       exposedToolNameFor(integration.id, "list_zones"),
+      GLOBAL_SCOPE,
     );
 
     const row = await db.client.integration.findFirstOrThrow({

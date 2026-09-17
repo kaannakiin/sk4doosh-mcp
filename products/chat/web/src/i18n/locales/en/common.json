@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Reader Console",
-    "subtitle": "Ask about a spreadsheet or an XML document. Every read waits for your approval."
+    "subtitle": "Ask about your files and the systems you have connected."
   },
   "sessions": {
     "title": "Conversations",
@@ -16,7 +16,7 @@
     "titleLabel": "Conversation title"
   },
   "composer": {
-    "placeholder": "Ask about the attached files",
+    "placeholder": "Ask a question",
     "hint": "Enter sends · Shift+Enter for a new line",
     "send": "Send",
     "stop": "Stop",
@@ -24,7 +24,7 @@
     "collapse": "Shrink the input"
   },
   "conversation": {
-    "empty": "Attach a file, then ask a question.",
+    "empty": "Attach a file or connect a server, then ask.",
     "you": "Your message",
     "assistant": "Assistant reply",
     "thinking": "Thinking",
@@ -69,11 +69,10 @@
       "project_records": "project_records",
       "codex_task": "codex_task"
     },
-    "remember": "Don't ask again for this tool",
-    "rememberHint": "Applies to this server only, until you forget it on the Integrations page.",
+    "remember": "Don't ask again",
     "codex": {
       "starting": "Starting",
-      "truncated": "Some of the result was longer than can be shown here.",
+      "truncated": "Part of the result was too long to show.",
       "commands_one": "{{count}} command",
       "commands_other": "{{count}} commands",
       "changes_one": "{{count}} file changed",
@@ -87,6 +86,10 @@
         "codex_aborted": "The coding agent was stopped before it finished.",
         "codex_failed": "The coding agent could not finish the task."
       }
+    },
+    "rememberScope": {
+      "session": "In this conversation",
+      "global": "Everywhere"
     }
   },
   "errors": {
@@ -106,7 +109,7 @@
   },
   "auth": {
     "brand": {
-      "tagline": "A quiet console for reading what your files actually say."
+      "tagline": "A quiet console for asking what your data actually says."
     },
     "login": {
       "title": "Welcome back",
@@ -274,7 +277,7 @@
       "label": "MCP server address",
       "placeholder": "https://example.com/mcp",
       "submit": "Add",
-      "hint": "The server is contacted straight away, so this can take a few seconds."
+      "hint": "The server is contacted now, so this can take a few seconds."
     },
     "status": {
       "disconnected": "Not connected",
@@ -318,15 +321,23 @@
     "approvals": {
       "show": "Remembered tools",
       "hide": "Hide",
-      "empty": "Nothing remembered for this server yet.",
-      "loading": "Loading remembered tools…",
+      "empty": "No remembered approvals for this server.",
+      "loading": "Loading remembered approvals…",
       "grantedAt": "Approved {{when}}",
       "changed": "Definition changed",
       "withdrawn": "No longer offered",
       "destructive": "Always asks",
       "forget": "Forget",
       "count_one": "{{count}} remembered",
-      "count_other": "{{count}} remembered"
+      "count_other": "{{count}} remembered",
+      "scope": {
+        "session": "This conversation",
+        "global": "Everywhere"
+      },
+      "expired": "Lapsed",
+      "expiresAt": "Lapses {{when}}",
+      "chatTitle": "This product's own tools",
+      "chatEmpty": "No remembered approvals."
     },
     "mode": {
       "label": "Tool approval",
@@ -334,7 +345,18 @@
       "always_ask": "Ask every time",
       "hint": {
         "remember": "A tool you have approved runs without asking again, unless its definition changes or the server says it can modify data.",
-        "always_ask": "Every tool call is asked for. Your remembered choices are kept but not used."
+        "always_ask": "Every tool that reads or changes your data is asked for, every time. Your remembered approvals are kept but not used."
+      }
+    },
+    "ttl": {
+      "label": "Remembered approvals lapse",
+      "day": "After a day",
+      "week": "After a week",
+      "never": "Never",
+      "hint": {
+        "day": "A new approval lapses a day after you give it. Approvals you already gave keep their own terms.",
+        "week": "A new approval lapses a week after you give it. Approvals you already gave keep their own terms.",
+        "never": "An approval stays until you forget it."
       }
     }
   }

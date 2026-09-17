@@ -1,0 +1,194 @@
+import { describe, expect, it } from "vitest";
+
+import { decideToolApproval } from "../src/tools/approval-decision.ts";
+import {
+  CHAT_TOOL_POLICY,
+  toolApprovalPolicySchema,
+} from "../src/tools/approval-policy.ts";
+import { grantExpiryFor } from "../src/integration/grant-scope.ts";
+import { CHAT_TOOL_DEFINITIONS } from "../src/tools/tool-fingerprint.ts";
+import { chatToolNameSchema } from "../src/tools/tool-name.ts";
+
+const DIGEST = "a".repeat(64);
+const OTHER = "b".repeat(64);
+const NOW = new Date("2026-09-17T12:00:00.000Z");
+
+const base = {
+  policy: "askable",
+  mode: "remember",
+  destructive: false,
+  currentDigest: DIGEST,
+  grants: [],
+  now: NOW,
+} as const;
+
+describe("decideToolApproval", () => {
+  it("lets an auto tool run without consulting anything", () => {
+    expect(
+      decideToolApproval({ ...base, policy: "auto", destructive: true }),
+    ).toEqual({ outcome: "allow", reason: "policy_auto" });
+  });
+
+  it("asks for an always tool no matter what was remembered", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        policy: "always",
+        grants: [{ digest: DIGEST, expiresAt: undefined }],
+      }),
+    ).toEqual({ outcome: "ask", reason: "policy_always" });
+  });
+
+  it("asks for a declared destructive tool even when remembered", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        destructive: true,
+        grants: [{ digest: DIGEST, expiresAt: undefined }],
+      }),
+    ).toEqual({ outcome: "ask", reason: "declared_destructive" });
+  });
+
+  it("asks for everything in always_ask, keeping the memory", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        mode: "always_ask",
+        grants: [{ digest: DIGEST, expiresAt: undefined }],
+      }),
+    ).toEqual({ outcome: "ask", reason: "mode_always_ask" });
+  });
+
+  it("asks for a tool it has never seen", () => {
+    expect(decideToolApproval(base)).toEqual({
+      outcome: "ask",
+      reason: "not_remembered",
+    });
+  });
+
+  it("allows a remembered tool whose definition still matches", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        grants: [{ digest: DIGEST, expiresAt: undefined }],
+      }),
+    ).toEqual({ outcome: "allow", reason: "remembered" });
+  });
+
+  it("asks again when the definition changed", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        grants: [{ digest: OTHER, expiresAt: undefined }],
+      }),
+    ).toEqual({ outcome: "ask", reason: "definition_changed" });
+  });
+
+  it("separates a lapsed grant from one that was never given", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        grants: [
+          { digest: DIGEST, expiresAt: new Date(NOW.getTime() - 1000) },
+        ],
+      }),
+    ).toEqual({ outcome: "ask", reason: "grant_expired" });
+  });
+
+  it("honours a grant that is still live", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        grants: [
+          { digest: DIGEST, expiresAt: new Date(NOW.getTime() + 1000) },
+        ],
+      }),
+    ).toEqual({ outcome: "allow", reason: "remembered" });
+  });
+
+  /**
+   * A subject can hold an everywhere grant and a conversation-scoped one at the
+   * same time. The narrow one is typically the newer, given after the definition
+   * changed, so ranking the two by scope would let the stale row decide.
+   */
+  it("consults every live grant rather than ranking them", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        grants: [
+          { digest: OTHER, expiresAt: undefined },
+          { digest: DIGEST, expiresAt: undefined },
+        ],
+      }),
+    ).toEqual({ outcome: "allow", reason: "remembered" });
+  });
+
+  it("ignores an expired grant when deciding the digest matched", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        grants: [
+          { digest: DIGEST, expiresAt: new Date(NOW.getTime() - 1000) },
+          { digest: OTHER, expiresAt: undefined },
+        ],
+      }),
+    ).toEqual({ outcome: "ask", reason: "definition_changed" });
+  });
+});
+
+describe("CHAT_TOOL_POLICY", () => {
+  it("declares a posture for every tool this product ships", () => {
+    for (const name of chatToolNameSchema.options) {
+      expect(toolApprovalPolicySchema.parse(CHAT_TOOL_POLICY[name])).toBe(
+        CHAT_TOOL_POLICY[name],
+      );
+    }
+  });
+
+  /**
+   * Remembering `codex_task` would make the gate answer `approved`, which runs
+   * it inline inside a step where the chunk watchdog kills it at a minute.
+   */
+  it("keeps the coding agent unrememberable", () => {
+    expect(CHAT_TOOL_POLICY.codex_task).toBe("always");
+  });
+
+  it("stops asking about the tool search", () => {
+    expect(CHAT_TOOL_POLICY.find_tools).toBe("auto");
+  });
+});
+
+describe("CHAT_TOOL_DEFINITIONS", () => {
+  it("fingerprints every tool", () => {
+    for (const name of chatToolNameSchema.options) {
+      expect(CHAT_TOOL_DEFINITIONS[name]).toBeDefined();
+    }
+  });
+
+  /**
+   * The tool's own description is read out of the locale files at call time, so
+   * a fingerprint that carried it would change with the reader's language and
+   * drop every grant they had given.
+   */
+  it("carries no localized prose", () => {
+    const serialized = JSON.stringify(CHAT_TOOL_DEFINITIONS.codex_task);
+
+    expect(serialized).toContain("sandboxed directory");
+    expect(serialized).not.toContain("Delegate a coding");
+  });
+});
+
+describe("grantExpiryFor", () => {
+  it("never lapses when the reader asked for never", () => {
+    expect(grantExpiryFor("never", NOW)).toBeUndefined();
+  });
+
+  it("lapses a day and a week out", () => {
+    expect(grantExpiryFor("day", NOW)?.toISOString()).toBe(
+      "2026-09-18T12:00:00.000Z",
+    );
+    expect(grantExpiryFor("week", NOW)?.toISOString()).toBe(
+      "2026-09-24T12:00:00.000Z",
+    );
+  });
+});

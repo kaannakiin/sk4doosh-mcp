@@ -1,5 +1,6 @@
 import type { IntegrationId } from "@chat/contracts/integration/integration";
 import type { ApprovedTool } from "@chat/contracts/integration/tool-approval";
+import { isChatToolName } from "@chat/contracts/tools/tool-name";
 import { Injectable } from "@nestjs/common";
 
 import type { UserId } from "../db/ids.ts";
@@ -8,7 +9,11 @@ import {
   type CatalogTool,
 } from "./integration-tool.repository.ts";
 import { exposedToolNameFor } from "./remote-tool-names.ts";
-import { ToolApprovalRepository } from "./tool-approval.repository.ts";
+import {
+  approvalKey,
+  ToolApprovalRepository,
+  type ApprovalRow,
+} from "./tool-approval.repository.ts";
 
 export type ApprovalChange = "changed" | "unknown_tool";
 
@@ -26,9 +31,9 @@ export class ToolApprovalService {
    * integration — so this is the one place that can turn it back into a row, and
    * a parser would let a caller name a pair that was never offered to them.
    *
-   * @param userId the subject of the trusted session
-   * @param exposedName the name the model was offered the tool under
-   * @returns the catalog row, or `undefined` when this reader has no such tool
+   * Guard: a first-party name is recognised before the catalog is read at all.
+   * The two namespaces cannot collide: a derived exposed name always begins with
+   * `i<8 hex>_`, and no name in this product's vocabulary has that shape.
    */
   private async resolve(
     userId: UserId,
@@ -43,7 +48,17 @@ export class ToolApprovalService {
     );
   }
 
-  async remember(userId: UserId, exposedName: string): Promise<ApprovalChange> {
+  async remember(
+    userId: UserId,
+    exposedName: string,
+    scopeKey: string,
+  ): Promise<ApprovalChange> {
+    if (isChatToolName(exposedName)) {
+      await this.approvals.rememberChatTool(userId, exposedName, scopeKey);
+
+      return "changed";
+    }
+
     const tool = await this.resolve(userId, exposedName);
     if (tool === undefined) {
       return "unknown_tool";
@@ -53,12 +68,22 @@ export class ToolApprovalService {
       userId,
       tool.integrationPublicId,
       tool.remoteName,
+      scopeKey,
     ))
       ? "changed"
       : "unknown_tool";
   }
 
-  async forget(userId: UserId, exposedName: string): Promise<ApprovalChange> {
+  async forget(
+    userId: UserId,
+    exposedName: string,
+  ): Promise<ApprovalChange> {
+    if (isChatToolName(exposedName)) {
+      return (await this.approvals.forget(userId, exposedName))
+        ? "changed"
+        : "unknown_tool";
+    }
+
     const tool = await this.resolve(userId, exposedName);
     if (tool === undefined) {
       return "unknown_tool";
@@ -66,20 +91,18 @@ export class ToolApprovalService {
 
     return (await this.approvals.forget(
       userId,
-      tool.integrationPublicId,
-      tool.remoteName,
+      approvalKey(tool.integrationPublicId, tool.remoteName),
     ))
       ? "changed"
       : "unknown_tool";
   }
 
   /**
-   * Guard: `definitionChanged` is answered here rather than left to the page.
-   * A grant whose digest no longer matches will ask again on the next call, and
-   * a list that showed it as live would misreport what the reader consented to.
+   * Guard: `definitionChanged`, `expired` and `available` are answered here
+   * rather than left to the page. Each is a reason a remembered approval will
+   * not be honoured, and a list that showed such a grant as live would misreport
+   * what the reader consented to.
    *
-   * @param userId the subject of the trusted session
-   * @param integrationId the integration to list
    * @returns the remembered tools, or `undefined` when no such integration is visible
    */
   async listFor(
@@ -88,14 +111,42 @@ export class ToolApprovalService {
   ): Promise<readonly ApprovedTool[] | undefined> {
     const rows = await this.approvals.listFor(userId, integrationId);
 
-    return rows?.map((row) => ({
-      toolName: row.toolName,
-      exposedName: exposedToolNameFor(integrationId, row.toolName),
-      approvedAt: row.approvedAt.toISOString(),
-      definitionChanged:
-        row.currentDigest !== undefined && row.currentDigest !== row.digest,
-      destructive: row.destructive,
-      available: row.available,
-    }));
+    return rows?.map((row) =>
+      project(row, exposedToolNameFor(integrationId, row.toolName), false),
+    );
   }
+
+  /**
+   * The reader's grants for the tools this product ships.
+   *
+   * Guard: a first-party tool is named by itself on the wire. Its subject key,
+   * the name the model called it by and the name the forget request carries are
+   * all the same string, which is what lets both families share one route.
+   */
+  async listChatTools(userId: UserId): Promise<readonly ApprovedTool[]> {
+    const rows = await this.approvals.listChatTools(userId);
+
+    return rows.map((row) => project(row, row.toolName, true));
+  }
+}
+
+function project(
+  row: ApprovalRow,
+  exposedName: string,
+  firstParty: boolean,
+): ApprovedTool {
+  return {
+    subjectKey: row.subjectKey,
+    toolName: row.toolName,
+    exposedName,
+    firstParty,
+    scope: row.scope,
+    approvedAt: row.approvedAt.toISOString(),
+    expiresAt: row.expiresAt?.toISOString() ?? null,
+    expired: row.expired,
+    definitionChanged:
+      row.currentDigest !== undefined && row.currentDigest !== row.digest,
+    destructive: row.destructive,
+    available: row.available,
+  };
 }

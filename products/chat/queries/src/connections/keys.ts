@@ -10,4 +10,6 @@ export const connectionKeys = {
   approvalsAll: () => [...connectionKeys.all, "approvals"] as const,
   approvals: (integrationId: string) =>
     [...connectionKeys.approvalsAll(), integrationId] as const,
+  chatToolApprovals: () =>
+    [...connectionKeys.approvalsAll(), "chat-tools"] as const,
 } as const;

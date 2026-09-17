@@ -1,4 +1,6 @@
+import { policyFor } from "@chat/contracts/tools/approval-policy";
 import { toolFilePathSchema } from "@chat/contracts/tools/tool-file-path";
+import { isChatToolName } from "@chat/contracts/tools/tool-name";
 import type { ToolSet } from "ai";
 
 export type Materializer = (filePath: string) => Promise<void>;
@@ -17,6 +19,12 @@ export type Materializer = (filePath: string) => Promise<void>;
  * Guard: the tool is spread and only `execute` replaced, which keeps
  * `inputSchema`, `description` and `type` intact. Re-registering instead would
  * demote every part the interface renders from `tool-<name>` to `dynamic-tool`.
+ *
+ * Guard: the tool's approval posture rides along in `metadata`, which the sdk
+ * copies onto the ui part as `toolMetadata`. That is the only channel there is:
+ * an approval status carries a reason string and nothing else, so without this
+ * the page cannot tell a tool it may offer to remember from one the server will
+ * refuse to — and it used to offer the control either way.
  */
 export function withMaterialization(
   tools: ToolSet,
@@ -33,6 +41,9 @@ export function withMaterialization(
         name,
         {
           ...tool,
+          ...(isChatToolName(name)
+            ? { metadata: { policy: policyFor(name) } }
+            : {}),
           execute: async (input: unknown, options: never) => {
             const parsed = toolFilePathSchema.safeParse(input);
             if (parsed.success) {

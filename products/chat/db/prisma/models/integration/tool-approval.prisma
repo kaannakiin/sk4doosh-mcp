@@ -1,5 +1,25 @@
 /// A tool one reader decided not to be asked about again.
 ///
+/// Guard: identity is `subject_key`, not the integration and tool name it was
+/// once keyed by. A first-party tool has no integration row to be named by, and
+/// the reader approving one is approving the same kind of thing whether the
+/// model reached it through a remote server or not — keying them apart is what
+/// left this product trusting its own readers less than a server it had never
+/// met. The key is `<integration public id>:<tool name>` for a discovered tool
+/// and the bare name for a shipped one; the two shapes cannot collide because
+/// ':' appears in neither half.
+///
+/// Guard: the exposed name never reaches this table. That name is derived and
+/// lossy, and `ToolApprovalService.resolve` already refuses to invert it by
+/// splitting the string — storing it would make that refusal pointless.
+///
+/// Guard: `integration_id` is no longer identity and is kept only so removing an
+/// integration still reaps the grants that named its tools. `ON DELETE CASCADE`
+/// is the one form of that a code path cannot forget to run. The cost is a
+/// second value that can disagree with `subject_key`, which no CHECK can catch
+/// because verifying it needs a subquery — both are written from one resolved
+/// row in `remember()`, and that is the whole of the guarantee.
+///
 /// Guard: there is no relation to `IntegrationTool`. That table is rewritten
 /// wholesale on every refresh, so a foreign key would cascade these rows away
 /// hourly, and a server answering with an empty list during an outage would
@@ -14,18 +34,35 @@
 /// that changed with the definition would leave a dead row behind every time a
 /// server edited a description, with nothing to reap them and three rows for one
 /// tool on the reader's page.
+///
+/// Guard: `scope_key` is `''` for a grant that reaches everywhere, never null. It
+/// is part of the primary key, and a primary key may not contain nulls under any
+/// setting — PG15's `UNIQUE NULLS NOT DISTINCT` is a unique constraint and not a
+/// primary key, and Prisma's compound-unique input has no way to spell null,
+/// which is what `upsert` addresses this table by.
+///
+/// Guard: an expired grant is kept, not swept. Expiry means the row goes quiet;
+/// deleting it is a different and stronger thing, and a background job whose only
+/// verb is DELETE has no business on the table that records consent. Re-granting
+/// refreshes the same row through the same key.
 model ToolApproval {
-  userId           BigInt   @map("user_id")
-  integrationId    BigInt   @map("integration_id")
-  toolName         String   @map("tool_name")
-  definitionDigest Bytes    @map("definition_digest")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  userId           BigInt    @map("user_id")
+  subjectKey       String    @map("subject_key")
+  scopeKey         String    @default("") @map("scope_key")
+  integrationId    BigInt?   @map("integration_id")
+  toolName         String    @map("tool_name")
+  definitionDigest Bytes     @map("definition_digest")
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Guard: `onDelete: Cascade` is stated although the column is now optional.
+  /// Prisma defaults an optional relation to `SetNull`, and accepting that
+  /// default silently is the one way this change stops reaping anything.
+  integration Integration? @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
-  @@id([userId, integrationId, toolName])
+  @@id([userId, subjectKey, scopeKey])
   @@index([integrationId], map: "tool_approval_integration_idx")
   @@map("tool_approval")
 }

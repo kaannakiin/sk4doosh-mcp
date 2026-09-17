@@ -1,11 +1,9 @@
 import type { Locale } from "@chat/contracts/common/locale";
-import type { SessionId } from "@chat/contracts/chat/session";
 import type { StreamRequest } from "@chat/contracts/chat/stream-request";
 import type { ApiError } from "@chat/contracts/http/error";
 import type { UserId } from "../db/ids.ts";
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { SystemModelMessage } from "ai";
 import {
   convertToModelMessages,
   createIdGenerator,
@@ -25,11 +23,11 @@ import type { AppConfig } from "../config/configuration.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import { LlmService } from "../llm/llm.service.ts";
 import { ReaderSessionService } from "../mcp/reader-session.service.ts";
-import { approvalFor } from "../mcp/tool-approval.ts";
 import { attachmentManifest } from "./attachment-manifest.ts";
 import { ChatHistoryService } from "./chat-history.service.ts";
-import { RemoteToolApprovalService } from "./remote-tool-approval.service.ts";
+import { ToolApprovalGateService } from "./tool-approval-gate.service.ts";
 import { RemoteToolSetService } from "./remote-tool-set.service.ts";
+import { SystemPromptService } from "./system-prompt.service.ts";
 
 /**
  * One step is one model generation. A read that needs describe, then read, then
@@ -69,8 +67,9 @@ export class ChatService {
     private readonly llm: LlmService,
     private readonly history: ChatHistoryService,
     private readonly remote: RemoteToolSetService,
-    private readonly approvals: RemoteToolApprovalService,
+    private readonly approvals: ToolApprovalGateService,
     private readonly codex: CodexToolService,
+    private readonly prompt: SystemPromptService,
   ) {
     this.approvalSecret = config.get("toolApprovalSecret", { infer: true });
   }
@@ -101,7 +100,6 @@ export class ChatService {
 
     const abort = abortOnDisconnect(response);
 
-    const manifest = await this.manifest(userId, request.sessionId, locale);
     /**
      * Guard: converted twice, and the second pass is the one that matters.
      * `toModelOutput` is applied by `convertToModelMessages`, but only when it is
@@ -116,10 +114,11 @@ export class ChatService {
      * every turn after it, for the life of the conversation.
      */
     const seed = await convertToModelMessages(messages);
-    const [local, codex, surface] = await Promise.all([
+    const [local, codex, surface, attachments] = await Promise.all([
       this.readers.toolsFor(userId, request.sessionId),
       Promise.resolve(this.codex.toolsFor(userId, request.sessionId, locale)),
       this.remote.surfaceFor(userId, seed, locale),
+      this.store.list(userId, request.sessionId),
     ]);
     const tools = { ...local, ...codex, ...surface.tools };
     const history = await convertToModelMessages(messages, {
@@ -128,23 +127,35 @@ export class ChatService {
     });
     const gate = await this.approvals.gateFor(
       userId,
+      request.sessionId,
       surface.byExposedName,
       locale,
     );
     const localNames = [...Object.keys(local), ...Object.keys(codex)];
+    const codexInstructions = this.codex.instructionsFor(locale);
 
     const result = await streamText({
       model: this.llm.model(),
-      instructions: [
+      /**
+       * Guard: these are `instructions`, never extra elements of `messages`.
+       * `collectToolApprovals` in the SDK resumes an approved tool call only
+       * when the last model message is the `tool` message carrying the approval
+       * response — anything appended after it makes the approval invisible, the
+       * tool never runs, and the provider receives a tool call with no result.
+       * The observed failure is an empty assistant turn plus an infinite
+       * auto-resend loop, because
+       * `lastAssistantMessageIsCompleteWithApprovalResponses` on the client
+       * stays true for a part that can never leave `approval-responded`.
+       */
+      instructions: this.prompt.compose(
         {
-          role: "system",
-          content: this.i18n.t("chat:system.instructions", {}, locale),
+          toolNames: localNames,
+          attachments: attachmentManifest(attachments),
+          remote: surface.instructions,
+          codex: codexInstructions,
         },
-        manifest,
-        ...(surface.instructions === undefined
-          ? []
-          : [{ role: "system" as const, content: surface.instructions }]),
-      ],
+        locale,
+      ),
       messages: history,
       tools,
       /**
@@ -178,17 +189,13 @@ export class ChatService {
        */
       enhancedOptions: { enableStreamingSynthesis: false },
       /**
-       * Guard: the remote gate answers first and only for names it minted. A
-       * local reader tool still goes through `approvalFor`'s allowlist, so the
-       * closed surface this product ships keeps deciding by name at compile
-       * time and only discovered tools are decided at run time.
+       * Guard: one gate answers for every tool, shipped or discovered. It used
+       * to be two — a compile-time allowlist for this product's own readers and
+       * a per-reader table for everything else — and that split is how the
+       * shipped tools ended up being the ones that could never be remembered.
        */
       toolApproval: ({ toolCall }) =>
-        gate(toolCall.toolName) ??
-        approvalFor(
-          { toolName: toolCall.toolName, dynamic: toolCall.dynamic === true },
-          (key) => this.i18n.t(key, {}, locale),
-        ),
+        gate(toolCall.toolName, toolCall.dynamic === true),
     });
 
     await pipeUIMessageStreamToResponse({
@@ -207,48 +214,6 @@ export class ChatService {
           ),
       }),
     });
-  }
-
-  /**
-   * Guard: this is a second entry in `instructions`, never an extra element of
-   * `messages`. `collectToolApprovals` in the SDK resumes an approved tool call
-   * only when the last model message is the `tool` message carrying the approval
-   * response — anything appended after it makes the approval invisible, the tool
-   * never runs, and the provider receives a tool call with no result. The
-   * observed failure is an empty assistant turn plus an infinite auto-resend
-   * loop, because `lastAssistantMessageIsCompleteWithApprovalResponses` on the
-   * client stays true for a part that can never leave `approval-responded`.
-   */
-  private async manifest(
-    userId: UserId,
-    session: SessionId,
-    locale: Locale,
-  ): Promise<SystemModelMessage> {
-    const { readable, images } = attachmentManifest(
-      await this.store.list(userId, session),
-    );
-
-    const sections: string[] = [];
-    if (readable.length > 0) {
-      sections.push(
-        `${this.i18n.t("chat:system.readable_files", {}, locale)}\n${readable.join("\n")}`,
-      );
-    }
-    if (images.length > 0) {
-      sections.push(
-        `${this.i18n.t("chat:system.image_files", {}, locale)}\n${images.join("\n")}`,
-      );
-    }
-
-    const files =
-      sections.length === 0
-        ? this.i18n.t("chat:system.no_files", {}, locale)
-        : sections.join("\n\n");
-
-    return {
-      role: "system",
-      content: this.i18n.t("chat:system.files", { files }, locale),
-    };
   }
 
   /**

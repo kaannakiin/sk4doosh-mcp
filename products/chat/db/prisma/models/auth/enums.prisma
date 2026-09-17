@@ -17,3 +17,9 @@ enum ToolApprovalMode {
   always_ask
   remember
 }
+
+enum GrantTtl {
+  day
+  week
+  never
+}

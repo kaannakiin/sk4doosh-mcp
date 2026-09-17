@@ -29,6 +29,20 @@ export class CodexToolService {
   }
 
   /**
+   * What the model is told about the agent, or nothing when there is none.
+   *
+   * Guard: a separate system message rather than a line in the standing
+   * instructions, because the agent is conditional and those are not. Describing
+   * a tool that is not in the turn's tool set is how a model ends up promising
+   * work it has no way to do.
+   */
+  instructionsFor(locale: Locale): string | undefined {
+    return this.client.configured
+      ? this.i18n.t("chat:tools.codex.manifest", {}, locale)
+      : undefined;
+  }
+
+  /**
    * The coding agent half of a turn's tool surface.
    *
    * Guard: an unconfigured deployment offers nothing rather than offering a tool
@@ -43,6 +57,7 @@ export class CodexToolService {
 
     return {
       codex_task: tool({
+        metadata: { policy: "always" },
         description: this.i18n.t("chat:tools.codex.description", {}, locale),
         inputSchema: codexTaskInputSchema,
         execute: (input: CodexTaskInput, { abortSignal }) =>
