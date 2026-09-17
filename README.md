@@ -28,6 +28,7 @@ so parity is a test result rather than a claim.
 | [sdks/nestjs](sdks/nestjs)                                           | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md)) |
 | [sdks/nestjs/samples/agent-client](sdks/nestjs/samples/agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                             |
 | [packages/file-core](packages/file-core)                             | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                     |
+| [packages/ooxml-core](packages/ooxml-core)                           | Published shared reader for OOXML containers: zip, OPC, relationships, content types                             |
 | [packages/excel-mcp](packages/excel-mcp)                             | Standalone published product: an MCP server that reads local Excel workbooks                                     |
 | [packages/xml-mcp](packages/xml-mcp)                                 | Standalone published product: an MCP server that reads local XML documents                                       |
 | [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                   |
@@ -39,7 +40,7 @@ so parity is a test result rather than a claim.
 `packages/xml-lab` is an evidence harness with no shipping surface.
 
 The HTTP catalog (`packages/core`, both SDKs) and the file-backed servers (`packages/file-core`,
-`excel-mcp`, `xml-mcp`) are two separate product shapes that share no runtime code path. One is a
+`packages/ooxml-core`, `excel-mcp`, `xml-mcp`) are two separate product shapes that share no runtime code path. One is a
 library you embed in your backend; the others are servers you run against local files.
 
 `products/chat` is a third line, and it shares only the toolchain: no `packages/*` or `sdks/*`

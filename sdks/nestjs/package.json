@@ -10,8 +10,8 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "lint": "eslint .",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "lint": "eslint . --max-warnings 0",
     "check-types": "tsc -p tsconfig.test.json",
     "test": "vitest run"
   },

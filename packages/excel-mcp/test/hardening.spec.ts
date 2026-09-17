@@ -16,20 +16,21 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
-import { createDocumentCache, sheetSource } from "../src/document.js";
-import { createHandlers, type ToolHandlers } from "../src/tools.js";
-import { parseCsv } from "../src/csv.js";
-import { limits } from "../src/limits.js";
-import { decodeCursor } from "../src/cursor.js";
-import { selectSheetName } from "../src/sheetjs-workbook.js";
-import { parseSheetJs } from "../src/sheetjs-workbook.js";
-import { collectValidations } from "../src/validations.js";
-import { validateCondition } from "../src/predicate.js";
-import { declaredTablesOf } from "../src/tables.js";
-import { buildColumnIndex, resolveColumn } from "../src/columns.js";
-import { normalizeCell } from "../src/cell-value.js";
-import { readSheet } from "../src/read-sheet.js";
+} from "../src/platform/paths.js";
+import { createDocumentCache, sheetSource } from "../src/format/document.js";
+import type { ToolHandlers } from "../src/tools/definitions.js";
+import { createHandlers } from "../src/tools/handlers.js";
+import { parseCsv } from "../src/format/csv.js";
+import { limits } from "../src/platform/limits.js";
+import { decodeCursor } from "../src/grid/cursor.js";
+import { selectSheetName } from "../src/format/sheetjs-workbook.js";
+import { parseSheetJs } from "../src/format/sheetjs-workbook.js";
+import { collectValidations } from "../src/metadata/validations.js";
+import { validateCondition } from "../src/grid/predicate.js";
+import { declaredTablesOf } from "../src/metadata/tables.js";
+import { buildColumnIndex, resolveColumn } from "../src/grid/columns.js";
+import { normalizeCell } from "../src/grid/cell-value.js";
+import { readSheet } from "../src/grid/read-sheet.js";
 
 let directory: string;
 let root: WorkbookRoot;
@@ -480,10 +481,7 @@ describe("snapshot and cursor contracts (#26 #27 #28 #33)", () => {
     );
     expect(loaded.format).toBe("xlsx");
     if (loaded.format !== "xlsx") throw new Error("wrong format");
-    expect(loaded.workbook.sheetNames).toEqual([
-      "Caf\u00e9",
-      "Cafe\u0301",
-    ]);
+    expect(loaded.workbook.sheetNames).toEqual(["Caf\u00e9", "Cafe\u0301"]);
     for (const name of ["Caf\u00e9", "Cafe\u0301"]) {
       expect(() => selectSheetName(loaded.workbook, name)).toThrow(
         expect.objectContaining({ code: "ambiguous_sheet" }),

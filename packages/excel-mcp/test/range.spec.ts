@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SkMcpExcelError } from "../src/errors.js";
+import { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   advance,
   columnToLetters,
@@ -8,7 +8,7 @@ import {
   parseCellRef,
   resolveRange,
   type GridBounds,
-} from "../src/range.js";
+} from "../src/grid/range.js";
 
 const used: GridBounds = { top: 1, left: 1, bottom: 100, right: 10 };
 

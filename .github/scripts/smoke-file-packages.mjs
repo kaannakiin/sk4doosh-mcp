@@ -30,12 +30,14 @@ try {
       dependencies: {
         "@sk-mcp/file-core-native": archive("sk-mcp-file-core-native-"),
         "@sk-mcp/file-core": archive("sk-mcp-file-core-0"),
+        "@sk-mcp/ooxml-core": archive("sk-mcp-ooxml-core-"),
         "@sk-mcp/excel-mcp": archive("sk-mcp-excel-mcp-"),
         "@sk-mcp/xml-mcp": archive("sk-mcp-xml-mcp-"),
       },
       overrides: {
         "@sk-mcp/file-core-native": "$@sk-mcp/file-core-native",
         "@sk-mcp/file-core": "$@sk-mcp/file-core",
+        "@sk-mcp/ooxml-core": "$@sk-mcp/ooxml-core",
       },
     }),
   );

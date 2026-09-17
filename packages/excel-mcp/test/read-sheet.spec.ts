@@ -1,14 +1,17 @@
 import { describe, expect, inject, it } from "vitest";
-import type { SkMcpExcelError } from "../src/errors.js";
-import { limits } from "../src/limits.js";
-import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
+import { limits } from "../src/platform/limits.js";
+import {
+  createWorkbookRoot,
+  resolveWorkbookPath,
+} from "../src/platform/paths.js";
 import {
   findInSheet,
   readSheet,
   type ReadSheetOptions,
-} from "../src/read-sheet.js";
-import { loadDocument, sheetSource } from "../src/document.js";
-import type { SheetSource } from "../src/sheet.js";
+} from "../src/grid/read-sheet.js";
+import { loadDocument, sheetSource } from "../src/format/document.js";
+import type { SheetSource } from "../src/grid/sheet.js";
 import { largeRowCount } from "./fixtures/build.js";
 
 const loneSurrogate =

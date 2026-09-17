@@ -1,11 +1,11 @@
 import { describe, expect, inject, it } from "vitest";
-import { collectConditionalFormats } from "../src/conditional-formats.js";
-import { loadDocument, type LoadedWorkbook } from "../src/document.js";
+import { collectConditionalFormats } from "../src/metadata/conditional-formats.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {
   const fixtures = inject("fixtures");

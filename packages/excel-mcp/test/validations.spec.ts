@@ -3,12 +3,12 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
-import { collectValidations, compressAddresses } from "../src/validations.js";
+} from "../src/platform/paths.js";
 import {
-  loadDocument,
-  type LoadedWorkbook,
-} from "../src/document.js";
+  collectValidations,
+  compressAddresses,
+} from "../src/metadata/validations.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 
 function addresses(column: string, from: number, to: number): string[] {
   const list: string[] = [];

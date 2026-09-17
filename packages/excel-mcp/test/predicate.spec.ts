@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CellScalar } from "../src/cell-value.js";
-import type { SkMcpExcelError } from "../src/errors.js";
+import type { CellScalar } from "../src/grid/cell-value.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   classify,
   compareWithin,
@@ -11,7 +11,7 @@ import {
   validateCondition,
   type Condition,
   type PredicateOptions,
-} from "../src/predicate.js";
+} from "../src/grid/predicate.js";
 
 const loose: PredicateOptions = { caseSensitive: false, coerceText: false };
 

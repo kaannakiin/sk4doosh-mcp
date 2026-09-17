@@ -1,11 +1,11 @@
 import { describe, expect, inject, it } from "vitest";
-import { loadDocument, type LoadedWorkbook } from "../src/document.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
-import { collectTables } from "../src/tables.js";
+} from "../src/platform/paths.js";
+import { collectTables } from "../src/metadata/tables.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {
   const fixtures = inject("fixtures");

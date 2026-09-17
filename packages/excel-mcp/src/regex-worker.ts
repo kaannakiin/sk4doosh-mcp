@@ -1,3 +1,10 @@
+/**
+ * Guard: this entry stays at the src/ root so tsc emits dist/regex-worker.js.
+ * check-npm-tarballs.py fails the pack job when package/dist/regex-worker.js is
+ * missing, and rootDir "src" mirrors the source tree — a folder here moves the
+ * emitted path, the pack job goes red, and the published server's regex search
+ * cannot start.
+ */
 import { parentPort, workerData } from "node:worker_threads";
 
 const port = parentPort;

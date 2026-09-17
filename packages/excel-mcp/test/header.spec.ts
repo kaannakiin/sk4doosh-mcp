@@ -1,23 +1,23 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { documentSheet, loadDocument } from "../src/document.js";
-import type { SkMcpExcelError } from "../src/errors.js";
+import { documentSheet, loadDocument } from "../src/format/document.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   declaredHeaderRow,
   isHeaderCandidate,
   rowFacts,
   scanHeaderRow,
-} from "../src/header.js";
+} from "../src/grid/header.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
-import { resolveRange, type GridBounds } from "../src/range.js";
+} from "../src/platform/paths.js";
+import { resolveRange, type GridBounds } from "../src/grid/range.js";
 import {
   requireSheetBounds,
   type DeclaredTable,
   type SheetView,
-} from "../src/sheet.js";
+} from "../src/grid/sheet.js";
 
 describe("header row evidence", () => {
   let root: WorkbookRoot;

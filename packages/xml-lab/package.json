@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "check-types": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

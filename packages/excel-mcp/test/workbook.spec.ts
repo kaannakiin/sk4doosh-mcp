@@ -1,19 +1,19 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import type { SkMcpExcelError } from "../src/errors.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
-import { selectSheetName } from "../src/sheetjs-workbook.js";
-import { requireSheetBounds } from "../src/sheet.js";
+} from "../src/platform/paths.js";
+import { selectSheetName } from "../src/format/sheetjs-workbook.js";
+import { requireSheetBounds } from "../src/grid/sheet.js";
 import {
   clearDocumentCache,
   describeDocument,
   documentSheet,
   loadDocument,
   type LoadedWorkbook,
-} from "../src/document.js";
+} from "../src/format/document.js";
 
 async function codeOf(
   action: () => Promise<unknown> | unknown,

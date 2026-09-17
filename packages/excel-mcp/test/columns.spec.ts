@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildColumnIndex, resolveColumn } from "../src/columns.js";
-import type { SkMcpExcelError } from "../src/errors.js";
-import type { GridBounds } from "../src/range.js";
+import { buildColumnIndex, resolveColumn } from "../src/grid/columns.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { GridBounds } from "../src/grid/range.js";
 
 const bounds: GridBounds = { top: 1, left: 1, bottom: 10, right: 8 };
 const headers = ["Region", "Total", "Date", "B", "Total", "", null, "İSTANBUL"];

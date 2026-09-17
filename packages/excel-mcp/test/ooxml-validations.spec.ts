@@ -1,14 +1,14 @@
 import { describe, expect, inject, it } from "vitest";
 import ExcelJS from "exceljs";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { loadDocument, type LoadedWorkbook } from "../src/document.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
-import { createHandlers } from "../src/tools.js";
-import { collectValidations } from "../src/validations.js";
+} from "../src/platform/paths.js";
+import { createHandlers } from "../src/tools/handlers.js";
+import { collectValidations } from "../src/metadata/validations.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {
   const first = result.content[0];
@@ -116,7 +116,7 @@ describe("the OOXML data validation reader agrees with ExcelJS", () => {
     await reference.xlsx.load(Uint8Array.from(bytes).buffer);
     const expected = excelJsRules(reference.worksheets[0]!);
 
-    const { parseSheetJs } = await import("../src/sheetjs-workbook.js");
+    const { parseSheetJs } = await import("../src/format/sheetjs-workbook.js");
     const parsed = parseSheetJs(bytes, "parity.xlsx");
     const actual = collectValidations("Data", parsed.validations.get("Data"));
 
@@ -153,7 +153,7 @@ describe("the OOXML data validation reader agrees with ExcelJS", () => {
       formulae: ["TRUE()"],
     });
     const bytes = Buffer.from(await workbook.xlsx.writeBuffer());
-    const { parseSheetJs } = await import("../src/sheetjs-workbook.js");
+    const { parseSheetJs } = await import("../src/format/sheetjs-workbook.js");
     const report = collectValidations(
       "Wide",
       parseSheetJs(bytes, "wide.xlsx").validations.get("Wide"),
@@ -200,8 +200,9 @@ describe("validations no longer need the ExcelJS metadata reader", () => {
       );
       const capabilities = body["capabilities"] as Record<string, boolean>;
       expect(capabilities["dataValidations"]).toBe(true);
-      expect((await loadXlsx(file)).workbook.validations.get("Veri")?.rules)
-        .toHaveLength(1);
+      expect(
+        (await loadXlsx(file)).workbook.validations.get("Veri")?.rules,
+      ).toHaveLength(1);
     });
   }
 });

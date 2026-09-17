@@ -2,14 +2,14 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { SkMcpExcelError } from "../src/errors.js";
-import { modePolicy } from "../src/limits.js";
+import { SkMcpExcelError } from "../src/platform/errors.js";
+import { modePolicy } from "../src/platform/limits.js";
 import {
   createWorkbookRoot,
   listWorkbooks,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 
 async function failureOf(
   action: () => Promise<unknown>,

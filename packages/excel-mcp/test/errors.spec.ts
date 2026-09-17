@@ -1,15 +1,15 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { loadDocument } from "../src/document.js";
+import { loadDocument } from "../src/format/document.js";
 import {
   asExcelError,
   type SkMcpExcelError,
   SkMcpExcelError as ExcelError,
-} from "../src/errors.js";
+} from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 
 describe("asExcelError", () => {
   it("passes a SkMcpExcelError through untouched", () => {

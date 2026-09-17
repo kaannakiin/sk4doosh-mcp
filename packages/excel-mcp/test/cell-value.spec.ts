@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCell, type NormalizeOptions } from "../src/cell-value.js";
-import { sheetjsSnapshot, type SheetJsCell } from "../src/sheetjs-cell.js";
-import { limits } from "../src/limits.js";
+import {
+  normalizeCell,
+  type NormalizeOptions,
+} from "../src/grid/cell-value.js";
+import {
+  sheetjsSnapshot,
+  type SheetJsCell,
+} from "../src/format/sheetjs-cell.js";
+import { limits } from "../src/platform/limits.js";
 
 const values: NormalizeOptions = {
   valueMode: "values",

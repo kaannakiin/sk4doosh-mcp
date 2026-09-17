@@ -3,12 +3,18 @@ import { Buffer } from "node:buffer";
 import { performance } from "node:perf_hooks";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
-import { parseCsv } from "../../dist/csv.js";
+/**
+ * Guard: dist/index.js is the only dist path this fixture may name. It is the
+ * entry check-npm-tarballs.py pins, so it survives every src/ folder change; a
+ * deep dist specifier goes stale on the next move and the child then exits 1
+ * with MODULE_NOT_FOUND, which reads as a resource-limit failure in the spec.
+ */
 import {
+  collectValidations,
   describeSheetJs,
+  parseCsv,
   parseSheetJs,
-} from "../../dist/sheetjs-workbook.js";
-import { collectValidations } from "../../dist/validations.js";
+} from "../../dist/index.js";
 const report = {};
 let start = performance.now();
 const bytes = Buffer.alloc(16 * 1024 * 1024, 0x61);
@@ -49,7 +55,10 @@ start = performance.now();
 const parsed = parseSheetJs(xlsx, "validation.xlsx");
 const describeOptions = { includeDefinedNames: false };
 report.validationParseMs = performance.now() - start;
-const validations = collectValidations("Validation", parsed.validations.get("Validation"));
+const validations = collectValidations(
+  "Validation",
+  parsed.validations.get("Validation"),
+);
 assert.equal(validations.count, 1);
 assert.equal(validations.coveredCellCount, 5001);
 report.validationCoveredCells = validations.coveredCellCount;

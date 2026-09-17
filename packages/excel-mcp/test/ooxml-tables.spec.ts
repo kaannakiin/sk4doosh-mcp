@@ -1,10 +1,10 @@
 import { describe, expect, inject, it } from "vitest";
 import ExcelJS from "exceljs";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { createWorkbookRoot } from "../src/paths.js";
-import { parseSheetJs } from "../src/sheetjs-workbook.js";
-import { collectTables, declaredTablesOf } from "../src/tables.js";
-import { createHandlers } from "../src/tools.js";
+import { createWorkbookRoot } from "../src/platform/paths.js";
+import { parseSheetJs } from "../src/format/sheetjs-workbook.js";
+import { collectTables, declaredTablesOf } from "../src/metadata/tables.js";
+import { createHandlers } from "../src/tools/handlers.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {
   const first = result.content[0];

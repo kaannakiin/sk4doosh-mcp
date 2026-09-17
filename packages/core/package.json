@@ -11,10 +11,10 @@
   },
   "scripts": {
     "gen": "node scripts/generate-types.mjs",
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "bench:search": "pnpm run build && node --expose-gc bench/search.mjs",
     "dev": "tsc --watch",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "check-types": "tsc -p tsconfig.test.json",
     "test": "vitest run"
   },

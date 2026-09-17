@@ -5,8 +5,8 @@ import {
   encodeCursor,
   fingerprint,
   type SheetCursor,
-} from "../src/cursor.js";
-import type { SkMcpExcelError } from "../src/errors.js";
+} from "../src/grid/cursor.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 
 const stamp = fingerprint("/q1.xlsx", 1, 10);
 const otherStamp = fingerprint("/q1.xlsx", 2, 10);
