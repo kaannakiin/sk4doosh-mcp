@@ -3,7 +3,7 @@ import * as XLSX from "@e965/xlsx";
 import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
 import type { MediaEntry } from "./images.js";
 import { SkMcpExcelError } from "./errors.js";
-import { openPackage } from "./ooxml/package.js";
+import { openPackage, sheetJsSource } from "./ooxml/package.js";
 import {
   readConditionalFormats,
   type OoxmlConditionalBlock,
@@ -106,7 +106,7 @@ export function parseSheetJs(bytes: Buffer, path: string): SheetJsWorkbook {
       "The file is probably not a spreadsheet; check what it really is before reading it.",
     );
   }
-  const opc = openPackage(book);
+  const opc = openPackage(sheetJsSource(book));
   const date1904 = book.Workbook?.WBProps?.date1904 === true;
   const validations = new Map<string, OoxmlValidations>();
   const tables = new Map<string, readonly OoxmlTable[]>();

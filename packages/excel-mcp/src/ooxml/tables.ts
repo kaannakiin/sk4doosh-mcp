@@ -41,10 +41,8 @@ function tablePartsOf(opc: OpcPackage, sheetPart: string): readonly string[] {
   const rels = opc.relationshipsFor(sheetPart);
   return relationshipIds
     .map((id) => rels.get(id))
-    .filter(
-      (relationship) => relationship !== undefined && !relationship.external,
-    )
-    .map((relationship) => relationship!.target);
+    .filter((relationship) => relationship?.kind === "internal")
+    .map((relationship) => relationship.target);
 }
 
 function readTable(opc: OpcPackage, tablePart: string): OoxmlTable | undefined {

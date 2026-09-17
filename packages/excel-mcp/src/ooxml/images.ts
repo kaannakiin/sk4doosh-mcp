@@ -69,9 +69,7 @@ function drawingPartOf(opc: OpcPackage, sheetPart: string): string | undefined {
   });
   if (relationshipId === undefined) return undefined;
   const relationship = opc.relationshipsFor(sheetPart).get(relationshipId);
-  return relationship === undefined || relationship.external
-    ? undefined
-    : relationship.target;
+  return relationship?.kind === "internal" ? relationship.target : undefined;
 }
 
 /**
@@ -196,9 +194,7 @@ export function readImages(
         ? undefined
         : draft.cy / emuPerPixel;
     return {
-      ...(media === undefined || media.external
-        ? {}
-        : { mediaPart: media.target }),
+      ...(media?.kind === "internal" ? { mediaPart: media.target } : {}),
       anchor: draft.kind,
       ...(draft.from === undefined ? {} : { from: draft.from }),
       ...(draft.to === undefined ? {} : { to: draft.to }),
