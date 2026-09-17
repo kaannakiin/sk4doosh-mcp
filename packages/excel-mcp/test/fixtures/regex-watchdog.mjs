@@ -4,9 +4,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import ExcelJS from "exceljs";
-import { createWorkbookRoot } from "../../dist/paths.js";
-import { createHandlers } from "../../dist/tools.js";
-import { closeRegexWorkers, withRegex } from "../../dist/regex.js";
+/**
+ * Guard: dist/index.js is the only dist path this fixture may name. It is the
+ * entry check-npm-tarballs.py pins, so it survives every src/ folder change; a
+ * deep dist specifier goes stale on the next move and the child then exits 1
+ * with MODULE_NOT_FOUND, which reads as a resource-limit failure in the spec.
+ */
+import {
+  closeRegexWorkers,
+  createHandlers,
+  createWorkbookRoot,
+  withRegex,
+} from "../../dist/index.js";
 
 const dir = await mkdtemp(join(tmpdir(), "regex-watchdog-"));
 const payload = (result) => JSON.parse(result.content[0].text);
