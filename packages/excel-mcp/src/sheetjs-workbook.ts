@@ -3,7 +3,8 @@ import * as XLSX from "@e965/xlsx";
 import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
 import type { MediaEntry } from "./images.js";
 import { SkMcpExcelError } from "./errors.js";
-import { openPackage, sheetJsSource } from "./ooxml/package.js";
+import { openPackage } from "./ooxml/package.js";
+import { zipSource } from "./ooxml/reader.js";
 import {
   readConditionalFormats,
   type OoxmlConditionalBlock,
@@ -59,10 +60,9 @@ interface MergeRange extends GridBounds {
  * cell that carries no cached result is dropped from the grid entirely; the
  * price is that blank cells arrive as `t: "z"` stubs, which every value test
  * below has to exclude. `dense` keeps each sheet as row arrays rather than one
- * property per cell. `bookFiles` retains the decompressed parts so the OOXML
- * readers can reach the structures SheetJS does not model; the handle is
- * dropped again before the workbook is cached, or the cache would hold the
- * whole package a second time.
+ * property per cell. `bookFiles` is off: the OOXML readers reach their parts
+ * through ooxml-core's own archive reader, so retaining SheetJS's decompressed
+ * table would hold the package a second time for nothing.
  */
 const readOptions = {
   type: "buffer",
@@ -71,7 +71,6 @@ const readOptions = {
   cellNF: true,
   sheetStubs: true,
   dense: true,
-  bookFiles: true,
 } as const;
 
 export function parseSheetJs(bytes: Buffer, path: string): SheetJsWorkbook {
@@ -106,7 +105,13 @@ export function parseSheetJs(bytes: Buffer, path: string): SheetJsWorkbook {
       "The file is probably not a spreadsheet; check what it really is before reading it.",
     );
   }
-  const opc = openPackage(sheetJsSource(book));
+  /**
+   * Guard: XLSX.read runs first and keeps the error precedence. A workbook it
+   * refuses must never reach the archive reader, or "a .docx named .xlsx" would
+   * come back as a container failure instead of not_a_workbook, with the wrong
+   * recovery advice.
+   */
+  const opc = openPackage(zipSource(bytes));
   const date1904 = book.Workbook?.WBProps?.date1904 === true;
   const validations = new Map<string, OoxmlValidations>();
   const tables = new Map<string, readonly OoxmlTable[]>();
@@ -130,9 +135,6 @@ export function parseSheetJs(bytes: Buffer, path: string): SheetJsWorkbook {
     images.set(name, readImages(opc, sheetPart));
     panes.set(name, readFrozenPanes(opc, sheetPart));
   }
-  const retained = book as unknown as Record<string, unknown>;
-  delete retained["files"];
-  delete retained["keys"];
   return {
     book,
     sheetNames: book.SheetNames,

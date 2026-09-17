@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
 import * as XLSX from "@e965/xlsx";
 import { describe, expect, inject, it } from "vitest";
-import { openPackage, sheetJsSource } from "../src/ooxml/package.js";
+import { openPackage } from "../src/ooxml/package.js";
 import { zipSource } from "../src/ooxml/reader.js";
+import { sheetJsSource } from "./fixtures/sheetjs-source.js";
 
 const fixtures = () => inject("fixtures");
 
