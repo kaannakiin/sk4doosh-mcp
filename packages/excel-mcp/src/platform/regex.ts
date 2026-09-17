@@ -1,11 +1,21 @@
 import { Worker } from "node:worker_threads";
-import { SkMcpExcelError } from "./platform/errors.js";
+import { SkMcpExcelError } from "./errors.js";
 
 let running = 0;
 const waiting: {
   readonly resolve: () => void;
   readonly reject: (error: Error) => void;
 }[] = [];
+/**
+ * Guard: the specifier is relative to the package root, not to this module.
+ * src/ and dist/ mirror each other, so one `..` per folder below the root lands
+ * on the package from both sides — from src/platform/ under vitest and from
+ * dist/platform/ under the published CLI — and the `dist/` segment then names
+ * the emitted worker in either case. One `..` too few resolves inside src/, one
+ * too many escapes the package. Another folder level here needs another `..`.
+ */
+const workerEntry = new URL("../../dist/regex-worker.js", import.meta.url);
+
 const workers = new Set<Worker>();
 
 async function acquire(signal?: AbortSignal): Promise<void> {
@@ -95,7 +105,7 @@ export async function withRegex<T>(
         "resource_limit",
         "The regex search was cancelled.",
       );
-    worker = new Worker(new URL("../dist/regex-worker.js", import.meta.url), {
+    worker = new Worker(workerEntry, {
       workerData: { query, caseSensitive },
       resourceLimits: {
         maxOldGenerationSizeMb: 24,

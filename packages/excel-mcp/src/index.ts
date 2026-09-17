@@ -145,7 +145,7 @@ export type {
   ReadSheetOptions,
   ReadSheetResult,
 } from "./read-sheet.js";
-export { closeRegexWorkers, withRegex } from "./regex.js";
+export { closeRegexWorkers, withRegex } from "./platform/regex.js";
 export { createHandlers, toolDefinitions, toolNames } from "./tools.js";
 export type { ToolHandlers, ToolName } from "./tools.js";
 export { createExcelMcpServer } from "./server.js";

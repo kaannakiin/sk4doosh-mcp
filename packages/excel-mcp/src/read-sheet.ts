@@ -24,7 +24,7 @@ import {
   type HeaderRowSource,
 } from "./header.js";
 import { limits } from "./platform/limits.js";
-import { withRegex } from "./regex.js";
+import { withRegex } from "./platform/regex.js";
 import { inheritCursorOptions, type CursorOptions } from "./cursor.js";
 import {
   columnToLetters,

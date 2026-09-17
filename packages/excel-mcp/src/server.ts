@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createFileSourceServer } from "@sk-mcp/file-core";
 import type { WorkbookRoot } from "./platform/paths.js";
 import { createHandlers, toolDefinitions } from "./tools.js";
-import { closeRegexWorkers } from "./regex.js";
+import { closeRegexWorkers } from "./platform/regex.js";
 
 /**
  * Guard: the specifier is relative to the package root. This file stays at the
