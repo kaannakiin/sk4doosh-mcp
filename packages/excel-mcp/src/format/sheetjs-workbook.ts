@@ -1,40 +1,40 @@
 import { canonical } from "@sk-mcp/file-core";
 import * as XLSX from "@e965/xlsx";
-import { conditionalFormatRuleCountOf } from "./metadata/conditional-formats.js";
-import type { MediaEntry } from "./metadata/images.js";
-import { SkMcpExcelError } from "./platform/errors.js";
-import { openPackage } from "./metadata/spreadsheetml/package.js";
-import { zipSource } from "./metadata/spreadsheetml/reader.js";
+import { conditionalFormatRuleCountOf } from "../metadata/conditional-formats.js";
+import type { MediaEntry } from "../metadata/images.js";
+import { SkMcpExcelError } from "../platform/errors.js";
+import { openPackage } from "../metadata/spreadsheetml/package.js";
+import { zipSource } from "../metadata/spreadsheetml/reader.js";
 import {
   readConditionalFormats,
   type OoxmlConditionalBlock,
-} from "./metadata/spreadsheetml/conditional-formats.js";
+} from "../metadata/spreadsheetml/conditional-formats.js";
 import {
   readFrozenPanes,
   readImages,
   type OoxmlImage,
   type OoxmlPanes,
-} from "./metadata/spreadsheetml/images.js";
-import { readTables, type OoxmlTable } from "./metadata/spreadsheetml/tables.js";
+} from "../metadata/spreadsheetml/images.js";
+import { readTables, type OoxmlTable } from "../metadata/spreadsheetml/tables.js";
 import {
   readValidations,
   type OoxmlValidations,
-} from "./metadata/spreadsheetml/validations.js";
-import { limits } from "./platform/limits.js";
-import { metadataLimitations } from "./metadata/support.js";
+} from "../metadata/spreadsheetml/validations.js";
+import { limits } from "../platform/limits.js";
+import { metadataLimitations } from "../metadata/support.js";
 import {
   formatCellRef,
   formatRange,
   parseCellRef,
   type GridBounds,
-} from "./grid/range.js";
+} from "../grid/range.js";
 import { sheetjsSnapshot, type SheetJsCell } from "./sheetjs-cell.js";
-import type { DeclaredTable, RowView, SheetView } from "./grid/sheet.js";
+import type { DeclaredTable, RowView, SheetView } from "../grid/sheet.js";
 import type {
   DocumentMeta,
   SheetSummary,
   WorkbookDescription,
-} from "./metadata/description.js";
+} from "../metadata/description.js";
 
 export interface SheetJsWorkbook {
   readonly book: XLSX.WorkBook;

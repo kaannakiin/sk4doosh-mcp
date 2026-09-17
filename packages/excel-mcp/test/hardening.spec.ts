@@ -17,13 +17,13 @@ import {
   resolveWorkbookPath,
   type WorkbookRoot,
 } from "../src/platform/paths.js";
-import { createDocumentCache, sheetSource } from "../src/document.js";
+import { createDocumentCache, sheetSource } from "../src/format/document.js";
 import { createHandlers, type ToolHandlers } from "../src/tools.js";
-import { parseCsv } from "../src/csv.js";
+import { parseCsv } from "../src/format/csv.js";
 import { limits } from "../src/platform/limits.js";
 import { decodeCursor } from "../src/grid/cursor.js";
-import { selectSheetName } from "../src/sheetjs-workbook.js";
-import { parseSheetJs } from "../src/sheetjs-workbook.js";
+import { selectSheetName } from "../src/format/sheetjs-workbook.js";
+import { parseSheetJs } from "../src/format/sheetjs-workbook.js";
 import { collectValidations } from "../src/metadata/validations.js";
 import { validateCondition } from "../src/grid/predicate.js";
 import { declaredTablesOf } from "../src/metadata/tables.js";

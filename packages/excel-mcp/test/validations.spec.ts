@@ -8,7 +8,7 @@ import { collectValidations, compressAddresses } from "../src/metadata/validatio
 import {
   loadDocument,
   type LoadedWorkbook,
-} from "../src/document.js";
+} from "../src/format/document.js";
 
 function addresses(column: string, from: number, to: number): string[] {
   const list: string[] = [];

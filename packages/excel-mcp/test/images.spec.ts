@@ -1,5 +1,5 @@
 import { describe, expect, inject, it } from "vitest";
-import { loadDocument, type LoadedWorkbook } from "../src/document.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 import { collectImages } from "../src/metadata/images.js";
 import {
   createWorkbookRoot,

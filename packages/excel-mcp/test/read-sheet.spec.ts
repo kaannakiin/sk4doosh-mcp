@@ -7,7 +7,7 @@ import {
   readSheet,
   type ReadSheetOptions,
 } from "../src/grid/read-sheet.js";
-import { loadDocument, sheetSource } from "../src/document.js";
+import { loadDocument, sheetSource } from "../src/format/document.js";
 import type { SheetSource } from "../src/grid/sheet.js";
 import { largeRowCount } from "./fixtures/build.js";
 

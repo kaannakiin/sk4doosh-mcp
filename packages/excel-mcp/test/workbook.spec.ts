@@ -5,7 +5,7 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/platform/paths.js";
-import { selectSheetName } from "../src/sheetjs-workbook.js";
+import { selectSheetName } from "../src/format/sheetjs-workbook.js";
 import { requireSheetBounds } from "../src/grid/sheet.js";
 import {
   clearDocumentCache,
@@ -13,7 +13,7 @@ import {
   documentSheet,
   loadDocument,
   type LoadedWorkbook,
-} from "../src/document.js";
+} from "../src/format/document.js";
 
 async function codeOf(
   action: () => Promise<unknown> | unknown,

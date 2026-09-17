@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { documentSheet, loadDocument } from "../src/document.js";
+import { documentSheet, loadDocument } from "../src/format/document.js";
 import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   declaredHeaderRow,

@@ -1,5 +1,5 @@
-import { truncate, type CellFacts, type CellSnapshot } from "./grid/cell-value.js";
-import { SkMcpExcelError } from "./platform/errors.js";
+import { truncate, type CellFacts, type CellSnapshot } from "../grid/cell-value.js";
+import { SkMcpExcelError } from "../platform/errors.js";
 
 export interface SheetJsCell {
   readonly t?: string;

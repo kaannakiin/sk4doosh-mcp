@@ -1,17 +1,17 @@
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
-import { truncate, type CellSnapshot } from "./grid/cell-value.js";
-import { SkMcpExcelError } from "./platform/errors.js";
-import { limits } from "./platform/limits.js";
-import { columnToLetters, type GridBounds } from "./grid/range.js";
-import type { RowView, SheetView } from "./grid/sheet.js";
-import type { DocumentMeta, WorkbookDescription } from "./metadata/description.js";
+import { truncate, type CellSnapshot } from "../grid/cell-value.js";
+import { SkMcpExcelError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
+import { columnToLetters, type GridBounds } from "../grid/range.js";
+import type { RowView, SheetView } from "../grid/sheet.js";
+import type { DocumentMeta, WorkbookDescription } from "../metadata/description.js";
 import {
   delimiterNames,
   type CsvOptions,
   type DelimiterName,
   type EncodingName,
-} from "./platform/delimited.js";
+} from "../platform/delimited.js";
 
 export const csvSheetName = "csv";
 

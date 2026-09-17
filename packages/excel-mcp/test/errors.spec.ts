@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { loadDocument } from "../src/document.js";
+import { loadDocument } from "../src/format/document.js";
 import {
   asExcelError,
   type SkMcpExcelError,

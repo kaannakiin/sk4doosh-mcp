@@ -1,4 +1,4 @@
-import { documentSheet, type LoadedDocument } from "./document.js";
+import { documentSheet, type LoadedDocument } from "./format/document.js";
 import {
   declaredHeaderRow,
   scanHeaderRow,

@@ -5,7 +5,7 @@ import type {
   DocumentCache,
   LoadedDocument,
   LoadedWorkbook,
-} from "./document.js";
+} from "./format/document.js";
 import type { ToolName } from "./tools-definitions.js";
 
 export type XlsxOpener = (

@@ -5,7 +5,7 @@ import {
   type ParseContext,
   type SandboxedPath,
 } from "@sk-mcp/file-core";
-import { capabilitiesFor, type FormatCapabilities } from "./platform/capabilities.js";
+import { capabilitiesFor, type FormatCapabilities } from "../platform/capabilities.js";
 import {
   csvSheetName,
   csvSheetView,
@@ -14,13 +14,13 @@ import {
   type CsvReport,
   type CsvTable,
 } from "./csv.js";
-import type { CsvOptions } from "./platform/delimited.js";
-import { SkMcpExcelError, fail } from "./platform/errors.js";
-import { formats, type DocumentFormat } from "./platform/formats.js";
-import { limits, modePolicy } from "./platform/limits.js";
-import { assertReadableFormat } from "./platform/paths.js";
-import type { SheetSource, SheetView } from "./grid/sheet.js";
-import { vocabulary } from "./platform/vocabulary.js";
+import type { CsvOptions } from "../platform/delimited.js";
+import { SkMcpExcelError, fail } from "../platform/errors.js";
+import { formats, type DocumentFormat } from "../platform/formats.js";
+import { limits, modePolicy } from "../platform/limits.js";
+import { assertReadableFormat } from "../platform/paths.js";
+import type { SheetSource, SheetView } from "../grid/sheet.js";
+import { vocabulary } from "../platform/vocabulary.js";
 import {
   describeSheetJs,
   parseSheetJs,
@@ -28,8 +28,8 @@ import {
   sheetjsSheetView,
   type SheetJsWorkbook,
 } from "./sheetjs-workbook.js";
-import type { DocumentMeta, WorkbookDescription } from "./metadata/description.js";
-import { declaredTablesOf } from "./metadata/tables.js";
+import type { DocumentMeta, WorkbookDescription } from "../metadata/description.js";
+import { declaredTablesOf } from "../metadata/tables.js";
 
 interface XlsxBody {
   readonly format: "xlsx";

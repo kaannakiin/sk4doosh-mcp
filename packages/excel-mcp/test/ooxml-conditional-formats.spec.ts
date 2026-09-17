@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { collectConditionalFormats } from "../src/metadata/conditional-formats.js";
 import { createWorkbookRoot } from "../src/platform/paths.js";
-import { parseSheetJs } from "../src/sheetjs-workbook.js";
+import { parseSheetJs } from "../src/format/sheetjs-workbook.js";
 import { createHandlers } from "../src/tools.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {

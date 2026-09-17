@@ -93,8 +93,8 @@ export {
   describeCsv,
   parseCsv,
   sniffDelimiter,
-} from "./csv.js";
-export type { CsvReport, CsvTable } from "./csv.js";
+} from "./format/csv.js";
+export type { CsvReport, CsvTable } from "./format/csv.js";
 export { delimiterNames } from "./platform/delimited.js";
 export type {
   CsvOptions,
@@ -107,20 +107,20 @@ export {
   describeDocument,
   documentSheet,
   loadDocument,
-} from "./document.js";
+} from "./format/document.js";
 export type {
   DocumentDescription,
   LoadedCsv,
   LoadedDocument,
   LoadedWorkbook,
-} from "./document.js";
+} from "./format/document.js";
 export {
   describeSheetJs,
   parseSheetJs,
   selectSheetName,
   sheetjsSheetView,
-} from "./sheetjs-workbook.js";
-export type { SheetJsWorkbook } from "./sheetjs-workbook.js";
+} from "./format/sheetjs-workbook.js";
+export type { SheetJsWorkbook } from "./format/sheetjs-workbook.js";
 export type {
   DocumentMeta,
   SheetSummary,

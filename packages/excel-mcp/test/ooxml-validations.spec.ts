@@ -1,7 +1,7 @@
 import { describe, expect, inject, it } from "vitest";
 import ExcelJS from "exceljs";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { loadDocument, type LoadedWorkbook } from "../src/document.js";
+import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
@@ -116,7 +116,7 @@ describe("the OOXML data validation reader agrees with ExcelJS", () => {
     await reference.xlsx.load(Uint8Array.from(bytes).buffer);
     const expected = excelJsRules(reference.worksheets[0]!);
 
-    const { parseSheetJs } = await import("../src/sheetjs-workbook.js");
+    const { parseSheetJs } = await import("../src/format/sheetjs-workbook.js");
     const parsed = parseSheetJs(bytes, "parity.xlsx");
     const actual = collectValidations("Data", parsed.validations.get("Data"));
 
@@ -153,7 +153,7 @@ describe("the OOXML data validation reader agrees with ExcelJS", () => {
       formulae: ["TRUE()"],
     });
     const bytes = Buffer.from(await workbook.xlsx.writeBuffer());
-    const { parseSheetJs } = await import("../src/sheetjs-workbook.js");
+    const { parseSheetJs } = await import("../src/format/sheetjs-workbook.js");
     const report = collectValidations(
       "Wide",
       parseSheetJs(bytes, "wide.xlsx").validations.get("Wide"),

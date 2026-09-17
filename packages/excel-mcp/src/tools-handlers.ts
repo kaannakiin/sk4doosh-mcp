@@ -10,16 +10,16 @@ import { collectConditionalFormats } from "./metadata/conditional-formats.js";
 import { collectImages } from "./metadata/images.js";
 import { collectTables } from "./metadata/tables.js";
 import { collectValidations } from "./metadata/validations.js";
-import { selectSheetName } from "./sheetjs-workbook.js";
+import { selectSheetName } from "./format/sheetjs-workbook.js";
 import {
   createDocumentCache,
   csvReportOf,
   describeDocument,
   documentSheet,
   sheetSource,
-} from "./document.js";
+} from "./format/document.js";
 import { aggregateSheet } from "./grid/aggregate.js";
-import type { CsvReport } from "./csv.js";
+import type { CsvReport } from "./format/csv.js";
 import type { DelimiterName, EncodingName } from "./platform/delimited.js";
 import { inheritCursorOptions, decodeCursor } from "./grid/cursor.js";
 import type { ToolHandlers } from "./tools-definitions.js";
