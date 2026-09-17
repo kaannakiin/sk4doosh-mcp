@@ -1,3 +1,4 @@
+import { classifyContainerMagic } from "@sk-mcp/ooxml-core";
 import {
   createSandboxRoot,
   listSources,
@@ -34,16 +35,9 @@ export const resolveWorkbookPath = resolveSourcePath;
 export const listWorkbooks = listSources;
 
 export function assertReadableFormat(magic: Buffer, requested: string): void {
-  if (
-    magic.length >= 4 &&
-    magic.subarray(0, 4).toString("hex") === "504b0304"
-  ) {
-    return;
-  }
-  if (
-    magic.length >= 8 &&
-    magic.subarray(0, 8).toString("hex") === "d0cf11e0a1b11ae1"
-  ) {
+  const kind = classifyContainerMagic(magic);
+  if (kind === "zip") return;
+  if (kind === "cfb") {
     throw new SkMcpExcelError(
       "encrypted_workbook",
       `'${requested}' is password-protected or stored in the legacy binary format.`,
