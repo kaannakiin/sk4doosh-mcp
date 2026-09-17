@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import type { EndpointPolicy } from "@chat/contracts/integration/discovery";
 import {
   remoteToolSchema,
@@ -153,7 +154,7 @@ export class McpSession {
     const initialized = await this.send("initialize", {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: {},
-      clientInfo: { name: "sk4doosh", version: "0" },
+      clientInfo: { name: PRODUCT_NAME, version: "0" },
     });
 
     if (initialized.kind === "failed") {

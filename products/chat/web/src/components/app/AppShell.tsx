@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import { Burger, Drawer } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet } from "@tanstack/react-router";
@@ -53,7 +54,7 @@ export function AppShell() {
             aria-label={t("sessions.title")}
           />
           <span className="font-serif text-base tracking-[0.01em]">
-            {t("app.title")}
+            {PRODUCT_NAME}
           </span>
         </header>
         <Outlet />

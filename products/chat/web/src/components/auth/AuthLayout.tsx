@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import { Outlet, getRouteApi } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 
@@ -22,7 +23,7 @@ export function AuthLayout() {
       <section className="flex flex-col justify-between gap-10 border-b border-hairline px-6 py-10 lg:border-b-0 lg:px-14 lg:py-14">
         <div className="flex flex-col">
           <h1 className="font-serif text-[clamp(2.5rem,5.5vw,4rem)] leading-[1.02] font-medium tracking-[-0.015em] text-ink">
-            {t("app.title")}
+            {PRODUCT_NAME}
           </h1>
           <p className="mt-5 max-w-[26ch] font-serif text-[1.125rem] leading-relaxed text-ink-dim italic">
             {t("auth.brand.tagline")}

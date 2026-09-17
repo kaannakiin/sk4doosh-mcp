@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import { SESSION_TITLE_MAX_LENGTH } from "@chat/contracts/chat/session-limits";
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
 import {
@@ -51,7 +52,7 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
           className="font-serif text-[1.0625rem] font-medium tracking-[0.01em] text-ink no-underline"
           onClick={onNavigate}
         >
-          {t("app.title")}
+          {PRODUCT_NAME}
         </Link>
         <Link
           to="/"

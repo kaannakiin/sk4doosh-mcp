@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import {
   authorizationServerMetadataSchema,
   protectedResourceMetadataSchema,
@@ -36,7 +37,7 @@ const PROBE_BODY = JSON.stringify({
   params: {
     protocolVersion: "2025-06-18",
     capabilities: {},
-    clientInfo: { name: "sk4doosh", version: "0" },
+    clientInfo: { name: PRODUCT_NAME, version: "0" },
   },
 });
 
