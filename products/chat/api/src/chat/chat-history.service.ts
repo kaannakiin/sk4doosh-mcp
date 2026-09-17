@@ -15,7 +15,12 @@ import type { UIMessage } from "ai";
 import type { UserId } from "../db/ids.ts";
 import { ChatSessionRepository } from "./chat-session.repository.ts";
 import { MessageRepository } from "./message.repository.ts";
-import { hydrate, titleFrom, toInputs } from "./message-history.ts";
+import {
+  hydrate,
+  sealPreliminary,
+  titleFrom,
+  toInputs,
+} from "./message-history.ts";
 
 export interface TurnEnd {
   readonly responseMessage: UIMessage;
@@ -67,19 +72,22 @@ export class ChatHistoryService {
     userId: UserId,
     session: SessionId,
     event: TurnEnd,
+    interruptedText: string,
   ): Promise<void> {
     try {
+      const messages = sealPreliminary(event.messages, interruptedText);
       const written = await this.messages.reconcileTurn({
         userId,
         sessionId: session,
-        messages: toInputs(event.messages),
-        title: titleFrom(event.messages),
+        messages: toInputs(messages),
+        title: titleFrom(messages),
       });
       if (!written) {
         return;
       }
 
-      await this.messages.settleTurn(userId,
+      await this.messages.settleTurn(
+        userId,
         session,
         event.responseMessage.id,
         outcomeOf(event.outcome.status),
@@ -109,7 +117,8 @@ export class ChatHistoryService {
         : { cursor: { updatedAt: new Date(cursor.updatedAt), id: cursor.id } }),
     });
 
-    const counts = await this.sessions.attachmentCounts(userId,
+    const counts = await this.sessions.attachmentCounts(
+      userId,
       page.sessions.map((session) => session.id),
     );
 
@@ -184,9 +193,7 @@ export class ChatHistoryService {
   ): Promise<SessionSummary | undefined> {
     const renamed = await this.sessions.renameSession(userId, session, title);
 
-    return renamed === undefined
-      ? undefined
-      : this.summaryOf(userId, session);
+    return renamed === undefined ? undefined : this.summaryOf(userId, session);
   }
 
   async remove(userId: UserId, session: SessionId): Promise<boolean> {

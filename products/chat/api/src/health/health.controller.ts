@@ -2,6 +2,7 @@ import type { HealthResponse } from "@chat/contracts/http/health";
 import { Controller, Get, Req } from "@nestjs/common";
 
 import { ObjectStorageService } from "../attachments/object-storage.service.ts";
+import { CodexToolService } from "../codex/codex-tool.service.ts";
 import { DbService } from "../db/db.service.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import type { RequestWithLocale } from "../i18n/request-locale.ts";
@@ -13,6 +14,7 @@ export class HealthController {
   constructor(
     private readonly llm: LlmService,
     private readonly readers: ReaderSessionService,
+    private readonly codex: CodexToolService,
     private readonly db: DbService,
     private readonly objects: ObjectStorageService,
     private readonly i18n: I18nService,
@@ -35,6 +37,7 @@ export class HealthController {
       database,
       objects: this.objects.probe(),
       readers: { workbook, document },
+      codex: this.codex.status(),
     };
   }
 }

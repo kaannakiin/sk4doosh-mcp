@@ -5,6 +5,8 @@ import type { Locale } from "@chat/contracts/common/locale";
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  isDynamicToolUIPart,
+  isToolUIPart,
   lastAssistantMessageIsCompleteWithApprovalResponses,
   type UIMessage,
 } from "ai";
@@ -21,6 +23,34 @@ import { createChatTransport } from "./transport.ts";
  * render of the whole log.
  */
 const STREAM_THROTTLE_MS = 50;
+
+/**
+ * Guard: a tool that is still streaming holds the turn open, even though its part
+ * already reads as `output-available`. The sdk's own predicate treats that state
+ * as terminal without looking at `preliminary`, so a turn carrying both a running
+ * tool and a just-answered approval would satisfy it mid-stream and post the
+ * conversation again while the first request is still writing to it.
+ */
+function noToolStillRunning(messages: readonly UIMessage[]): boolean {
+  const last = messages.at(-1);
+  if (last === undefined || last.role !== "assistant") {
+    return true;
+  }
+
+  return !last.parts.some(
+    (part) =>
+      (isToolUIPart(part) || isDynamicToolUIPart(part)) &&
+      part.state === "output-available" &&
+      part.preliminary === true,
+  );
+}
+
+function readyToResume({ messages }: { messages: UIMessage[] }): boolean {
+  return (
+    noToolStillRunning(messages) &&
+    lastAssistantMessageIsCompleteWithApprovalResponses({ messages })
+  );
+}
 
 export interface ChatSessionParams {
   sessionId: SessionId;
@@ -84,7 +114,7 @@ export function useChatSession({
     messages: initialMessages as unknown as UIMessage[],
     transport,
     throttle: STREAM_THROTTLE_MS,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+    sendAutomaticallyWhen: readyToResume,
     onFinish: ({ messages }) => {
       upsertSessionAtFront(queryClient, {
         ...base,

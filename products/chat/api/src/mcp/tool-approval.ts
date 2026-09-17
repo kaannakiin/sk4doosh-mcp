@@ -7,6 +7,14 @@ import type { ToolApprovalStatus } from "ai";
 /**
  * The two tools that only report structure — sheet names, namespaces, element
  * counts — and never return cell or record values.
+ *
+ * Guard: `codex_task` must never join this set, and not only because it writes
+ * files. A tool that skips approval executes inline inside a step, where the
+ * sdk's chunk watchdog has been armed by the model's own output and is never
+ * cleared for the duration of the call — an agent run would be killed at the
+ * one-minute mark with the whole turn. Requiring approval moves it onto the
+ * resumed request, which executes approved tools before the step that arms that
+ * watchdog exists. `tool-approval.spec.ts` holds this.
  */
 const AUTO_APPROVED = new Set<ChatToolName>([
   "describe_workbook",

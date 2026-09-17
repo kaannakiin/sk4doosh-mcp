@@ -6,13 +6,19 @@
 /// carries; it must never appear in a response, a cursor or an object key.
 model ChatSession {
   id           BigInt    @id @default(autoincrement())
-  publicId     String    @unique @db.Uuid @map("public_id")
+  publicId     String    @unique @map("public_id") @db.Uuid
   userId       BigInt    @map("user_id")
   title        String?
   messageCount Int       @default(0) @map("message_count")
-  createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt    DateTime  @default(now()) @db.Timestamptz @map("updated_at")
-  deletedAt    DateTime? @db.Timestamptz @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
+
+  /// The Codex thread this conversation continues, as the agent's own runtime
+  /// named it. It is a handle into `$CODEX_HOME/sessions`, not an identifier
+  /// this product mints, so it is never projected into a row type and never
+  /// leaves the process — resuming a thread is the only thing it is read for.
+  codexThreadId String? @map("codex_thread_id")
 
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    ChatMessage[]

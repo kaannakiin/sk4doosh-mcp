@@ -27,6 +27,13 @@ const TOOL_TIMEOUT_MS = 120_000;
 
 const TOTAL_TIMEOUT_MS = 900_000;
 
+/**
+ * Guard: the room a turn needs on top of its longest tool. `totalMs` covers the
+ * tool run and the model generation that reads its result, so a ceiling set to
+ * the tool's own budget would abort the answer rather than the work.
+ */
+const TURN_SLACK_MS = 120_000;
+
 interface TagsResponse {
   models?: { name?: string }[];
 }
@@ -51,12 +58,35 @@ export class LlmService {
     });
   }
 
-  get timeout(): TimeoutConfiguration<ToolSet> {
+  /**
+   * Guard: `chunkMs` is not widened for a long tool, and must not be. The chunk
+   * watchdog is armed by the model's own output and is never cleared for the
+   * duration of a tool call, so a tool that runs inline past a minute dies with
+   * the whole turn. What saves the long ones is that they require approval and
+   * therefore execute on the resumed request, before the step that arms the
+   * watchdog exists at all. Raising this to cover them would buy nothing and
+   * would let a genuinely dead model stream sit open for the same span.
+   *
+   * Guard: `totalMs` does cover them. It is armed when `streamText` is called,
+   * which is before the approved tools run, so it is the one ceiling a long tool
+   * has to fit inside.
+   *
+   * @param longToolMs the budget of the longest-running tool this turn offers
+   */
+  timeoutFor(
+    longToolMs?: Partial<Record<string, number>>,
+  ): TimeoutConfiguration<ToolSet> {
+    const longest = Math.max(
+      0,
+      ...Object.values(longToolMs ?? {}).map((ms) => ms ?? 0),
+    );
+
     return {
       firstChunkMs: FIRST_CHUNK_TIMEOUT_MS,
       chunkMs: CHUNK_TIMEOUT_MS,
       toolMs: TOOL_TIMEOUT_MS,
-      totalMs: TOTAL_TIMEOUT_MS,
+      ...(longToolMs === undefined ? {} : { tools: longToolMs }),
+      totalMs: Math.max(TOTAL_TIMEOUT_MS, longest + TURN_SLACK_MS),
     };
   }
 

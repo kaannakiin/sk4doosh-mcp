@@ -55,7 +55,8 @@
       "approval-responded": "Approved",
       "output-available": "Done",
       "output-error": "Failed",
-      "output-denied": "Denied"
+      "output-denied": "Denied",
+      "running": "Working"
     },
     "names": {
       "describe_workbook": "describe_workbook",
@@ -65,10 +66,28 @@
       "describe_document": "describe_document",
       "read_node": "read_node",
       "select_xpath": "select_xpath",
-      "project_records": "project_records"
+      "project_records": "project_records",
+      "codex_task": "codex_task"
     },
     "remember": "Don't ask again for this tool",
-    "rememberHint": "Applies to this server only, until you forget it on the Integrations page."
+    "rememberHint": "Applies to this server only, until you forget it on the Integrations page.",
+    "codex": {
+      "starting": "Starting",
+      "truncated": "Some of the result was longer than can be shown here.",
+      "commands_one": "{{count}} command",
+      "commands_other": "{{count}} commands",
+      "changes_one": "{{count}} file changed",
+      "changes_other": "{{count}} files changed",
+      "errors": {
+        "codex_unconfigured": "The coding agent is not set up on this server.",
+        "codex_binary_missing": "The coding agent's program is missing from this server.",
+        "codex_unauthenticated": "The coding agent has no credentials on this server.",
+        "codex_workspace_unavailable": "A working directory for the coding agent could not be prepared.",
+        "codex_timeout": "The coding agent ran past the time allowed for one task.",
+        "codex_aborted": "The coding agent was stopped before it finished.",
+        "codex_failed": "The coding agent could not finish the task."
+      }
+    }
   },
   "errors": {
     "network": "The API could not be reached",

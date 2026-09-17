@@ -21,6 +21,7 @@ export const healthResponseSchema = z.object({
     workbook: readinessSchema,
     document: readinessSchema,
   }),
+  codex: readinessSchema,
 });
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;

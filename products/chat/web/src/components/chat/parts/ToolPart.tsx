@@ -4,7 +4,9 @@ import { getToolName } from "ai";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { codexOutputOf } from "~/lib/codex-output";
 import { formatToolInput, formatToolOutput } from "~/lib/tool-output";
+import { CodexPart } from "./CodexPart";
 
 export type ReaderToolPart = ToolUIPart | DynamicToolUIPart;
 
@@ -27,18 +29,29 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
   const args = formatToolInput(part.input);
   const approvalId = part.approval?.id;
   const reason = part.approval?.requestReason;
+  /**
+   * A streaming tool reaches `output-available` on its first progress update and
+   * stays there for the rest of the run, so the state alone reads as finished.
+   * `preliminary` is what separates the two, and it drives the label, the border
+   * and whether the result is offered as a collapsed block.
+   */
+  const running =
+    part.state === "output-available" && part.preliminary === true;
+  const display = running ? "running" : part.state;
+  const codex =
+    part.state === "output-available" ? codexOutputOf(part.output) : undefined;
 
   return (
     <section
       className="group/tool mt-4 rounded-[10px] border border-hairline bg-panel px-3.5 py-3 data-[state=approval-requested]:border-amber data-[state=output-denied]:border-red data-[state=output-error]:border-red"
-      data-state={part.state}
+      data-state={display}
     >
       <header className="flex items-center justify-between gap-3">
         <span className="font-mono text-[0.8125rem] font-medium">
           {t(`tool.names.${name}`, { defaultValue: name })}
         </span>
         <span className="text-[0.6875rem] tracking-widest whitespace-nowrap text-ink-dim uppercase group-data-[state=approval-requested]/tool:text-amber group-data-[state=output-available]/tool:text-green group-data-[state=output-denied]/tool:text-red group-data-[state=output-error]/tool:text-red">
-          {t(`tool.states.${part.state}`)}
+          {t(`tool.states.${display}`)}
         </span>
       </header>
 
@@ -105,7 +118,11 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
         </div>
       ) : null}
 
-      {part.state === "output-available" ? (
+      {codex === undefined ? null : (
+        <CodexPart output={codex} running={running} />
+      )}
+
+      {part.state === "output-available" && codex === undefined && !running ? (
         <details className="mt-3">
           <summary className="cursor-pointer text-xs tracking-wider text-ink-dim uppercase">
             {t("tool.output")}

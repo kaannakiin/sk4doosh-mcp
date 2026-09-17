@@ -2,7 +2,12 @@ import { SESSION_TITLE_MAX_LENGTH } from "@chat/contracts/chat/session-limits";
 import type { MessageRow } from "@chat/db";
 
 import type { MessageInput } from "./message.repository.ts";
-import { validateUIMessages, type UIMessage } from "ai";
+import {
+  isDynamicToolUIPart,
+  isToolUIPart,
+  validateUIMessages,
+  type UIMessage,
+} from "ai";
 
 /**
  * Flattens a message's text parts.
@@ -132,4 +137,62 @@ async function validate(
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Rewrites a tool part that never reached a terminal state into a failed one.
+ *
+ * Guard: a streaming tool publishes its progress as `output-available` carrying
+ * `preliminary`, and a turn the reader cancelled ends on one of those. Stored as
+ * it stands, the conversation reopens with a tool card that claims to be running
+ * forever, and the progress object reads as the tool's result. Sealing it here
+ * keeps the record that the tool ran and marks it for what it was.
+ *
+ * Guard: the failed part is built field by field rather than spread over the
+ * running one. The sdk's part union allows a different set of fields in each
+ * state, so carrying `output` and `preliminary` across would produce a shape no
+ * variant admits — and the parts array is rebuilt rather than mutated, because
+ * `onEnd` hands back message objects the stream still holds.
+ */
+export function sealPreliminary(
+  messages: readonly UIMessage[],
+  errorText: string,
+): UIMessage[] {
+  return messages.map((message) => {
+    if (!message.parts.some(isPreliminaryTool)) {
+      return message;
+    }
+
+    return {
+      ...message,
+      parts: message.parts.map((part) =>
+        isPreliminaryTool(part) ? sealed(part, errorText) : part,
+      ),
+    };
+  });
+}
+
+type MessagePart = UIMessage["parts"][number];
+
+function sealed(part: MessagePart, errorText: string): MessagePart {
+  const base = {
+    toolCallId: (part as { toolCallId: string }).toolCallId,
+    input: (part as { input: unknown }).input,
+    state: "output-error",
+    errorText,
+  };
+
+  return (
+    part.type === "dynamic-tool"
+      ? { ...base, type: "dynamic-tool", toolName: part.toolName }
+      : { ...base, type: part.type }
+  ) as MessagePart;
+}
+
+function isPreliminaryTool(part: MessagePart): boolean {
+  if (!isToolUIPart(part) && !isDynamicToolUIPart(part)) {
+    return false;
+  }
+
+  return part.state === "output-available" && part.preliminary === true;
 }

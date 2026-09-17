@@ -119,10 +119,7 @@ export class ChatSessionRepository {
    *
    * @returns `false` when the session does not exist or belongs to somebody else
    */
-  async softDeleteSession(
-    userId: UserId,
-    sessionId: string,
-  ): Promise<boolean> {
+  async softDeleteSession(userId: UserId, sessionId: string): Promise<boolean> {
     const { count } = await this.db.client.chatSession.updateMany({
       where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
       data: { deletedAt: new Date() },
@@ -168,5 +165,43 @@ export class ChatSessionRepository {
     });
 
     return count === 0 ? undefined : this.findSession(userId, sessionId);
+  }
+
+  /**
+   * The Codex thread this conversation continues, if it has one.
+   *
+   * @returns the agent runtime's thread id, or `undefined` when no agent has run
+   */
+  async codexThreadFor(
+    userId: UserId,
+    sessionId: string,
+  ): Promise<string | undefined> {
+    const found = await this.db.client.chatSession.findFirst({
+      where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
+      select: { codexThreadId: true },
+    });
+
+    return found?.codexThreadId ?? undefined;
+  }
+
+  /**
+   * Records the thread a Codex run started, so the next one resumes it.
+   *
+   * Guard: written with `updateMany` for the same reason `renameSession` is —
+   * the user predicate has to sit in the same statement as the write.
+   *
+   * Guard: `updated_at` is left alone. A conversation's position in the sidebar
+   * is set by the turn that produced this thread, not by the bookkeeping that
+   * remembers it.
+   */
+  async rememberCodexThread(
+    userId: UserId,
+    sessionId: string,
+    threadId: string,
+  ): Promise<void> {
+    await this.db.client.chatSession.updateMany({
+      where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
+      data: { codexThreadId: threadId },
+    });
   }
 }

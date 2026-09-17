@@ -55,7 +55,8 @@
       "approval-responded": "Onaylandı",
       "output-available": "Tamamlandı",
       "output-error": "Başarısız",
-      "output-denied": "Reddedildi"
+      "output-denied": "Reddedildi",
+      "running": "Çalışıyor"
     },
     "names": {
       "describe_workbook": "describe_workbook",
@@ -65,10 +66,28 @@
       "describe_document": "describe_document",
       "read_node": "read_node",
       "select_xpath": "select_xpath",
-      "project_records": "project_records"
+      "project_records": "project_records",
+      "codex_task": "codex_task"
     },
     "remember": "Bu araç için bir daha sorma",
-    "rememberHint": "Yalnızca bu sunucu için geçerli; Entegrasyonlar sayfasından unutturana kadar sürer."
+    "rememberHint": "Yalnızca bu sunucu için geçerli; Entegrasyonlar sayfasından unutturana kadar sürer.",
+    "codex": {
+      "starting": "Başlıyor",
+      "truncated": "Sonucun bir bölümü burada gösterilemeyecek kadar uzundu.",
+      "commands_one": "{{count}} komut",
+      "commands_other": "{{count}} komut",
+      "changes_one": "{{count}} dosya değişti",
+      "changes_other": "{{count}} dosya değişti",
+      "errors": {
+        "codex_unconfigured": "Kodlama ajanı bu sunucuda kurulu değil.",
+        "codex_binary_missing": "Kodlama ajanının programı bu sunucuda bulunamadı.",
+        "codex_unauthenticated": "Kodlama ajanının bu sunucuda kimlik bilgisi yok.",
+        "codex_workspace_unavailable": "Kodlama ajanı için bir çalışma dizini hazırlanamadı.",
+        "codex_timeout": "Kodlama ajanı bir görev için tanınan süreyi aştı.",
+        "codex_aborted": "Kodlama ajanı bitirmeden durduruldu.",
+        "codex_failed": "Kodlama ajanı görevi tamamlayamadı."
+      }
+    }
   },
   "errors": {
     "network": "API'ye ulaşılamadı",

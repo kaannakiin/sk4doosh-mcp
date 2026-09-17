@@ -1455,7 +1455,87 @@ Açık sunucu için token'sız `active` bir `Connection` açılıyor. `authorize
 
 Bu F4'te `discovered_at`/`verified_at` ile yakalanan tuzağın aynısı. `createOpen` ikisini de tek `new Date()`'ten yazıyor; `beginAuthorization`'daki aynı gizli hata da (satırı DB saatiyle yaratıp `completeAuthorization`'da uygulama saatiyle işaretlemek) birlikte kapatıldı.
 
-## 34. Teknik referanslar
+## 34. F8 ile kesinleşen kararlar
+
+### 34.1 Araçlar tanımlanıyor, azı etkinleştiriliyor
+
+`integration_tool` satırları F6'dan beri yazılıyor ve sayılıyordu; hiçbir şey okumuyordu. Köprü kurulurken bağlam maliyeti asıl kısıttı: üç sunucu bağlayan kullanıcıda her mesaja onlarca araç şeması giriyor.
+
+Çözüm `activeTools`. `stream-text.ts:2325` `filterActiveTools(...)` çağırıyor ve sağlayıcıya yalnız süzülmüş küme serileştiriliyor, dolayısıyla bütün araçlar `tools`'ta **tanımlı** kalıp yalnız `find_tools`'un açığa çıkardıkları etkin oluyor. Araç seti kırpılmıyor; modele gösterilen kırpılıyor.
+
+`find_tools` bizim aracımız, keşfedilmiş değil: `ChatToolName` enum'una girdi, kapalı liste kapalı kaldı ve kendi veritabanımızı okuduğu için `approvalFor` onu otomatik onaylıyor.
+
+### 34.2 Adım 0 geçmişten tohumlanıyor, kayıp adlar mezar taşı alıyor
+
+İki ayrı davranış ölçüldü, ikisi de tasarımı değiştirdi.
+
+`parse-tool-call.ts:95-113` dış catch `NoSuchToolError`'ı **fırlatmıyor** — `invalid: true` bir tool-call döndürüyor ve `stream-language-model-call.ts:697` onu `tool-error` parçasına çeviriyor. Yani bilinmeyen bir ad turu öldürmüyor, sadece bir adım harcıyor. Bu yüzden adım 0'ın `activeTools`'u gelen geçmişte zaten geçen adlarla tohumlanıyor: model az önce kullandığı aracı yeniden aramıyor.
+
+Ama `execute-tool-call.ts:89` `!isExecutableTool(tool)` için `undefined` dönüyor ve `stream-text.ts:2113` `result != null` ile eliyor — **onay dönüşünde aracı kaybolmuş bir çağrı hiç sonuç yazmıyor**. Geriye sonuçsuz bir araç çağrısı kalıyor, ki bu `ChatService`'in zaten belgelediği boş asistan turu ve sonsuz yeniden-gönderim. Mezar taşı saplamalarının tek gerekçesi bu, ve yalnız `^i[0-9a-f]{8}_` şeklindeki adlara konuyor: yerel bir okuyucu adına konsa gerçek aracı gölgelerdi.
+
+### 34.3 Açık ad `public_id`'den türüyor
+
+Sağlayıcıların araç adı kısıtı pratikte `^[a-zA-Z0-9_-]{1,64}$`; uzak adlar 128 karaktere kadar çıkabiliyor ve nokta içerebiliyor. Açık ad `i` + `public_id`'nin sha256'sından 8 hex + `_` + sanitize edilmiş ad.
+
+Önek **`display_name`'den değil** `public_id`'den türüyor: ad değiştirilebilir bir alan ve değişince konuşma geçmişindeki her araç çağrısı öksüz kalırdı. Sanitize veya kesme bir şeyi değiştirdiyse tam adın digest'inden 7 hex ekleniyor, yoksa yalnız noktalamayla ayrılan iki araç tek ada çökerdi.
+
+Çakışma bir **hata**: sayaçla numaralandırmak sıraya bağlı olurdu ve turlar arası sessizce yeniden numaralandırmak, tam da kaçınılan geçmiş bozulması demekti. İkinci araç düşüyor ve iki ad da loglanıyor.
+
+Modelin ürettiği ad **haritadan** çözülüyor, dize bölünerek değil. Tarayıcı da entegrasyonu bilmiyor — AI SDK'nın onay yanıtı yalnız `{ id, approved }` taşıyor — bu yüzden hatırlama isteği açık adla anahtarlanıyor ve sunucu kataloğu yeniden kurup adı çözüyor.
+
+### 34.4 Digest ingest anında hesaplanıyor
+
+Hatırlanan onay, onaylanan **tanıma** bağlı: sunucu adı koruyup ne yaptığını değiştirebilir. Digest `sha256("mcp-tool-v1\n" + canonical({name, description, annotations, inputSchema}))`.
+
+Okuma anında hesaplamak sağlam değil. V8 `JSON.parse`/`JSON.stringify` sırasında sayı-benzeri anahtarları öne alıyor, yani `properties` içinde `"1"` ve `"a"` olan bir şema Postgres'te ve bu süreçte farklı hash'lenirdi; dahası bir sürücü değişikliği **bütün kullanıcıların bütün onaylarını** bir günde düşürürdü. Digest `integration_tool.definition_digest` kolonunda, `listTools`'un ayrıştırdığı nesneden bir kez yazılıyor.
+
+`title` hariç — saf görüntü. `description` normalize **edilmiyor**: açıklama, sunucunun modele ne yapacağını anlattığı yer, yani birincil prompt injection yüzeyi; her değişikliği anlam değişikliğidir. Bedeli açık: açıklamasını her seferinde yeniden üreten bir sunucu her saat yeniden sorar.
+
+### 34.5 Annotation'lara asimetrik güven
+
+`destructiveHint: true` barı **yükseltiyor** — hatırlanmış olsa da her seferinde soruluyor. `readOnlyHint` otomatik onay için **yok sayılıyor**. Yalan söyleyen sunucu kendini yalnız daha zahmetli yapabiliyor.
+
+Spec'in `destructiveHint` varsayılanı `true`, ama yalnız **açıkça yazılmış** `true` bağlayıcı. Harfiyen uygulansaydı annotation yayınlamayan her sunucunun her aracı yıkıcı sayılır ve hatırlama özelliği hiç ateşlemezdi.
+
+Bu asimetri yüzünden `read_only` diye bir mod eklenmedi: o mod `readOnlyHint`'e güvenmek zorunda kalırdı ve `tool-approval.ts`'in zaten yazılı kararıyla çelişirdi.
+
+### 34.6 Hatırlama kalıcı, `integration_tool`'a bağlı değil
+
+`replaceTools` her tazelemede satırları silip yeniden yazıyor. `tool_approval` o tabloya FK verseydi saatlik TTL kalıcı onayları süpürürdü, ve kesinti sırasında boş liste dönen bir sunucu verilmiş rızayı kalıcı olarak silerdi. Bağ yok; çekilmiş bir araç okuma yolunda `available: false` olarak bildiriliyor.
+
+Digest anahtarın parçası değil: kalıcı hatırlamada digest'li anahtar, sunucu her açıklama düzelttiğinde ölü satır bırakır ve arayüzde aynı aracı üç kez gösterirdi. Dışarıda kalınca yeniden onay bir `upsert`.
+
+`tool_approval_integration_idx` şart — Postgres FK'nın referans eden kolonunu indekslemiyor, entegrasyon silmede cascade tabloyu seq-scan ederdi. PK'nın `user_id` öneki kullanıcı okumalarını ve `app_user` cascade'ini zaten karşılıyor.
+
+### 34.7 Tazeleme turun kritik yolunda değil
+
+`LIST_TIMEOUT_MS` 10 sn. Altı bayat entegrasyonu olan kullanıcı ilk token'dan önce dakikalarca bekleyebilirdi ve tek bir ulaşılamaz sunucu her turu vergilendirirdi. 1 saatlik bayatlık zaten kabul edilmişken bir tur daha kabul etmek bedavaya geliyor: araç seti o anki satırlardan kuruluyor, tazeleme ayrık tetikleniyor.
+
+Tek istisna `tools_refreshed_at IS NULL` — az önce bağlanmış sunucu bir tur boyunca görünmez olmamalı.
+
+Kira tek `updateMany`, ve **kaybeden beklemiyor**. Token kirasında beklemek zorunlu (token'ı olmayanın sunacağı bir şey yok); bayat araç listesi gayet kullanılabilir, beklemek saf gecikme vergisi. Başarısız tazeleme de pencereyi tüketiyor, yoksa sağlayıcı kesintisine karşı tur-başına sağlık yoklaması kurulmuş olurdu.
+
+Bilinen sınır: sayaç `integration` üzerinde global, yani aynı partner entegrasyonuna bağlı iki kullanıcıdan birinin tazelemesi diğerininkini bastırıyor. `auth_mode: "none"` entegrasyonlarının bağlantı satırı olmadığı için doğru ev iki kolon demekti; ilk partner entegrasyonunda yeniden bakılacak.
+
+### 34.8 Sunucunun JSON Schema'sı sağlayıcıya olduğu gibi gitmiyor
+
+`jsonSchema()` doğrulama yapmıyor. Kök seviyede nesne olmayan bir tip, `$ref` veya bilinmeyen bir draft, **bütün isteği** 400'letirdi — turdaki her araç ölürdü, sadece bozuk olan değil. `sanitizeToolInputSchema` kökün `type === "object"` olmasını şart koşuyor, meta anahtarları sıyırıyor, `$ref` taşıyan belgeyi tümüyle opak bir şemaya çeviriyor ve 8 KB tavanı uyguluyor.
+
+`$ref` yerinde budanmıyor: bir `anyOf` dalını atmak şemanın neyi kabul ettiğini sessizce değiştirirdi, ve kendi şekli hakkında yalan söyleyen bir şema hiçbir şey söylemeyenden kötüdür.
+
+### 34.9 Uzak sonuç veri, talimat değil
+
+Her uzak sonuç `untrustedServerOutput` alanında dönüyor ve sistem talimatı bu alanı adıyla güvenilmez ilan ediyor. Sunucunun kendi `isError`'ı fırlatılmıyor, taşınıyor: fırlatmak sunucunun metnini SDK'nın hata biçimlendirmesine yedirir ve modele düzeltecek bir şey bırakmazdı. İki tavan var — taşımada 512 KB süreç için, ayrıştırmadan sonra ~24 000 karakter bağlam penceresi ve adım bütçesi için.
+
+Ve bir taşıma kusuru kapandı: `guarded-http.ts` boyut aşımını `{ kind: "failed" }` olarak bildiriyordu, `failureOf` onu `unreachable`'a eşliyordu — yani büyük bir cevap kullanıcıya "sunucuya ulaşılamadı" dedirtiyordu. `failed` artık `reason: "transport" | "oversized"` taşıyor ve `too_large` ayrı bir hata olarak görünüyor.
+
+### 34.10 Oturum kullanıcı başına önbellekleniyor
+
+Her çağrıda tam el sıkışma 3 tur demek. Önbellek anahtarı `${userId}:${integrationPublicId}` — entegrasyon tek başına asla: oturum kullanıcının bearer'ını taşıyor ve sunucu durumu oturum id'sine bağlayabiliyor.
+
+Sunucu oturumu düşürdüğünde (`mcp-session-id` sunulurken gelen `404`) **tam bir kez** yeniden el sıkışılıyor; döngü bearer'ı tekrar tekrar oynatırdı. Kaynağın `401`'i yetkilendirme sunucusunun reddi değil, o yüzden sohbet yolu `markReauthRequired` çağırmıyor — o kararın sahibi `ConnectionTokenService`.
+
+## 35. Teknik referanslar
 
 - Model Context Protocol — 2026-07-28 specification release and authorization hardening:  
   https://blog.modelcontextprotocol.io/posts/2026-07-28/

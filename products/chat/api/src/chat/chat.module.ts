@@ -4,6 +4,7 @@ import { MulterModule } from "@nestjs/platform-express";
 
 import { AttachmentsModule } from "../attachments/attachments.module.ts";
 import { AuthModule } from "../auth/auth.module.ts";
+import { CodexModule } from "../codex/codex.module.ts";
 import { ConnectionsModule } from "../connections/connections.module.ts";
 import type { AppConfig } from "../config/configuration.ts";
 import { DbModule } from "../db/db.module.ts";
@@ -29,6 +30,7 @@ import { MessageRepository } from "./message.repository.ts";
      * one place.
      */
     ConnectionsModule,
+    CodexModule,
     DbModule,
     LlmModule,
     McpModule,

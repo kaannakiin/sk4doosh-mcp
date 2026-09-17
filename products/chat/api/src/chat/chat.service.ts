@@ -20,6 +20,7 @@ import type { ServerResponse } from "node:http";
 
 import { AttachmentStoreService } from "../attachments/attachment-store.service.ts";
 import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
+import { CodexToolService } from "../codex/codex-tool.service.ts";
 import type { AppConfig } from "../config/configuration.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import { LlmService } from "../llm/llm.service.ts";
@@ -69,6 +70,7 @@ export class ChatService {
     private readonly history: ChatHistoryService,
     private readonly remote: RemoteToolSetService,
     private readonly approvals: RemoteToolApprovalService,
+    private readonly codex: CodexToolService,
   ) {
     this.approvalSecret = config.get("toolApprovalSecret", { infer: true });
   }
@@ -100,17 +102,36 @@ export class ChatService {
     const abort = abortOnDisconnect(response);
 
     const manifest = await this.manifest(userId, request.sessionId, locale);
-    const history = await convertToModelMessages(messages);
-    const [local, surface] = await Promise.all([
+    /**
+     * Guard: converted twice, and the second pass is the one that matters.
+     * `toModelOutput` is applied by `convertToModelMessages`, but only when it is
+     * handed the same tools `streamText` gets — and the tool surface cannot be
+     * built without a converted history to read the conversation's used tool
+     * names from. The seed breaks that circle; the function is pure, so the
+     * second pass costs nothing but the walk.
+     *
+     * Guard: `ignoreIncompleteToolCalls` drops the preliminary output a cancelled
+     * turn leaves behind. Without it a run the reader stopped halfway through
+     * would hand the model a progress object as though it were the result, on
+     * every turn after it, for the life of the conversation.
+     */
+    const seed = await convertToModelMessages(messages);
+    const [local, codex, surface] = await Promise.all([
       this.readers.toolsFor(userId, request.sessionId),
-      this.remote.surfaceFor(userId, history, locale),
+      Promise.resolve(this.codex.toolsFor(userId, request.sessionId, locale)),
+      this.remote.surfaceFor(userId, seed, locale),
     ]);
+    const tools = { ...local, ...codex, ...surface.tools };
+    const history = await convertToModelMessages(messages, {
+      tools,
+      ignoreIncompleteToolCalls: true,
+    });
     const gate = await this.approvals.gateFor(
       userId,
       surface.byExposedName,
       locale,
     );
-    const localNames = Object.keys(local);
+    const localNames = [...Object.keys(local), ...Object.keys(codex)];
 
     const result = await streamText({
       model: this.llm.model(),
@@ -125,7 +146,7 @@ export class ChatService {
           : [{ role: "system" as const, content: surface.instructions }]),
       ],
       messages: history,
-      tools: { ...local, ...surface.tools },
+      tools,
       /**
        * Guard: only the tools `find_tools` has surfaced, plus the ones the
        * conversation already used, are handed to the provider. `activeTools` is
@@ -144,10 +165,18 @@ export class ChatService {
       stopWhen: isStepCount(
         surface.byExposedName.size === 0 ? STEP_LIMIT : REMOTE_STEP_LIMIT,
       ),
-      timeout: this.llm.timeout,
+      timeout: this.llm.timeoutFor(this.codex.toolBudget(codex)),
       abortSignal: abort.signal,
       experimental_toolApprovalSecret: this.approvalSecret,
       experimental_transform: smoothStream(),
+      /**
+       * Guard: the ollama wrapper's synthesis fallback is off. When it fires it
+       * issues a second, separate generation whose prompt embeds every tool
+       * result verbatim — for an agent run that is the whole summary sent again.
+       * It only ever reads `fullStream`, which this code does not consume, so
+       * today it is dormant rather than harmless; naming it keeps it that way.
+       */
+      enhancedOptions: { enableStreamingSynthesis: false },
       /**
        * Guard: the remote gate answers first and only for names it minted. A
        * local reader tool still goes through `approvalFor`'s allowlist, so the
@@ -169,7 +198,13 @@ export class ChatService {
         originalMessages: messages,
         generateMessageId: messageId,
         onError: (cause) => this.renderError(cause, locale),
-        onEnd: (event) => this.history.settle(userId, request.sessionId, event),
+        onEnd: (event) =>
+          this.history.settle(
+            userId,
+            request.sessionId,
+            event,
+            this.i18n.t("chat:tools.interrupted", {}, locale),
+          ),
       }),
     });
   }

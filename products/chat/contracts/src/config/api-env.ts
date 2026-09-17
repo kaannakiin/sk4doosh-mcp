@@ -16,6 +16,11 @@ import {
   SESSION_IDLE_TTL_MS_DEFAULT,
 } from "../attachment/limits.ts";
 import {
+  CODEX_MAX_WORKSPACES_DEFAULT,
+  CODEX_TIMEOUT_MS_DEFAULT,
+  CODEX_TIMEOUT_MS_HARD,
+} from "../tools/codex/limits.ts";
+import {
   DB_POOL_MAX_DEFAULT,
   DB_POOL_MAX_HARD,
   databaseUrlSchema,
@@ -247,6 +252,37 @@ export const apiEnvSchema = z.preprocess(
         .int()
         .positive()
         .default(MCP_MAX_SESSIONS_DEFAULT),
+
+      /**
+       * Guard: this is the directory the Codex CLI reads its credentials from,
+       * and the whole of this product's Codex authentication. No api key is ever
+       * passed to the sdk, so which credential the agent runs under — a ChatGPT
+       * login, a personal access token, a federated workload identity — is
+       * decided by what this directory holds and never by this code. Unset means
+       * the feature is off, the same way an unset reader command means no reader.
+       */
+      CHAT_CODEX_HOME: z.string().trim().min(1).optional(),
+      CHAT_CODEX_BIN: z.string().trim().min(1).optional(),
+      CHAT_CODEX_BASE_URL: z.url().optional(),
+      /**
+       * Guard: a root of its own, never `CHAT_CACHE_ROOT`. The attachment cache
+       * is wiped at boot and evicted under byte pressure across every session —
+       * an agent's working directory placed under it would be deleted mid-run by
+       * an unrelated upload.
+       */
+      CHAT_CODEX_ROOT: z.string().trim().min(1).optional(),
+      CHAT_CODEX_MODEL: z.string().trim().min(1).optional(),
+      CHAT_CODEX_TIMEOUT_MS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .max(CODEX_TIMEOUT_MS_HARD)
+        .default(CODEX_TIMEOUT_MS_DEFAULT),
+      CHAT_CODEX_MAX_WORKSPACES: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(CODEX_MAX_WORKSPACES_DEFAULT),
 
       CHAT_TOOL_APPROVAL_SECRET: z.string().min(32).optional(),
     })

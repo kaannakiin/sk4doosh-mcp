@@ -1,0 +1,21 @@
+export const CODEX_TIMEOUT_MS_DEFAULT = 10 * 60 * 1000;
+
+export const CODEX_TIMEOUT_MS_HARD = 30 * 60 * 1000;
+
+export const CODEX_HEARTBEAT_MS = 10 * 1000;
+
+export const CODEX_MAX_WORKSPACES_DEFAULT = 4;
+
+export const CODEX_INSTRUCTION_MAX_CHARS = 4000;
+
+export const CODEX_MAX_INPUT_FILES = 16;
+
+export const CODEX_SUMMARY_MAX_CHARS = 12_000;
+
+export const CODEX_MAX_CHANGED_FILES = 100;
+
+export const CODEX_MAX_COMMANDS = 50;
+
+export const CODEX_MAX_TODOS = 32;
+
+export const CODEX_ACTIVITY_MAX_CHARS = 200;

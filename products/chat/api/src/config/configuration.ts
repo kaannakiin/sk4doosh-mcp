@@ -79,6 +79,23 @@ export interface ReaderConfig {
   documentCommand?: string;
 }
 
+/**
+ * Guard: there is no `apiKey` here and there must never be one. `home` is the
+ * whole of this product's Codex authentication — the sdk is handed an explicit
+ * environment, so a credential this interface cannot express is a credential the
+ * agent cannot receive, including an `OPENAI_API_KEY` sitting in the server's
+ * own environment.
+ */
+export interface CodexConfig {
+  home?: string;
+  binary?: string;
+  baseUrl?: string;
+  model?: string;
+  root: string;
+  timeoutMs: number;
+  maxWorkspaces: number;
+}
+
 export interface AppConfig {
   port: number;
   pathPrefix: string;
@@ -94,6 +111,7 @@ export interface AppConfig {
   cache: CacheConfig;
   sessions: SessionConfig;
   readers: ReaderConfig;
+  codex: CodexConfig;
   toolApprovalSecret?: string;
 }
 
@@ -205,6 +223,15 @@ export function loadConfig(): AppConfig {
     readers: {
       workbookCommand: env.CHAT_MCP_EXCEL_CMD,
       documentCommand: env.CHAT_MCP_XML_CMD,
+    },
+    codex: {
+      home: env.CHAT_CODEX_HOME,
+      binary: env.CHAT_CODEX_BIN,
+      baseUrl: env.CHAT_CODEX_BASE_URL,
+      model: env.CHAT_CODEX_MODEL,
+      root: env.CHAT_CODEX_ROOT ?? join(tmpdir(), "chat-codex"),
+      timeoutMs: env.CHAT_CODEX_TIMEOUT_MS,
+      maxWorkspaces: env.CHAT_CODEX_MAX_WORKSPACES,
     },
     toolApprovalSecret: env.CHAT_TOOL_APPROVAL_SECRET,
   };

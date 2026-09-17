@@ -48,3 +48,6 @@ local/
 
 .playwright-mcp
 /mail.ts
+
+# Local Codex credentials for the chat product's coding agent
+.codex-home/
