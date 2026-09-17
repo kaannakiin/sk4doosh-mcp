@@ -1,6 +1,6 @@
 import type { Fingerprint } from "@sk-mcp/file-core";
 import type { CellSnapshot } from "./cell-value.js";
-import { SkMcpExcelError } from "./errors.js";
+import { SkMcpExcelError } from "./platform/errors.js";
 import type { GridBounds } from "./range.js";
 
 export interface DeclaredTable {

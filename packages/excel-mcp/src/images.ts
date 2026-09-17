@@ -1,4 +1,4 @@
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import type { MetadataLimitation } from "./metadata-support.js";
 import type { AnchorCell, OoxmlImage } from "./ooxml/images.js";
 import { formatRectangle } from "./range.js";

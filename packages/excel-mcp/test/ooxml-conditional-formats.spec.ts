@@ -2,7 +2,7 @@ import { describe, expect, inject, it } from "vitest";
 import ExcelJS from "exceljs";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { collectConditionalFormats } from "../src/conditional-formats.js";
-import { createWorkbookRoot } from "../src/paths.js";
+import { createWorkbookRoot } from "../src/platform/paths.js";
 import { parseSheetJs } from "../src/sheetjs-workbook.js";
 import { createHandlers } from "../src/tools.js";
 

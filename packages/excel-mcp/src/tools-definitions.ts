@@ -7,7 +7,7 @@ import {
   type ToolNameOf,
 } from "@sk-mcp/file-core";
 import { z } from "zod";
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import {
   columnRef,
   delimiter,

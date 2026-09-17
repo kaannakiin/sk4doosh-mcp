@@ -1,10 +1,10 @@
 import { json, measureJson } from "@sk-mcp/file-core";
-import { limits, modePolicy } from "./limits.js";
+import { limits, modePolicy } from "./platform/limits.js";
 import {
   listWorkbooks,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "./paths.js";
+} from "./platform/paths.js";
 import { findInSheet, readSheet } from "./read-sheet.js";
 import { collectConditionalFormats } from "./conditional-formats.js";
 import { collectImages } from "./images.js";
@@ -20,7 +20,7 @@ import {
 } from "./document.js";
 import { aggregateSheet } from "./aggregate.js";
 import type { CsvReport } from "./csv.js";
-import type { DelimiterName, EncodingName } from "./delimited.js";
+import type { DelimiterName, EncodingName } from "./platform/delimited.js";
 import { inheritCursorOptions, decodeCursor } from "./cursor.js";
 import type { ToolHandlers } from "./tools-definitions.js";
 import { guard } from "./tools-guard.js";

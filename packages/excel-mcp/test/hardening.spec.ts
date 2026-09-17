@@ -16,11 +16,11 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { createDocumentCache, sheetSource } from "../src/document.js";
 import { createHandlers, type ToolHandlers } from "../src/tools.js";
 import { parseCsv } from "../src/csv.js";
-import { limits } from "../src/limits.js";
+import { limits } from "../src/platform/limits.js";
 import { decodeCursor } from "../src/cursor.js";
 import { selectSheetName } from "../src/sheetjs-workbook.js";
 import { parseSheetJs } from "../src/sheetjs-workbook.js";

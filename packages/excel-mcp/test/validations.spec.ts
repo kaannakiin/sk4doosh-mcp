@@ -3,7 +3,7 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { collectValidations, compressAddresses } from "../src/validations.js";
 import {
   loadDocument,

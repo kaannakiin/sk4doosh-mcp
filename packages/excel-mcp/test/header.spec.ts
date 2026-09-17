@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import { documentSheet, loadDocument } from "../src/document.js";
-import type { SkMcpExcelError } from "../src/errors.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   declaredHeaderRow,
   isHeaderCandidate,
@@ -11,7 +11,7 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { resolveRange, type GridBounds } from "../src/range.js";
 import {
   requireSheetBounds,

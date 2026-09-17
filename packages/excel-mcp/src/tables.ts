@@ -1,4 +1,4 @@
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import type { OoxmlTable, OoxmlTableColumn } from "./ooxml/tables.js";
 import { columnToLetters, parseCellRef } from "./range.js";
 import type { DeclaredTable } from "./sheet.js";

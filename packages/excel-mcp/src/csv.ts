@@ -1,8 +1,8 @@
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
 import { truncate, type CellSnapshot } from "./cell-value.js";
-import { SkMcpExcelError } from "./errors.js";
-import { limits } from "./limits.js";
+import { SkMcpExcelError } from "./platform/errors.js";
+import { limits } from "./platform/limits.js";
 import { columnToLetters, type GridBounds } from "./range.js";
 import type { RowView, SheetView } from "./sheet.js";
 import type { DocumentMeta, WorkbookDescription } from "./types.js";
@@ -11,7 +11,7 @@ import {
   type CsvOptions,
   type DelimiterName,
   type EncodingName,
-} from "./delimited.js";
+} from "./platform/delimited.js";
 
 export const csvSheetName = "csv";
 

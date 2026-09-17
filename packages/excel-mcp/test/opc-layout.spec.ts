@@ -4,7 +4,7 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { readFile } from "node:fs/promises";
 import { createHandlers, type ToolHandlers } from "../src/tools.js";
 

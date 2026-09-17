@@ -17,13 +17,13 @@ import {
   type MergePolicy,
   type ValueMode,
 } from "./cursor.js";
-import { SkMcpExcelError } from "./errors.js";
+import { SkMcpExcelError } from "./platform/errors.js";
 import {
   headerWarnings,
   readHeaderRow,
   type HeaderRowSource,
 } from "./header.js";
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import { withRegex } from "./regex.js";
 import { inheritCursorOptions, type CursorOptions } from "./cursor.js";
 import {

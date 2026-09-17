@@ -6,7 +6,7 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { createHandlers } from "../src/tools.js";
 import { collectValidations } from "../src/validations.js";
 

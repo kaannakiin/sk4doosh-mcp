@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import type { SkMcpExcelError } from "../src/errors.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { selectSheetName } from "../src/sheetjs-workbook.js";
 import { requireSheetBounds } from "../src/sheet.js";
 import {

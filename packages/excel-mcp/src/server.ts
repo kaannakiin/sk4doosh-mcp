@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createFileSourceServer } from "@sk-mcp/file-core";
-import type { WorkbookRoot } from "./paths.js";
+import type { WorkbookRoot } from "./platform/paths.js";
 import { createHandlers, toolDefinitions } from "./tools.js";
 import { closeRegexWorkers } from "./regex.js";
 

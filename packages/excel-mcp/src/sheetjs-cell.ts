@@ -1,5 +1,5 @@
 import { truncate, type CellFacts, type CellSnapshot } from "./cell-value.js";
-import { SkMcpExcelError } from "./errors.js";
+import { SkMcpExcelError } from "./platform/errors.js";
 
 export interface SheetJsCell {
   readonly t?: string;

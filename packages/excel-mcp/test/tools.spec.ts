@@ -6,7 +6,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { createWorkbookRoot, type WorkbookRoot } from "../src/paths.js";
+import { createWorkbookRoot, type WorkbookRoot } from "../src/platform/paths.js";
 import { createExcelMcpServer } from "../src/server.js";
 import {
   createHandlers,

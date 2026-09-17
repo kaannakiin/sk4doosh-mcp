@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { parseServerArgv } from "@sk-mcp/file-core";
-import { createWorkbookRoot } from "./paths.js";
+import { createWorkbookRoot } from "./platform/paths.js";
 import { createExcelMcpServer } from "./server.js";
 
 function fail(message: string, code: number): never {

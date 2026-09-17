@@ -1,6 +1,6 @@
-import { SkMcpExcelError } from "./errors.js";
-import { formats } from "./formats.js";
-import { resolveWorkbookPath, type WorkbookRoot } from "./paths.js";
+import { SkMcpExcelError } from "./platform/errors.js";
+import { formats } from "./platform/formats.js";
+import { resolveWorkbookPath, type WorkbookRoot } from "./platform/paths.js";
 import type {
   DocumentCache,
   LoadedDocument,

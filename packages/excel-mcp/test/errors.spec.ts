@@ -4,12 +4,12 @@ import {
   asExcelError,
   type SkMcpExcelError,
   SkMcpExcelError as ExcelError,
-} from "../src/errors.js";
+} from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 
 describe("asExcelError", () => {
   it("passes a SkMcpExcelError through untouched", () => {

@@ -5,7 +5,7 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {
   const fixtures = inject("fixtures");

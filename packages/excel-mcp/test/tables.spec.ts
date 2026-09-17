@@ -4,7 +4,7 @@ import {
   createWorkbookRoot,
   resolveWorkbookPath,
   type SandboxedPath,
-} from "../src/paths.js";
+} from "../src/platform/paths.js";
 import { collectTables } from "../src/tables.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {

@@ -4,7 +4,7 @@ import {
   type ErrorContext,
   type GuardedHandler,
 } from "@sk-mcp/file-core";
-import { asExcelError, fail } from "./errors.js";
+import { asExcelError, fail } from "./platform/errors.js";
 import type { Definitions, ToolInput, ToolName } from "./tools-definitions.js";
 
 export function guard<K extends ToolName>(

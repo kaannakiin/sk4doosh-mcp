@@ -1,8 +1,8 @@
 import { fold } from "@sk-mcp/file-core";
 import { normalizeCell, type NormalizeOptions } from "./cell-value.js";
 import type { MergePolicy } from "./cursor.js";
-import { SkMcpExcelError } from "./errors.js";
-import { limits } from "./limits.js";
+import { SkMcpExcelError } from "./platform/errors.js";
+import { limits } from "./platform/limits.js";
 import { classify } from "./predicate.js";
 import {
   columnToLetters,

@@ -2,7 +2,7 @@ import { canonical } from "@sk-mcp/file-core";
 import * as XLSX from "@e965/xlsx";
 import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
 import type { MediaEntry } from "./images.js";
-import { SkMcpExcelError } from "./errors.js";
+import { SkMcpExcelError } from "./platform/errors.js";
 import { openPackage } from "./ooxml/package.js";
 import { zipSource } from "./ooxml/reader.js";
 import {
@@ -20,7 +20,7 @@ import {
   readValidations,
   type OoxmlValidations,
 } from "./ooxml/validations.js";
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import { metadataLimitations } from "./metadata-support.js";
 import {
   formatCellRef,

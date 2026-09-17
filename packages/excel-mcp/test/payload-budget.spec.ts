@@ -1,8 +1,8 @@
 import { basename } from "node:path";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { createWorkbookRoot } from "../src/paths.js";
+import { createWorkbookRoot } from "../src/platform/paths.js";
 import { createHandlers, type ToolHandlers } from "../src/tools.js";
-import { limits } from "../src/limits.js";
+import { limits } from "../src/platform/limits.js";
 
 let handlers: ToolHandlers;
 let longStrings: string;

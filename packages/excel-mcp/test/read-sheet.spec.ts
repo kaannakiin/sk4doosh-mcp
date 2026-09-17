@@ -1,7 +1,7 @@
 import { describe, expect, inject, it } from "vitest";
-import type { SkMcpExcelError } from "../src/errors.js";
-import { limits } from "../src/limits.js";
-import { createWorkbookRoot, resolveWorkbookPath } from "../src/paths.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
+import { limits } from "../src/platform/limits.js";
+import { createWorkbookRoot, resolveWorkbookPath } from "../src/platform/paths.js";
 import {
   findInSheet,
   readSheet,

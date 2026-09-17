@@ -1,5 +1,5 @@
 import { truncateWellFormed } from "@sk-mcp/file-core";
-import { limits } from "./limits.js";
+import { limits } from "./platform/limits.js";
 import type {
   OoxmlConditionalBlock,
   OoxmlConditionalRule,

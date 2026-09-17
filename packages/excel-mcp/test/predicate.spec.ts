@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CellScalar } from "../src/cell-value.js";
-import type { SkMcpExcelError } from "../src/errors.js";
+import type { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   classify,
   compareWithin,

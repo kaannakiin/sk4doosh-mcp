@@ -1,7 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { capabilities, type FormatCapabilities } from "../src/capabilities.js";
-import { createWorkbookRoot } from "../src/paths.js";
+import { capabilities, type FormatCapabilities } from "../src/platform/capabilities.js";
+import { createWorkbookRoot } from "../src/platform/paths.js";
 import { createHandlers, type ToolHandlers } from "../src/tools.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {

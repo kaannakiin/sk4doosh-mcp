@@ -1,21 +1,21 @@
-export { SkMcpExcelError, asExcelError } from "./errors.js";
-export type { SkMcpExcelErrorCode } from "./errors.js";
-export { limits } from "./limits.js";
-export type { Limits } from "./limits.js";
-export { formats } from "./formats.js";
-export type { DocumentFormat } from "./formats.js";
+export { SkMcpExcelError, asExcelError } from "./platform/errors.js";
+export type { SkMcpExcelErrorCode } from "./platform/errors.js";
+export { limits } from "./platform/limits.js";
+export type { Limits } from "./platform/limits.js";
+export { formats } from "./platform/formats.js";
+export type { DocumentFormat } from "./platform/formats.js";
 export {
   createWorkbookRoot,
   isContained,
   listWorkbooks,
   resolveWorkbookPath,
-} from "./paths.js";
+} from "./platform/paths.js";
 export type {
   SandboxedPath,
   WorkbookEntry,
   WorkbookListing,
   WorkbookRoot,
-} from "./paths.js";
+} from "./platform/paths.js";
 export {
   advance,
   columnToLetters,
@@ -85,8 +85,8 @@ export type {
   MetricFunction,
   MetricRequest,
 } from "./aggregate.js";
-export { capabilities, capabilitiesFor } from "./capabilities.js";
-export type { FormatCapabilities } from "./capabilities.js";
+export { capabilities, capabilitiesFor } from "./platform/capabilities.js";
+export type { FormatCapabilities } from "./platform/capabilities.js";
 export {
   csvSheetName,
   csvSheetView,
@@ -95,12 +95,12 @@ export {
   sniffDelimiter,
 } from "./csv.js";
 export type { CsvReport, CsvTable } from "./csv.js";
-export { delimiterNames } from "./delimited.js";
+export { delimiterNames } from "./platform/delimited.js";
 export type {
   CsvOptions,
   DelimiterName,
   EncodingName,
-} from "./delimited.js";
+} from "./platform/delimited.js";
 export {
   clearDocumentCache,
   csvReportOf,

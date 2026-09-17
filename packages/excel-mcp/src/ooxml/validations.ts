@@ -1,5 +1,5 @@
 import { asciiUpper } from "@sk-mcp/file-core";
-import { limits } from "../limits.js";
+import { limits } from "../platform/limits.js";
 import { parseCellRef } from "../range.js";
 import type { OpcPackage } from "./package.js";
 import { namespaces, readXmlPart } from "./xml.js";

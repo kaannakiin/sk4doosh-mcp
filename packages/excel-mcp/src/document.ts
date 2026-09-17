@@ -5,7 +5,7 @@ import {
   type ParseContext,
   type SandboxedPath,
 } from "@sk-mcp/file-core";
-import { capabilitiesFor, type FormatCapabilities } from "./capabilities.js";
+import { capabilitiesFor, type FormatCapabilities } from "./platform/capabilities.js";
 import {
   csvSheetName,
   csvSheetView,
@@ -14,13 +14,13 @@ import {
   type CsvReport,
   type CsvTable,
 } from "./csv.js";
-import type { CsvOptions } from "./delimited.js";
-import { SkMcpExcelError, fail } from "./errors.js";
-import { formats, type DocumentFormat } from "./formats.js";
-import { limits, modePolicy } from "./limits.js";
-import { assertReadableFormat } from "./paths.js";
+import type { CsvOptions } from "./platform/delimited.js";
+import { SkMcpExcelError, fail } from "./platform/errors.js";
+import { formats, type DocumentFormat } from "./platform/formats.js";
+import { limits, modePolicy } from "./platform/limits.js";
+import { assertReadableFormat } from "./platform/paths.js";
 import type { SheetSource, SheetView } from "./sheet.js";
-import { vocabulary } from "./vocabulary.js";
+import { vocabulary } from "./platform/vocabulary.js";
 import {
   describeSheetJs,
   parseSheetJs,

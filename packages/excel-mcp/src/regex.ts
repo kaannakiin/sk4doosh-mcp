@@ -1,5 +1,5 @@
 import { Worker } from "node:worker_threads";
-import { SkMcpExcelError } from "./errors.js";
+import { SkMcpExcelError } from "./platform/errors.js";
 
 let running = 0;
 const waiting: {

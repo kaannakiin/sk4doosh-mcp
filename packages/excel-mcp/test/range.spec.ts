@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SkMcpExcelError } from "../src/errors.js";
+import { SkMcpExcelError } from "../src/platform/errors.js";
 import {
   advance,
   columnToLetters,
