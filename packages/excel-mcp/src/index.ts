@@ -90,18 +90,17 @@ export type { FormatCapabilities } from "./capabilities.js";
 export {
   csvSheetName,
   csvSheetView,
-  delimiterNames,
   describeCsv,
   parseCsv,
   sniffDelimiter,
 } from "./csv.js";
+export type { CsvReport, CsvTable } from "./csv.js";
+export { delimiterNames } from "./delimited.js";
 export type {
   CsvOptions,
-  CsvReport,
-  CsvTable,
   DelimiterName,
   EncodingName,
-} from "./csv.js";
+} from "./delimited.js";
 export {
   clearDocumentCache,
   csvReportOf,

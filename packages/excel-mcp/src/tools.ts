@@ -44,7 +44,8 @@ import {
 } from "./header.js";
 import { formatRange, resolveRange } from "./range.js";
 
-import type { CsvReport, DelimiterName, EncodingName } from "./csv.js";
+import type { CsvReport } from "./csv.js";
+import type { DelimiterName, EncodingName } from "./delimited.js";
 import { requireSheetBounds } from "./sheet.js";
 import { inheritCursorOptions, decodeCursor } from "./cursor.js";
 

@@ -5,7 +5,7 @@ import {
   type Fingerprint,
 } from "@sk-mcp/file-core";
 import { SkMcpExcelError } from "./errors.js";
-import type { CsvOptions } from "./csv.js";
+import type { CsvOptions } from "./delimited.js";
 
 export { encodeCursor, fingerprint } from "@sk-mcp/file-core";
 export type { Fingerprint } from "@sk-mcp/file-core";

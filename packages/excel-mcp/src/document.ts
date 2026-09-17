@@ -11,10 +11,10 @@ import {
   csvSheetView,
   describeCsv,
   parseCsv,
-  type CsvOptions,
   type CsvReport,
   type CsvTable,
 } from "./csv.js";
+import type { CsvOptions } from "./delimited.js";
 import { SkMcpExcelError, fail } from "./errors.js";
 import { formats, type DocumentFormat } from "./formats.js";
 import { limits, modePolicy } from "./limits.js";
