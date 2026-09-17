@@ -22,6 +22,7 @@ internal static class ToolDefinitionFactory
                 ? $"{endpoint.Method} {endpoint.Route}"
                 : declared,
             InputSchema = BuildInputSchema(endpoint, variant, relief),
+            OutputSchema = BuildOutputSchema(endpoint),
             Annotations = Annotate(endpoint.Method),
             Auth = endpoint.Auth,
         };
@@ -156,6 +157,74 @@ internal static class ToolDefinitionFactory
             result["$defs"] = defs;
         }
         return result;
+    }
+
+    private const string ResultRootProperty = "result";
+
+    private static readonly string[] PreferredStatuses = ["200", "201", "202", "204"];
+
+    private static JsonObject? PrimaryResponseOf(IReadOnlyDictionary<string, ResponseBody> responses)
+    {
+        string[] successes = [.. responses.Keys.Where(status => status.StartsWith('2'))];
+        string? chosen = Array.Find(PreferredStatuses, successes.Contains)
+            ?? successes.OrderBy(int.Parse).FirstOrDefault();
+        return chosen is null ? null : responses[chosen].Schema;
+    }
+
+    private static bool IsObjectRoot(JsonObject schema) => schema["type"] switch
+    {
+        JsonValue value when value.TryGetValue(out string? name) => name == "object",
+        JsonArray members =>
+            members.Select(member => member?.GetValue<string>())
+                .Where(member => member != "null")
+                .SequenceEqual(["object"]),
+        _ => false,
+    };
+
+    /// <summary>
+    /// Produces the schema of what the tool returns, or <c>null</c> when the endpoint declares no
+    /// success body.
+    /// </summary>
+    /// <remarks>
+    /// A non-object root is wrapped under <c>result</c> because MCP requires <c>outputSchema</c> to
+    /// be an object. The wrapped schema's <c>$defs</c> MUST move to the wrapper root: a
+    /// <c>#/$defs/...</c> inside it resolves against the document root, so a bag left under
+    /// <c>properties.result</c> leaves every reference aimed at nothing. A root declaring <c>$id</c>
+    /// is its own schema resource and rebases its own references, so <c>LiftDefs</c> leaves it alone
+    /// — the same rule that keeps such a root out of body flattening.
+    /// <para>
+    /// <c>additionalProperties</c> is never written here. On <c>InputSchema</c> it binds what the
+    /// caller may send; a response is the backend's own shape and the agent is not the party
+    /// constrained by it.
+    /// </para>
+    /// </remarks>
+    private static JsonObject? BuildOutputSchema(EndpointDescriptor endpoint)
+    {
+        if (endpoint.Responses is not { } responses)
+        {
+            return null;
+        }
+        if (PrimaryResponseOf(responses) is not { } primary)
+        {
+            return null;
+        }
+        if (IsObjectRoot(primary))
+        {
+            return (JsonObject)primary.DeepClone();
+        }
+
+        JsonObject properties = new() { [ResultRootProperty] = primary.DeepClone() };
+        JsonObject wrapped = new()
+        {
+            ["type"] = "object",
+            ["properties"] = properties,
+            ["required"] = new JsonArray(ResultRootProperty),
+        };
+        if (LiftDefs(properties, null, endpoint) is { } defs)
+        {
+            wrapped["$defs"] = defs;
+        }
+        return wrapped;
     }
 
     /// <summary>Merges every <c>$defs</c> bag reachable from the tool's own root into one.</summary>

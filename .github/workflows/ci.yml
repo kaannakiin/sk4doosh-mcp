@@ -10,10 +10,16 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job is opt-in. The matrix spans four runners and two of them are macOS,
+# which bills at ten times the Linux rate, so a round that nobody asked for is
+# the most expensive thing this file can do. Put [ci] in the commit message, or
+# dispatch it; a pull request alone never starts one.
 jobs:
   native:
     name: secure files (${{ matrix.target.id }}, Node ${{ matrix.node }})
-    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[ci]')
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || contains(github.event.head_commit.message, '[ci]')
     runs-on: ${{ matrix.target.os }}
     strategy:
       fail-fast: false
@@ -56,7 +62,9 @@ jobs:
 
   node:
     name: build, lint, types, fixtures
-    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[ci]')
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || contains(github.event.head_commit.message, '[ci]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +87,9 @@ jobs:
 
   dotnet:
     name: dotnet test (net8.0 + net10.0)
-    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[ci]')
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || contains(github.event.head_commit.message, '[ci]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,6 +111,9 @@ jobs:
 
   pack:
     name: pack SkMcp.AspNetCore
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || contains(github.event.head_commit.message, '[ci]')
     runs-on: ubuntu-latest
     needs: [node, dotnet, native]
     steps:

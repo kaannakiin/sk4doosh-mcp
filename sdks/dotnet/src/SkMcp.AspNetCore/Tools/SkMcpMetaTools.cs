@@ -135,6 +135,7 @@ internal sealed class SkMcpMetaTools(
             entry.Tool.Name,
             entry.Tool.Description,
             entry.Tool.InputSchema,
+            entry.Tool.OutputSchema,
             entry.Tool.Annotations,
             AuthUncertain = Uncertain(decision),
         }, SkMcpJson.Wire), isError: false);

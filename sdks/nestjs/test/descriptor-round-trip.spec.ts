@@ -15,7 +15,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
-import { IsInt, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString } from "class-validator";
 import {
   createToolDefinition,
   expandToolProductions,
@@ -81,6 +81,16 @@ class OrdersWriteGuard {
 
   describeVisibility(): VisibilityDeclaration {
     return { anonymous: "no", policies: ["OrdersWrite"] };
+  }
+}
+
+class OrdersReadGuard {
+  canActivate(): boolean {
+    return true;
+  }
+
+  describeVisibility(): VisibilityDeclaration {
+    return { anonymous: "no", policies: ["OrdersRead"] };
   }
 }
 
@@ -166,9 +176,49 @@ class OrdersController {
   cancelOrder(@Body() _body: CancelBody): void {}
 }
 
+class PingBody {
+  @IsBoolean()
+  @IsOptional()
+  pong?: boolean;
+}
+
+class OrderSummary {
+  @IsInt()
+  @IsOptional()
+  id?: number;
+}
+
+class OrderView {
+  @IsInt()
+  @IsOptional()
+  id?: number;
+
+  @IsString()
+  @IsOptional()
+  item?: string;
+}
+
+class CreatedOrder {
+  @IsInt()
+  @IsOptional()
+  createdId?: number;
+}
+
+class RebuildError {
+  @IsString()
+  @IsOptional()
+  error?: string;
+}
+
+class UpsertOrderBody {
+  @IsString()
+  item!: string;
+}
+
 @Controller()
 class RootController {
   @Get("ping")
+  @McpTool({ responses: { 200: PingBody } })
   @UseGuards(AnonymousGuard)
   ping(): void {}
 
@@ -177,8 +227,77 @@ class RootController {
   headPing(): void {}
 
   @Get("me")
+  @McpTool({
+    responses: {
+      200: {
+        schema: {
+          type: "object",
+          properties: { name: { type: ["string", "null"] } },
+        },
+      },
+    },
+  })
   @UseGuards(AuthenticatedGuard)
   me(): void {}
+}
+
+@Controller("orders")
+class OrderResponsesController {
+  @Get()
+  @McpTool({
+    description: "Siparisleri listeler.",
+    responses: { 200: [OrderSummary] },
+  })
+  @UseGuards(OrdersReadGuard)
+  listOrders(): void {}
+
+  @Get("search")
+  @McpTool({
+    description: "Siparisleri arar.",
+    responses: {
+      200: {
+        schema: {
+          type: "array",
+          items: { $ref: "#/$defs/Order" },
+          $defs: {
+            Order: { type: "object", properties: { id: { type: "integer" } } },
+          },
+        },
+      },
+    },
+  })
+  @UseGuards(OrdersReadGuard)
+  searchOrders(): void {}
+
+  @Delete(":id")
+  @McpTool({
+    description: "Bir siparisi siler.",
+    responses: { 204: {}, 404: {} },
+  })
+  @UseGuards(OrdersWriteGuard)
+  deleteOrder(@Param("id", ParseIntPipe) _id: number): void {}
+
+  @Put(":id")
+  @McpTool({
+    description: "Bir siparisi olusturur ya da gunceller.",
+    responses: { 201: CreatedOrder, 200: OrderView },
+  })
+  @UseGuards(OrdersWriteGuard)
+  upsertOrder(
+    @Param("id", ParseIntPipe) _id: number,
+    @Body() _body: UpsertOrderBody,
+  ): void {}
+}
+
+@Controller("index")
+class IndexController {
+  @Post("rebuild")
+  @McpTool({
+    description: "Arama indeksini yeniden kurar.",
+    responses: { 400: RebuildError, 500: {} },
+  })
+  @UseGuards(OrdersWriteGuard)
+  rebuildIndex(): void {}
 }
 
 class CurationListQuery {
@@ -384,6 +503,26 @@ const hosts: Record<string, HostCase> = {
     handler: "deleteOrder",
   },
   "head-ping.json": { controller: RootController, handler: "headPing" },
+  "list-orders-array-response.json": {
+    controller: OrderResponsesController,
+    handler: "listOrders",
+  },
+  "search-orders-response-defs.json": {
+    controller: OrderResponsesController,
+    handler: "searchOrders",
+  },
+  "delete-order-no-content.json": {
+    controller: OrderResponsesController,
+    handler: "deleteOrder",
+  },
+  "upsert-order-prefers-200.json": {
+    controller: OrderResponsesController,
+    handler: "upsertOrder",
+  },
+  "rebuild-index-no-success-response.json": {
+    controller: IndexController,
+    handler: "rebuildIndex",
+  },
   "me-authenticated.json": { controller: RootController, handler: "me" },
   "patch-order.json": { controller: OrdersController, handler: "patchOrder" },
   "ping-anonymous.json": { controller: RootController, handler: "ping" },
@@ -533,6 +672,7 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
         fixture.input.parameters ?? [],
       );
       expect(descriptor.requestBody).toEqual(fixture.input.requestBody);
+      expect(descriptor.responses ?? {}).toEqual(fixture.input.responses ?? {});
       expect(descriptor.arguments ?? []).toEqual(fixture.input.arguments ?? []);
       expect(descriptor.variants ?? []).toEqual(fixture.input.variants ?? []);
 

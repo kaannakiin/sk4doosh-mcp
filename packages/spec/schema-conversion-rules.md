@@ -139,7 +139,9 @@ _because_ it is something the server reports. So a `responses[*].schema` MUST be
 dropping off, whatever the host set `dropReadOnlyProperties` to; the host knob narrows inputs only.
 An SDK that writes both from one options instance inverts the rule exactly where it costs most, and
 because both directions of one DTO then pass through the same diagnostic sink, it MUST NOT report a
-shape diagnostic twice for one endpoint.
+shape diagnostic twice for one endpoint. What is written here is what the agent reads: the primary
+success schema becomes the tool's `outputSchema` ([metadata-contract.md](metadata-contract.md)),
+so a member dropped here is a field the agent never learns exists.
 
 Member order: base-type members first, then the derived type's; within each type, declaration order.
 The order is normative — the `required` array and fixture comparison are order-sensitive, while

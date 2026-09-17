@@ -301,6 +301,9 @@ export function registerSkMcpTools(
           name: entry.tool.name,
           description: entry.tool.description,
           inputSchema: entry.tool.inputSchema,
+          ...(entry.tool.outputSchema === undefined
+            ? {}
+            : { outputSchema: entry.tool.outputSchema }),
           annotations: entry.tool.annotations,
           ...(decision === "unknown" ? { authUncertain: true } : {}),
         },

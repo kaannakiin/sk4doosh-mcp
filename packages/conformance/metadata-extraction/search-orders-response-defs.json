@@ -1,0 +1,85 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Sarilan sema $defs tasiyor: canta sarmalayicinin kokune kalkar, yoksa '#/$defs/...' hicbir seye bakar",
+  "input": {
+    "operationId": "SearchOrders",
+    "method": "GET",
+    "route": "/orders/search",
+    "description": "Siparisleri arar.",
+    "responses": {
+      "200": {
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Order"
+          },
+          "$defs": {
+            "Order": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
+      "imperative": false
+    },
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "name": "search_orders",
+    "description": "Siparisleri arar.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Order"
+          }
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "$defs": {
+        "Order": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
+      "imperative": false
+    }
+  }
+}

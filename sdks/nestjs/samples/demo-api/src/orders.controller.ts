@@ -47,6 +47,20 @@ export class AddNoteDto {
   text!: string;
 }
 
+export class OrderResponse {
+  @IsInt()
+  id!: number;
+
+  @IsString()
+  item!: string;
+
+  @IsInt()
+  quantity!: number;
+
+  @IsString()
+  owner!: string;
+}
+
 interface Order {
   readonly id: number;
   readonly item: string;
@@ -76,7 +90,10 @@ export class OrdersController {
 
   @Get("orders/:id")
   @UseGuards(JwtGuard, OrdersReadGuard)
-  @McpTool({ description: "Fetches one order by id." })
+  @McpTool({
+    description: "Fetches one order by id.",
+    responses: { 200: OrderResponse, 404: {} },
+  })
   getOrder(@Param("id", ParseIntPipe) id: number): Order {
     return this.require(id);
   }

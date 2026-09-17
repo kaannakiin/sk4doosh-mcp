@@ -210,6 +210,34 @@ are required, because one description cannot honestly describe two differently c
 
 Full guide: the docs site's _How to curate the arguments an agent sees_.
 
+## 3c. Telling the agent what a tool returns
+
+`load_tool` publishes an `outputSchema` alongside `inputSchema`, so an agent can plan a chain of
+calls without making the first one. Nest has to be told what a handler returns: TypeScript erases
+generics, so an `async` handler reports `Promise` at runtime and a collection reports `Array`.
+
+```ts
+@Get("orders/:id")
+@McpTool({
+  description: "Fetches one order by id.",
+  responses: { 200: OrderResponse, 404: {} },
+})
+getOrder(@Param("id", ParseIntPipe) id: number): OrderResponse { ... }
+```
+
+Per status code: a DTO class, `[OrderResponse]` for a collection of it, `{ schema }` for a shape no
+class can express, or `{}` for a status with no body. A DTO needs class-validator decorators, the
+same as a request DTO.
+
+If you already write `@ApiOkResponse({ type: OrderResponse })`, it is read as a fallback, and a sync
+handler's plain class return type is read as a last resort. The declaration wins over both.
+
+Only one status becomes the schema — `200`, `201`, `202`, `204` in that order, then the lowest
+remaining `2xx`. A non-object root is wrapped under `result`, because MCP requires an object. Unlike
+the input side, read-only members are kept: they are what a response is made of.
+
+Full guide: the docs site's _How to tell the agent what a tool returns_.
+
 ## 4. Visibility and guards
 
 This is the SDK's defining behaviour, and the thing most likely to surprise you.

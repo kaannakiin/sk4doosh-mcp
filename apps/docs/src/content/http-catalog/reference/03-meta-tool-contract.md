@@ -88,6 +88,16 @@ Takes `name`, exactly as `search_tools` returned it.
     "required": ["id"],
     "additionalProperties": false
   },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer" },
+      "item": { "type": "string" },
+      "quantity": { "type": "integer" },
+      "owner": { "type": "string" }
+    },
+    "required": ["id", "item", "quantity", "owner"]
+  },
   "annotations": { "readOnlyHint": true, "idempotentHint": true }
 }
 ```
@@ -95,6 +105,19 @@ Takes `name`, exactly as `search_tools` returned it.
 `inputSchema` is always a flat object: path, query, header and body members are all top-level
 arguments. How a backend type becomes that schema is
 [schema conversion](/docs/http-catalog/schema-conversion).
+
+`outputSchema` is what the call returns, so an agent can plan a chain of calls before making the
+first one. It is present only when the endpoint declares a success body: the status codes `200`,
+`201`, `202` and `204` are tried in that order, then the lowest remaining `2xx`, and a `204` or an
+endpoint with no `2xx` at all publishes no `outputSchema`. A response whose root is not an object —
+an array, a scalar — is wrapped as `{"type":"object","properties":{"result":…},"required":["result"]}`,
+because MCP requires the root to be an object.
+
+Unlike `inputSchema`, a response schema keeps read-only members: a get-only property is a response
+field precisely because the server is the one that computes it. Curation does not reach
+`outputSchema` either, so every variant of one operation publishes the same one. Where the
+declaration comes from is
+[telling the agent what a tool returns](/docs/http-catalog/tell-the-agent-what-a-tool-returns).
 
 `annotations` carries only the hints that apply — the field is omitted rather than filled with
 `false`. `load_tool` is subject to visibility: a tool the caller cannot see returns `unknown_tool`,

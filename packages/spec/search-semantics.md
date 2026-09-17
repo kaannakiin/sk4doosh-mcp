@@ -13,11 +13,14 @@ Defines the three meta-tools of search-first discovery and the ranking rules of 
 | Tool           | Input                                                           | Output                                                              |
 | -------------- | --------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `search_tools` | `query: string` (may be empty), `limit: int` (1-50, default 20) | `{ total, results: Card[] }`                                        |
-| `load_tool`    | `name: string`                                                  | `{ name, description, inputSchema, annotations }`                   |
+| `load_tool`    | `name: string`                                                  | `{ name, description, inputSchema, outputSchema?, annotations }`    |
 | `invoke_tool`  | `name: string`, `arguments: object`                             | `InvokeSuccess`, or `CallToolResult.isError = true` + `MappedError` |
 
 - In `search_tools` an empty query means **list**: every tool, ordinal sorted by name, up to `limit`. There is no separate `list` tool.
 - `load_tool` output does **not** contain `auth` — [visibility.md](visibility.md) invariant 3: policy names MUST NOT leak to the agent. `load_tool` is subject to the visibility filter: for a hidden tool, its answer is identical to the answer for a nonexistent tool.
+- `load_tool` carries `outputSchema` only when the endpoint declares a success body
+  ([metadata-contract.md](metadata-contract.md)). The compact card does not carry it: the card's
+  budget is what keeps a large result set readable, and the schema is one turn away.
 - In `search_tools` and `load_tool` output, `authUncertain: true` says the decision was `unknown`; `total` is the number of tools the declarative layer counted as visible (see below).
 - `invoke_tool` MUST NOT consult the visibility filter ([visibility.md](visibility.md) invariant 1); enforcement is in the real pipeline. The result envelope and the error codes (the backend's HTTP errors, the SDK-side `unknown_tool`/`not_invocable`, and the argument codes from [argument-mapping.md](argument-mapping.md)) are normative in [error-mapping.md](error-mapping.md).
 - The meta-tools' own descriptions are in English; that is the SDK's language, not the backend's.

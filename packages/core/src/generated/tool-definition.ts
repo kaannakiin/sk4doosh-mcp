@@ -4,6 +4,7 @@ export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: JsonSchemaObject;
+  outputSchema?: JsonSchemaObject;
   annotations: ToolAnnotations;
   auth: Auth;
 }

@@ -14,6 +14,7 @@ export type {
   ArgumentRule,
   ArgumentRules,
   JsonValue,
+  McpResponseDeclaration,
   McpToolOptions,
   McpVariantOptions,
 } from "./decorators.js";

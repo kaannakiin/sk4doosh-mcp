@@ -1,0 +1,53 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Descriptor yalniz hata response'lari tasiyor: 2xx olmadigi icin outputSchema yazilmaz",
+  "input": {
+    "operationId": "RebuildIndex",
+    "method": "POST",
+    "route": "/index/rebuild",
+    "description": "Arama indeksini yeniden kurar.",
+    "responses": {
+      "400": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "500": {}
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
+      "imperative": false
+    },
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "name": "rebuild_index",
+    "description": "Arama indeksini yeniden kurar.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
+      "imperative": false
+    }
+  }
+}

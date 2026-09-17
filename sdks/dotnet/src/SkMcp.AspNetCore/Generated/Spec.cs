@@ -87,6 +87,7 @@ public sealed record ToolDefinition
     public required string Name { get; init; }
     public required string Description { get; init; }
     public required JsonObject InputSchema { get; init; }
+    public JsonObject? OutputSchema { get; init; }
     public required ToolAnnotations Annotations { get; init; }
     public required Auth Auth { get; init; }
 }

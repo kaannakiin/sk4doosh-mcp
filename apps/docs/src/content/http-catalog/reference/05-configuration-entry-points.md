@@ -38,6 +38,11 @@ interface IMcpSelectionMetadata { bool Include { get; } }
 
 `IMcpSelectionMetadata` is public, so a host can attach selection through its own metadata type.
 
+Response types are read from ApiExplorer — `[ProducesResponseType(typeof(T), 200)]`, `Produces<T>()`
+or an action return type MVC can infer — so there is no `[McpTool]` field for them. NestJS has no
+ApiExplorer equivalent and needs the `responses` option above; see
+[telling the agent what a tool returns](/docs/http-catalog/tell-the-agent-what-a-tool-returns).
+
 Curation markers:
 
 ```csharp
@@ -119,6 +124,7 @@ Selection markers:
 @McpTool(options?: {
   name?: string; prefix?: string; description?: string;
   body?: JsonSchemaObject;
+  responses?: Record<string, NewableFunction | [NewableFunction] | { schema } | {}>;
   readOnly?: boolean; destructive?: boolean; idempotent?: boolean;
 })
 @McpIgnore()

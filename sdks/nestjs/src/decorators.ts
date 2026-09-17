@@ -60,11 +60,33 @@ export interface McpParameterOptions {
   readonly explode?: boolean;
 }
 
+/**
+ * What one status code returns.
+ *
+ * A bare class is bound through the same TypeShape reader the request body uses; a one-element
+ * tuple declares a collection of it; `{ schema }` supplies a schema verbatim; `{}` declares a
+ * status that carries no body.
+ */
+export type McpResponseDeclaration =
+  | NewableFunction
+  | readonly [NewableFunction]
+  | { readonly schema: JsonSchemaObject }
+  | Record<string, never>;
+
 export interface McpToolOptions {
   readonly name?: string;
   readonly prefix?: string;
   readonly description?: string;
   readonly body?: JsonSchemaObject;
+  /**
+   * What the endpoint returns, keyed by status code.
+   *
+   * A declaration is needed because a handler's return type is not readable at runtime: TypeScript
+   * emits `design:returntype` with the generic erased, so an `async` handler reports `Promise` and
+   * a collection reports `Array`. Discovery falls back to `@nestjs/swagger`'s response metadata and
+   * then to `design:returntype`, but only a declaration here is guaranteed to be exact.
+   */
+  readonly responses?: Readonly<Record<string, McpResponseDeclaration>>;
   /**
    * Whether the backend requires a body at all, as distinct from requiring the
    * fields inside it. `false` makes omitting the body expressible: the agent

@@ -8,7 +8,11 @@ import {
   RequestMethod,
 } from "@nestjs/common";
 import { createRequire } from "node:module";
-import type { EndpointDescriptor, JsonSchemaObject } from "@sk-mcp/core";
+import type {
+  EndpointDescriptor,
+  JsonSchemaObject,
+  SchemaSimplificationOptions,
+} from "@sk-mcp/core";
 import {
   allowsAdditional,
   flattenableBody,
@@ -18,6 +22,7 @@ import {
 import {
   markersOf,
   type ArgumentRule,
+  type McpResponseDeclaration,
   type McpToolOptions,
   type McpVariantOptions,
 } from "../decorators.js";
@@ -31,6 +36,7 @@ const load = createRequire(import.meta.url);
 
 const {
   GUARDS_METADATA,
+  HTTP_CODE_METADATA,
   METHOD_METADATA,
   MODULE_PATH,
   PATH_METADATA,
@@ -38,6 +44,7 @@ const {
   VERSION_METADATA,
 } = load("@nestjs/common/constants") as {
   GUARDS_METADATA: string;
+  HTTP_CODE_METADATA: string;
   METHOD_METADATA: string;
   MODULE_PATH: string;
   PATH_METADATA: string;
@@ -303,6 +310,15 @@ function describe(
     handlerName,
   ) ?? []) as unknown[];
 
+  const reported = new Set<string>();
+  const tracked: DiscoveryOptions = {
+    ...options,
+    report: (diagnostic) => {
+      reported.add(`${diagnostic.code}\u0000${diagnostic.message}`);
+      options.report?.(diagnostic);
+    },
+  };
+
   const declared: NonNullable<EndpointDescriptor["parameters"]> = [];
   const expanded: NonNullable<EndpointDescriptor["parameters"]> = [];
   let bodySchema: JsonSchemaObject | undefined;
@@ -330,7 +346,7 @@ function describe(
           controller,
           handlerName,
           declaredType,
-          options,
+          tracked,
         );
         if (members === undefined) {
           unresolvedQuery = true;
@@ -356,10 +372,10 @@ function describe(
         break;
       case BODY:
         if (name === undefined) {
-          bodySchema = bodyFor(declaredType, options);
+          bodySchema = bodyFor(declaredType, tracked);
         } else {
           bodyFields ??= {};
-          bodyFields[name] = bodyFor(declaredType, options);
+          bodyFields[name] = bodyFor(declaredType, tracked);
         }
         break;
       case FILE:
@@ -418,6 +434,16 @@ function describe(
     ...expanded.filter((parameter) => !claimed.has(parameter.name)),
   ].map((parameter) => applyParameterHints(parameter, hints));
 
+  const responses = responsesOf(
+    controller,
+    handlerName,
+    handler,
+    method,
+    hints,
+    options,
+    reported,
+  );
+
   const descriptor: EndpointDescriptor = {
     operationId: handlerName,
     container: controller.name,
@@ -436,6 +462,7 @@ function describe(
               : { required: hints.bodyRequired }),
           },
         }),
+    ...(responses === undefined ? {} : { responses }),
   };
 
   const description = descriptionOf(handler, hints);
@@ -522,16 +549,190 @@ function descriptionOf(
   return declared !== undefined && declared.length > 0 ? declared : undefined;
 }
 
+/**
+ * Constructors `design:returntype` writes when it has erased the type it was asked about.
+ *
+ * TypeScript emits the declared return type with its generics gone, so `Promise<OrderDto>` reaches
+ * runtime as `Promise` and `OrderDto[]` as `Array`; `any`, `unknown` and an inferred return all
+ * arrive as `Object`. Binding one of these produces a schema for the wrong type — `Promise` has no
+ * validator metadata at all — so the inference tier must decline rather than publish it.
+ */
+const erasedReturnTypes = new Set<unknown>([Promise, Array, Object, Function]);
+
+function readableReturnType(candidate: unknown): candidate is NewableFunction {
+  return typeof candidate === "function" && !erasedReturnTypes.has(candidate);
+}
+
+function defaultStatusOf(
+  handler: (...args: never[]) => unknown,
+  method: EndpointDescriptor["method"],
+): string {
+  const declared = Reflect.getMetadata(HTTP_CODE_METADATA, handler) as
+    number | undefined;
+  return declared === undefined
+    ? method === "POST"
+      ? "201"
+      : "200"
+    : String(declared);
+}
+
+/**
+ * Writes a response body's schema, keeping the read-only members the request side drops.
+ *
+ * A get-only member is a response field precisely because it is read-only, so dropping it would
+ * hide the field from the agent (schema-conversion-rules.md Table 4). One DTO bound as both request
+ * body and response would otherwise report every shape diagnostic twice, so `reported` — seeded by
+ * the request pass — bounds the second pass to what this endpoint has not already said.
+ */
+function responseSchemaOf(
+  declaredType: unknown,
+  isArray: boolean,
+  options: DiscoveryOptions,
+  reported: Set<string>,
+): JsonSchemaObject {
+  const { schema, diagnostics } = shapeOf(declaredType, options, {
+    dropReadOnlyProperties: false,
+  });
+  for (const diagnostic of diagnostics) {
+    const key = `${diagnostic.code} ${diagnostic.message}`;
+    if (reported.has(key)) {
+      continue;
+    }
+    reported.add(key);
+    options.report?.(diagnostic);
+  }
+  return isArray ? { type: "array", items: schema } : schema;
+}
+
+function bodyOfDeclaration(
+  declaration: McpResponseDeclaration,
+  options: DiscoveryOptions,
+  reported: Set<string>,
+): { schema?: JsonSchemaObject } {
+  if (typeof declaration === "function") {
+    return { schema: responseSchemaOf(declaration, false, options, reported) };
+  }
+  if (Array.isArray(declaration)) {
+    return {
+      schema: responseSchemaOf(
+        (declaration as readonly NewableFunction[])[0],
+        true,
+        options,
+        reported,
+      ),
+    };
+  }
+  return "schema" in declaration ? { schema: declaration.schema } : {};
+}
+
+function declaredResponses(
+  hints: McpToolOptions,
+  options: DiscoveryOptions,
+  reported: Set<string>,
+): EndpointDescriptor["responses"] | undefined {
+  const entries = Object.entries(hints.responses ?? {});
+  if (entries.length === 0) {
+    return undefined;
+  }
+  return Object.fromEntries(
+    entries.map(([status, declaration]) => [
+      status,
+      bodyOfDeclaration(declaration, options, reported),
+    ]),
+  );
+}
+
+function swaggerResponses(
+  handler: (...args: never[]) => unknown,
+  options: DiscoveryOptions,
+  reported: Set<string>,
+): EndpointDescriptor["responses"] | undefined {
+  const metadata = Reflect.getMetadata("swagger/apiResponse", handler) as
+    | Record<string, { type?: unknown; isArray?: boolean } | undefined>
+    | undefined;
+  const entries = Object.entries(metadata ?? {}).filter(([status]) =>
+    /^[1-5][0-9]{2}$/.test(status),
+  );
+  if (entries.length === 0) {
+    return undefined;
+  }
+  return Object.fromEntries(
+    entries.map(([status, entry]) => [
+      status,
+      readableReturnType(entry?.type)
+        ? {
+            schema: responseSchemaOf(
+              entry?.type,
+              entry?.isArray === true,
+              options,
+              reported,
+            ),
+          }
+        : {},
+    ]),
+  );
+}
+
+function inferredResponses(
+  controller: NewableFunction,
+  handlerName: string,
+  handler: (...args: never[]) => unknown,
+  method: EndpointDescriptor["method"],
+  options: DiscoveryOptions,
+  reported: Set<string>,
+): EndpointDescriptor["responses"] | undefined {
+  const returnType = Reflect.getMetadata(
+    "design:returntype",
+    controller.prototype as object,
+    handlerName,
+  ) as unknown;
+  if (!readableReturnType(returnType)) {
+    return undefined;
+  }
+  return {
+    [defaultStatusOf(handler, method)]: {
+      schema: responseSchemaOf(returnType, false, options, reported),
+    },
+  };
+}
+
+function responsesOf(
+  controller: NewableFunction,
+  handlerName: string,
+  handler: (...args: never[]) => unknown,
+  method: EndpointDescriptor["method"],
+  hints: McpToolOptions,
+  options: DiscoveryOptions,
+  reported: Set<string>,
+): EndpointDescriptor["responses"] | undefined {
+  return (
+    declaredResponses(hints, options, reported) ??
+    swaggerResponses(handler, options, reported) ??
+    inferredResponses(
+      controller,
+      handlerName,
+      handler,
+      method,
+      options,
+      reported,
+    )
+  );
+}
+
 function shapeOf(
   declaredType: unknown,
   options: DiscoveryOptions,
+  simplification: SchemaSimplificationOptions = {},
 ): { schema: JsonSchemaObject; diagnostics: DiscoveryDiagnostic[] } {
   const collected: DiscoveryDiagnostic[] = [];
   const binder = new NestTypeShapeBinder({
     ...options.schema,
     report: (diagnostic) => collected.push(diagnostic),
   });
-  const { schema, diagnostics } = simplifySchema(binder.bind(declaredType));
+  const { schema, diagnostics } = simplifySchema(
+    binder.bind(declaredType),
+    simplification,
+  );
   collected.push(...diagnostics);
   return { schema, diagnostics: collected };
 }

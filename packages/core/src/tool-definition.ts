@@ -313,6 +313,74 @@ function buildInputSchema(
   return schema;
 }
 
+const resultRootProperty = "result";
+
+const preferredStatuses = ["200", "201", "202", "204"];
+
+function primaryResponseOf(
+  responses: NonNullable<EndpointDescriptor["responses"]>,
+): JsonSchemaObject | undefined {
+  const successes = Object.keys(responses).filter((status) =>
+    status.startsWith("2"),
+  );
+  const chosen =
+    preferredStatuses.find((status) => successes.includes(status)) ??
+    successes.sort((left, right) => Number(left) - Number(right))[0];
+  return chosen === undefined ? undefined : responses[chosen]?.schema;
+}
+
+function isObjectRoot(schema: JsonSchemaObject): boolean {
+  const type = schema.type;
+  if (typeof type === "string") {
+    return type === "object";
+  }
+  if (!Array.isArray(type)) {
+    return false;
+  }
+  const declared = type.filter((candidate) => candidate !== "null");
+  return declared.length === 1 && declared[0] === "object";
+}
+
+/**
+ * Produces the schema of what the tool returns, or nothing when the endpoint declares no success
+ * body.
+ *
+ * A non-object root is wrapped under `result` because MCP requires `outputSchema` to be an object.
+ * The wrapped schema's `$defs` MUST move to the wrapper root: a `#/$defs/...` inside it resolves
+ * against the document root, so a bag left under `properties.result` leaves every reference aimed at
+ * nothing. A root declaring `$id` is its own schema resource and rebases its own references, so
+ * `liftDefs` leaves it alone — the same rule that keeps such a root out of body flattening.
+ *
+ * `additionalProperties` is never written here. On `inputSchema` it binds what the caller may send;
+ * a response is the backend's own shape and the agent is not the party constrained by it.
+ */
+function buildOutputSchema(
+  endpoint: EndpointDescriptor,
+): JsonSchemaObject | undefined {
+  const responses = endpoint.responses;
+  if (responses === undefined) {
+    return undefined;
+  }
+  const primary = primaryResponseOf(responses);
+  if (primary === undefined) {
+    return undefined;
+  }
+  if (isObjectRoot(primary)) {
+    return structuredClone(primary);
+  }
+  const properties = { [resultRootProperty]: structuredClone(primary) };
+  const schema: JsonSchemaObject = {
+    type: "object",
+    properties,
+    required: [resultRootProperty],
+  };
+  const defs = liftDefs(properties, undefined);
+  if (defs !== undefined) {
+    schema.$defs = defs;
+  }
+  return schema;
+}
+
 /**
  * Renders a value with every object's keys in sorted order.
  *
@@ -428,10 +496,12 @@ export function createToolDefinition(
     declared === undefined || declared.trim() === ""
       ? `${endpoint.method} ${endpoint.route}`
       : declared;
+  const outputSchema = buildOutputSchema(endpoint);
   return {
     name: name ?? variant?.name ?? createToolName(endpoint),
     description,
     inputSchema: buildInputSchema(endpoint, variant, relief),
+    ...(outputSchema === undefined ? {} : { outputSchema }),
     annotations: annotate(endpoint.method),
     auth: endpoint.auth,
   };

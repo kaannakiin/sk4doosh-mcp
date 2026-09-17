@@ -1,0 +1,75 @@
+{
+  "kind": "metadata-extraction",
+  "description": "2xx govdesinin koku object degil: 'result' altina sarilir, cunku MCP outputSchema'nin object olmasini sart kosuyor",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "description": "Siparisleri listeler.",
+    "responses": {
+      "200": {
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
+      "imperative": false
+    },
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "name": "list_orders",
+    "description": "Siparisleri listeler.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "result"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersRead"
+      ],
+      "imperative": false
+    }
+  }
+}

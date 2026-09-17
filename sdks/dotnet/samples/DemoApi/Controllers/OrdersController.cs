@@ -8,6 +8,12 @@ namespace DemoApi.Controllers;
 
 public sealed record AddNoteRequest([Required][property: Description("Note text")] string Text);
 
+public sealed record OrderResponse(
+    [Required] int Id,
+    [Required] string Item,
+    [Required] int Quantity,
+    [Required] string Owner);
+
 public sealed record CreateOrderRequest(
     [Required, MinLength(1)][property: Description("Item name")] string Item,
     [Range(1, 100)][property: Description("Quantity")] int Quantity);
@@ -36,6 +42,8 @@ public sealed class OrdersController : ControllerBase
 
     [HttpGet("/orders/{id:int}")]
     [Authorize(Policy = "OrdersRead")]
+    [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Description("Fetches one order by id.")]
     public IActionResult GetOrder([Description("Order id")] int id) =>
         Orders.TryGetValue(id, out var order) ? Ok(order) : NotFound();

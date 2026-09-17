@@ -11,6 +11,9 @@
     "inputSchema": {
       "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
     },
+    "outputSchema": {
+      "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+    },
     "annotations": { "$ref": "#/$defs/ToolAnnotations" },
     "auth": { "$ref": "endpoint-descriptor.schema.json#/$defs/Auth" }
   },

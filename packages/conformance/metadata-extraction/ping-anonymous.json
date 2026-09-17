@@ -34,6 +34,14 @@
       "required": [],
       "additionalProperties": false
     },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "pong": {
+          "type": "boolean"
+        }
+      }
+    },
     "annotations": {
       "readOnlyHint": true,
       "idempotentHint": true

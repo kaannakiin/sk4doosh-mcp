@@ -62,13 +62,14 @@ The case where both fields stay empty is legitimate and defined: on backends who
 
 ## The tool definition (ToolDefinition)
 
-| Field         | Source                                                                                                                                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`        | [naming.md](naming.md)                                                                                                                                                              |
-| `description` | `EndpointDescriptor.description`; when absent, the fallback `"{METHOD} {route}"` (for example `"GET /ping"`)                                                                        |
-| `inputSchema` | The JSON Schema produced from the parameters plus `requestBody` (`type: object`; each parameter is a property, and the `required` list comes from the parameters' `required` flags) |
-| `annotations` | From the table below                                                                                                                                                                |
-| `auth`        | `EndpointDescriptor.auth` verbatim. It is an internal model: the visibility filter consumes it and it MUST NOT reach the MCP surface ([visibility.md](visibility.md) invariant 3)   |
+| Field          | Source                                                                                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`         | [naming.md](naming.md)                                                                                                                                                              |
+| `description`  | `EndpointDescriptor.description`; when absent, the fallback `"{METHOD} {route}"` (for example `"GET /ping"`)                                                                        |
+| `inputSchema`  | The JSON Schema produced from the parameters plus `requestBody` (`type: object`; each parameter is a property, and the `required` list comes from the parameters' `required` flags) |
+| `outputSchema` | The JSON Schema produced from `EndpointDescriptor.responses` (`type: object`). Written only when the endpoint declares a success body; see below                                    |
+| `annotations`  | From the table below                                                                                                                                                                |
+| `auth`         | `EndpointDescriptor.auth` verbatim. It is an internal model: the visibility filter consumes it and it MUST NOT reach the MCP surface ([visibility.md](visibility.md) invariant 3)   |
 
 ## Producing `inputSchema`
 
@@ -81,6 +82,37 @@ The case where both fields stay empty is legitimate and defined: on backends who
 - `requestBody.description` is deliberately dropped: because body fields flatten to the top level, there is no slot left for it.
 - `required` order: parameters first in declaration order, then body properties in declaration order; in the synthetic-root form the body contributes the single name `body` in that same position. The order is normative — fixture comparison is sensitive to array order.
 - Body property names are the backend's **wire** names, not class member names: the name in the schema is the JSON key the backend actually accepts. The SDK reads this from the framework's serialization settings (C#: the `JsonOptions` naming policy plus `[JsonPropertyName]`); in a setup where it cannot be read (C#: Newtonsoft) it MUST NOT guess — it uses the class member name, emits a `naming_policy_unresolved` diagnostic, and the host declares a resolver.
+
+## Producing `outputSchema`
+
+`outputSchema` tells the agent what a call returns, so that a plan can be built before the first
+call rather than discovered by making one. It is derived from `EndpointDescriptor.responses`, which
+[schema-conversion-rules.md](schema-conversion-rules.md) Table 4 requires to be written with
+read-only members kept.
+
+- **Primary response.** The status codes `200`, `201`, `202`, `204` are tried in that order; if the
+  endpoint declares none of them, the numerically lowest remaining `2xx` is taken. The order is
+  normative: two SDKs reading one endpoint MUST publish one schema.
+- When the chosen response declares no `schema`, or the endpoint declares no `2xx` status at all,
+  `outputSchema` is **not written**. The key is absent, never `null`.
+- **The root MUST be an object**, because MCP requires it. A response whose root is anything else —
+  an array, a scalar, a bare `$ref`, an `anyOf` — is wrapped as
+  `{"type":"object","properties":{"result":S},"required":["result"]}`. A root is an object when its
+  `type` is `"object"`, or a type array whose only non-`"null"` member is `"object"`.
+- When a schema is wrapped, its `$defs` MUST move to the wrapper root: a `#/$defs/...` reference
+  resolves against the document root, so a bag left under `properties.result` leaves every reference
+  aimed at nothing. A root declaring `$id` is its own schema resource and rebases its own
+  references, so its bag stays where it is — the same rule that keeps such a root out of body
+  flattening ([schema-conversion-rules.md](schema-conversion-rules.md) Table 6).
+- `additionalProperties` is **not written**. On `inputSchema` it binds what the caller may send; a
+  response is the backend's own shape and the agent is not the party constrained by it.
+- Argument curation does not reach `outputSchema` ([argument-curation.md](argument-curation.md)): a
+  response field is not an argument, is not renamed on the wire at invoke time, and every variant of
+  one operation therefore publishes the same `outputSchema`.
+- `outputSchema` is published on `load_tool` only. It is **not** validated against
+  `InvokeSuccess.body`: `invoke_tool` is one fixed meta-tool whose result shape varies per call, so a
+  client cannot check its `structuredContent` against a static schema. The compact card does not
+  carry it either ([search-semantics.md](search-semantics.md)).
 
 ## Method → annotation table
 

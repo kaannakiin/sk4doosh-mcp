@@ -1,0 +1,61 @@
+{
+  "kind": "metadata-extraction",
+  "description": "Birincil response 204 ve govdesi yok: outputSchema hic yazilmaz",
+  "input": {
+    "operationId": "DeleteOrder",
+    "method": "DELETE",
+    "route": "/orders/{id}",
+    "description": "Bir siparisi siler.",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "responses": {
+      "204": {},
+      "404": {}
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
+      "imperative": false
+    },
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "name": "delete_order",
+    "description": "Bir siparisi siler.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [
+        "OrdersWrite"
+      ],
+      "imperative": false
+    }
+  }
+}

@@ -37,6 +37,17 @@
       "required": [],
       "additionalProperties": false
     },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "annotations": {
       "readOnlyHint": true,
       "idempotentHint": true

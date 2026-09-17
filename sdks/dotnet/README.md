@@ -127,6 +127,29 @@ arguments, because one description cannot honestly describe two differently cura
 
 Full guide: the docs site's _How to curate the arguments an agent sees_.
 
+## 3c. Telling the agent what a tool returns
+
+`load_tool` publishes an `outputSchema` alongside `inputSchema`, so an agent can plan a chain of
+calls without making the first one. Response types come from ApiExplorer, so an action that already
+documents itself needs nothing new:
+
+```csharp
+[HttpGet("/orders/{id:int}")]
+[ProducesResponseType(typeof(OrderResponse), StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status404NotFound)]
+public IActionResult GetOrder(int id) => ...;
+```
+
+`Produces<T>()` on a minimal API and a return type MVC can infer work the same way; there is no
+`[McpTool]` field for this.
+
+Only one status becomes the schema — `200`, `201`, `202`, `204` in that order, then the lowest
+remaining `2xx`. A `204`, or an action with no `2xx` at all, publishes no `outputSchema`. A
+non-object root is wrapped under `result`, because MCP requires an object. Unlike the input side,
+read-only members are kept: a get-only property is exactly what a response reports.
+
+Full guide: the docs site's _How to tell the agent what a tool returns_.
+
 ## 4. Connecting an MCP client
 
 The endpoint speaks Streamable HTTP. `tools/list` returns only three meta-tools:
