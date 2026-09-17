@@ -1,0 +1,57 @@
+{
+  "kind": "metadata-extraction",
+  "description": "kuratorluk aciklamasi semanin kendi aciklamasini da ezer; describe()'in yalniz-bossa kurali tersine doner",
+  "input": {
+    "operationId": "GetOrder",
+    "method": "GET",
+    "route": "/orders/{id}",
+    "description": "Fetches one order.",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "description": "Internal row id."
+        },
+        "description": "Row id"
+      }
+    ],
+    "arguments": [
+      {
+        "name": "id",
+        "description": "The order's public identifier."
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "get_order",
+    "description": "Fetches one order.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "The order's public identifier."
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

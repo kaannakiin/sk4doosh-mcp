@@ -1,0 +1,29 @@
+{
+  "kind": "error-mapping",
+  "description": "backend tel adini raporlar, ajan yeniden adlandirilmis adi gorur; fieldAliases ikisini koprular",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "errors": {
+        "q": ["The q field is required."]
+      }
+    },
+    "knownFields": ["keyword"],
+    "fieldAliases": {
+      "q": "keyword"
+    }
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      {
+        "name": "keyword",
+        "message": "The q field is required."
+      }
+    ]
+  }
+}

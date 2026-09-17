@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "yeniden adlandirilmis bir parametrenin TEL adi reddedilir; kabul edilseydi hicbir dongu onu tuketmez ve sessizce duserdi",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "as": "page_number"
+        }
+      ]
+    },
+    "arguments": {
+      "page": 2
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

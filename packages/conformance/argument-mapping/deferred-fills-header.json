@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "ertelenmis kaynak cozulmus deger olarak gelir; composer hicbir ureticiyi cagirmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "X-Tenant",
+          "in": "header",
+          "type": "string",
+          "fill": {
+            "kind": "deferred",
+            "source": "tenant"
+          }
+        }
+      ]
+    },
+    "arguments": {},
+    "deferred": {
+      "tenant": "acme"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders",
+    "headers": {
+      "X-Tenant": "acme"
+    }
+  }
+}

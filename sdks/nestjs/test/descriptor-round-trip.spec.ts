@@ -12,18 +12,21 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { IsInt, IsOptional, IsString } from "class-validator";
 import {
   createToolDefinition,
+  expandToolProductions,
   SkMcpTemplateError,
   type EndpointDescriptor,
   type Fixture,
   type ToolDefinition,
 } from "@sk-mcp/core";
 import { describe, expect, it } from "vitest";
-import { McpTool } from "../src/decorators.js";
+import { declaredDescriptor, toCuration } from "../src/catalog.js";
+import { curate, hidden, McpTool, McpVariant } from "../src/decorators.js";
 import {
   discoverEndpoints,
   type DiscoveryOptions,
@@ -178,11 +181,180 @@ class RootController {
   me(): void {}
 }
 
+class CurationListQuery {
+  @IsString()
+  customerId!: string;
+
+  @IsInt()
+  @IsOptional()
+  page?: number;
+}
+
+class CurationHideQuery {
+  @IsString()
+  customerId!: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+}
+
+class CurationStatusQuery {
+  @IsString()
+  @IsOptional()
+  status?: string;
+}
+
+class CurationRenameCollisionQuery {
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @IsString()
+  @IsOptional()
+  state?: string;
+}
+
+class CurationVariantQuery {
+  @IsString()
+  @IsOptional()
+  q?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+}
+
+class CurationSourceBody {
+  @IsString()
+  item!: string;
+
+  @IsString()
+  source!: string;
+}
+
+class CurationItemBody {
+  @IsString()
+  item!: string;
+
+  @IsInt()
+  quantity!: number;
+}
+
+@Controller("orders")
+class CurationController {
+  @Get()
+  @McpTool({
+    description: "Lists orders.",
+    arguments: curate<CurationListQuery>({ page: { as: "page_number" } }),
+  })
+  @UseGuards(AnonymousGuard)
+  renamePage(@Query() _query: CurationListQuery): void {}
+
+  @Get()
+  @McpTool({
+    description: "Lists orders.",
+    arguments: curate<CurationHideQuery>({
+      customerId: hidden.from("tenant"),
+    }),
+  })
+  @UseGuards(AnonymousGuard)
+  hideCustomer(@Query() _query: CurationHideQuery): void {}
+
+  @Get()
+  @McpTool({ arguments: { statuz: { as: "state" } } })
+  @UseGuards(AnonymousGuard)
+  curateMissing(@Query() _query: CurationStatusQuery): void {}
+
+  @Get()
+  @McpTool({
+    arguments: curate<CurationRenameCollisionQuery>({
+      state: { as: "status" },
+    }),
+  })
+  @UseGuards(AnonymousGuard)
+  renameOntoSibling(@Query() _query: CurationRenameCollisionQuery): void {}
+
+  @Get(":id")
+  @McpTool({ arguments: { id: hidden.omit() } })
+  @UseGuards(AnonymousGuard)
+  omitPathParameter(@Param("id", ParseIntPipe) _id: number): void {}
+
+  @Post()
+  @McpTool({
+    description: "Creates an order.",
+    arguments: curate<CurationSourceBody>({
+      source: hidden.value("agent"),
+    }),
+  })
+  @UseGuards(AnonymousGuard)
+  hideBodyField(@Body() _body: CurationSourceBody): void {}
+
+  @Post()
+  @McpTool({
+    description: "Creates an order.",
+    arguments: curate<CurationItemBody>({ item: { as: "item_name" } }),
+  })
+  @UseGuards(AnonymousGuard)
+  renameBodyField(@Body() _body: CurationItemBody): void {}
+
+  @Post("tags")
+  @McpTool({ arguments: { tag: hidden.omit() } })
+  @UseGuards(AnonymousGuard)
+  curateBodyRootField(@Body() _tags: string[]): void {}
+
+  @Get()
+  @McpTool({ name: "list_orders" })
+  @McpVariant({ name: "find_orders", description: "Searches orders." })
+  @UseGuards(AnonymousGuard)
+  nameAndVariants(): void {}
+
+  @Get()
+  @McpTool({ description: "Lists orders." })
+  @McpVariant({
+    name: "find_open_orders",
+    description: "Searches orders that are still open.",
+    arguments: { status: hidden.value("open") },
+  })
+  @McpVariant({
+    name: "find_all_orders",
+    description: "Searches orders in any state.",
+  })
+  @UseGuards(AnonymousGuard)
+  twoVariants(@Query() _query: CurationVariantQuery): void {}
+
+  @Get()
+  @McpTool({
+    description: "Lists orders.",
+    arguments: curate<CurationStatusQuery>({ status: hidden.value("open") }),
+  })
+  @McpVariant({
+    name: "find_open_orders",
+    description: "Searches orders that are still open.",
+  })
+  @McpVariant({
+    name: "find_all_orders",
+    description: "Searches orders in any state.",
+    arguments: { status: {} },
+  })
+  @UseGuards(AnonymousGuard)
+  variantResetsRecord(@Query() _query: CurationStatusQuery): void {}
+}
+
 const integerArrayBody: DiscoveryOptions = {
   schema: {
     typeShape: (target) =>
       (target as unknown) === Array
         ? { kind: "array", items: { kind: "scalar", scalar: "integer" } }
+        : undefined,
+  },
+};
+
+const stringArrayBody: DiscoveryOptions = {
+  schema: {
+    typeShape: (target) =>
+      (target as unknown) === Array
+        ? { kind: "array", items: { kind: "scalar", scalar: "string" } }
         : undefined,
   },
 };
@@ -219,6 +391,51 @@ const hosts: Record<string, HostCase> = {
     controller: OrdersController,
     handler: "cancelOrder",
   },
+  "curated-rename-keeps-position.json": {
+    controller: CurationController,
+    handler: "renamePage",
+  },
+  "hidden-parameter-leaves-schema.json": {
+    controller: CurationController,
+    handler: "hideCustomer",
+  },
+  "curation-unresolved-drops-endpoint.json": {
+    controller: CurationController,
+    handler: "curateMissing",
+  },
+  "rename-collision-drops-endpoint.json": {
+    controller: CurationController,
+    handler: "renameOntoSibling",
+  },
+  "omit-on-required-path-parameter-drops-endpoint.json": {
+    controller: CurationController,
+    handler: "omitPathParameter",
+  },
+  "hidden-body-field-drops-required.json": {
+    controller: CurationController,
+    handler: "hideBodyField",
+  },
+  "renamed-required-body-field-keeps-required.json": {
+    controller: CurationController,
+    handler: "renameBodyField",
+  },
+  "curation-on-body-root-field-unresolved.json": {
+    controller: CurationController,
+    handler: "curateBodyRootField",
+    options: stringArrayBody,
+  },
+  "tool-name-and-variants-conflict.json": {
+    controller: CurationController,
+    handler: "nameAndVariants",
+  },
+  "variants-produce-two-tools.json": {
+    controller: CurationController,
+    handler: "twoVariants",
+  },
+  "variant-record-replaces-base-record.json": {
+    controller: CurationController,
+    handler: "variantResetsRecord",
+  },
   "optional-body-with-body-field-nests.json": {
     controller: MessagesController,
     handler: "sendMessage",
@@ -254,6 +471,12 @@ const unproducible: Record<string, string> = {
     "Parameter and body-member descriptions; Nest exposes no metadata source for either.",
   "put-replace-order.json":
     "The parameter carries both a parameter-level and a schema-level description; Nest exposes no metadata source for either.",
+  "curated-description-overrides-schema.json":
+    "The parameter carries a parameter-level description that the curation description has to override; Nest exposes no metadata source for parameter descriptions.",
+  "curation-on-folded-route-is-spared.json":
+    "The subject is route folding, which is a property of an operation's set of routes and not of one descriptor; this round-trip builds a single descriptor and has nothing to fold.",
+  "hidden-argument-defs-are-not-lifted.json":
+    "A query parameter whose schema is a $ref beside its own $defs: query parameters are bound from scalar DTO members, so no parameter schema the binder emits carries a bag.",
 };
 
 function discover(host: HostCase): EndpointDescriptor {
@@ -268,11 +491,17 @@ function discover(host: HostCase): EndpointDescriptor {
     entry,
     `discovery produced no endpoint for ${host.handler}`,
   ).toBeDefined();
-  return entry!.descriptor;
+  return declaredDescriptor(entry!, toCuration(entry!.hints.arguments ?? {}));
 }
 
 function toolOf(descriptor: EndpointDescriptor, name: string): ToolDefinition {
   return createToolDefinition(descriptor, name);
+}
+
+function toolsOf(descriptor: EndpointDescriptor): ToolDefinition[] {
+  return expandToolProductions([descriptor], (e) => e).map((production) =>
+    createToolDefinition(production.endpoint, undefined, production.variant),
+  );
 }
 
 describe("nest descriptor round-trip against metadata-extraction", () => {
@@ -304,15 +533,22 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
         fixture.input.parameters ?? [],
       );
       expect(descriptor.requestBody).toEqual(fixture.input.requestBody);
+      expect(descriptor.arguments ?? []).toEqual(fixture.input.arguments ?? []);
+      expect(descriptor.variants ?? []).toEqual(fixture.input.variants ?? []);
 
       if ("error" in expected) {
         try {
-          toolOf(descriptor, "unused");
+          toolsOf(descriptor);
           expect.unreachable("expected a template error");
         } catch (error) {
           expect(error).toBeInstanceOf(SkMcpTemplateError);
           expect((error as SkMcpTemplateError).code).toBe(expected.error);
         }
+        return;
+      }
+
+      if ("tools" in expected) {
+        expect(toolsOf(descriptor)).toEqual(expected.tools);
         return;
       }
 

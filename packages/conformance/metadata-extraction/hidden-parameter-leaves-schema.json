@@ -1,0 +1,65 @@
+{
+  "kind": "metadata-extraction",
+  "description": "gizli argüman ne properties'e ne required'a girer",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "description": "Lists orders.",
+    "parameters": [
+      {
+        "name": "customerId",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "customerId",
+        "hidden": {
+          "kind": "deferred",
+          "source": "tenant"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "list_orders",
+    "description": "Lists orders.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

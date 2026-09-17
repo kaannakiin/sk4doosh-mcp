@@ -9,6 +9,7 @@ import {
   isMappedError,
   maxSearchLimit,
   SkMcpArgumentError,
+  type ArgumentFill,
   type CallerScope,
   type VisibilityDecision,
 } from "@sk-mcp/core";
@@ -17,7 +18,8 @@ import type { CatalogEntry, SkMcpCatalog } from "./catalog.js";
 import type { CallerScopeResolver } from "./cache.js";
 import type { SkMcpDispatcher } from "./dispatcher.js";
 import type { InvokeResultMapper } from "./invoke-result-mapper.js";
-import type { OuterRequest, SkMcpOptions } from "./options.js";
+import { callerOf } from "./options.js";
+import type { OuterRequest, SkMcpOptions, VerifiedToken } from "./options.js";
 import { currentOuterConnection } from "./outer-connection.js";
 import type { CallerVisibilityProvider } from "./visibility/provider.js";
 
@@ -32,6 +34,7 @@ export interface MetaToolDependencies {
 
 interface ToolExtra {
   readonly requestInfo?: { readonly headers?: Record<string, unknown> };
+  readonly authInfo?: VerifiedToken;
 }
 
 export const catalogGenerationMetaKey = "sk-mcp/catalogGeneration";
@@ -86,10 +89,82 @@ function outerFrom(extra: unknown): OuterRequest | undefined {
     return undefined;
   }
   const connection = currentOuterConnection();
+  const auth = (extra as ToolExtra | undefined)?.authInfo;
   return {
     headers: headers as OuterRequest["headers"],
     ...(connection === undefined ? {} : { connection }),
+    ...(auth === undefined ? {} : { auth }),
   };
+}
+
+/** Every source this operation fills, paired with the value its provider returned. */
+async function resolveDeferred(
+  deps: MetaToolDependencies,
+  entry: CatalogEntry,
+  outer: OuterRequest | undefined,
+): Promise<Readonly<Record<string, unknown>> | undefined> {
+  const sources = deferredSourcesOf(entry);
+  if (sources.size === 0) {
+    return undefined;
+  }
+  const caller = callerOf(outer);
+  const resolved: Record<string, unknown> = {};
+  for (const source of sources) {
+    const provider = deps.options.arguments.providers.get(source);
+    if (provider === undefined) {
+      continue;
+    }
+    const value = await provider(caller);
+    if (value !== undefined) {
+      resolved[source] = value;
+    }
+  }
+  return resolved;
+}
+
+function deferredSourcesOf(entry: CatalogEntry): ReadonlySet<string> {
+  const sources = new Set<string>();
+  const take = (fill: ArgumentFill | undefined): void => {
+    if (fill?.kind === "deferred" && typeof fill.source === "string") {
+      sources.add(fill.source);
+    }
+  };
+  for (const parameter of entry.template?.parameters ?? []) {
+    take(parameter.fill);
+  }
+  for (const fill of entry.template?.bodyFills?.values() ?? []) {
+    take(fill);
+  }
+  take(entry.template?.rootFill);
+  return sources;
+}
+
+/**
+ * The wire names the backend reports, mapped back to the names the agent knows.
+ *
+ * Without it a rename leaks the wire vocabulary into `fields[].name` and points the agent at an
+ * argument it does not have.
+ */
+function vocabularyOf(entry: CatalogEntry): {
+  readonly fieldAliases: Record<string, string>;
+  readonly hiddenFields: string[];
+} {
+  const fieldAliases: Record<string, string> = {};
+  const hiddenFields: string[] = [];
+  for (const parameter of entry.template?.parameters ?? []) {
+    if (parameter.fill !== undefined) {
+      hiddenFields.push(parameter.name);
+    } else if (parameter.argument !== undefined) {
+      fieldAliases[parameter.name] = parameter.argument;
+    }
+  }
+  for (const [agentName, wireName] of entry.template?.bodyAliases ?? []) {
+    fieldAliases[wireName] = agentName;
+  }
+  for (const wireName of entry.template?.bodyFills?.keys() ?? []) {
+    hiddenFields.push(wireName);
+  }
+  return { fieldAliases, hiddenFields };
 }
 
 export function registerSkMcpTools(
@@ -261,8 +336,15 @@ export function registerSkMcpTools(
           `Operation '${name}' cannot be invoked through sk-mcp; see the catalog diagnostics.`,
         );
       }
+      const outer = outerFrom(extra);
+      /**
+       * Sources are resolved once per invocation and the same map feeds every composition, so a
+       * source that is not constant cannot make validation and dispatch disagree.
+       */
+      let deferred: Readonly<Record<string, unknown>> | undefined;
       try {
-        compose(entry.template, args ?? {});
+        deferred = await resolveDeferred(deps, entry, outer);
+        compose(entry.template, args ?? {}, deferred);
       } catch (error) {
         if (error instanceof SkMcpArgumentError) {
           return errorResult(error.code, error.message);
@@ -272,9 +354,14 @@ export function registerSkMcpTools(
       const result = await deps.dispatcher.dispatch(
         entry.template,
         args ?? {},
-        outerFrom(extra),
+        outer,
+        deferred,
       );
-      const outcome = deps.mapper.map(result, knownFields(entry));
+      const outcome = deps.mapper.map(
+        result,
+        knownFields(entry),
+        vocabularyOf(entry),
+      );
       return textResult(outcome, isMappedError(outcome));
     },
   );

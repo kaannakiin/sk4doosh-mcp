@@ -92,6 +92,41 @@ builder.Services.AddSkMcp(options =>
 Visibility is **not** a security mechanism. A tool hidden from the catalog still runs only if your
 backend permits it; enforcement is always in your pipeline at invoke time.
 
+## 3b. Curating what the agent sees
+
+Your DTO was written for HTTP clients. `[McpArgument]` declares a different agent-facing surface
+over the same endpoint, without touching the DTO.
+
+```csharp
+[HttpGet("orders")]
+[McpTool(Description = "Search your orders by keyword.")]
+[McpArgument("customerId", Hidden = true, ValueFrom = "tenant")]
+[McpArgument("status", Description = "active | closed")]
+[McpArgument("page", Name = "page_number")]
+public IActionResult List([FromQuery] ListOrdersQuery query) => ...;
+```
+
+The agent sends `page_number`; the request still goes out as `?page=`. It never sees `customerId`,
+and sending it is an `unknown_argument` error. The value comes from a provider you register once:
+
+```csharp
+options.Arguments.Provide("tenant", (caller, _) =>
+    ValueTask.FromResult<JsonNode?>(JsonValue.Create(caller.Claim("tenant_id"))));
+```
+
+`Value` writes a scalar constant, `ValueJson` an object or array one (attribute arguments must be
+compile-time constants, and a string is one), and `Hidden = true` alone sends nothing so your
+backend's own default stands. Rules can also live in `options.Arguments` for controllers you cannot
+decorate, with `Seal` for a rule no attribute may override.
+
+**Curation is not enforcement.** Filling `customerId` from a token does not isolate tenants; your
+pipeline still decides. It changes what the agent has to think about, not what it may do.
+
+`[McpToolVariant(name, description)]` produces several tools from one action. Both are constructor
+arguments, because one description cannot honestly describe two differently curated tools.
+
+Full guide: the docs site's _How to curate the arguments an agent sees_.
+
 ## 4. Connecting an MCP client
 
 The endpoint speaks Streamable HTTP. `tools/list` returns only three meta-tools:

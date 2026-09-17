@@ -13,11 +13,16 @@ import {
   createToolDefinition,
   createToolNames,
   deduplicateOperations,
+  expandToolProductions,
   isSelected,
+  routePlaceholderNames,
   SkMcpCatalogError,
   SkMcpTemplateError,
+  tokenize,
   ToolIndex,
   unflattenableRootKey,
+  type ArgumentCuration,
+  type CurationRelief,
   type EndpointDescriptor,
   type RequestTemplate,
   type ToolDefinition,
@@ -34,7 +39,12 @@ import {
   normalizeRoute,
   type DiscoveredEndpoint,
 } from "./discovery/endpoint-discovery.js";
-import { SK_MCP_OPTIONS, type SkMcpOptions } from "./options.js";
+import type { ArgumentRule } from "./decorators.js";
+import {
+  SK_MCP_OPTIONS,
+  type CurationRule,
+  type SkMcpOptions,
+} from "./options.js";
 import { protectedResourceMetadataPath } from "./transport/protected-resource-metadata.js";
 
 export interface CatalogEntry {
@@ -197,31 +207,49 @@ export class SkMcpCatalog {
       },
     );
 
+    /**
+     * One production per tool, from an already-folded list.
+     *
+     * Naming expands variants internally, so the catalog has to walk the same productions rather
+     * than the operations: with variants the two lists differ in length and a positional zip over
+     * operations would attach the wrong name to the wrong tool.
+     */
+    const declaredList = operations.map((endpoint) => this.declared(endpoint));
+    const sourceOf = new Map<EndpointDescriptor, DiscoveredEndpoint>();
+    operations.forEach((endpoint, index) => {
+      const declared = declaredList[index];
+      if (declared !== undefined) {
+        sourceOf.set(declared, endpoint);
+      }
+    });
+
     let names: string[];
+    let productions: ReturnType<typeof expandToolProductions>;
     try {
-      names = createToolNames(
-        operations.map((endpoint) => this.declared(endpoint)),
-        {
-          prefixMode: this.options.naming.prefixMode,
-          onDiagnostic: (code, message) => report({ code, message }),
-        },
-      );
+      productions = expandToolProductions(declaredList, (e) => e);
+      names = createToolNames(declaredList, {
+        prefixMode: this.options.naming.prefixMode,
+        onDiagnostic: (code, message) => report({ code, message }),
+      });
     } catch (error) {
       report({
         code: (error as SkMcpCatalogError).code,
         message: (error as Error).message,
       });
+      productions = [];
       names = [];
     }
 
     const entries: CatalogEntry[] = [];
     const byName = new Map<string, CatalogEntry>();
-    for (const [position, endpoint] of operations.entries()) {
+    for (const [position, production] of productions.entries()) {
       const name = names[position];
-      if (name === undefined) {
+      const endpoint = sourceOf.get(production.endpoint);
+      if (name === undefined || endpoint === undefined) {
         continue;
       }
-      const descriptor = this.declared(endpoint);
+      const descriptor = production.endpoint;
+      const variant = production.variant;
       if (name.length > 64) {
         report({
           code: "long_tool_name",
@@ -229,11 +257,16 @@ export class SkMcpCatalog {
         });
       }
       reportBodyRoot(descriptor, report);
+      const relief = reliefFor(descriptor, alternates.get(endpoint), report);
       let tool: ToolDefinition;
       let template: RequestTemplate | undefined;
       try {
-        tool = createToolDefinition(descriptor, name);
-        template = createRequestTemplateFromEndpoint(descriptor);
+        tool = createToolDefinition(descriptor, name, variant, relief);
+        template = createRequestTemplateFromEndpoint(
+          descriptor,
+          variant,
+          relief,
+        );
       } catch (error) {
         const code =
           error instanceof SkMcpTemplateError
@@ -241,6 +274,24 @@ export class SkMcpCatalog {
             : "template_rejected";
         report({ code, message: (error as Error).message });
         continue;
+      }
+      const missing = missingFillSource(template, this.options);
+      if (missing !== undefined) {
+        report({
+          code: "unknown_fill_source",
+          message: `Tool '${name}' fills an argument from source '${missing}', which no value provider is registered for; register it with options.arguments.provide.`,
+        });
+        continue;
+      }
+      reportCurationLeaks(tool, template, report);
+      if (
+        template.bodyAllowsAdditionalProperties &&
+        (template.bodyFills?.size ?? 0) > 0
+      ) {
+        report({
+          code: "curated_open_body",
+          message: `Tool '${name}' hides an argument on a body that accepts additional properties; the schema cannot express the exclusion, so only the composer enforces it.`,
+        });
       }
       const alternateRoutes = alternates.get(endpoint);
       const entry: CatalogEntry = {
@@ -266,6 +317,8 @@ export class SkMcpCatalog {
     const fatal = diagnostics.filter((diagnostic) =>
       atLeast(severityOf(diagnostic.code, this.options.diagnostics), failOn),
     );
+
+    reportIndistinguishableVariants(entries, report);
 
     return {
       entries,
@@ -317,13 +370,324 @@ export class SkMcpCatalog {
   }
 
   private declared(endpoint: DiscoveredEndpoint): EndpointDescriptor {
-    const hints = endpoint.hints;
-    return {
-      ...endpoint.descriptor,
-      ...(hints.name === undefined ? {} : { toolName: hints.name }),
-      ...(hints.prefix === undefined ? {} : { containerPrefix: hints.prefix }),
-    };
+    return declaredDescriptor(endpoint, this.curationFor(endpoint));
   }
+
+  /**
+   * Applies the declaration ladder, least specific first, with sealed fields last.
+   *
+   * Merging is per argument and per field, so a global rule that hides a tenant identifier and a
+   * method-level rule that renames a page number both survive. A decorator wins a tie against a
+   * central rule of the same specificity: it is nearer the code and that is the reading a
+   * maintainer expects.
+   */
+  private curationFor(endpoint: DiscoveredEndpoint): ArgumentCuration[] {
+    const central = this.options.arguments.rules
+      .filter((rule) => matchesTarget(rule, endpoint))
+      .sort((a, b) => a.specificity - b.specificity);
+    assertUnambiguous(central, endpoint);
+    const layers: Array<{
+      readonly rules: Readonly<Record<string, ArgumentRule>>;
+      readonly sealed: boolean;
+    }> = [
+      ...central.filter((rule) => !rule.sealed),
+      { rules: endpoint.hints.arguments ?? {}, sealed: false },
+      ...central.filter((rule) => rule.sealed),
+    ];
+
+    /**
+     * Collected before the merge, not during it: sealed rules are applied last so that they win,
+     * which means a check that learns the sealed names as it goes can never see an override.
+     */
+    const sealed = new Set(
+      central
+        .filter((rule) => rule.sealed)
+        .flatMap((rule) => Object.keys(rule.rules)),
+    );
+
+    const merged = new Map<string, ArgumentRule>();
+    for (const layer of layers) {
+      for (const [name, rule] of Object.entries(layer.rules)) {
+        if (sealed.has(name) && !layer.sealed) {
+          throw new SkMcpTemplateError(
+            "sealed_curation_overridden",
+            `Argument '${name}' is sealed on ${endpoint.controller.name}.${endpoint.handlerName}; a sealed rule cannot be overridden.`,
+          );
+        }
+        merged.set(name, rule);
+      }
+    }
+    return toCuration(Object.fromEntries(merged));
+  }
+}
+
+/**
+ * Spares a declaration that only a folded-away route could satisfy.
+ *
+ * Folding keeps the shortest route, so which route wins a length comparison would otherwise decide
+ * whether the endpoint builds at all. Only path parameters can differ between an operation's
+ * routes, so the folded routes' placeholders are the whole vocabulary this has to consider.
+ *
+ * The same relief is handed to both consumers, so a name reaches the reporter twice; the set keeps
+ * one warning per name.
+ */
+function reliefFor(
+  descriptor: EndpointDescriptor,
+  foldedRoutes: readonly string[] | undefined,
+  report: (diagnostic: CatalogDiagnostic) => void,
+): CurationRelief | undefined {
+  if (foldedRoutes === undefined || foldedRoutes.length === 0) {
+    return undefined;
+  }
+  const foldedNames = new Set<string>();
+  for (const route of foldedRoutes) {
+    for (const name of routePlaceholderNames(route)) {
+      foldedNames.add(name);
+    }
+  }
+  for (const name of routePlaceholderNames(descriptor.route)) {
+    foldedNames.delete(name);
+  }
+  if (foldedNames.size === 0) {
+    return undefined;
+  }
+  const reported = new Set<string>();
+  return {
+    foldedNames,
+    onUnused: (name) => {
+      if (reported.has(name)) {
+        return;
+      }
+      reported.add(name);
+      report({
+        code: "curation_unused_on_kept_route",
+        message: `Curation names '${name}', which exists only on a route folded away from ${descriptor.method} ${descriptor.route}; the declaration has no effect on the route that is invoked.`,
+      });
+    },
+  };
+}
+
+/**
+ * Rejects two central rules that set the same argument differently at the same specificity.
+ *
+ * Between levels the nearer rule simply wins, silently and by design. Within one level there is no
+ * nearer rule, so a merge would have to pick by registration order and the host would be reading a
+ * ladder that does not decide anything.
+ */
+function assertUnambiguous(
+  rules: readonly CurationRule[],
+  endpoint: DiscoveredEndpoint,
+): void {
+  const claimed = new Map<string, string>();
+  for (const rule of rules) {
+    for (const [name, declaration] of Object.entries(rule.rules)) {
+      const key = `${rule.specificity}|${rule.sealed ? "sealed" : "open"}|${name}`;
+      const written = JSON.stringify(declaration);
+      const existing = claimed.get(key);
+      if (existing !== undefined && existing !== written) {
+        throw new SkMcpTemplateError(
+          "ambiguous_curation",
+          `Two curation rules of equal specificity declare argument '${name}' differently on ${endpoint.controller.name}.${endpoint.handlerName}; narrow one of their targets.`,
+        );
+      }
+      claimed.set(key, written);
+    }
+  }
+}
+
+/**
+ * A declared source with no provider is a build error, never a per-call one.
+ *
+ * Deferring it to invoke time turns a host mistake into a failure that recurs on every call and
+ * that nobody in the request path can act on.
+ */
+function missingFillSource(
+  template: RequestTemplate,
+  options: SkMcpOptions,
+): string | undefined {
+  const fills = [
+    ...template.parameters.map((parameter) => parameter.fill),
+    ...(template.bodyFills?.values() ?? []),
+    template.rootFill,
+  ];
+  for (const fill of fills) {
+    if (
+      fill?.kind === "deferred" &&
+      typeof fill.source === "string" &&
+      !options.arguments.providers.has(fill.source)
+    ) {
+      return fill.source;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Warns when the published name or description still names an argument the agent cannot reach.
+ *
+ * Heuristic by construction: a single-token wire name such as `page` fires on "page size". It is a
+ * warning for that reason and is not escalated by default.
+ */
+function reportCurationLeaks(
+  tool: ToolDefinition,
+  template: RequestTemplate,
+  report: (diagnostic: CatalogDiagnostic) => void,
+): void {
+  const curated = [
+    ...template.parameters
+      .filter(
+        (parameter) =>
+          parameter.fill !== undefined || parameter.argument !== undefined,
+      )
+      .map((parameter) => parameter.name),
+    ...(template.bodyAliases?.values() ?? []),
+    ...(template.bodyFills?.keys() ?? []),
+  ];
+  if (curated.length === 0) {
+    return;
+  }
+  const haystack = tokenize(`${tool.name} ${tool.description}`);
+  for (const wireName of curated) {
+    const needle = tokenize(wireName);
+    if (needle.length > 0 && containsSequence(haystack, needle)) {
+      report({
+        code: "curation_leaks_name",
+        message: `Tool '${tool.name}' still names the curated argument '${wireName}' in its name or description; the agent cannot act on it.`,
+      });
+    }
+  }
+}
+
+function containsSequence(
+  haystack: readonly string[],
+  needle: readonly string[],
+): boolean {
+  for (let start = 0; start + needle.length <= haystack.length; start += 1) {
+    if (needle.every((token, offset) => haystack[start + offset] === token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Warns when two variants of one operation are the same tool twice.
+ *
+ * Equal schemas and equal descriptions mean two cards competing for the same terms on the same
+ * route, which is the search pollution route folding already exists to prevent.
+ */
+function reportIndistinguishableVariants(
+  entries: readonly CatalogEntry[],
+  report: (diagnostic: CatalogDiagnostic) => void,
+): void {
+  const seen = new Map<string, string>();
+  for (const entry of entries) {
+    const key = `${entry.controller.name}.${entry.handlerName}|${entry.tool.description}|${JSON.stringify(entry.tool.inputSchema)}`;
+    const owner = seen.get(key);
+    if (owner !== undefined) {
+      report({
+        code: "variant_indistinguishable",
+        message: `Tools '${owner}' and '${entry.tool.name}' expose the same schema and the same description; make their first clauses differ or the search card cannot tell them apart.`,
+      });
+      continue;
+    }
+    seen.set(key, entry.tool.name);
+  }
+}
+
+/**
+ * Folds the decorator's declarations into the descriptor.
+ *
+ * Discovery reports facts; declarations are reduced here, the same way `toolName` and
+ * `containerPrefix` are. The curation list arrives resolved because the ladder that produces it
+ * needs the host's central rules, which are not a property of the endpoint.
+ */
+export function declaredDescriptor(
+  endpoint: DiscoveredEndpoint,
+  curation: readonly ArgumentCuration[],
+): EndpointDescriptor {
+  const hints = endpoint.hints;
+  return {
+    ...endpoint.descriptor,
+    ...(hints.name === undefined ? {} : { toolName: hints.name }),
+    ...(hints.prefix === undefined ? {} : { containerPrefix: hints.prefix }),
+    ...(curation.length === 0 ? {} : { arguments: [...curation] }),
+    ...(hints.variants === undefined || hints.variants.length === 0
+      ? {}
+      : {
+          variants: hints.variants.map((variant) => ({
+            name: variant.name,
+            description: variant.description,
+            ...(variant.arguments === undefined
+              ? {}
+              : { arguments: toCuration(variant.arguments) }),
+          })) as EndpointDescriptor["variants"],
+        }),
+  };
+}
+
+export function toCuration(
+  rules: Readonly<Record<string, ArgumentRule>>,
+): ArgumentCuration[] {
+  return Object.entries(rules).map(([name, rule]) => ({
+    name,
+    ...(rule.hide === undefined
+      ? {
+          ...(rule.as === undefined ? {} : { as: rule.as }),
+          ...(rule.description === undefined
+            ? {}
+            : { description: rule.description }),
+        }
+      : { hidden: rule.hide }),
+  }));
+}
+
+function matchesTarget(
+  rule: CurationRule,
+  endpoint: DiscoveredEndpoint,
+): boolean {
+  const target = rule.target;
+  if (
+    target.controller !== undefined &&
+    target.controller !== endpoint.controller
+  ) {
+    return false;
+  }
+  if (target.handler !== undefined && target.handler !== endpoint.handlerName) {
+    return false;
+  }
+  if (
+    target.method !== undefined &&
+    target.method.toUpperCase() !== endpoint.descriptor.method
+  ) {
+    return false;
+  }
+  if (
+    target.route !== undefined &&
+    !matchesRoute(target.route, endpoint.descriptor.route)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * A `*` matches within one segment, `**` across segments.
+ *
+ * The pattern is built from the host's own string, so every regex metacharacter outside the two
+ * wildcards is escaped before it can turn a target into a catastrophic backtracker.
+ */
+function matchesRoute(pattern: string, route: string): boolean {
+  const source = pattern
+    .split("**")
+    .map((part) =>
+      part
+        .split("*")
+        .map((literal) => literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("[^/]*"),
+    )
+    .join(".*");
+  return new RegExp(`^${source}$`).test(route);
 }
 
 function reportBodyRoot(

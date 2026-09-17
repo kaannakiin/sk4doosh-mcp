@@ -9,7 +9,13 @@ export type SkMcpTemplateErrorCode =
   | "unsupported_array_style"
   | "argument_collision"
   | "route_placeholder_mismatch"
-  | "schema_def_conflict";
+  | "schema_def_conflict"
+  | "curation_unresolved"
+  | "invalid_fill_constant"
+  | "hidden_required_omitted"
+  | "variant_declaration_conflict"
+  | "sealed_curation_overridden"
+  | "ambiguous_curation";
 
 export class SkMcpTemplateError extends Error {
   constructor(
@@ -27,7 +33,9 @@ export type SkMcpArgumentErrorCode =
   | "missing_path_parameter"
   | "header_injection"
   | "null_not_allowed"
-  | "invalid_type";
+  | "invalid_type"
+  | "deferred_value_missing"
+  | "deferred_value_invalid";
 
 export class SkMcpArgumentError extends Error {
   constructor(

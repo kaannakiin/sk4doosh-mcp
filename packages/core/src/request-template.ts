@@ -1,4 +1,5 @@
 import { assertUniqueArgumentNames } from "./argument-names.js";
+import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
 import { SkMcpTemplateError } from "./errors.js";
 import type { Parameter } from "./generated/endpoint-descriptor.js";
 
@@ -19,6 +20,14 @@ export interface ParameterBinding {
    * {@link arraySeparatorFor} so the invalid pairings cannot be represented.
    */
   readonly arraySeparator?: string;
+  /**
+   * The key the agent sends, when it differs from the wire name. Omitted when
+   * they are equal, so two templates describing the same binding stay deeply
+   * equal.
+   */
+  readonly argument?: string;
+  /** Present means hidden: the agent cannot send this, the value is written from here. */
+  readonly fill?: ArgumentFill;
 }
 
 const delimiters: Readonly<Record<ParameterStyle, string>> = {
@@ -57,9 +66,21 @@ export interface RequestTemplate {
   readonly routeTemplate: string;
   readonly parameters: readonly ParameterBinding[];
   readonly hasBody: boolean;
+  /** Wire field names, never agent names. */
   readonly bodyProperties: ReadonlySet<string>;
   readonly bodyAllowsAdditionalProperties: boolean;
   readonly bodyRoot?: string;
+  /** Agent key to wire field, for renamed body fields. */
+  readonly bodyAliases?: ReadonlyMap<string, string>;
+  /** Wire field to fill, for hidden body fields. */
+  readonly bodyFills?: ReadonlyMap<string, ArgumentFill>;
+  readonly rootFill?: ArgumentFill;
+  /**
+   * Wire names whose fill must produce a value. Path parameters are always
+   * treated as required; this set carries the body fields and body root that
+   * the schema declared required.
+   */
+  readonly requiredFills?: ReadonlySet<string>;
 }
 
 export interface RequestTemplateInput {
@@ -69,10 +90,116 @@ export interface RequestTemplateInput {
   readonly bodyProperties?: readonly string[];
   readonly bodyAllowsAdditionalProperties?: boolean;
   readonly bodyRoot?: string;
+  readonly bodyAliases?: ReadonlyMap<string, string>;
+  readonly bodyFills?: ReadonlyMap<string, ArgumentFill>;
+  readonly rootFill?: ArgumentFill;
+  readonly requiredFills?: ReadonlySet<string>;
+}
+
+function fitsKind(value: unknown, kind: ParameterKind): boolean {
+  switch (kind) {
+    case "integer":
+      return typeof value === "number" && Number.isSafeInteger(value);
+    case "number":
+      return typeof value === "number" && Number.isFinite(value);
+    case "boolean":
+      return typeof value === "boolean";
+    default:
+      return typeof value === "string";
+  }
+}
+
+/**
+ * Constants are gated here rather than at call time.
+ *
+ * A constant the binding cannot carry would otherwise fail every single call
+ * with an error nobody in the request path can act on: the agent did not send
+ * it and cannot remove it.
+ */
+function assertConstantFits(binding: ParameterBinding): void {
+  const fill = binding.fill;
+  if (fill === undefined || fill.kind !== "constant") {
+    return;
+  }
+  const value = fill.value;
+  const ok =
+    binding.isArray === true
+      ? Array.isArray(value) &&
+        value.every((item) => fitsKind(item, binding.kind))
+      : fitsKind(value, binding.kind);
+  if (!ok) {
+    throw new SkMcpTemplateError(
+      "invalid_fill_constant",
+      `The constant filling '${binding.name}' does not fit a ${binding.isArray === true ? "array of " : ""}${binding.kind} ${binding.location} parameter.`,
+    );
+  }
+}
+
+/** The agent-facing names a caller may send. */
+export function allowedArgumentNames(
+  template: RequestTemplate,
+): ReadonlySet<string> {
+  const allowed = new Set<string>();
+  for (const parameter of template.parameters) {
+    if (parameter.fill === undefined) {
+      allowed.add(parameter.argument ?? parameter.name);
+    }
+  }
+  const aliased = new Set(template.bodyAliases?.values() ?? []);
+  for (const agentName of template.bodyAliases?.keys() ?? []) {
+    allowed.add(agentName);
+  }
+  for (const field of template.bodyProperties) {
+    if (!template.bodyFills?.has(field) && !aliased.has(field)) {
+      allowed.add(field);
+    }
+  }
+  if (template.bodyRoot !== undefined && template.rootFill === undefined) {
+    allowed.add(template.bodyRoot);
+  }
+  return allowed;
+}
+
+/**
+ * Wire names the agent may never send.
+ *
+ * This set beats the free-form body allowance. Without that precedence an open
+ * body accepts a hidden field's wire name and the hide is bypassed; and the
+ * wire name of a renamed parameter is accepted, consumed by no loop, and
+ * dropped in silence.
+ */
+export function deniedArgumentNames(
+  template: RequestTemplate,
+): ReadonlySet<string> {
+  const denied = new Set<string>();
+  for (const parameter of template.parameters) {
+    if (parameter.fill !== undefined || parameter.argument !== undefined) {
+      denied.add(parameter.name);
+    }
+  }
+  for (const wireName of template.bodyAliases?.values() ?? []) {
+    denied.add(wireName);
+  }
+  for (const wireName of template.bodyFills?.keys() ?? []) {
+    denied.add(wireName);
+  }
+  if (template.bodyRoot !== undefined && template.rootFill !== undefined) {
+    denied.add(template.bodyRoot);
+  }
+  return denied;
 }
 
 const reservedHeaderNames = new Set(["authorization", "cookie"]);
 const routePlaceholder = /\{([^}:?*]+)[^}]*\}/g;
+
+/** The placeholder names a route template declares, with constraints and modifiers stripped. */
+export function routePlaceholderNames(route: string): Set<string> {
+  const names = new Set<string>();
+  for (const match of route.matchAll(routePlaceholder)) {
+    names.add(match[1] as string);
+  }
+  return names;
+}
 
 export function createRequestTemplate(
   input: RequestTemplateInput,
@@ -116,7 +243,19 @@ export function createRequestTemplate(
       : [input.bodyRoot],
   );
 
+  const agentNames = new Set<string>();
   for (const parameter of parameters) {
+    assertConstantFits(parameter);
+    if (parameter.fill === undefined) {
+      const agentName = parameter.argument ?? parameter.name;
+      if (agentNames.has(agentName)) {
+        throw new SkMcpTemplateError(
+          "argument_collision",
+          `Curation produces two arguments named '${agentName}'.`,
+        );
+      }
+      agentNames.add(agentName);
+    }
     if (
       parameter.location === "header" &&
       reservedHeaderNames.has(parameter.name.toLowerCase())
@@ -154,10 +293,7 @@ export function createRequestTemplate(
     routePlaceholder,
     (_, name: string) => `{${name}}`,
   );
-  const placeholders = new Set<string>();
-  for (const match of input.route.matchAll(routePlaceholder)) {
-    placeholders.add(match[1] as string);
-  }
+  const placeholders = routePlaceholderNames(input.route);
   for (const parameter of parameters) {
     if (parameter.location === "path" && !placeholders.has(parameter.name)) {
       throw new SkMcpTemplateError(
@@ -177,6 +313,16 @@ export function createRequestTemplate(
     }
   }
 
+  for (const agentName of input.bodyAliases?.keys() ?? []) {
+    if (agentNames.has(agentName)) {
+      throw new SkMcpTemplateError(
+        "argument_collision",
+        `Curation produces two arguments named '${agentName}'.`,
+      );
+    }
+    agentNames.add(agentName);
+  }
+
   return {
     method,
     routeTemplate: normalizedRoute,
@@ -185,5 +331,15 @@ export function createRequestTemplate(
     bodyProperties: input.bodyRoot === undefined ? bodyProperties : new Set(),
     bodyAllowsAdditionalProperties,
     ...(input.bodyRoot === undefined ? {} : { bodyRoot: input.bodyRoot }),
+    ...(input.bodyAliases === undefined || input.bodyAliases.size === 0
+      ? {}
+      : { bodyAliases: input.bodyAliases }),
+    ...(input.bodyFills === undefined || input.bodyFills.size === 0
+      ? {}
+      : { bodyFills: input.bodyFills }),
+    ...(input.rootFill === undefined ? {} : { rootFill: input.rootFill }),
+    ...(input.requiredFills === undefined || input.requiredFills.size === 0
+      ? {}
+      : { requiredFills: input.requiredFills }),
   };
 }

@@ -1,0 +1,58 @@
+{
+  "kind": "metadata-extraction",
+  "description": "katlanan route'un path parametresini adlandiran kuratorluk endpoint'i dusurmez; tutulan route'ta o arguman yok, beyan etkisiz kalir",
+  "input": {
+    "operationId": "GetOrder",
+    "method": "GET",
+    "route": "/orders/{id}",
+    "description": "Fetches one order.",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "tenantId",
+        "hidden": {
+          "kind": "deferred",
+          "source": "tenant"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "foldedRoutes": ["/tenants/{tenantId}/orders/{id}"],
+  "expected": {
+    "name": "get_order",
+    "description": "Fetches one order.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

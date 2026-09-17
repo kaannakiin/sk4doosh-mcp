@@ -22,6 +22,7 @@ public sealed class SkMcpOptions
     public ErrorMappingOptions Errors { get; } = new();
     public ResourceServerOptions ResourceServer { get; } = new();
     public DiagnosticsOptions Diagnostics { get; } = new();
+    public ArgumentCurationOptions Arguments { get; } = new();
 }
 
 public sealed class DiagnosticsOptions

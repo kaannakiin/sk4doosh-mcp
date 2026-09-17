@@ -1,0 +1,25 @@
+{
+  "kind": "argument-mapping",
+  "description": "yeniden adlandirilmis gövde alaninin eski adi kapalidir; ajan yalniz yeni adi gonderebilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders",
+      "body": {
+        "properties": ["q"],
+        "curation": [
+          {
+            "name": "q",
+            "as": "keyword"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "q": "laptop"
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

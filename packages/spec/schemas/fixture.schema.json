@@ -93,6 +93,20 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "fieldAliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Wire field name to agent argument name."
+        },
+        "hiddenFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Wire field names the agent cannot set; a reported field matching one is emitted without a name."
         }
       }
     },
@@ -195,6 +209,13 @@
         "toolName": {
           "type": "string",
           "minLength": 1
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "endpoint-descriptor.schema.json#/$defs/ToolVariant"
+          }
         }
       }
     },
@@ -219,10 +240,35 @@
         "input": {
           "$ref": "endpoint-descriptor.schema.json"
         },
+        "foldedRoutes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Routes folded away from input.route. A declaration that resolves only on one of these is spared with curation_unused_on_kept_route rather than dropping the endpoint."
+        },
         "expected": {
           "oneOf": [
             {
               "$ref": "tool-definition.schema.json"
+            },
+            {
+              "title": "MetadataExtractionExpectedTools",
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["tools"],
+              "properties": {
+                "tools": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "tool-definition.schema.json"
+                  }
+                }
+              },
+              "description": "Used when the endpoint declares variants: one tool per variant, in declaration order."
             },
             {
               "title": "MetadataExtractionExpectedError",
@@ -232,7 +278,15 @@
               "properties": {
                 "error": {
                   "type": "string",
-                  "enum": ["argument_collision", "schema_def_conflict"]
+                  "enum": [
+                    "argument_collision",
+                    "schema_def_conflict",
+                    "duplicate_argument",
+                    "curation_unresolved",
+                    "invalid_fill_constant",
+                    "hidden_required_omitted",
+                    "variant_declaration_conflict"
+                  ]
                 }
               }
             }
@@ -263,6 +317,10 @@
             },
             "arguments": {
               "type": "object"
+            },
+            "deferred": {
+              "type": "object",
+              "description": "Resolved deferred values keyed by source name. The runner builds the provider from this map, the way naming fixtures build Naming.Prefix from hostPrefixes."
             }
           }
         },
@@ -318,7 +376,9 @@
                     "missing_path_parameter",
                     "header_injection",
                     "null_not_allowed",
-                    "invalid_type"
+                    "invalid_type",
+                    "deferred_value_missing",
+                    "deferred_value_invalid"
                   ]
                 }
               }
@@ -360,12 +420,22 @@
             },
             "additionalProperties": {
               "type": "boolean"
+            },
+            "curation": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/TemplateBodyCuration"
+              }
             }
           }
         },
         "bodyRoot": {
           "type": "string",
           "minLength": 1
+        },
+        "rootFill": {
+          "$ref": "endpoint-descriptor.schema.json#/$defs/ArgumentFill",
+          "description": "Fills the body root argument; only meaningful with bodyRoot."
         }
       }
     },
@@ -396,6 +466,15 @@
         },
         "explode": {
           "type": "boolean"
+        },
+        "as": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "The name the agent sends. The wire name stays in 'name'."
+        },
+        "fill": {
+          "$ref": "endpoint-descriptor.schema.json#/$defs/ArgumentFill",
+          "description": "Present means hidden: the agent cannot send this parameter and the value is written from here."
         }
       }
     },
@@ -755,6 +834,26 @@
               "type": "boolean"
             }
           }
+        }
+      }
+    },
+    "TemplateBodyCuration": {
+      "title": "TemplateBodyCuration",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The wire field name."
+        },
+        "as": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "fill": {
+          "$ref": "endpoint-descriptor.schema.json#/$defs/ArgumentFill"
         }
       }
     }

@@ -21,6 +21,14 @@ An agent's flat JSON arguments convert deterministically into an HTTP request. I
 4. **Header:** a CR/LF/NUL in a value → `header_injection`; an array-valued header is joined by its declared delimiter and the check runs on the joined value; an empty array writes no header; data headers are applied AFTER identity carriers (a collision is already impossible thanks to the template rule).
 5. **Body — two modes.** _Field mode_ (declared body fields): declared fields not bound to parameters are collected into a single JSON object. Field mode **always** produces a body: with no declared field supplied the object is empty, and `{}` goes on the wire. There is no path by which field mode omits the body, which is why a body that is itself optional is never flattened ([schema-conversion-rules.md](schema-conversion-rules.md) Table 6). _Root mode_ (when the template declares a body-root argument): that argument's value is **the entire body** — it may be an object, an array, a string, a number or a bool; if the argument is absent, no body is sent and the backend's model binder decides (the same discipline as `absent-query-omitted`). Root mode is therefore the only mode in which "send no body" and "send `{}`" are both expressible, and they are different requests. The two modes MUST NOT be declared together in one template (`conflicting_body_modes`). **`Content-Type: application/json; charset=utf-8` and `Content-Length` are written if and only if a body is sent** — that is, always in field mode, and in root mode only when the argument was supplied.
 
+## Curated arguments
+
+An endpoint may declare that an argument is renamed or hidden. The allow-list then speaks agent
+names, the wire name of every curated argument is refused whatever the body allows, and a hidden
+argument's value is written to its wire slot through the same type gate and the same encoding as an
+agent-supplied one. The rules, the two invoke-time error codes and the resolve-once discipline are
+in [argument-curation.md](argument-curation.md).
+
 ## Value formatting
 
 - Number and bool conversion is **always invariant** (`1.5` MUST NEVER become `1,5`) and is a **canonical shortest** serialization: leftover notation in the source text is not preserved (`1.50` → `"1.5"`; fixture: `number-canonical-form`). The rationale: in languages that work with the parsed value (JS) there is no source text, and the canonical form is the natural intersection of the two languages. Magnitudes requiring exponential notation are not yet fixture-pinned — an unpinned area.

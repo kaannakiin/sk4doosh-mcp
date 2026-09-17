@@ -61,6 +61,21 @@
       "items": {
         "type": "string"
       }
+    },
+    "arguments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ArgumentCuration"
+      },
+      "description": "Argument curation declarations, keyed by wire name. The SDK collects these from host declarations and reduces them here; they are declarations, not discovered facts."
+    },
+    "variants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/ToolVariant"
+      },
+      "description": "When present, the operation produces exactly one tool per variant and its own toolName and description are unused."
     }
   },
   "$defs": {
@@ -123,6 +138,113 @@
         },
         "description": {
           "type": "string"
+        }
+      }
+    },
+    "ArgumentCuration": {
+      "title": "ArgumentCuration",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The wire name: a parameter name, a flattened request-body field name, or the body root argument name."
+        },
+        "as": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "The name the agent sees. The wire name is unchanged. The pattern excludes the characters error-mapping uses to split a reported field name."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Overrides the description the schema carries. There is no way to erase a description."
+        },
+        "hidden": {
+          "$ref": "#/$defs/ArgumentFill"
+        }
+      }
+    },
+    "ArgumentFillKind": {
+      "title": "ArgumentFillKind",
+      "type": "string",
+      "enum": ["constant", "deferred", "omit"],
+      "description": "constant: a fixed value is written on every call. deferred: the value comes from a registered provider at invoke time. omit: nothing is written and the backend's own default stands."
+    },
+    "ArgumentFill": {
+      "title": "ArgumentFill",
+      "description": "How a hidden argument is filled. Present means hidden; absent means visible. Exactly one of value / source may accompany its kind.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ArgumentFillKind"
+        },
+        "value": {},
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Names a value provider the host registered. Resolved once per invocation, before composition."
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {
+              "const": "constant"
+            },
+            "value": {},
+            "source": false
+          }
+        },
+        {
+          "required": ["kind", "source"],
+          "properties": {
+            "kind": {
+              "const": "deferred"
+            },
+            "source": {},
+            "value": false
+          }
+        },
+        {
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "omit"
+            },
+            "value": false,
+            "source": false
+          }
+        }
+      ]
+    },
+    "ToolVariant": {
+      "title": "ToolVariant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,255}$",
+          "description": "Absolute: no container prefix is applied."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required, because one description cannot honestly describe two differently curated tools."
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ArgumentCuration"
+          },
+          "description": "Merged with the endpoint's own arguments by whole-record replacement per wire name."
         }
       }
     },

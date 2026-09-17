@@ -7,6 +7,9 @@ public static class DiagnosticCodes
     public const string AmbiguousSelection = "ambiguous_selection";
     public const string ArgumentCollision = "argument_collision";
     public const string BodyFieldCollision = "body_field_collision";
+    public const string CuratedOpenBody = "curated_open_body";
+    public const string CurationLeaksName = "curation_leaks_name";
+    public const string CurationUnusedOnKeptRoute = "curation_unused_on_kept_route";
     public const string EnumFormatUnresolved = "enum_format_unresolved";
     public const string InvalidName = "invalid_name";
     public const string LongToolName = "long_tool_name";
@@ -27,6 +30,7 @@ public static class DiagnosticCodes
     public const string UnsupportedBinding = "unsupported_binding";
     public const string UnflattenableBodyRoot = "unflattenable_body_root";
     public const string UnsupportedDictionaryKey = "unsupported_dictionary_key";
+    public const string VariantIndistinguishable = "variant_indistinguishable";
 
     private static readonly Dictionary<string, CatalogSeverity> Defaults =
         new(StringComparer.Ordinal)

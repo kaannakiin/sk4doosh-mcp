@@ -6,6 +6,8 @@ namespace SkMcp.AspNetCore.Naming;
 
 public enum PrefixMode { Always, OnCollision }
 
+internal sealed record ToolProduction(EndpointDescriptor Endpoint, ToolVariant? Variant);
+
 internal static partial class ToolNameFactory
 {
     public const int LongNameThreshold = 64;
@@ -111,6 +113,42 @@ internal static partial class ToolNameFactory
         return false;
     }
 
+    /// <summary>Folds routes first, then expands variants.</summary>
+    /// <remarks>
+    /// The order is what keeps <see cref="Deduplicate"/> unchanged: it never sees a variant, so its
+    /// grouping key stays the operation identity. It is also the single place productions are
+    /// enumerated — naming used to fold internally while the catalog folded again, which is
+    /// idempotent for plain operations and is not for variants, where a second fold would return
+    /// fewer names than tools and misalign the catalog's positional zip.
+    /// </remarks>
+    public static IReadOnlyList<ToolProduction> ExpandProductions<T>(
+        IEnumerable<T> items,
+        Func<T, EndpointDescriptor> selector,
+        Action<T, IReadOnlyList<T>>? onFolded = null)
+    {
+        List<ToolProduction> productions = [];
+        foreach (T item in Deduplicate(items, selector, onFolded))
+        {
+            EndpointDescriptor endpoint = selector(item);
+            if (endpoint.Variants is null)
+            {
+                productions.Add(new ToolProduction(endpoint, null));
+                continue;
+            }
+            if (endpoint.ToolName is not null)
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.VariantDeclarationConflict,
+                    $"{endpoint.Method} {endpoint.Route} declares both a tool name and variants; a variant names itself.");
+            }
+            foreach (ToolVariant variant in endpoint.Variants)
+            {
+                productions.Add(new ToolProduction(endpoint, variant));
+            }
+        }
+        return productions;
+    }
+
     public static IReadOnlyList<string> CreateAll(
         IEnumerable<EndpointDescriptor> endpoints,
         PrefixMode mode = PrefixMode.Always,
@@ -118,15 +156,17 @@ internal static partial class ToolNameFactory
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        List<EndpointDescriptor> operations = [.. Deduplicate(endpoints, e => e)];
-        List<string> names = [.. operations.Select(e => Create(e, mode))];
+        List<ToolProduction> operations = [.. ExpandProductions(endpoints, e => e)];
+        List<string> names =
+            [.. operations.Select(p => p.Variant?.Name ?? Create(p.Endpoint, mode))];
 
         if (mode == PrefixMode.OnCollision)
         {
             Dictionary<string, List<int>> groups = new(StringComparer.Ordinal);
             for (int index = 0; index < operations.Count; index++)
             {
-                if (operations[index].ToolName is not null)
+                if (operations[index].Endpoint.ToolName is not null
+                    || operations[index].Variant is not null)
                 {
                     continue;
                 }
@@ -147,7 +187,7 @@ internal static partial class ToolNameFactory
                 }
                 foreach (int index in group)
                 {
-                    EndpointDescriptor endpoint = operations[index];
+                    EndpointDescriptor endpoint = operations[index].Endpoint;
                     string prefixed = ApplyPrefix(body, DerivePrefix(endpoint));
                     if (string.Equals(prefixed, body, StringComparison.Ordinal))
                     {
@@ -168,9 +208,9 @@ internal static partial class ToolNameFactory
             {
                 throw new SkMcpCatalogException(
                     SkMcpCatalogException.NameCollision,
-                    $"Tool name '{names[index]}' is produced by both {owner.Method} {owner.Route} and {operations[index].Method} {operations[index].Route}; declare a tool name on one of them.");
+                    $"Tool name '{names[index]}' is produced by both {owner.Method} {owner.Route} and {operations[index].Endpoint.Method} {operations[index].Endpoint.Route}; declare a tool name on one of them.");
             }
-            claimed[names[index]] = operations[index];
+            claimed[names[index]] = operations[index].Endpoint;
         }
         return names;
     }

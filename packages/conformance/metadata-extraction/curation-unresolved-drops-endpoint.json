@@ -1,0 +1,33 @@
+{
+  "kind": "metadata-extraction",
+  "description": "var olmayan bir argumani adlandiran beyan endpoint'i dusurur; eslesme buyuk/kucuk harfe duyarli",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "parameters": [
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "statuz",
+        "as": "state"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "curation_unresolved"
+  }
+}

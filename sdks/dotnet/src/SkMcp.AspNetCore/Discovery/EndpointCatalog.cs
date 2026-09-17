@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
 using SkMcp.AspNetCore.Naming;
 using SkMcp.AspNetCore.Requests;
+using SkMcp.AspNetCore.Search;
 using SkMcp.AspNetCore.Spec;
 using SkMcp.AspNetCore.Tools;
 
@@ -51,7 +52,8 @@ internal static partial class EndpointCatalog
         bool hasFallbackPolicy = false,
         PrefixMode prefixMode = PrefixMode.Always,
         Func<string, string?>? containerPrefix = null,
-        Func<string, CatalogSeverity>? severityOf = null)
+        Func<string, CatalogSeverity>? severityOf = null,
+        ArgumentCurationOptions? curation = null)
     {
         ArgumentNullException.ThrowIfNull(apiDescriptions);
         severityOf ??= DiagnosticCodes.SeverityOf;
@@ -117,7 +119,7 @@ internal static partial class EndpointCatalog
 
                 EndpointDescriptor? descriptor = Describe(
                     api, route, action, metadata, useOperationIds, schema, hasFallbackPolicy,
-                    containerPrefix, diagnostics);
+                    containerPrefix, diagnostics, curation ?? new ArgumentCurationOptions());
                 if (descriptor is null)
                 {
                     dropped += 1;
@@ -157,62 +159,98 @@ internal static partial class EndpointCatalog
 
         foreach ((Endpoint? endpoint, EndpointDescriptor descriptor, ToolAnnotations? overrides) in operations)
         {
-            string name;
+            IReadOnlyList<ToolProduction> productions;
             try
             {
-                name = ToolNameFactory.Create(descriptor, prefixMode);
-                if (prefixMode == PrefixMode.OnCollision
-                    && descriptor.ToolName is null
-                    && bodyGroups.TryGetValue(name, out int clashes)
-                    && clashes > 1)
-                {
-                    string prefixed = ToolNameFactory.ApplyPrefix(name, ToolNameFactory.DerivePrefix(descriptor));
-                    if (!string.Equals(prefixed, name, StringComparison.Ordinal))
-                    {
-                        diagnostics.Add(new CatalogDiagnostic(
-                            ToolNameFactory.NameDisambiguated,
-                            $"Tool name '{name}' collided; {descriptor.Method} {descriptor.Route} is exposed as '{prefixed}'."));
-                        name = prefixed;
-                    }
-                }
+                productions = ToolNameFactory.ExpandProductions([descriptor], d => d);
             }
-            catch (SkMcpCatalogException ex)
+            catch (SkMcpTemplateException ex)
             {
                 diagnostics.Add(new CatalogDiagnostic(ex.Code, ex.Message));
-                continue;
-            }
-            if (claimed.TryGetValue(name, out EndpointDescriptor? owner))
-            {
-                diagnostics.Add(new CatalogDiagnostic(
-                    SkMcpCatalogException.NameCollision,
-                    $"Tool name '{name}' is produced by both {owner.Method} {owner.Route} and {descriptor.Method} {descriptor.Route}."));
-                continue;
-            }
-            claimed[name] = descriptor;
-
-            if (name.Length > ToolNameFactory.LongNameThreshold)
-            {
-                diagnostics.Add(new CatalogDiagnostic(
-                    "long_tool_name",
-                    $"Tool name '{name}' is {name.Length} characters; long names cost agent context and weaken search."));
-            }
-
-            (RequestTemplate? template, string? failure) = BuildTemplate(descriptor, diagnostics);
-            if (failure is not null && severityOf(failure) >= CatalogSeverity.EndpointDropped)
-            {
                 dropped += 1;
                 continue;
             }
 
-            entries.Add(new CatalogEntry
+            foreach (ToolProduction production in productions)
             {
-                Tool = Apply(ToolDefinitionFactory.Create(descriptor, name), overrides),
-                Descriptor = descriptor,
-                Endpoint = endpoint,
-                Template = template,
-                AlternateRoutes = alternates.GetValueOrDefault(FoldKey(descriptor)),
-            });
+                ToolVariant? variant = production.Variant;
+                string name;
+                try
+                {
+                    name = variant?.Name ?? ToolNameFactory.Create(descriptor, prefixMode);
+                    if (prefixMode == PrefixMode.OnCollision
+                        && variant is null
+                        && descriptor.ToolName is null
+                        && bodyGroups.TryGetValue(name, out int clashes)
+                        && clashes > 1)
+                    {
+                        string prefixed = ToolNameFactory.ApplyPrefix(name, ToolNameFactory.DerivePrefix(descriptor));
+                        if (!string.Equals(prefixed, name, StringComparison.Ordinal))
+                        {
+                            diagnostics.Add(new CatalogDiagnostic(
+                                ToolNameFactory.NameDisambiguated,
+                                $"Tool name '{name}' collided; {descriptor.Method} {descriptor.Route} is exposed as '{prefixed}'."));
+                            name = prefixed;
+                        }
+                    }
+                }
+                catch (SkMcpCatalogException ex)
+                {
+                    diagnostics.Add(new CatalogDiagnostic(ex.Code, ex.Message));
+                    continue;
+                }
+                if (claimed.TryGetValue(name, out EndpointDescriptor? owner))
+                {
+                    diagnostics.Add(new CatalogDiagnostic(
+                        SkMcpCatalogException.NameCollision,
+                        $"Tool name '{name}' is produced by both {owner.Method} {owner.Route} and {descriptor.Method} {descriptor.Route}."));
+                    continue;
+                }
+                claimed[name] = descriptor;
+
+                if (name.Length > ToolNameFactory.LongNameThreshold)
+                {
+                    diagnostics.Add(new CatalogDiagnostic(
+                        "long_tool_name",
+                        $"Tool name '{name}' is {name.Length} characters; long names cost agent context and weaken search."));
+                }
+
+                CurationRelief? relief = ReliefFor(
+                    descriptor, alternates.GetValueOrDefault(FoldKey(descriptor)), diagnostics);
+                (RequestTemplate? template, string? failure) = BuildTemplate(
+                    descriptor, diagnostics, variant, relief);
+                if (failure is not null && severityOf(failure) >= CatalogSeverity.EndpointDropped)
+                {
+                    dropped += 1;
+                    continue;
+                }
+
+                ToolDefinition tool = Apply(
+                    ToolDefinitionFactory.Create(descriptor, name, variant, relief), overrides);
+                if (template is not null)
+                {
+                    ReportCurationLeaks(tool, template, diagnostics);
+                    if (template.BodyAllowsAdditionalProperties && template.BodyFills.Count > 0)
+                    {
+                        diagnostics.Add(new CatalogDiagnostic(
+                            DiagnosticCodes.CuratedOpenBody,
+                            $"Tool '{name}' hides an argument on a body that accepts additional properties; "
+                            + "the schema cannot express the exclusion, so only the composer enforces it."));
+                    }
+                }
+
+                entries.Add(new CatalogEntry
+                {
+                    Tool = tool,
+                    Descriptor = descriptor,
+                    Endpoint = endpoint,
+                    Template = template,
+                    AlternateRoutes = alternates.GetValueOrDefault(FoldKey(descriptor)),
+                });
+            }
         }
+
+        ReportIndistinguishableVariants(entries, diagnostics);
 
         return new CatalogBuildResult
         {
@@ -264,7 +302,8 @@ internal static partial class EndpointCatalog
         SchemaMapperOptions? mapper,
         bool hasFallbackPolicy,
         Func<string, string?>? containerPrefix,
-        List<CatalogDiagnostic> diagnostics)
+        List<CatalogDiagnostic> diagnostics,
+        ArgumentCurationOptions curation)
     {
         List<Parameter> parameters = [];
         RequestBody? body = null;
@@ -366,7 +405,14 @@ internal static partial class EndpointCatalog
             ContainerPrefix = PrefixFor(action, metadata, containerPrefix),
             Method = api.HttpMethod!.ToUpperInvariant(),
             Route = route,
-            Description = DescriptionOf(metadata),
+            Description = SelectionAttribute(action, metadata, operationOnly: true)?.Description
+                ?? DescriptionOf(metadata),
+            Arguments = CurationReader.Read(
+                action, metadata, null, curation,
+                api.HttpMethod!.ToUpperInvariant(), route),
+            Variants = CurationReader.Variants(
+                action, metadata, curation,
+                api.HttpMethod!.ToUpperInvariant(), route),
             Parameters = parameters.Count == 0 ? null : parameters,
             RequestBody = body,
             Responses = responses.Count == 0 ? null : responses,
@@ -577,6 +623,133 @@ internal static partial class EndpointCatalog
         return SelectionResolver.Combine(include, exclude);
     }
 
+    /// <summary>Spares a declaration that only a folded-away route could satisfy.</summary>
+    /// <remarks>
+    /// Only path parameters can differ between an operation's routes, so the folded routes'
+    /// placeholders are the whole vocabulary this has to consider. The same relief is handed to
+    /// both consumers, so a name reaches the reporter twice; the set keeps one warning per name.
+    /// </remarks>
+    private static CurationRelief? ReliefFor(
+        EndpointDescriptor descriptor,
+        IReadOnlyList<string>? foldedRoutes,
+        List<CatalogDiagnostic> diagnostics)
+    {
+        if (foldedRoutes is null || foldedRoutes.Count == 0)
+        {
+            return null;
+        }
+        HashSet<string> foldedNames = new(
+            foldedRoutes.SelectMany(route => RoutePlaceholder().Matches(route)
+                .Select(match => match.Groups[1].Value)),
+            StringComparer.Ordinal);
+        foldedNames.ExceptWith(RoutePlaceholder().Matches(descriptor.Route)
+            .Select(match => match.Groups[1].Value));
+        if (foldedNames.Count == 0)
+        {
+            return null;
+        }
+
+        HashSet<string> reported = new(StringComparer.Ordinal);
+        return new CurationRelief(foldedNames, name =>
+        {
+            if (!reported.Add(name))
+            {
+                return;
+            }
+            diagnostics.Add(new CatalogDiagnostic(
+                DiagnosticCodes.CurationUnusedOnKeptRoute,
+                $"Curation names '{name}', which exists only on a route folded away from "
+                + $"{descriptor.Method} {descriptor.Route}; the declaration has no effect on the "
+                + "route that is invoked."));
+        });
+    }
+
+    /// <summary>
+    /// Warns when a tool's name or description still names an argument the agent cannot reach.
+    /// </summary>
+    /// <remarks>
+    /// The name is checked as well as the description: a generated name carries
+    /// <c>by_&lt;path parameter&gt;</c>, so hiding a path parameter leaves the wire name in the name
+    /// itself. The match is heuristic, which is why the code stays a warning.
+    /// </remarks>
+    private static void ReportCurationLeaks(
+        ToolDefinition tool, RequestTemplate template, List<CatalogDiagnostic> diagnostics)
+    {
+        List<string> curated = [
+            .. template.Parameters
+                .Where(parameter => parameter.Fill is not null || parameter.Argument is not null)
+                .Select(parameter => parameter.Name),
+            .. template.BodyAliases.Values,
+            .. template.BodyFills.Keys,
+        ];
+        if (curated.Count == 0)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> haystack = ToolIndex.Tokenize($"{tool.Name} {tool.Description}");
+        foreach (string wireName in curated)
+        {
+            IReadOnlyList<string> needle = ToolIndex.Tokenize(wireName);
+            if (needle.Count > 0 && ContainsSequence(haystack, needle))
+            {
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.CurationLeaksName,
+                    $"Tool '{tool.Name}' still names the curated argument '{wireName}' in its name or "
+                    + "description; the agent cannot act on it."));
+            }
+        }
+    }
+
+    private static bool ContainsSequence(IReadOnlyList<string> haystack, IReadOnlyList<string> needle)
+    {
+        for (int start = 0; start + needle.Count <= haystack.Count; start++)
+        {
+            bool matched = true;
+            for (int offset = 0; offset < needle.Count; offset++)
+            {
+                if (!string.Equals(haystack[start + offset], needle[offset], StringComparison.Ordinal))
+                {
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Warns when two variants of one operation are the same tool twice.</summary>
+    /// <remarks>
+    /// Equal schemas and equal descriptions mean two cards competing for the same terms on the same
+    /// route, which is the search pollution route folding already exists to prevent.
+    /// </remarks>
+    private static void ReportIndistinguishableVariants(
+        IReadOnlyList<CatalogEntry> entries, List<CatalogDiagnostic> diagnostics)
+    {
+        Dictionary<string, string> seen = new(StringComparer.Ordinal);
+        foreach (CatalogEntry entry in entries)
+        {
+            string key = string.Join(
+                '\u0000',
+                FoldKey(entry.Descriptor),
+                entry.Tool.Description,
+                entry.Tool.InputSchema.ToJsonString());
+            if (seen.TryGetValue(key, out string? owner))
+            {
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.VariantIndistinguishable,
+                    $"Tools '{owner}' and '{entry.Tool.Name}' expose the same schema and the same "
+                    + "description; make their first clauses differ or the search card cannot tell them apart."));
+                continue;
+            }
+            seen[key] = entry.Tool.Name;
+        }
+    }
+
     private static string FoldKey(EndpointDescriptor descriptor) =>
         string.Join('\u0000', descriptor.Container, descriptor.OperationId, descriptor.Method.ToUpperInvariant());
 
@@ -604,10 +777,36 @@ internal static partial class EndpointCatalog
     }
 
     private static (RequestTemplate? Template, string? FailureCode) BuildTemplate(
-        EndpointDescriptor descriptor, List<CatalogDiagnostic> diagnostics)
+        EndpointDescriptor descriptor, List<CatalogDiagnostic> diagnostics,
+        ToolVariant? variant = null, CurationRelief? relief = null)
     {
         try
         {
+            string[] parameterNames = [.. (descriptor.Parameters ?? []).Select(p => p.Name)];
+            string? bodyRoot = descriptor.RequestBody is null
+                ? null
+                : RequestBodyShape.BodyRootOf(descriptor.RequestBody, parameterNames);
+            JsonObject? flattened = descriptor.RequestBody is not null && bodyRoot is null
+                ? descriptor.RequestBody.Schema["properties"] as JsonObject
+                : null;
+            string[] bodyFieldNames = [.. (flattened ?? []).Select(entry => entry.Key)];
+            string[] requiredBodyFields = descriptor.RequestBody is not null && bodyRoot is null
+                ? [.. (descriptor.RequestBody.Schema["required"] as JsonArray ?? [])
+                    .Select(node => node?.GetValue<string>()).OfType<string>()]
+                : [];
+            ResolvedCuration curation = ResolvedCuration.Resolve(
+                descriptor,
+                variant,
+                CurationShape.Of(
+                    parameterNames,
+                    (descriptor.Parameters ?? []).Where(p => p.Required).Select(p => p.Name),
+                    bodyFieldNames,
+                    requiredBodyFields,
+                    bodyRoot,
+                    descriptor.RequestBody?.Required != false),
+                relief);
+            HashSet<string> requiredFills = new(StringComparer.Ordinal);
+
             List<ParameterBinding> bindings = [];
             foreach (Parameter parameter in descriptor.Parameters ?? [])
             {
@@ -616,6 +815,11 @@ internal static partial class EndpointCatalog
                 string? scalar = isArray
                     ? RequestBodyShape.TypeOf(parameter.Schema["items"]?["type"])
                     : type;
+                ResolvedArgument? resolved = curation.Of(parameter.Name);
+                if (resolved?.Fill is not null && parameter.Required)
+                {
+                    requiredFills.Add(parameter.Name);
+                }
                 bindings.Add(new ParameterBinding(
                     parameter.Name,
                     Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true),
@@ -623,30 +827,56 @@ internal static partial class EndpointCatalog
                     isArray,
                     isArray
                         ? RequestTemplate.ArraySeparatorFor(parameter.Style, parameter.Explode, parameter.Name)
-                        : null));
+                        : null,
+                    resolved?.Argument,
+                    resolved?.Fill));
             }
 
             List<string>? bodyProperties = null;
             bool allowsAdditional = false;
-            string? bodyRoot = null;
-            if (descriptor.RequestBody is { Schema: { } bodySchema } requestBody)
+            Dictionary<string, string> bodyAliases = new(StringComparer.Ordinal);
+            Dictionary<string, ArgumentFill> bodyFills = new(StringComparer.Ordinal);
+            ArgumentFill? rootFill = null;
+            if (descriptor.RequestBody is { Schema: { } bodySchema })
             {
-                bodyRoot = RequestBodyShape.BodyRootOf(
-                    requestBody,
-                    (descriptor.Parameters ?? []).Select(parameter => parameter.Name));
                 if (bodyRoot is null)
                 {
-                    if (bodySchema["properties"] is JsonObject properties)
+                    if (flattened is not null)
                     {
-                        bodyProperties = [.. properties.Select(p => p.Key)];
+                        bodyProperties = [.. bodyFieldNames];
                     }
                     allowsAdditional = RequestBodyShape.AllowsAdditional(bodySchema);
+                    foreach (string field in bodyFieldNames)
+                    {
+                        ResolvedArgument? resolved = curation.Of(field);
+                        if (resolved?.Argument is { } agentName)
+                        {
+                            bodyAliases[agentName] = field;
+                        }
+                        if (resolved?.Fill is { } fill)
+                        {
+                            bodyFills[field] = fill;
+                            if (requiredBodyFields.Contains(field))
+                            {
+                                requiredFills.Add(field);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    ResolvedArgument? resolved = curation.Of(bodyRoot);
+                    rootFill = resolved?.Fill;
+                    if (rootFill is not null && descriptor.RequestBody.Required != false)
+                    {
+                        requiredFills.Add(bodyRoot);
+                    }
                 }
             }
 
             return (RequestTemplate.Create(
                 new HttpMethod(descriptor.Method), descriptor.Route, bindings, bodyProperties,
-                allowsAdditional, bodyRoot), null);
+                allowsAdditional, bodyRoot, bodyAliases, bodyFills, rootFill, requiredFills), null);
         }
         catch (Exception ex) when (ex is SkMcpTemplateException or ArgumentException or FormatException)
         {

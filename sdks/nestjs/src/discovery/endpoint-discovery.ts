@@ -15,7 +15,12 @@ import {
   simplifySchema,
   typeOf,
 } from "@sk-mcp/core";
-import { markersOf, type McpToolOptions } from "../decorators.js";
+import {
+  markersOf,
+  type ArgumentRule,
+  type McpToolOptions,
+  type McpVariantOptions,
+} from "../decorators.js";
 import { atLeast, severityOf, type CatalogSeverity } from "./diagnostics.js";
 import {
   NestTypeShapeBinder,
@@ -606,7 +611,9 @@ function queryFor(
   return parameters;
 }
 
-type DescriptorParameter = NonNullable<EndpointDescriptor["parameters"]>[number];
+type DescriptorParameter = NonNullable<
+  EndpointDescriptor["parameters"]
+>[number];
 
 function applyParameterHints(
   parameter: DescriptorParameter,
@@ -692,17 +699,41 @@ function argumentsOf(
     {}) as Record<string, ArgumentEntry>;
 }
 
+/**
+ * Flat last-wins merge, except for curation.
+ *
+ * `arguments` merges per argument and per field so a container-level rule that hides a tenant
+ * identifier survives a method-level rule that only renames something else. A flat replacement
+ * would silently unhide it.
+ */
 function mergeHints(
   container: ReturnType<typeof markersOf>,
   operation: ReturnType<typeof markersOf>,
 ): McpToolOptions {
   const merged: Record<string, unknown> = {};
+  const curation: Record<string, ArgumentRule> = {};
+  const variants: McpVariantOptions[] = [];
   for (const marker of [...container, ...operation]) {
     for (const [key, value] of Object.entries(marker.options)) {
-      if (value !== undefined) {
-        merged[key] = value;
+      if (value === undefined) {
+        continue;
       }
+      if (key === "arguments") {
+        Object.assign(curation, value as Record<string, ArgumentRule>);
+        continue;
+      }
+      if (key === "variants") {
+        variants.push(...(value as McpVariantOptions[]));
+        continue;
+      }
+      merged[key] = value;
     }
+  }
+  if (Object.keys(curation).length > 0) {
+    merged["arguments"] = curation;
+  }
+  if (variants.length > 0) {
+    merged["variants"] = variants;
   }
   return merged as McpToolOptions;
 }

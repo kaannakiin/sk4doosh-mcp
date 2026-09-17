@@ -27,9 +27,10 @@ internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFac
 
     public Task<DispatchResult> DispatchAsync(
         RequestTemplate template, JsonElement arguments, HttpRequest? outerRequest,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, JsonElement>? deferred = null)
     {
-        ComposedRequest composed = RequestComposer.Compose(template, arguments);
+        ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred);
         return DispatchAsync(template.Method, composed, outerRequest, cancellationToken);
     }
 

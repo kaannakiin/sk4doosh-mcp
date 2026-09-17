@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Naming;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Tools;
@@ -8,23 +9,35 @@ namespace SkMcp.AspNetCore.Tools;
 internal static class ToolDefinitionFactory
 {
     public static ToolDefinition Create(
-        EndpointDescriptor endpoint, string? name = null)
+        EndpointDescriptor endpoint, string? name = null, ToolVariant? variant = null,
+        CurationRelief? relief = null)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
+        string? declared = variant?.Description ?? endpoint.Description;
         return new ToolDefinition
         {
-            Name = name ?? ToolNameFactory.Create(endpoint),
-            Description = string.IsNullOrWhiteSpace(endpoint.Description)
+            Name = name ?? variant?.Name ?? ToolNameFactory.Create(endpoint),
+            Description = string.IsNullOrWhiteSpace(declared)
                 ? $"{endpoint.Method} {endpoint.Route}"
-                : endpoint.Description,
-            InputSchema = BuildInputSchema(endpoint),
+                : declared,
+            InputSchema = BuildInputSchema(endpoint, variant, relief),
             Annotations = Annotate(endpoint.Method),
             Auth = endpoint.Auth,
         };
     }
 
-    private static JsonObject BuildInputSchema(EndpointDescriptor endpoint)
+    /// <summary>Produces the published argument schema, with curation applied.</summary>
+    /// <remarks>
+    /// Two rules are easy to get backwards. A curation description overrides even one the schema
+    /// carries: the parameter description is a fallback for a missing one, whereas a curation
+    /// description is the host's own statement of what the agent should read. And the
+    /// wire-to-agent mapping runs before the requiredness guard: a renamed required field is keyed
+    /// by its agent name, so a guard on the wire name would find nothing and silently make the
+    /// field optional.
+    /// </remarks>
+    private static JsonObject BuildInputSchema(
+        EndpointDescriptor endpoint, ToolVariant? variant, CurationRelief? relief)
     {
         JsonObject properties = [];
         JsonArray required = [];
@@ -38,21 +51,59 @@ internal static class ToolDefinitionFactory
             }
         }
 
-        foreach (Parameter parameter in endpoint.Parameters ?? [])
+        IReadOnlyList<Parameter> parameters = endpoint.Parameters ?? [];
+        string[] parameterNames = [.. parameters.Select(parameter => parameter.Name)];
+        string? root = endpoint.RequestBody is null
+            ? null
+            : RequestBodyShape.BodyRootOf(endpoint.RequestBody, parameterNames);
+        JsonObject? flattened = endpoint.RequestBody is not null && root is null
+            ? endpoint.RequestBody.Schema["properties"] as JsonObject
+            : null;
+        string[] bodyFieldNames = [.. (flattened ?? []).Select(entry => entry.Key)];
+        string[] requiredBodyFields = endpoint.RequestBody is not null && root is null
+            ? [.. (endpoint.RequestBody.Schema["required"] as JsonArray ?? [])
+                .Select(node => node?.GetValue<string>())
+                .OfType<string>()]
+            : [];
+
+        ResolvedCuration curation = ResolvedCuration.Resolve(
+            endpoint,
+            variant,
+            CurationShape.Of(
+                parameterNames,
+                parameters.Where(parameter => parameter.Required).Select(parameter => parameter.Name),
+                bodyFieldNames,
+                requiredBodyFields,
+                root,
+                endpoint.RequestBody?.Required != false),
+            relief);
+
+        string? Publish(string wireName, JsonNode? schema)
         {
-            properties[parameter.Name] = Describe(parameter.Schema, parameter.Description);
-            if (parameter.Required)
+            ResolvedArgument? resolved = curation.Of(wireName);
+            if (resolved?.Fill is not null)
             {
-                Require(parameter.Name);
+                return null;
+            }
+            string key = resolved?.Argument ?? wireName;
+            if (resolved?.Description is { } description && schema is JsonObject owner)
+            {
+                owner["description"] = description;
+            }
+            properties[key] = schema;
+            return key;
+        }
+
+        foreach (Parameter parameter in parameters)
+        {
+            if (Publish(parameter.Name, Describe(parameter.Schema, parameter.Description)) is { } key
+                && parameter.Required)
+            {
+                Require(key);
             }
         }
 
         JsonNode additionalProperties = false;
-        string? root = endpoint.RequestBody is null
-            ? null
-            : RequestBodyShape.BodyRootOf(
-                endpoint.RequestBody,
-                (endpoint.Parameters ?? []).Select(parameter => parameter.Name));
         JsonObject? seed = null;
         if (endpoint.RequestBody is not null && root is { } bodyRoot)
         {
@@ -62,10 +113,10 @@ internal static class ToolDefinitionFactory
                     SkMcpTemplateException.ArgumentCollision,
                     $"Body root argument '{bodyRoot}' collides with a parameter name on {endpoint.Method} {endpoint.Route}; rename the parameter.");
             }
-            properties[bodyRoot] = endpoint.RequestBody.Schema.DeepClone();
-            if (endpoint.RequestBody.Required != false)
+            if (Publish(bodyRoot, endpoint.RequestBody.Schema.DeepClone()) is { } key
+                && endpoint.RequestBody.Required != false)
             {
-                Require(bodyRoot);
+                Require(key);
             }
         }
         else if (endpoint.RequestBody is not null)
@@ -74,21 +125,21 @@ internal static class ToolDefinitionFactory
             additionalProperties = RequestBodyShape.AdditionalPropertiesOf(body);
             seed = body["$defs"] as JsonObject;
 
-            if (body["properties"] is JsonObject bodyProperties)
+            foreach ((string name, JsonNode? schema) in flattened ?? [])
             {
-                foreach ((string name, JsonNode? schema) in bodyProperties)
-                {
-                    properties[name] = schema?.DeepClone();
-                }
+                Publish(name, schema?.DeepClone());
             }
-            if (body["required"] is JsonArray bodyRequired)
+            foreach (string entry in requiredBodyFields)
             {
-                foreach (JsonNode? name in bodyRequired)
+                ResolvedArgument? resolved = curation.Of(entry);
+                if (resolved?.Fill is not null)
                 {
-                    if (name?.GetValue<string>() is { } entry && properties.ContainsKey(entry))
-                    {
-                        Require(entry);
-                    }
+                    continue;
+                }
+                string key = resolved?.Argument ?? entry;
+                if (properties.ContainsKey(key))
+                {
+                    Require(key);
                 }
             }
         }

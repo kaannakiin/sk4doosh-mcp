@@ -32,7 +32,12 @@ export type Recognizer = (
 
 export interface ErrorMappingOptions {
   readonly recognizers?: readonly Recognizer[];
+  /** Agent-facing argument names, from the published input schema. */
   readonly knownFields?: readonly string[];
+  /** Wire field name to agent argument name, for renamed arguments. */
+  readonly fieldAliases?: Readonly<Record<string, string>>;
+  /** Wire field names the agent cannot set. */
+  readonly hiddenFields?: readonly string[];
 }
 
 export function isMappedError(result: InvokeResult): result is MappedError {
@@ -291,34 +296,61 @@ function parseRetryAfter(value: string | undefined): number | undefined {
   return Number.parseInt(trimmed, 10);
 }
 
+function matchInsensitively(
+  name: string,
+  candidates: readonly string[] | undefined,
+): string | undefined {
+  return candidates?.find(
+    (candidate) => candidate.toLowerCase() === name.toLowerCase(),
+  );
+}
+
+/**
+ * Resolution order: published names first, then the wire-to-agent alias.
+ *
+ * Published first because an agent name that happens to equal some other
+ * argument's wire name has to resolve to the thing the agent can actually fix.
+ */
 function normalizeFieldName(
   name: string,
-  knownFields: readonly string[] | undefined,
-): string {
+  options: ErrorMappingOptions,
+): string | undefined {
   const stripped = name.startsWith("$.") ? name.slice(2) : name;
-  if (knownFields === undefined) return stripped;
-  const match = knownFields.find(
+  const known = matchInsensitively(stripped, options.knownFields);
+  if (known !== undefined) return known;
+  const aliasKey = Object.keys(options.fieldAliases ?? {}).find(
     (candidate) => candidate.toLowerCase() === stripped.toLowerCase(),
   );
-  return match ?? stripped;
+  if (aliasKey !== undefined) return options.fieldAliases?.[aliasKey];
+  /**
+   * A field the agent cannot set is emitted with its message and no name.
+   * Dropping the entry loses the only useful information; keeping the wire name
+   * sends the agent to repair an argument it does not have.
+   */
+  if (matchInsensitively(stripped, options.hiddenFields) !== undefined) {
+    return undefined;
+  }
+  return stripped;
 }
 
 function normalizeField(
   field: FieldError,
-  knownFields: readonly string[] | undefined,
+  options: ErrorMappingOptions,
 ): FieldError {
   const message = forwardable(field.message) ?? fieldLeakMessage;
   if (field.name === undefined) {
-    const resolved = fieldNameFromMessage(field.message, knownFields);
+    const resolved = fieldNameFromMessage(field.message, options);
     return resolved === undefined ? { message } : { name: resolved, message };
   }
-  return { name: normalizeFieldName(field.name, knownFields), message };
+  const name = normalizeFieldName(field.name, options);
+  return name === undefined ? { message } : { name, message };
 }
 
 function fieldNameFromMessage(
   message: string,
-  knownFields: readonly string[] | undefined,
+  options: ErrorMappingOptions,
 ): string | undefined {
+  const knownFields = options.knownFields;
   if (knownFields === undefined || knownFields.length === 0) {
     return undefined;
   }
@@ -329,6 +361,19 @@ function fieldNameFromMessage(
   const token = (leading[0].split(/[.[]/)[0] ?? "").toLowerCase();
   if (token.length === 0) {
     return undefined;
+  }
+  /**
+   * A heuristic that names an unsettable argument is worse than no name, so a
+   * hidden field is never guessed from a message.
+   */
+  if (matchInsensitively(token, options.hiddenFields) !== undefined) {
+    return undefined;
+  }
+  const alias = Object.keys(options.fieldAliases ?? {}).find(
+    (candidate) => candidate.toLowerCase() === token,
+  );
+  if (alias !== undefined) {
+    return options.fieldAliases?.[alias];
   }
   return knownFields.find((candidate) => candidate.toLowerCase() === token);
 }
@@ -359,9 +404,7 @@ function finalizeError(
     retryable: retryableStatuses.has(status),
   };
   if (hasFields) {
-    result.fields = fields.map((field) =>
-      normalizeField(field, options.knownFields),
-    );
+    result.fields = fields.map((field) => normalizeField(field, options));
   }
   if (retryAfterSeconds !== undefined) {
     result.retryAfterSeconds = retryAfterSeconds;

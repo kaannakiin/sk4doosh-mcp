@@ -1,0 +1,38 @@
+{
+  "kind": "argument-mapping",
+  "description": "gizli parametre bildirim sirasindaki konumunda yazilir: olusan dize ajan degeri kendisi gonderseydi uretecegiyle bayt bayt ayni",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "a",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "tenant",
+          "in": "query",
+          "type": "string",
+          "fill": {
+            "kind": "constant",
+            "value": "acme"
+          }
+        },
+        {
+          "name": "b",
+          "in": "query",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "a": "1",
+      "b": "2"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders?a=1&tenant=acme&b=2"
+  }
+}

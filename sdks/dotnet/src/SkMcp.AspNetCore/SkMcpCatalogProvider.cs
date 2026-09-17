@@ -154,7 +154,8 @@ internal sealed class SkMcpCatalogProvider(
             hasFallbackPolicy: hasFallbackPolicy,
             prefixMode: options.Value.Naming.PrefixMode,
             containerPrefix: options.Value.Naming.Prefix,
-            severityOf: options.Value.Diagnostics.SeverityOf);
+            severityOf: options.Value.Diagnostics.SeverityOf,
+            curation: options.Value.Arguments);
         if (schemaNotes.Count > 0)
         {
             result = result with { Diagnostics = [.. schemaNotes, .. result.Diagnostics] };

@@ -1,0 +1,33 @@
+{
+  "kind": "metadata-extraction",
+  "description": "gövde kök modundayken bir gövde ALANINI kuratorlemek cozulemez; sessizce yok saymak alani body nesnesinin icinde canli birakirdi",
+  "input": {
+    "operationId": "ReplaceTags",
+    "method": "POST",
+    "route": "/orders/tags",
+    "requestBody": {
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "arguments": [
+      {
+        "name": "tag",
+        "hidden": {
+          "kind": "omit"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "curation_unresolved"
+  }
+}

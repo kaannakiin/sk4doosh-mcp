@@ -20,6 +20,15 @@ public sealed class McpToolAttribute : Attribute, IMcpSelectionMetadata
 
     public string? Prefix { get; set; }
 
+    /// <summary>
+    /// Overrides the description the endpoint's own metadata carries.
+    /// </summary>
+    /// <remarks>
+    /// <c>[Description]</c> covers a single tool, but it may be written once per method, so a
+    /// method that declares variants cannot use it to give each one its own sentence.
+    /// </remarks>
+    public string? Description { get; set; }
+
     public bool ReadOnly
     {
         get => _readOnly ?? false;
@@ -50,4 +59,63 @@ public sealed class McpToolAttribute : Attribute, IMcpSelectionMetadata
 public sealed class McpIgnoreAttribute : Attribute, IMcpSelectionMetadata
 {
     public bool Include => false;
+}
+
+/// <summary>Declares one of several tools produced from a single operation.</summary>
+/// <remarks>
+/// The name and description are constructor parameters because that is the only way to make an
+/// attribute property mandatory, and they are mandatory because one description cannot honestly
+/// describe two tools whose arguments are hidden differently. <see cref="McpToolAttribute"/> keeps
+/// <c>AllowMultiple = false</c>: it is the selection marker, and multiplying it would reintroduce
+/// the ambiguous-selection state the spec forbids.
+/// </remarks>
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+public sealed class McpToolVariantAttribute(string name, string description) : Attribute
+{
+    public string Name { get; } = name;
+
+    public string Description { get; } = description;
+}
+
+/// <summary>Curates one argument: renames it, re-describes it, or hides it with a value.</summary>
+/// <remarks>
+/// Attribute arguments must be compile-time constants, so an object or array constant cannot be
+/// one. <see cref="ValueJson"/> is the answer: a string is a constant, and it is parsed once at
+/// catalog build. Setting any of the three value properties without <see cref="Hidden"/> is a
+/// build error — a filled but visible argument is a default, which is a different feature.
+/// </remarks>
+[AttributeUsage(
+    AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Property,
+    AllowMultiple = true, Inherited = true)]
+public sealed class McpArgumentAttribute : Attribute
+{
+    public McpArgumentAttribute(string argument)
+    {
+        Argument = argument;
+    }
+
+    public McpArgumentAttribute()
+    {
+    }
+
+    /// <summary>The wire name. Null on a parameter or property, where the member names it.</summary>
+    public string? Argument { get; }
+
+    public string? Name { get; set; }
+
+    public string? Description { get; set; }
+
+    public bool Hidden { get; set; }
+
+    /// <summary>A compile-time constant scalar.</summary>
+    public object? Value { get; set; }
+
+    /// <summary>A JSON object or array constant, as text.</summary>
+    public string? ValueJson { get; set; }
+
+    /// <summary>The name of a registered value provider.</summary>
+    public string? ValueFrom { get; set; }
+
+    /// <summary>Restricts this rule to one variant; null applies it to every variant.</summary>
+    public string? Variant { get; set; }
 }

@@ -1,0 +1,35 @@
+{
+  "kind": "metadata-extraction",
+  "description": "zorunlu bir arguman degersiz gizlenemez; path'te route hic kurulamaz",
+  "input": {
+    "operationId": "GetOrder",
+    "method": "GET",
+    "route": "/orders/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "id",
+        "hidden": {
+          "kind": "omit"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "hidden_required_omitted"
+  }
+}

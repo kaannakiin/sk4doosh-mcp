@@ -1,0 +1,33 @@
+{
+  "kind": "argument-mapping",
+  "description": "gizli argumanin adi izin listesinde yoktur; gondermek gizlemeyi atlatmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "a",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "tenant",
+          "in": "query",
+          "type": "string",
+          "fill": {
+            "kind": "constant",
+            "value": "acme"
+          }
+        }
+      ]
+    },
+    "arguments": {
+      "a": "1",
+      "tenant": "other"
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

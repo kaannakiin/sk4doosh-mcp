@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "ajan keyword gonderir, gövdeye q yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders",
+      "body": {
+        "properties": ["q"],
+        "curation": [
+          {
+            "name": "q",
+            "as": "keyword"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "keyword": "laptop"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders",
+    "bodyJson": {
+      "q": "laptop"
+    }
+  }
+}

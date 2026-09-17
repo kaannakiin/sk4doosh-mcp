@@ -8,8 +8,72 @@ export type Fixture =
   | ErrorMappingFixture
   | SchemaSimplificationFixture
   | CardFixture;
+export type ArgumentFill = (
+  | {
+      kind: "constant";
+      value: unknown;
+      source?: never;
+    }
+  | {
+      kind: "deferred";
+      source: unknown;
+      value?: never;
+    }
+  | {
+      kind: "omit";
+      value?: never;
+      source?: never;
+    }
+) & {
+  kind: ArgumentFillKind;
+  value?: unknown;
+  source?: string;
+};
+export type ArgumentFillKind = "constant" | "deferred" | "omit";
 export type PrefixMode = "always" | "onCollision";
 export type Anonymity = "yes" | "no" | "unknown";
+export type ArgumentFill1 = (
+  | {
+      kind: "constant";
+      value: unknown;
+      source?: never;
+    }
+  | {
+      kind: "deferred";
+      source: unknown;
+      value?: never;
+    }
+  | {
+      kind: "omit";
+      value?: never;
+      source?: never;
+    }
+) & {
+  kind: ArgumentFillKind;
+  value?: unknown;
+  source?: string;
+};
+export type ArgumentFill2 = (
+  | {
+      kind: "constant";
+      value: unknown;
+      source?: never;
+    }
+  | {
+      kind: "deferred";
+      source: unknown;
+      value?: never;
+    }
+  | {
+      kind: "omit";
+      value?: never;
+      source?: never;
+    }
+) & {
+  kind: ArgumentFillKind;
+  value?: unknown;
+  source?: string;
+};
 export type InvokeResult = InvokeSuccess | MappedError;
 export type BackendErrorCode =
   | "validation_failed"
@@ -57,6 +121,18 @@ export interface NamingEndpoint {
   route: string;
   containerPrefix?: string;
   toolName?: string;
+  variants?: [ToolVariant, ...ToolVariant[]];
+}
+export interface ToolVariant {
+  name: string;
+  description: string;
+  arguments?: ArgumentCuration[];
+}
+export interface ArgumentCuration {
+  name: string;
+  as?: string;
+  description?: string;
+  hidden?: ArgumentFill;
 }
 export interface NamingExpectedNames {
   names: [string, ...string[]];
@@ -68,7 +144,11 @@ export interface MetadataExtractionFixture {
   kind: "metadata-extraction";
   description: string;
   input: EndpointDescriptor;
-  expected: ToolDefinition | MetadataExtractionExpectedError;
+  foldedRoutes?: [string, ...string[]];
+  expected:
+    | ToolDefinition
+    | MetadataExtractionExpectedTools
+    | MetadataExtractionExpectedError;
 }
 export interface EndpointDescriptor {
   operationId?: string;
@@ -85,6 +165,8 @@ export interface EndpointDescriptor {
   };
   auth: Auth;
   tags?: string[];
+  arguments?: ArgumentCuration[];
+  variants?: [ToolVariant, ...ToolVariant[]];
 }
 export interface Parameter {
   name: string;
@@ -166,8 +248,18 @@ export interface ToolAnnotations {
   destructiveHint?: boolean;
   idempotentHint?: boolean;
 }
+export interface MetadataExtractionExpectedTools {
+  tools: [ToolDefinition, ...ToolDefinition[]];
+}
 export interface MetadataExtractionExpectedError {
-  error: "argument_collision" | "schema_def_conflict";
+  error:
+    | "argument_collision"
+    | "schema_def_conflict"
+    | "duplicate_argument"
+    | "curation_unresolved"
+    | "invalid_fill_constant"
+    | "hidden_required_omitted"
+    | "variant_declaration_conflict";
 }
 export interface ArgumentMappingFixture {
   kind: "argument-mapping";
@@ -175,6 +267,7 @@ export interface ArgumentMappingFixture {
   input: {
     template: RequestTemplateSpec;
     arguments: {};
+    deferred?: {};
   };
   expected: ComposedRequestExpectation | ArgumentMappingError;
 }
@@ -185,8 +278,10 @@ export interface RequestTemplateSpec {
   body?: {
     properties: string[];
     additionalProperties?: boolean;
+    curation?: TemplateBodyCuration[];
   };
   bodyRoot?: string;
+  rootFill?: ArgumentFill2;
 }
 export interface TemplateParameter {
   name: string;
@@ -195,6 +290,13 @@ export interface TemplateParameter {
   array?: boolean;
   style?: "form" | "spaceDelimited" | "pipeDelimited";
   explode?: boolean;
+  as?: string;
+  fill?: ArgumentFill1;
+}
+export interface TemplateBodyCuration {
+  name: string;
+  as?: string;
+  fill?: ArgumentFill;
 }
 export interface ComposedRequestExpectation {
   pathAndQuery: string;
@@ -210,7 +312,9 @@ export interface ArgumentMappingError {
     | "missing_path_parameter"
     | "header_injection"
     | "null_not_allowed"
-    | "invalid_type";
+    | "invalid_type"
+    | "deferred_value_missing"
+    | "deferred_value_invalid";
 }
 export interface SelectionFixture {
   kind: "selection";
@@ -284,6 +388,10 @@ export interface BackendResponseSpec {
   };
   body?: string | {} | unknown[];
   knownFields?: string[];
+  fieldAliases?: {
+    [k: string]: string;
+  };
+  hiddenFields?: string[];
 }
 export interface InvokeSuccess {
   status: number;

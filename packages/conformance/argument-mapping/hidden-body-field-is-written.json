@@ -1,0 +1,32 @@
+{
+  "kind": "argument-mapping",
+  "description": "gizli gövde alani semadan duser ama sablondan dusmez: degeri tel adiyla yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders",
+      "body": {
+        "properties": ["item", "source"],
+        "curation": [
+          {
+            "name": "source",
+            "fill": {
+              "kind": "constant",
+              "value": "agent"
+            }
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "item": "laptop"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders",
+    "bodyJson": {
+      "item": "laptop",
+      "source": "agent"
+    }
+  }
+}

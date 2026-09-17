@@ -45,11 +45,13 @@ export class SkMcpDispatcher {
     template: RequestTemplate,
     args: unknown,
     outer?: OuterRequest,
+    deferred?: Readonly<Record<string, unknown>>,
   ): Promise<DispatchResult>;
   async dispatch(
     target: string | RequestTemplate,
     second: unknown,
     outer?: OuterRequest,
+    deferred?: Readonly<Record<string, unknown>>,
   ): Promise<DispatchResult> {
     let method: string;
     let composed: ComposedRequest;
@@ -58,7 +60,7 @@ export class SkMcpDispatcher {
       composed = { pathAndQuery: second as string, headers: {} };
     } else {
       method = target.method;
-      composed = compose(target, second);
+      composed = compose(target, second, deferred);
     }
 
     return this.run(method, composed, outer, false);

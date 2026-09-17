@@ -1,0 +1,26 @@
+{
+  "kind": "error-mapping",
+  "description": "gizli bir alan icin raporlanan hata mesajiyla yayilir ama adsiz: adi korumak ajani goremedigi bir argumani duzeltmeye yollardi",
+  "input": {
+    "status": 400,
+    "contentType": "application/json",
+    "body": {
+      "errors": {
+        "tenantId": ["The tenantId field is invalid."]
+      }
+    },
+    "knownFields": ["item"],
+    "hiddenFields": ["tenantId"]
+  },
+  "expected": {
+    "error": "validation_failed",
+    "message": "The backend rejected one or more arguments. Fix the listed fields and call the operation again.",
+    "status": 400,
+    "retryable": false,
+    "fields": [
+      {
+        "message": "The tenantId field is invalid."
+      }
+    ]
+  }
+}

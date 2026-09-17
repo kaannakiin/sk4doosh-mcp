@@ -1,4 +1,10 @@
 export type { EndpointDescriptor } from "./generated/endpoint-descriptor.js";
+export type {
+  ArgumentCuration,
+  ArgumentFill,
+  ArgumentFillKind,
+  ToolVariant,
+} from "./generated/endpoint-descriptor.js";
 export type { ToolDefinition } from "./generated/tool-definition.js";
 export type { Fixture } from "./generated/fixture.js";
 export {
@@ -89,6 +95,21 @@ export type { Card } from "./card.js";
 export { createRequestTemplateFromEndpoint, createTool } from "./tool.js";
 export type { Tool } from "./tool.js";
 export { ToolIndex, tokenize } from "./search.js";
+export { curationShapeOf, emptyCuration, resolveCuration } from "./curation.js";
+export type {
+  ArgumentSlot,
+  CurationRelief,
+  CurationShape,
+  ResolvedArgument,
+  ResolvedCuration,
+} from "./curation.js";
+export {
+  allowedArgumentNames,
+  deniedArgumentNames,
+  routePlaceholderNames,
+} from "./request-template.js";
+export { expandToolProductions } from "./naming.js";
+export type { ToolProduction } from "./naming.js";
 export type { SearchDocument } from "./search.js";
 export { evaluateVisibility } from "./visibility.js";
 export type {

@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using SkMcp.AspNetCore;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Naming;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Search;
 using SkMcp.AspNetCore.Spec;
 using SkMcp.AspNetCore.Tools;
@@ -77,6 +79,9 @@ public sealed class CatalogFixtureTests
                         : null,
                     Method = endpoint.GetProperty("method").GetString()!,
                     Route = endpoint.GetProperty("route").GetString()!,
+                    Variants = endpoint.TryGetProperty("variants", out JsonElement variants)
+                        ? variants.Deserialize<IReadOnlyList<ToolVariant>>(Neutral)
+                        : null,
                     Auth = UnusedAuth,
                 });
             }
@@ -133,17 +138,28 @@ public sealed class CatalogFixtureTests
             EndpointDescriptor endpoint = root.GetProperty("input")
                 .Deserialize<EndpointDescriptor>(Neutral)!;
             JsonElement expectation = root.GetProperty("expected");
+            CurationRelief? relief = ReliefOf(root, endpoint);
 
             if (expectation.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpTemplateException failure = Assert.Throws<SkMcpTemplateException>(
-                    () => ToolDefinitionFactory.Create(endpoint));
+                    () => ToolsOf(endpoint, relief));
                 Assert.Equal(error.GetString(), failure.Code);
                 continue;
             }
 
+            if (expectation.TryGetProperty("tools", out JsonElement expectedTools))
+            {
+                JsonNode producedTools = JsonSerializer.SerializeToNode(ToolsOf(endpoint, relief), Neutral)!;
+                JsonNode expectedNode = JsonNode.Parse(expectedTools.GetRawText())!;
+                Assert.True(
+                    JsonNode.DeepEquals(expectedNode, producedTools),
+                    $"{endpoint.Method} {endpoint.Route}\nexpected: {expectedNode.ToJsonString()}\nproduced: {producedTools.ToJsonString()}");
+                continue;
+            }
+
             JsonNode produced = JsonSerializer.SerializeToNode(
-                ToolDefinitionFactory.Create(endpoint), Neutral)!;
+                ToolDefinitionFactory.Create(endpoint, null, null, relief), Neutral)!;
             JsonNode expected = JsonNode.Parse(expectation.GetRawText())!;
 
             Assert.True(
@@ -151,6 +167,29 @@ public sealed class CatalogFixtureTests
                 $"{endpoint.Method} {endpoint.Route}\nexpected: {expected.ToJsonString()}\nproduced: {produced.ToJsonString()}");
         }
     }
+
+    private static IReadOnlyList<ToolDefinition> ToolsOf(
+        EndpointDescriptor endpoint, CurationRelief? relief) =>
+        [.. ToolNameFactory.ExpandProductions([endpoint], e => e)
+            .Select(production => ToolDefinitionFactory.Create(
+                production.Endpoint, null, production.Variant, relief))];
+
+    private static CurationRelief? ReliefOf(JsonElement root, EndpointDescriptor endpoint)
+    {
+        if (!root.TryGetProperty("foldedRoutes", out JsonElement folded))
+        {
+            return null;
+        }
+        HashSet<string> names = new(
+            folded.EnumerateArray()
+                .SelectMany(route => Placeholders(route.GetString() ?? "")),
+            StringComparer.Ordinal);
+        names.ExceptWith(Placeholders(endpoint.Route));
+        return new CurationRelief(names, _ => { });
+    }
+
+    private static IEnumerable<string> Placeholders(string route) =>
+        Regex.Matches(route, @"\{([^}:?*]+)[^}]*\}").Select(match => match.Groups[1].Value);
 
     [Fact]
     public void C5_SearchFixtures_AllPass()

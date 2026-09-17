@@ -1,0 +1,65 @@
+{
+  "kind": "metadata-extraction",
+  "description": "as ajan adini degistirir; ozellik ve required sirasi korunur, tel adi degismez",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "description": "Lists orders.",
+    "parameters": [
+      {
+        "name": "customerId",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "page",
+        "as": "page_number"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "list_orders",
+    "description": "Lists orders.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "customerId": {
+          "type": "string"
+        },
+        "page_number": {
+          "type": "integer"
+        }
+      },
+      "required": ["customerId"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

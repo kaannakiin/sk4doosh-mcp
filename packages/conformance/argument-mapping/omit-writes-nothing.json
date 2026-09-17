@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "omit hicbir sey yazmaz: backend'in kendi varsayilani gecerli kalir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "a",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "includeDeleted",
+          "in": "query",
+          "type": "boolean",
+          "fill": {
+            "kind": "omit"
+          }
+        }
+      ]
+    },
+    "arguments": {
+      "a": "1"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders?a=1"
+  }
+}

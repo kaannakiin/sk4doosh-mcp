@@ -1,0 +1,35 @@
+{
+  "kind": "argument-mapping",
+  "description": "path/query/header yuvasinda null deger yokmus gibi ele alinir; null_not_allowed'in 'bunun yerine atla' mesaji elinden bir sey gelmeyen bir ajana hitap eder",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "a",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "tenant",
+          "in": "query",
+          "type": "string",
+          "fill": {
+            "kind": "deferred",
+            "source": "tenant"
+          }
+        }
+      ]
+    },
+    "arguments": {
+      "a": "1"
+    },
+    "deferred": {
+      "tenant": null
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders?a=1"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "kind": "metadata-extraction",
+  "description": "toolName ile variants birlikte yazilamaz; celiskiyi sessizce cozmek yerine endpoint duser",
+  "input": {
+    "operationId": "ListOrders",
+    "toolName": "list_orders",
+    "method": "GET",
+    "route": "/orders",
+    "variants": [
+      {
+        "name": "find_orders",
+        "description": "Searches orders."
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "variant_declaration_conflict"
+  }
+}

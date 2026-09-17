@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "serbest bicimli gövdede bile kuratorlenmis bir alanin tel adi reddedilir: denylist ek-anahtar iznini yener",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders",
+      "body": {
+        "properties": ["note", "tenantId"],
+        "additionalProperties": true,
+        "curation": [
+          {
+            "name": "tenantId",
+            "fill": {
+              "kind": "constant",
+              "value": "acme"
+            }
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "note": "x",
+      "tenantId": "other"
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

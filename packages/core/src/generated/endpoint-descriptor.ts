@@ -1,4 +1,26 @@
 export type Anonymity = "yes" | "no" | "unknown";
+export type ArgumentFill = (
+  | {
+      kind: "constant";
+      value: unknown;
+      source?: never;
+    }
+  | {
+      kind: "deferred";
+      source: unknown;
+      value?: never;
+    }
+  | {
+      kind: "omit";
+      value?: never;
+      source?: never;
+    }
+) & {
+  kind: ArgumentFillKind;
+  value?: unknown;
+  source?: string;
+};
+export type ArgumentFillKind = "constant" | "deferred" | "omit";
 
 export interface EndpointDescriptor {
   operationId?: string;
@@ -15,6 +37,8 @@ export interface EndpointDescriptor {
   };
   auth: Auth;
   tags?: string[];
+  arguments?: ArgumentCuration[];
+  variants?: [ToolVariant, ...ToolVariant[]];
 }
 export interface Parameter {
   name: string;
@@ -83,4 +107,15 @@ export interface Auth {
   anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
+}
+export interface ArgumentCuration {
+  name: string;
+  as?: string;
+  description?: string;
+  hidden?: ArgumentFill;
+}
+export interface ToolVariant {
+  name: string;
+  description: string;
+  arguments?: ArgumentCuration[];
 }

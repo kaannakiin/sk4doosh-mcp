@@ -24,10 +24,12 @@ treat a file as binding without reading it.
 | `schema-conversion-rules.md` | TypeShape → JSON Schema                          | **rule layer normative, binding partly** |
 | `caching.md`                 | Cache key, namespace, TTL, invalidation          | **partly normative**                     |
 | `argument-mapping.md`        | Flat arguments → HTTP request                    | **normative candidate**                  |
+| `argument-curation.md`       | Renaming, re-describing and hiding arguments     | **specified, not yet implemented**       |
 
-The three highlighted rows are the ones that bite. `schema-conversion-rules.md` has an
+The four highlighted rows are the ones that bite. `schema-conversion-rules.md` has an
 "Unpinned areas" section listing behaviour that is deliberately not settled; `argument-mapping.md`
-is validated by two implementations but not yet declared normative.
+is validated by two implementations but not yet declared normative; `argument-curation.md` is
+written ahead of any implementation on purpose, so nothing passes it yet.
 
 The prose is English, like the documentation site that links to it. The design documents under
 repo-root `docs/` remain Turkish.

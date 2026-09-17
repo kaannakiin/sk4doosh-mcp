@@ -21,6 +21,8 @@ public sealed record EndpointDescriptor
     public IReadOnlyDictionary<string, ResponseBody>? Responses { get; init; }
     public required Auth Auth { get; init; }
     public IReadOnlyList<string>? Tags { get; init; }
+    public IReadOnlyList<ArgumentCuration>? Arguments { get; init; }
+    public IReadOnlyList<ToolVariant>? Variants { get; init; }
 }
 
 public sealed record Parameter
@@ -45,6 +47,30 @@ public sealed record ResponseBody
 {
     public JsonObject? Schema { get; init; }
     public string? Description { get; init; }
+}
+
+public sealed record ArgumentCuration
+{
+    public required string Name { get; init; }
+    public string? As { get; init; }
+    public string? Description { get; init; }
+    public ArgumentFill? Hidden { get; init; }
+}
+
+public enum ArgumentFillKind { Constant, Deferred, Omit }
+
+public sealed record ArgumentFill
+{
+    public required ArgumentFillKind Kind { get; init; }
+    public JsonNode? Value { get; init; }
+    public string? Source { get; init; }
+}
+
+public sealed record ToolVariant
+{
+    public required string Name { get; init; }
+    public required string Description { get; init; }
+    public IReadOnlyList<ArgumentCuration>? Arguments { get; init; }
 }
 
 public sealed record Auth

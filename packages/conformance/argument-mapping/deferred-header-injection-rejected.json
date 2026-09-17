@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "CR/LF kontrolu doldurulmus header degerinde de calisir; token'dan gelen deger saldirgan etkisine acik",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "X-Tenant",
+          "in": "header",
+          "type": "string",
+          "fill": {
+            "kind": "deferred",
+            "source": "tenant"
+          }
+        }
+      ]
+    },
+    "arguments": {},
+    "deferred": {
+      "tenant": "acme\r\nX-Admin: 1"
+    }
+  },
+  "expected": {
+    "error": "deferred_value_invalid"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "kaynak yok ve yuva zorunlu: ajan-eylemli missing_path_parameter degil, host'a yonelik deferred_value_missing",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/tenants/{tenant}/orders",
+      "parameters": [
+        {
+          "name": "tenant",
+          "in": "path",
+          "type": "string",
+          "fill": {
+            "kind": "deferred",
+            "source": "tenant"
+          }
+        }
+      ]
+    },
+    "arguments": {},
+    "deferred": {}
+  },
+  "expected": {
+    "error": "deferred_value_missing"
+  }
+}

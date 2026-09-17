@@ -1,0 +1,27 @@
+{
+  "kind": "naming",
+  "description": "varyantlar operasyon degil tool uretir: tek operasyondan iki ad cikar ve beyan edilen ad prefix almaz",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "List",
+        "container": "OrdersController",
+        "method": "GET",
+        "route": "/orders",
+        "variants": [
+          {
+            "name": "find_open_orders",
+            "description": "Searches orders that are still open."
+          },
+          {
+            "name": "find_all_orders",
+            "description": "Searches orders in any state."
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "names": ["find_open_orders", "find_all_orders"]
+  }
+}

@@ -38,8 +38,20 @@ interface IMcpSelectionMetadata { bool Include { get; } }
 
 `IMcpSelectionMetadata` is public, so a host can attach selection through its own metadata type.
 
-Option groups are ten properties on `SkMcpOptions` — `Identity`, `Synthetic`, `Selection`,
-`Schema`, `Naming`, `Visibility`, `Cache`, `Errors`, `ResourceServer`, `Diagnostics`. Their fields
+Curation markers:
+
+```csharp
+[McpArgument("q", Name = "keyword", Description = "...")]   // rename, re-describe
+[McpArgument("tenantId", Hidden = true, ValueFrom = "...")] // hide: provider, Value, or ValueJson
+[McpToolVariant("name", "description")]                     // one of several tools per operation
+```
+
+`McpArgumentAttribute` also targets a parameter or a DTO property, where the member names the
+argument. At most one of `Value`, `ValueJson` and `ValueFrom` may be set, and none without
+`Hidden = true`.
+
+Option groups are eleven properties on `SkMcpOptions` — `Identity`, `Synthetic`, `Selection`,
+`Schema`, `Naming`, `Visibility`, `Cache`, `Errors`, `ResourceServer`, `Diagnostics`, `Arguments`. Their fields
 and defaults are in
 [`SkMcpOptions.cs`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/src/SkMcp.AspNetCore/SkMcpOptions.cs);
 this page does not copy them.
@@ -65,6 +77,23 @@ the most common miswiring in the SDK: passing an object configures nothing.
 
 The module is `@Global()`. When `resourceServer` is set it also installs the PRM handler and bearer
 verification on the MCP path itself.
+
+Curation on the NestJS side:
+
+```ts
+McpVariant(options: McpVariantOptions): MethodDecorator
+
+const hidden: {
+  value(value: JsonValue): ArgumentRule;
+  from(source: string): ArgumentRule;
+  omit(): ArgumentRule;
+};
+
+function curate<T>(rules: ArgumentRules<T>): ArgumentRules<T>;
+```
+
+`curate<T>()` key-checks the record against a DTO's own keys at compile time; `arguments` accepts a
+plain record without it. `options.arguments` carries `provide`, `curate`, `everywhere` and `seal`.
 
 There is no `MapSkMcp` equivalent. You write the MCP route:
 

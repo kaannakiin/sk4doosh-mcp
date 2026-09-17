@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SkMcp.AspNetCore;
 using SkMcp.AspNetCore.Requests;
+using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.Tests;
 
@@ -242,17 +244,26 @@ public class ArgumentMappingTests
             Assert.Equal("argument-mapping", root.GetProperty("kind").GetString());
             RequestTemplate template = BuildTemplate(root.GetProperty("input").GetProperty("template"));
             JsonElement arguments = root.GetProperty("input").GetProperty("arguments");
+            Dictionary<string, JsonElement>? deferred = null;
+            if (root.GetProperty("input").TryGetProperty("deferred", out JsonElement deferredSpec))
+            {
+                deferred = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+                foreach (JsonProperty entry in deferredSpec.EnumerateObject())
+                {
+                    deferred[entry.Name] = entry.Value;
+                }
+            }
             JsonElement expected = root.GetProperty("expected");
 
             if (expected.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpArgumentException ex = Assert.Throws<SkMcpArgumentException>(
-                    () => RequestComposer.Compose(template, arguments));
+                    () => RequestComposer.Compose(template, arguments, deferred));
                 Assert.Equal(error.GetString(), ex.Code);
             }
             else
             {
-                ComposedRequest composed = RequestComposer.Compose(template, arguments);
+                ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred);
                 Assert.Equal(expected.GetProperty("pathAndQuery").GetString(), composed.PathAndQuery);
                 if (expected.TryGetProperty("headers", out JsonElement headers))
                 {
@@ -304,6 +315,10 @@ public class ArgumentMappingTests
                             p.TryGetProperty("style", out JsonElement style) ? style.GetString() : null,
                             p.TryGetProperty("explode", out JsonElement explode) ? explode.GetBoolean() : null,
                             p.GetProperty("name").GetString()!)
+                        : null,
+                    p.TryGetProperty("as", out JsonElement agentName) ? agentName.GetString() : null,
+                    p.TryGetProperty("fill", out JsonElement fill)
+                        ? fill.Deserialize<ArgumentFill>(FixtureJson)
                         : null));
             }
         }
@@ -313,11 +328,28 @@ public class ArgumentMappingTests
             : null;
         string[]? bodyProperties = null;
         bool additional = false;
+        Dictionary<string, string> bodyAliases = new(StringComparer.Ordinal);
+        Dictionary<string, ArgumentFill> bodyFills = new(StringComparer.Ordinal);
         if (bodyRoot is null && spec.TryGetProperty("body", out JsonElement body))
         {
             bodyProperties = body.GetProperty("properties").EnumerateArray()
                 .Select(x => x.GetString()!).ToArray();
             additional = body.TryGetProperty("additionalProperties", out JsonElement a) && a.GetBoolean();
+            if (body.TryGetProperty("curation", out JsonElement curation))
+            {
+                foreach (JsonElement record in curation.EnumerateArray())
+                {
+                    string name = record.GetProperty("name").GetString()!;
+                    if (record.TryGetProperty("as", out JsonElement agentName))
+                    {
+                        bodyAliases[agentName.GetString()!] = name;
+                    }
+                    if (record.TryGetProperty("fill", out JsonElement fill))
+                    {
+                        bodyFills[name] = fill.Deserialize<ArgumentFill>(FixtureJson)!;
+                    }
+                }
+            }
         }
 
         return RequestTemplate.Create(
@@ -326,6 +358,17 @@ public class ArgumentMappingTests
             parameters,
             bodyProperties,
             additional,
-            bodyRoot);
+            bodyRoot,
+            bodyAliases,
+            bodyFills,
+            spec.TryGetProperty("rootFill", out JsonElement rootFill)
+                ? rootFill.Deserialize<ArgumentFill>(FixtureJson)
+                : null);
     }
+
+    private static readonly JsonSerializerOptions FixtureJson = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+    };
 }

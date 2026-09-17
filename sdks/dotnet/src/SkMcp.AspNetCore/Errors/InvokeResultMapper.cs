@@ -12,9 +12,27 @@ public sealed record InvokeSucceeded(InvokeSuccess Success) : InvokeOutcome;
 
 public sealed record InvokeFailed(MappedError Error) : InvokeOutcome;
 
+/// <summary>The names a reported field may be canonicalised against.</summary>
+/// <param name="Known">Agent-facing argument names, from the published input schema.</param>
+/// <param name="Aliases">Wire field name to agent argument name, for renamed arguments.</param>
+/// <param name="Hidden">Wire field names the agent cannot set.</param>
+public sealed record FieldVocabulary(
+    IReadOnlySet<string> Known,
+    IReadOnlyDictionary<string, string> Aliases,
+    IReadOnlySet<string> Hidden)
+{
+    public static FieldVocabulary Of(IReadOnlySet<string> known) =>
+        new(known,
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            new HashSet<string>(StringComparer.Ordinal));
+}
+
 public interface IInvokeResultMapper
 {
     InvokeOutcome Map(BackendResponse response, IReadOnlySet<string> knownFields);
+
+    InvokeOutcome Map(BackendResponse response, FieldVocabulary vocabulary) =>
+        Map(response, vocabulary.Known);
 }
 
 internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvokeResultMapper
@@ -27,7 +45,10 @@ internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvo
     private static readonly Regex TraceIdPattern = new("^[A-Za-z0-9:_.-]{1,100}$", RegexOptions.Compiled);
     private static readonly Regex DigitsOnly = new(@"^\d+$", RegexOptions.Compiled);
 
-    public InvokeOutcome Map(BackendResponse response, IReadOnlySet<string> knownFields)
+    public InvokeOutcome Map(BackendResponse response, IReadOnlySet<string> knownFields) =>
+        Map(response, FieldVocabulary.Of(knownFields));
+
+    public InvokeOutcome Map(BackendResponse response, FieldVocabulary knownFields)
     {
         ParsedBody parsed = ParseBody(response.Body, response.ContentType);
         int status = response.Status;
@@ -137,7 +158,7 @@ internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvo
     }
 
     private static MappedError FinalizeError(
-        int status, RecognizedError? outcome, BackendResponse response, IReadOnlySet<string> knownFields, string? reference)
+        int status, RecognizedError? outcome, BackendResponse response, FieldVocabulary knownFields, string? reference)
     {
         IReadOnlyList<FieldError> fields = outcome?.Fields ?? [];
         bool hasFields = fields.Count > 0;
@@ -159,21 +180,34 @@ internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvo
         };
     }
 
-    private static FieldError NormalizeField(FieldError field, IReadOnlySet<string> knownFields)
+    private static FieldError NormalizeField(FieldError field, FieldVocabulary vocabulary)
     {
         string message = LeakFilter.Forwardable(field.Message) ?? FieldLeakMessage;
         if (field.Name is null)
         {
-            string? resolved = FieldNameFromMessage(field.Message, knownFields);
+            string? resolved = FieldNameFromMessage(field.Message, vocabulary);
             return resolved is null
                 ? new FieldError { Message = message }
                 : new FieldError { Name = resolved, Message = message };
         }
-        return new FieldError { Name = NormalizeFieldName(field.Name, knownFields), Message = message };
+        string? name = NormalizeFieldName(field.Name, vocabulary);
+        return name is null
+            ? new FieldError { Message = message }
+            : new FieldError { Name = name, Message = message };
     }
 
-    private static string? FieldNameFromMessage(string message, IReadOnlySet<string> knownFields)
+    private static string? MatchInsensitively(string name, IEnumerable<string> candidates) =>
+        candidates.FirstOrDefault(
+            candidate => string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Guesses a field name from a message's leading token.</summary>
+    /// <remarks>
+    /// A hidden field is never guessed: a heuristic that names an argument the agent cannot set is
+    /// worse than no name at all.
+    /// </remarks>
+    private static string? FieldNameFromMessage(string message, FieldVocabulary vocabulary)
     {
+        IReadOnlySet<string> knownFields = vocabulary.Known;
         if (knownFields.Count == 0)
         {
             return null;
@@ -191,15 +225,43 @@ internal sealed class InvokeResultMapper(IOptions<SkMcpOptions> options) : IInvo
             return null;
         }
         string token = trimmed[..length].ToString();
-        return knownFields.FirstOrDefault(
-            candidate => string.Equals(candidate, token, StringComparison.OrdinalIgnoreCase));
+        if (MatchInsensitively(token, vocabulary.Hidden) is not null)
+        {
+            return null;
+        }
+        if (MatchInsensitively(token, vocabulary.Aliases.Keys) is { } aliased)
+        {
+            return vocabulary.Aliases[aliased];
+        }
+        return MatchInsensitively(token, knownFields);
     }
 
-    private static string NormalizeFieldName(string name, IReadOnlySet<string> knownFields)
+    /// <summary>
+    /// Resolution order: published names first, then the wire-to-agent alias.
+    /// </summary>
+    /// <remarks>
+    /// Published first because an agent name that happens to equal some other argument's wire name
+    /// has to resolve to the thing the agent can actually fix. A field the agent cannot set returns
+    /// <c>null</c> and is emitted with its message and no name: dropping the entry loses the only
+    /// useful information, and keeping the wire name sends the agent to repair an argument it does
+    /// not have.
+    /// </remarks>
+    private static string? NormalizeFieldName(string name, FieldVocabulary vocabulary)
     {
         string stripped = name.StartsWith("$.", StringComparison.Ordinal) ? name[2..] : name;
-        return knownFields.FirstOrDefault(candidate => string.Equals(candidate, stripped, StringComparison.OrdinalIgnoreCase))
-            ?? stripped;
+        if (MatchInsensitively(stripped, vocabulary.Known) is { } known)
+        {
+            return known;
+        }
+        if (MatchInsensitively(stripped, vocabulary.Aliases.Keys) is { } aliased)
+        {
+            return vocabulary.Aliases[aliased];
+        }
+        if (MatchInsensitively(stripped, vocabulary.Hidden) is not null)
+        {
+            return null;
+        }
+        return stripped;
     }
 
     private static string? ResolveReference(BackendResponse response, ParsedBody parsed) =>

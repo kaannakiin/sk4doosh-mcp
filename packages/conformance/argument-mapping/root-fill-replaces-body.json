@@ -1,0 +1,20 @@
+{
+  "kind": "argument-mapping",
+  "description": "kök modunda rootFill cozulmus deger gövdenin kendisidir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/orders/tags",
+      "bodyRoot": "body",
+      "rootFill": {
+        "kind": "constant",
+        "value": ["urgent", "review"]
+      }
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/orders/tags",
+    "bodyJson": ["urgent", "review"]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "kind": "metadata-extraction",
+  "description": "as baska bir argumanin adiyla cakisirsa endpoint duser; mevcut argument_collision yeniden kullanilir",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "parameters": [
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "state",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "state",
+        "as": "status"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "argument_collision"
+  }
+}

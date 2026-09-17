@@ -1,5 +1,8 @@
-import { SkMcpCatalogError } from "./errors.js";
-import type { EndpointDescriptor } from "./generated/endpoint-descriptor.js";
+import { SkMcpCatalogError, SkMcpTemplateError } from "./errors.js";
+import type {
+  EndpointDescriptor,
+  ToolVariant,
+} from "./generated/endpoint-descriptor.js";
 
 export const longNameThreshold = 64;
 
@@ -221,18 +224,60 @@ export interface NamingOptions {
   readonly onDiagnostic?: (code: string, message: string) => void;
 }
 
+export interface ToolProduction {
+  readonly endpoint: EndpointDescriptor;
+  readonly variant?: ToolVariant;
+}
+
+/**
+ * Folds routes first, then expands variants.
+ *
+ * The order is what keeps {@link deduplicateOperations} unchanged: it never
+ * sees a variant, so its grouping key stays the operation identity. It is also
+ * the single place productions are enumerated — naming used to fold internally
+ * while the catalog folded again, which is idempotent for plain operations and
+ * is not for variants, where a second fold would return fewer names than tools
+ * and misalign the catalog's positional zip.
+ */
+export function expandToolProductions<T>(
+  items: readonly T[],
+  selector: (item: T) => EndpointDescriptor,
+  onFolded?: (fold: FoldedOperation<T>) => void,
+): ToolProduction[] {
+  const productions: ToolProduction[] = [];
+  for (const item of deduplicateOperations(items, selector, onFolded)) {
+    const endpoint = selector(item);
+    if (endpoint.variants === undefined) {
+      productions.push({ endpoint });
+      continue;
+    }
+    if (endpoint.toolName !== undefined) {
+      throw new SkMcpTemplateError(
+        "variant_declaration_conflict",
+        `${endpoint.method} ${endpoint.route} declares both a tool name and variants; a variant names itself.`,
+      );
+    }
+    for (const variant of endpoint.variants) {
+      productions.push({ endpoint, variant });
+    }
+  }
+  return productions;
+}
+
 export function createToolNames(
   endpoints: readonly EndpointDescriptor[],
   options: NamingOptions = {},
 ): string[] {
   const mode = options.prefixMode ?? "always";
-  const operations = deduplicateOperations(endpoints, (e) => e);
-  const names = operations.map((endpoint) => createToolName(endpoint, mode));
+  const operations = expandToolProductions(endpoints, (e) => e);
+  const names = operations.map(({ endpoint, variant }) =>
+    variant === undefined ? createToolName(endpoint, mode) : variant.name,
+  );
 
   if (mode === "onCollision") {
     const groups = new Map<string, number[]>();
-    operations.forEach((endpoint, index) => {
-      if (endpoint.toolName !== undefined) {
+    operations.forEach(({ endpoint, variant }, index) => {
+      if (endpoint.toolName !== undefined || variant !== undefined) {
         return;
       }
       const group = groups.get(names[index] as string);
@@ -247,7 +292,7 @@ export function createToolNames(
         continue;
       }
       for (const index of group) {
-        const endpoint = operations[index] as EndpointDescriptor;
+        const endpoint = (operations[index] as ToolProduction).endpoint;
         const prefixed = applyPrefix(body, derivePrefix(endpoint));
         if (prefixed === body) {
           continue;
@@ -262,7 +307,7 @@ export function createToolNames(
   }
 
   const claimed = new Map<string, EndpointDescriptor>();
-  operations.forEach((endpoint, index) => {
+  operations.forEach(({ endpoint }, index) => {
     const name = names[index] as string;
     const owner = claimed.get(name);
     if (owner !== undefined) {

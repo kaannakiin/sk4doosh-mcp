@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "kuratorluk lookup'i degistirir, emisyonu degil: ajan page_number gonderir, tele page gider",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "as": "page_number"
+        }
+      ]
+    },
+    "arguments": {
+      "page_number": 2
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders?page=2"
+  }
+}

@@ -1,6 +1,58 @@
-import type { EndpointDescriptor, JsonSchemaObject } from "@sk-mcp/core";
+import type {
+  ArgumentFill,
+  EndpointDescriptor,
+  JsonSchemaObject,
+} from "@sk-mcp/core";
 
-type DescriptorParameter = NonNullable<EndpointDescriptor["parameters"]>[number];
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
+/**
+ * A curation rule for one argument.
+ *
+ * The union is what makes "hidden but also renamed" unrepresentable: a hidden argument has no
+ * agent-facing name or description to carry.
+ */
+export type ArgumentRule =
+  | {
+      readonly hide?: undefined;
+      readonly as?: string;
+      readonly description?: string;
+    }
+  | { readonly hide: ArgumentFill };
+
+export const hidden = {
+  value: (value: JsonValue): ArgumentRule => ({
+    hide: { kind: "constant", value },
+  }),
+  from: (source: string): ArgumentRule => ({
+    hide: { kind: "deferred", source },
+  }),
+  omit: (): ArgumentRule => ({ hide: { kind: "omit" } }),
+} as const;
+
+export type ArgumentRules<T> = {
+  readonly [K in keyof T & string]?: ArgumentRule;
+};
+
+/**
+ * Key-checks a curation against a DTO's own keys.
+ *
+ * Optional: `arguments` accepts a plain record. Reaching for this moves the
+ * `curation_unresolved` diagnostic from startup to compile time, which is where a typo belongs.
+ */
+export function curate<T>(rules: ArgumentRules<T>): ArgumentRules<T> {
+  return rules;
+}
+
+type DescriptorParameter = NonNullable<
+  EndpointDescriptor["parameters"]
+>[number];
 
 export interface McpParameterOptions {
   readonly required?: boolean;
@@ -26,9 +78,29 @@ export interface McpToolOptions {
    * inferences.
    */
   readonly parameters?: Readonly<Record<string, McpParameterOptions>>;
+  /**
+   * Curation declarations keyed by wire name: a parameter, a flattened body field, or the body
+   * root argument. Distinct from `parameters`, which corrects a discovered fact; these declare the
+   * agent-facing surface and span the body too.
+   */
+  readonly arguments?: Readonly<Record<string, ArgumentRule>>;
   readonly readOnly?: boolean;
   readonly destructive?: boolean;
   readonly idempotent?: boolean;
+  readonly variants?: readonly McpVariantOptions[];
+}
+
+/**
+ * One of several tools produced from a single operation.
+ *
+ * `name` and `description` are non-optional because one description cannot honestly describe two
+ * tools whose arguments are hidden differently; `tsc` therefore enforces the rule at the
+ * declaration site.
+ */
+export interface McpVariantOptions {
+  readonly name: string;
+  readonly description: string;
+  readonly arguments?: Readonly<Record<string, ArgumentRule>>;
 }
 
 export interface McpSelectionMarker {
@@ -38,6 +110,18 @@ export interface McpSelectionMarker {
 
 export const MCP_SELECTION = "sk-mcp:selection";
 
+export function McpVariant(options: McpVariantOptions): MethodDecorator {
+  return ((
+    _target: object,
+    _property?: string | symbol,
+    descriptor?: PropertyDescriptor,
+  ): void => {
+    if (descriptor?.value !== undefined) {
+      appendVariant(descriptor.value as object, options);
+    }
+  }) as MethodDecorator;
+}
+
 type Target = object | ((...args: never[]) => unknown);
 
 function append(target: Target, marker: McpSelectionMarker): void {
@@ -45,6 +129,30 @@ function append(target: Target, marker: McpSelectionMarker): void {
     (Reflect.getOwnMetadata(MCP_SELECTION, target) as
       McpSelectionMarker[] | undefined) ?? [];
   Reflect.defineMetadata(MCP_SELECTION, [...existing, marker], target);
+}
+
+function appendVariant(target: object, variant: McpVariantOptions): void {
+  const existing =
+    (Reflect.getOwnMetadata(MCP_SELECTION, target) as
+      McpSelectionMarker[] | undefined) ?? [];
+  const carrier = existing.find((marker) => marker.include);
+  /**
+   * Prepended, not appended: method decorators evaluate bottom-up, so appending would publish the
+   * variants in the reverse of the order they are written in, and the order is what the catalog
+   * zips names against.
+   */
+  const variants = [variant, ...(carrier?.options.variants ?? [])];
+  const marker: McpSelectionMarker = {
+    include: true,
+    options: { ...(carrier?.options ?? {}), variants },
+  };
+  Reflect.defineMetadata(
+    MCP_SELECTION,
+    carrier === undefined
+      ? [...existing, marker]
+      : existing.map((entry) => (entry === carrier ? marker : entry)),
+    target,
+  );
 }
 
 function decorate(

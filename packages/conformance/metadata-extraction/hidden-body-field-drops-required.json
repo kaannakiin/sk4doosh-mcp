@@ -1,0 +1,60 @@
+{
+  "kind": "metadata-extraction",
+  "description": "sabitle doldurulmus zorunlu gövde alani semadan ve required'dan duser; deger telde yazilir",
+  "input": {
+    "operationId": "CreateOrder",
+    "method": "POST",
+    "route": "/orders",
+    "description": "Creates an order.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": ["item", "source"]
+      }
+    },
+    "arguments": [
+      {
+        "name": "source",
+        "hidden": {
+          "kind": "constant",
+          "value": "agent"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "create_order",
+    "description": "Creates an order.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "string"
+        }
+      },
+      "required": ["item"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

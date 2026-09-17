@@ -1,0 +1,105 @@
+{
+  "kind": "metadata-extraction",
+  "description": "variants varsa endpoint'in kendi adi kullanilmaz ve varyant basina bir tool uretilir; kuratorlenmemis taban tool uretilmez",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "description": "Lists orders.",
+    "parameters": [
+      {
+        "name": "q",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "variants": [
+      {
+        "name": "find_open_orders",
+        "description": "Searches orders that are still open.",
+        "arguments": [
+          {
+            "name": "status",
+            "hidden": {
+              "kind": "constant",
+              "value": "open"
+            }
+          }
+        ]
+      },
+      {
+        "name": "find_all_orders",
+        "description": "Searches orders in any state."
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "tools": [
+      {
+        "name": "find_open_orders",
+        "description": "Searches orders that are still open.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "q": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true
+        },
+        "auth": {
+          "anonymous": "yes",
+          "policies": [],
+          "imperative": false
+        }
+      },
+      {
+        "name": "find_all_orders",
+        "description": "Searches orders in any state.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "q": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true
+        },
+        "auth": {
+          "anonymous": "yes",
+          "policies": [],
+          "imperative": false
+        }
+      }
+    ]
+  }
+}

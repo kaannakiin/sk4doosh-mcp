@@ -1,0 +1,33 @@
+{
+  "kind": "argument-mapping",
+  "description": "kaynak yok ve yuva opsiyonel: anahtar hic yazilmaz, hata da yok",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "a",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "tenant",
+          "in": "query",
+          "type": "string",
+          "fill": {
+            "kind": "deferred",
+            "source": "tenant"
+          }
+        }
+      ]
+    },
+    "arguments": {
+      "a": "1"
+    },
+    "deferred": {}
+  },
+  "expected": {
+    "pathAndQuery": "/orders?a=1"
+  }
+}

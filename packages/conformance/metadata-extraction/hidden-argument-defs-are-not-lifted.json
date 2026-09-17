@@ -1,0 +1,73 @@
+{
+  "kind": "metadata-extraction",
+  "description": "gizli argumanin semasi yayinlanmadigi icin $defs torbasi kaldirilmaz; kaldirmak referanssiz tanim yayinlardi",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "parameters": [
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      {
+        "name": "filter",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "$ref": "#/$defs/Filter",
+          "$defs": {
+            "Filter": {
+              "type": "object",
+              "properties": {
+                "since": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "filter",
+        "hidden": {
+          "kind": "omit"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "list_orders",
+    "description": "GET /orders",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

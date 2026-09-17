@@ -3,8 +3,27 @@ export type { SkMcpModuleAsyncOptions } from "./sk-mcp.module.js";
 export { SkMcpDispatcher } from "./dispatcher.js";
 export { SkMcpCatalog } from "./catalog.js";
 export type { CatalogEntry, CatalogSnapshot } from "./catalog.js";
-export { McpIgnore, McpTool } from "./decorators.js";
-export type { McpToolOptions } from "./decorators.js";
+export {
+  curate,
+  hidden,
+  McpIgnore,
+  McpTool,
+  McpVariant,
+} from "./decorators.js";
+export type {
+  ArgumentRule,
+  ArgumentRules,
+  JsonValue,
+  McpToolOptions,
+  McpVariantOptions,
+} from "./decorators.js";
+export { ArgumentCurationOptions, callerOf } from "./options.js";
+export type {
+  ArgumentValueProvider,
+  CurationTarget,
+  McpCaller,
+  VerifiedToken,
+} from "./options.js";
 export { isSkMcpProbe, isSkMcpRequest } from "./markers.js";
 export {
   currentOuterConnection,

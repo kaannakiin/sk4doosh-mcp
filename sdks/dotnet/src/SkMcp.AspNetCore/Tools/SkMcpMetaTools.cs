@@ -10,6 +10,7 @@ using ModelContextProtocol.Server;
 using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Errors;
+using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Visibility;
 
 namespace SkMcp.AspNetCore.Tools;
@@ -154,16 +155,22 @@ internal sealed class SkMcpMetaTools(
         {
             return UnknownTool(name);
         }
-        if (entry.Template is null)
+        if (entry.Template is not { } template)
         {
             return ErrorResult("not_invocable", $"Operation '{name}' cannot be invoked through sk-mcp; see the catalog diagnostics.");
         }
 
         try
         {
+            IReadOnlyDictionary<string, JsonElement>? deferred = await CallerFactory.ResolveAsync(
+                template,
+                options.Value.Arguments,
+                CallerFactory.From(httpContextAccessor.HttpContext),
+                cancellationToken);
             DispatchResult result = await dispatcher.DispatchAsync(
-                entry.Template, arguments, httpContextAccessor.HttpContext?.Request, cancellationToken);
-            InvokeOutcome outcome = mapper.Map(result.ToBackendResponse(), KnownFields(entry));
+                template, arguments, httpContextAccessor.HttpContext?.Request, cancellationToken,
+                deferred);
+            InvokeOutcome outcome = mapper.Map(result.ToBackendResponse(), VocabularyOf(entry, template));
             return outcome switch
             {
                 InvokeSucceeded succeeded => TextResult(JsonSerializer.Serialize(succeeded.Success, SkMcpJson.Wire), isError: false),
@@ -281,6 +288,36 @@ internal sealed class SkMcpMetaTools(
         && (key.Length == 1 || key[0] != '0')
         && key.All(char.IsAsciiDigit)
         && uint.TryParse(key, CultureInfo.InvariantCulture, out _);
+
+    /// <summary>
+    /// The wire names the backend reports, mapped back to the names the agent knows.
+    /// </summary>
+    /// <remarks>
+    /// Without it a rename leaks the wire vocabulary into the reported field name and points the
+    /// agent at an argument it does not have.
+    /// </remarks>
+    private static FieldVocabulary VocabularyOf(CatalogEntry entry, RequestTemplate template)
+    {
+        Dictionary<string, string> aliases = new(StringComparer.Ordinal);
+        HashSet<string> hidden = new(StringComparer.Ordinal);
+        foreach (ParameterBinding parameter in template.Parameters)
+        {
+            if (parameter.Fill is not null)
+            {
+                hidden.Add(parameter.Name);
+            }
+            else if (parameter.Argument is { } agentName)
+            {
+                aliases[parameter.Name] = agentName;
+            }
+        }
+        foreach ((string agentKey, string wireField) in template.BodyAliases)
+        {
+            aliases[wireField] = agentKey;
+        }
+        hidden.UnionWith(template.BodyFills.Keys);
+        return new FieldVocabulary(KnownFields(entry), aliases, hidden);
+    }
 
     private static IReadOnlySet<string> KnownFields(CatalogEntry entry)
     {

@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "doldurulmus deger ayni tip kapisindan gecer; integer yuvaya kesirli deger deferred_value_invalid",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/orders",
+      "parameters": [
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "fill": {
+            "kind": "deferred",
+            "source": "page"
+          }
+        }
+      ]
+    },
+    "arguments": {},
+    "deferred": {
+      "page": 1.5
+    }
+  },
+  "expected": {
+    "error": "deferred_value_invalid"
+  }
+}

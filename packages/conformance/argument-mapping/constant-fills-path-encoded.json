@@ -1,0 +1,25 @@
+{
+  "kind": "argument-mapping",
+  "description": "doldurulmus deger ayni RFC 3986 kodlamasindan gecer: traversal tek segment kalir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/tenants/{tenant}/orders",
+      "parameters": [
+        {
+          "name": "tenant",
+          "in": "path",
+          "type": "string",
+          "fill": {
+            "kind": "constant",
+            "value": "5/../admin"
+          }
+        }
+      ]
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/tenants/5%2F..%2Fadmin/orders"
+  }
+}

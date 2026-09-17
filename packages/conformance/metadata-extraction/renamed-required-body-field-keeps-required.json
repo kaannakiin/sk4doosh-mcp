@@ -1,0 +1,60 @@
+{
+  "kind": "metadata-extraction",
+  "description": "yeniden adlandirilmis zorunlu gövde alani required kalir: tel->ajan eslemesi hasOwn kapisindan once yapilir",
+  "input": {
+    "operationId": "CreateOrder",
+    "method": "POST",
+    "route": "/orders",
+    "description": "Creates an order.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          }
+        },
+        "required": ["item", "quantity"]
+      }
+    },
+    "arguments": [
+      {
+        "name": "item",
+        "as": "item_name"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "create_order",
+    "description": "Creates an order.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item_name": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "integer"
+        }
+      },
+      "required": ["item_name", "quantity"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

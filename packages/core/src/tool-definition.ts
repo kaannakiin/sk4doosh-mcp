@@ -4,6 +4,9 @@ import type {
   ToolDefinition,
 } from "./generated/tool-definition.js";
 import { assertUniqueArgumentNames } from "./argument-names.js";
+import { curationShapeOf, resolveCuration } from "./curation.js";
+import type { CurationRelief } from "./curation.js";
+import type { ToolVariant } from "./generated/endpoint-descriptor.js";
 import { SkMcpTemplateError } from "./errors.js";
 import type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
 import {
@@ -189,7 +192,11 @@ type InputSchema = Omit<ObjectSchema, "additionalProperties"> & {
   additionalProperties: boolean | JsonSchemaObject;
 };
 
-function buildInputSchema(endpoint: EndpointDescriptor): InputSchema {
+function buildInputSchema(
+  endpoint: EndpointDescriptor,
+  variant: ToolVariant | undefined,
+  relief: CurationRelief | undefined,
+): InputSchema {
   const parameters = endpoint.parameters ?? [];
   const body = endpoint.requestBody?.schema;
   const bodyRequired = endpoint.requestBody?.required;
@@ -206,6 +213,20 @@ function buildInputSchema(endpoint: EndpointDescriptor): InputSchema {
         : Object.keys(flattened.properties),
   );
 
+  const curation = resolveCuration(
+    endpoint,
+    variant,
+    curationShapeOf(
+      parameterNames,
+      parameters.filter((parameter) => parameter.required).map((p) => p.name),
+      flattened === undefined ? [] : Object.keys(flattened.properties),
+      flattened?.required ?? [],
+      root,
+      bodyRequired !== false,
+    ),
+    relief,
+  );
+
   const properties: Record<string, JsonSchemaObject> = {};
   const required: string[] = [];
   const claimed = new Set<string>();
@@ -215,31 +236,63 @@ function buildInputSchema(endpoint: EndpointDescriptor): InputSchema {
       required.push(name);
     }
   };
+  /**
+   * A curation description overrides, including one the schema already carries.
+   * This is the one place the "the schema source takes precedence" rule is
+   * inverted: a parameter description is a fallback for a missing one, whereas
+   * a curation description is the host stating what the agent should read.
+   */
+  const publish = (
+    wireName: string,
+    schema: JsonSchemaObject,
+  ): string | undefined => {
+    const resolved = curation.byWireName.get(wireName);
+    if (resolved?.fill !== undefined) {
+      return undefined;
+    }
+    const key = resolved?.argument ?? wireName;
+    if (resolved?.description !== undefined) {
+      schema["description"] = resolved.description;
+    }
+    properties[key] = schema;
+    return key;
+  };
 
   for (const parameter of parameters) {
-    properties[parameter.name] = describe(
-      parameter.schema,
-      parameter.description,
+    const key = publish(
+      parameter.name,
+      describe(parameter.schema, parameter.description),
     );
-    if (parameter.required) {
-      require(parameter.name);
+    if (key !== undefined && parameter.required) {
+      require(key);
     }
   }
 
   if (root !== undefined && body !== undefined) {
-    properties[root] = structuredClone(body);
-    if (bodyRequired !== false) {
-      require(root);
+    const key = publish(root, structuredClone(body));
+    if (key !== undefined && bodyRequired !== false) {
+      require(key);
     }
   }
 
   if (flattened !== undefined) {
     for (const [name, schema] of Object.entries(flattened.properties)) {
-      properties[name] = structuredClone(schema);
+      publish(name, structuredClone(schema));
     }
     for (const name of flattened.required) {
-      if (Object.hasOwn(properties, name)) {
-        require(name);
+      /**
+       * The wire-to-agent mapping happens before the guard on purpose: a
+       * renamed required field is keyed by its agent name, so a guard that
+       * looked up the wire name would find nothing and silently drop the
+       * requiredness.
+       */
+      const resolved = curation.byWireName.get(name);
+      if (resolved?.fill !== undefined) {
+        continue;
+      }
+      const key = resolved?.argument ?? name;
+      if (Object.hasOwn(properties, key)) {
+        require(key);
       }
     }
   }
@@ -367,15 +420,18 @@ function annotate(method: string): ToolAnnotations {
 export function createToolDefinition(
   endpoint: EndpointDescriptor,
   name?: string,
+  variant?: ToolVariant,
+  relief?: CurationRelief,
 ): ToolDefinition {
+  const declared = variant?.description ?? endpoint.description;
   const description =
-    endpoint.description === undefined || endpoint.description.trim() === ""
+    declared === undefined || declared.trim() === ""
       ? `${endpoint.method} ${endpoint.route}`
-      : endpoint.description;
+      : declared;
   return {
-    name: name ?? createToolName(endpoint),
+    name: name ?? variant?.name ?? createToolName(endpoint),
     description,
-    inputSchema: buildInputSchema(endpoint),
+    inputSchema: buildInputSchema(endpoint, variant, relief),
     annotations: annotate(endpoint.method),
     auth: endpoint.auth,
   };

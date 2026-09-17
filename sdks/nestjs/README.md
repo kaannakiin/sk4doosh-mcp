@@ -173,6 +173,43 @@ Then `@McpIgnore()` on the endpoints or controllers you withhold.
 Visibility is **not** a security mechanism. A tool hidden from the catalog still runs only if your
 backend permits it; enforcement is always in your pipeline at invoke time.
 
+## 3b. Curating what the agent sees
+
+Your DTO was written for HTTP clients. `arguments` declares a different agent-facing surface over
+the same endpoint, without touching the DTO.
+
+```ts
+@Get("orders")
+@McpTool({
+  description: "Search your orders by keyword.",
+  arguments: curate<ListOrdersQuery>({
+    customerId: hidden.from("tenant"),
+    status: { description: "active | closed" },
+    page: { as: "page_number" },
+  }),
+})
+list(@Query() query: ListOrdersQuery) { ... }
+```
+
+The agent sends `page_number`; the request still goes out as `?page=`. It never sees `customerId`,
+and sending it is an `unknown_argument` error. The value comes from a provider you register once:
+
+```ts
+options.arguments.provide("tenant", (caller) => caller.claim("tid"));
+```
+
+`hidden.value(x)` writes a constant instead, and `hidden.omit()` sends nothing so your backend's own
+default stands. Rules can also live centrally — `options.arguments.curate(target, rules)` for
+controllers you cannot decorate, `seal` for a rule no decorator may override.
+
+**Curation is not enforcement.** Filling `customerId` from a token does not isolate tenants; your
+pipeline still decides. It changes what the agent has to think about, not what it may do.
+
+`@McpVariant({ name, description, arguments })` produces several tools from one handler. Both fields
+are required, because one description cannot honestly describe two differently curated tools.
+
+Full guide: the docs site's _How to curate the arguments an agent sees_.
+
 ## 4. Visibility and guards
 
 This is the SDK's defining behaviour, and the thing most likely to surprise you.

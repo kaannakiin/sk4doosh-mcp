@@ -129,7 +129,19 @@ public sealed class ErrorMappingTests
                 ? knownFieldsElement.EnumerateArray().Select(f => f.GetString()!).ToHashSet(StringComparer.Ordinal)
                 : [];
 
-            InvokeOutcome outcome = mapper.Map(response, knownFields);
+            Dictionary<string, string> aliases = new(StringComparer.Ordinal);
+            if (input.TryGetProperty("fieldAliases", out JsonElement aliasSpec))
+            {
+                foreach (JsonProperty entry in aliasSpec.EnumerateObject())
+                {
+                    aliases[entry.Name] = entry.Value.GetString()!;
+                }
+            }
+            HashSet<string> hidden = input.TryGetProperty("hiddenFields", out JsonElement hiddenSpec)
+                ? [.. hiddenSpec.EnumerateArray().Select(f => f.GetString()!)]
+                : new HashSet<string>(StringComparer.Ordinal);
+            InvokeOutcome outcome = mapper.Map(
+                response, new FieldVocabulary(knownFields, aliases, hidden));
             object produced = outcome switch
             {
                 InvokeSucceeded succeeded => succeeded.Success,

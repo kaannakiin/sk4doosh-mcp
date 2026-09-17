@@ -1,0 +1,95 @@
+{
+  "kind": "metadata-extraction",
+  "description": "varyant arguments'i taban arguments ile tel adi basina TAM KAYIT degisimiyle birlesir; yalniz name tasiyan kayit argumani endpoint'in kendi sekline sifirlar",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "description": "Lists orders.",
+    "parameters": [
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "arguments": [
+      {
+        "name": "status",
+        "hidden": {
+          "kind": "constant",
+          "value": "open"
+        }
+      }
+    ],
+    "variants": [
+      {
+        "name": "find_open_orders",
+        "description": "Searches orders that are still open."
+      },
+      {
+        "name": "find_all_orders",
+        "description": "Searches orders in any state.",
+        "arguments": [
+          {
+            "name": "status"
+          }
+        ]
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "tools": [
+      {
+        "name": "find_open_orders",
+        "description": "Searches orders that are still open.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true
+        },
+        "auth": {
+          "anonymous": "yes",
+          "policies": [],
+          "imperative": false
+        }
+      },
+      {
+        "name": "find_all_orders",
+        "description": "Searches orders in any state.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true
+        },
+        "auth": {
+          "anonymous": "yes",
+          "policies": [],
+          "imperative": false
+        }
+      }
+    ]
+  }
+}

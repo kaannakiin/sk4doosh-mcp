@@ -1,0 +1,43 @@
+{
+  "kind": "naming",
+  "description": "genisletme katlamadan sonra yapilir: iki route tek operasyona katlanir, sonra iki varyanta acilir",
+  "input": {
+    "endpoints": [
+      {
+        "operationId": "List",
+        "container": "OrdersController",
+        "method": "GET",
+        "route": "/orders",
+        "variants": [
+          {
+            "name": "find_open_orders",
+            "description": "Searches orders that are still open."
+          },
+          {
+            "name": "find_all_orders",
+            "description": "Searches orders in any state."
+          }
+        ]
+      },
+      {
+        "operationId": "List",
+        "container": "OrdersController",
+        "method": "GET",
+        "route": "/legacy/orders",
+        "variants": [
+          {
+            "name": "find_open_orders",
+            "description": "Searches orders that are still open."
+          },
+          {
+            "name": "find_all_orders",
+            "description": "Searches orders in any state."
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "names": ["find_open_orders", "find_all_orders"]
+  }
+}

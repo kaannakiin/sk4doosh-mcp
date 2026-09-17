@@ -9,6 +9,8 @@ import {
   createRequestTemplate,
   createToolDefinition,
   createToolNames,
+  expandToolProductions,
+  routePlaceholderNames,
   evaluateVisibility,
   isSelected,
   mapInvokeResult,
@@ -17,7 +19,9 @@ import {
   SkMcpCatalogError,
   SkMcpTemplateError,
   ToolIndex,
+  type ArgumentFill,
   type BackendResponse,
+  type CurationRelief,
   type EndpointDescriptor,
   type Fixture,
   type ParameterBinding,
@@ -65,6 +69,16 @@ const unusedAuth: EndpointDescriptor["auth"] = {
 function templateFrom(
   spec: FixtureOf<"argument-mapping">["input"]["template"],
 ): RequestTemplate {
+  const bodyAliases = new Map<string, string>();
+  const bodyFills = new Map<string, ArgumentFill>();
+  for (const record of spec.body?.curation ?? []) {
+    if (record.as !== undefined) {
+      bodyAliases.set(record.as, record.name);
+    }
+    if (record.fill !== undefined) {
+      bodyFills.set(record.name, record.fill as ArgumentFill);
+    }
+  }
   return createRequestTemplate({
     method: spec.method,
     route: spec.route,
@@ -79,6 +93,8 @@ function templateFrom(
         kind: p.type,
         isArray,
         ...(arraySeparator === undefined ? {} : { arraySeparator }),
+        ...(p.as === undefined ? {} : { argument: p.as }),
+        ...(p.fill === undefined ? {} : { fill: p.fill as ArgumentFill }),
       };
     }),
     ...(spec.bodyRoot === undefined
@@ -86,8 +102,15 @@ function templateFrom(
           bodyProperties: spec.body?.properties,
           bodyAllowsAdditionalProperties:
             spec.body?.additionalProperties === true,
+          ...(bodyAliases.size === 0 ? {} : { bodyAliases }),
+          ...(bodyFills.size === 0 ? {} : { bodyFills }),
         }
-      : { bodyRoot: spec.bodyRoot }),
+      : {
+          bodyRoot: spec.bodyRoot,
+          ...(spec.rootFill === undefined
+            ? {}
+            : { rootFill: spec.rootFill as ArgumentFill }),
+        }),
   });
 }
 
@@ -98,14 +121,18 @@ describe("conformance: argument-mapping", () => {
       if ("error" in fixture.expected) {
         const expected = fixture.expected.error;
         try {
-          compose(template, fixture.input.arguments);
+          compose(template, fixture.input.arguments, fixture.input.deferred);
           expect.unreachable(`expected error ${expected}`);
         } catch (error) {
           expect(error).toBeInstanceOf(SkMcpArgumentError);
           expect((error as SkMcpArgumentError).code).toBe(expected);
         }
       } else {
-        const composed = compose(template, fixture.input.arguments);
+        const composed = compose(
+          template,
+          fixture.input.arguments,
+          fixture.input.deferred,
+        );
         expect(composed.pathAndQuery).toBe(fixture.expected.pathAndQuery);
         expect(composed.headers).toEqual(fixture.expected.headers ?? {});
         expect(composed.bodyJson).toEqual(fixture.expected.bodyJson);
@@ -130,6 +157,7 @@ describe("conformance: naming", () => {
             ...(e.container === undefined ? {} : { container: e.container }),
             ...(declared === undefined ? {} : { containerPrefix: declared }),
             ...(e.toolName === undefined ? {} : { toolName: e.toolName }),
+            ...(e.variants === undefined ? {} : { variants: e.variants }),
             method: e.method,
             route: e.route,
             auth: unusedAuth,
@@ -178,17 +206,56 @@ function templateErrorCode(run: () => unknown): string {
   return expect.unreachable("expected a template error");
 }
 
+function reliefOf(
+  fixture: FixtureOf<"metadata-extraction">,
+): CurationRelief | undefined {
+  if (fixture.foldedRoutes === undefined) {
+    return undefined;
+  }
+  const foldedNames = new Set<string>();
+  for (const route of fixture.foldedRoutes) {
+    for (const name of routePlaceholderNames(route)) {
+      foldedNames.add(name);
+    }
+  }
+  for (const name of routePlaceholderNames(fixture.input.route)) {
+    foldedNames.delete(name);
+  }
+  return { foldedNames, onUnused: () => {} };
+}
+
+function toolsOf(
+  endpoint: EndpointDescriptor,
+  relief: CurationRelief | undefined,
+): ToolDefinition[] {
+  return expandToolProductions([endpoint], (e) => e).map((production) =>
+    createToolDefinition(
+      production.endpoint,
+      undefined,
+      production.variant,
+      relief,
+    ),
+  );
+}
+
 describe("conformance: metadata-extraction", () => {
   for (const [file, fixture] of fixturesOf("metadata-extraction")) {
     it(file, () => {
       const expected = fixture.expected;
+      const relief = reliefOf(fixture);
       if ("error" in expected) {
-        expect(
-          templateErrorCode(() => createToolDefinition(fixture.input)),
-        ).toBe(expected.error);
+        expect(templateErrorCode(() => toolsOf(fixture.input, relief))).toBe(
+          expected.error,
+        );
         return;
       }
-      expect(createToolDefinition(fixture.input)).toEqual(expected);
+      if ("tools" in expected) {
+        expect(toolsOf(fixture.input, relief)).toEqual(expected.tools);
+        return;
+      }
+      expect(
+        createToolDefinition(fixture.input, undefined, undefined, relief),
+      ).toEqual(expected);
     });
   }
 });
@@ -228,10 +295,17 @@ describe("conformance: error-mapping", () => {
   for (const [file, fixture] of fixturesOf("error-mapping")) {
     it(file, () => {
       const response = backendResponseFrom(fixture.input);
-      const options =
-        fixture.input.knownFields === undefined
+      const options = {
+        ...(fixture.input.knownFields === undefined
           ? {}
-          : { knownFields: fixture.input.knownFields };
+          : { knownFields: fixture.input.knownFields }),
+        ...(fixture.input.fieldAliases === undefined
+          ? {}
+          : { fieldAliases: fixture.input.fieldAliases }),
+        ...(fixture.input.hiddenFields === undefined
+          ? {}
+          : { hiddenFields: fixture.input.hiddenFields }),
+      };
       expect(mapInvokeResult(response, options)).toEqual(fixture.expected);
     });
   }
