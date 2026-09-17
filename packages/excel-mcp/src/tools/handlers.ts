@@ -1,37 +1,37 @@
 import { json, measureJson } from "@sk-mcp/file-core";
-import { limits, modePolicy } from "./platform/limits.js";
+import { limits, modePolicy } from "../platform/limits.js";
 import {
   listWorkbooks,
   resolveWorkbookPath,
   type WorkbookRoot,
-} from "./platform/paths.js";
-import { findInSheet, readSheet } from "./grid/read-sheet.js";
-import { collectConditionalFormats } from "./metadata/conditional-formats.js";
-import { collectImages } from "./metadata/images.js";
-import { collectTables } from "./metadata/tables.js";
-import { collectValidations } from "./metadata/validations.js";
-import { selectSheetName } from "./format/sheetjs-workbook.js";
+} from "../platform/paths.js";
+import { findInSheet, readSheet } from "../grid/read-sheet.js";
+import { collectConditionalFormats } from "../metadata/conditional-formats.js";
+import { collectImages } from "../metadata/images.js";
+import { collectTables } from "../metadata/tables.js";
+import { collectValidations } from "../metadata/validations.js";
+import { selectSheetName } from "../format/sheetjs-workbook.js";
 import {
   createDocumentCache,
   csvReportOf,
   describeDocument,
   documentSheet,
   sheetSource,
-} from "./format/document.js";
-import { aggregateSheet } from "./grid/aggregate.js";
-import type { CsvReport } from "./format/csv.js";
-import type { DelimiterName, EncodingName } from "./platform/delimited.js";
-import { inheritCursorOptions, decodeCursor } from "./grid/cursor.js";
-import type { ToolHandlers } from "./tools-definitions.js";
-import { guard } from "./tools-guard.js";
+} from "../format/document.js";
+import { aggregateSheet } from "../grid/aggregate.js";
+import type { CsvReport } from "../format/csv.js";
+import type { DelimiterName, EncodingName } from "../platform/delimited.js";
+import { inheritCursorOptions, decodeCursor } from "../grid/cursor.js";
+import type { ToolHandlers } from "./definitions.js";
+import { guard } from "./guard.js";
 import {
   assertHeaderScan,
   assertPictureKind,
   createXlsxOpener,
   rejectForCsv,
-} from "./tools-gate.js";
-import { resolveHeaderRow } from "./tools-coerce.js";
-import { modeEnvelopeBytes, withCsv, withMode } from "./tools-envelope.js";
+} from "./gate.js";
+import { resolveHeaderRow } from "./coerce.js";
+import { modeEnvelopeBytes, withCsv, withMode } from "./envelope.js";
 
 export function createHandlers(root: WorkbookRoot): ToolHandlers {
   const cache = createDocumentCache(root.real);

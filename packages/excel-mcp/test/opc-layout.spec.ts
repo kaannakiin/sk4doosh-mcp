@@ -6,7 +6,8 @@ import {
   type SandboxedPath,
 } from "../src/platform/paths.js";
 import { readFile } from "node:fs/promises";
-import { createHandlers, type ToolHandlers } from "../src/tools.js";
+import type { ToolHandlers } from "../src/tools/definitions.js";
+import { createHandlers } from "../src/tools/handlers.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {
   const first = result.content[0];

@@ -9,11 +9,11 @@ import { beforeAll, describe, expect, inject, it } from "vitest";
 import { createWorkbookRoot, type WorkbookRoot } from "../src/platform/paths.js";
 import { createExcelMcpServer } from "../src/server.js";
 import {
-  createHandlers,
   toolDefinitions,
   toolNames,
   type ToolHandlers,
-} from "../src/tools.js";
+} from "../src/tools/definitions.js";
+import { createHandlers } from "../src/tools/handlers.js";
 
 const manifest = createRequire(import.meta.url)("../package.json") as {
   version: string;

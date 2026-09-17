@@ -1,11 +1,11 @@
-import { documentSheet, type LoadedDocument } from "./format/document.js";
+import { documentSheet, type LoadedDocument } from "../format/document.js";
 import {
   declaredHeaderRow,
   scanHeaderRow,
   type HeaderRowSource,
-} from "./grid/header.js";
-import { formatRange, resolveRange } from "./grid/range.js";
-import { requireSheetBounds } from "./grid/sheet.js";
+} from "../grid/header.js";
+import { formatRange, resolveRange } from "../grid/range.js";
+import { requireSheetBounds } from "../grid/sheet.js";
 
 export function resolveHeaderRow(
   loaded: LoadedDocument,

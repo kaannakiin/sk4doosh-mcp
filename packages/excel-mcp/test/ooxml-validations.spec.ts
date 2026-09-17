@@ -7,7 +7,7 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/platform/paths.js";
-import { createHandlers } from "../src/tools.js";
+import { createHandlers } from "../src/tools/handlers.js";
 import { collectValidations } from "../src/metadata/validations.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {

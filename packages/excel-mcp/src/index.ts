@@ -146,8 +146,9 @@ export type {
   ReadSheetResult,
 } from "./grid/read-sheet.js";
 export { closeRegexWorkers, withRegex } from "./platform/regex.js";
-export { createHandlers, toolDefinitions, toolNames } from "./tools.js";
-export type { ToolHandlers, ToolName } from "./tools.js";
+export { toolDefinitions, toolNames } from "./tools/definitions.js";
+export type { ToolHandlers, ToolName } from "./tools/definitions.js";
+export { createHandlers } from "./tools/handlers.js";
 export { createExcelMcpServer } from "./server.js";
 export { metadataLimitations } from "./metadata/support.js";
 export type { MetadataLimitation } from "./metadata/support.js";

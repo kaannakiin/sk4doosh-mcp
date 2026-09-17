@@ -1,12 +1,12 @@
-import { SkMcpExcelError } from "./platform/errors.js";
-import { formats } from "./platform/formats.js";
-import { resolveWorkbookPath, type WorkbookRoot } from "./platform/paths.js";
+import { SkMcpExcelError } from "../platform/errors.js";
+import { formats } from "../platform/formats.js";
+import { resolveWorkbookPath, type WorkbookRoot } from "../platform/paths.js";
 import type {
   DocumentCache,
   LoadedDocument,
   LoadedWorkbook,
-} from "./format/document.js";
-import type { ToolName } from "./tools-definitions.js";
+} from "../format/document.js";
+import type { ToolName } from "./definitions.js";
 
 export type XlsxOpener = (
   path: string,

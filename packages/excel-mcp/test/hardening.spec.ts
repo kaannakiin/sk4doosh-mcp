@@ -18,7 +18,8 @@ import {
   type WorkbookRoot,
 } from "../src/platform/paths.js";
 import { createDocumentCache, sheetSource } from "../src/format/document.js";
-import { createHandlers, type ToolHandlers } from "../src/tools.js";
+import type { ToolHandlers } from "../src/tools/definitions.js";
+import { createHandlers } from "../src/tools/handlers.js";
 import { parseCsv } from "../src/format/csv.js";
 import { limits } from "../src/platform/limits.js";
 import { decodeCursor } from "../src/grid/cursor.js";
