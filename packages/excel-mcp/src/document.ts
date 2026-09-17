@@ -28,8 +28,8 @@ import {
   sheetjsSheetView,
   type SheetJsWorkbook,
 } from "./sheetjs-workbook.js";
-import type { DocumentMeta, WorkbookDescription } from "./types.js";
-import { declaredTablesOf } from "./tables.js";
+import type { DocumentMeta, WorkbookDescription } from "./metadata/description.js";
+import { declaredTablesOf } from "./metadata/tables.js";
 
 interface XlsxBody {
   readonly format: "xlsx";

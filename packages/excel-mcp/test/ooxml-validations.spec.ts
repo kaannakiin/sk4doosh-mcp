@@ -8,7 +8,7 @@ import {
   type SandboxedPath,
 } from "../src/platform/paths.js";
 import { createHandlers } from "../src/tools.js";
-import { collectValidations } from "../src/validations.js";
+import { collectValidations } from "../src/metadata/validations.js";
 
 function payload(result: CallToolResult): Record<string, unknown> {
   const first = result.content[0];

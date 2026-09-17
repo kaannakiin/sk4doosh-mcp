@@ -63,12 +63,12 @@ export type {
 export {
   collectTables,
   declaredTablesOf,
-} from "./tables.js";
+} from "./metadata/tables.js";
 export type {
   DeclaredTableDetail,
   TableColumnDetail,
   TableReport,
-} from "./tables.js";
+} from "./metadata/tables.js";
 export { requireSheetBounds } from "./grid/sheet.js";
 export type {
   BoundedSheet,
@@ -125,20 +125,20 @@ export type {
   DocumentMeta,
   SheetSummary,
   WorkbookDescription,
-} from "./types.js";
+} from "./metadata/description.js";
 export {
   collectConditionalFormats,
   conditionalFormatRuleCountOf,
-} from "./conditional-formats.js";
+} from "./metadata/conditional-formats.js";
 export type {
   ConditionalFormatReport,
   ConditionalFormatRule,
   ConditionalFormatThreshold,
-} from "./conditional-formats.js";
-export { collectImages } from "./images.js";
-export type { ImageReport, MediaEntry, SheetImage } from "./images.js";
-export { collectValidations, compressAddresses } from "./validations.js";
-export type { ValidationReport, ValidationRule } from "./validations.js";
+} from "./metadata/conditional-formats.js";
+export { collectImages } from "./metadata/images.js";
+export type { ImageReport, MediaEntry, SheetImage } from "./metadata/images.js";
+export { collectValidations, compressAddresses } from "./metadata/validations.js";
+export type { ValidationReport, ValidationRule } from "./metadata/validations.js";
 export { findInSheet, readSheet } from "./grid/read-sheet.js";
 export type {
   FindResult,
@@ -149,5 +149,5 @@ export { closeRegexWorkers, withRegex } from "./platform/regex.js";
 export { createHandlers, toolDefinitions, toolNames } from "./tools.js";
 export type { ToolHandlers, ToolName } from "./tools.js";
 export { createExcelMcpServer } from "./server.js";
-export { metadataLimitations } from "./metadata-support.js";
-export type { MetadataLimitation } from "./metadata-support.js";
+export { metadataLimitations } from "./metadata/support.js";
+export type { MetadataLimitation } from "./metadata/support.js";

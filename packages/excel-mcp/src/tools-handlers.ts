@@ -6,10 +6,10 @@ import {
   type WorkbookRoot,
 } from "./platform/paths.js";
 import { findInSheet, readSheet } from "./grid/read-sheet.js";
-import { collectConditionalFormats } from "./conditional-formats.js";
-import { collectImages } from "./images.js";
-import { collectTables } from "./tables.js";
-import { collectValidations } from "./validations.js";
+import { collectConditionalFormats } from "./metadata/conditional-formats.js";
+import { collectImages } from "./metadata/images.js";
+import { collectTables } from "./metadata/tables.js";
+import { collectValidations } from "./metadata/validations.js";
 import { selectSheetName } from "./sheetjs-workbook.js";
 import {
   createDocumentCache,

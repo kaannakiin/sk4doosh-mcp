@@ -1,5 +1,5 @@
 import { describe, expect, inject, it } from "vitest";
-import { collectConditionalFormats } from "../src/conditional-formats.js";
+import { collectConditionalFormats } from "../src/metadata/conditional-formats.js";
 import { loadDocument, type LoadedWorkbook } from "../src/document.js";
 import {
   createWorkbookRoot,

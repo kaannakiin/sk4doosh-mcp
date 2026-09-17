@@ -1,7 +1,5 @@
 export interface MetadataLimitation {
-  readonly code:
-    | "formula_cf_thresholds"
-    | "sheet_local_defined_names";
+  readonly code: "formula_cf_thresholds" | "sheet_local_defined_names";
   readonly message: string;
   readonly followUp: string;
 }

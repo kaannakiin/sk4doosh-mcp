@@ -1,5 +1,8 @@
 import type { OoxmlErrorCode, OoxmlErrorFactory } from "@sk-mcp/ooxml-core";
-import { SkMcpExcelError, type SkMcpExcelErrorCode } from "../platform/errors.js";
+import {
+  SkMcpExcelError,
+  type SkMcpExcelErrorCode,
+} from "../../platform/errors.js";
 
 interface Mapping {
   readonly code: SkMcpExcelErrorCode;

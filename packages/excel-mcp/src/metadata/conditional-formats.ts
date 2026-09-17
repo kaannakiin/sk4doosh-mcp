@@ -1,14 +1,11 @@
 import { truncateWellFormed } from "@sk-mcp/file-core";
-import { limits } from "./platform/limits.js";
+import { limits } from "../platform/limits.js";
 import type {
   OoxmlConditionalBlock,
   OoxmlConditionalRule,
   OoxmlThreshold,
-} from "./ooxml/conditional-formats.js";
-import {
-  metadataLimitations,
-  type MetadataLimitation,
-} from "./metadata-support.js";
+} from "./spreadsheetml/conditional-formats.js";
+import { metadataLimitations, type MetadataLimitation } from "./support.js";
 
 export interface ConditionalFormatThreshold {
   readonly type: string;

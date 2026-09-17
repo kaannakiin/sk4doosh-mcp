@@ -5,7 +5,7 @@ import { SkMcpExcelError } from "./platform/errors.js";
 import { limits } from "./platform/limits.js";
 import { columnToLetters, type GridBounds } from "./grid/range.js";
 import type { RowView, SheetView } from "./grid/sheet.js";
-import type { DocumentMeta, WorkbookDescription } from "./types.js";
+import type { DocumentMeta, WorkbookDescription } from "./metadata/description.js";
 import {
   delimiterNames,
   type CsvOptions,

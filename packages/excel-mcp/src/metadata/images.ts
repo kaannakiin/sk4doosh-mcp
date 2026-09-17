@@ -1,7 +1,7 @@
-import { limits } from "./platform/limits.js";
-import type { MetadataLimitation } from "./metadata-support.js";
-import type { AnchorCell, OoxmlImage } from "./ooxml/images.js";
-import { formatRectangle } from "./grid/range.js";
+import { limits } from "../platform/limits.js";
+import type { MetadataLimitation } from "./support.js";
+import type { AnchorCell, OoxmlImage } from "./spreadsheetml/images.js";
+import { formatRectangle } from "../grid/range.js";
 
 export interface SheetImage {
   readonly imageId: number;

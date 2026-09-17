@@ -1,6 +1,6 @@
 import { describe, expect, inject, it } from "vitest";
 import { loadDocument, type LoadedWorkbook } from "../src/document.js";
-import { collectImages } from "../src/images.js";
+import { collectImages } from "../src/metadata/images.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,

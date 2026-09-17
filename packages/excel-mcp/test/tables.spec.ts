@@ -5,7 +5,7 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/platform/paths.js";
-import { collectTables } from "../src/tables.js";
+import { collectTables } from "../src/metadata/tables.js";
 
 async function pathTo(file: string): Promise<SandboxedPath> {
   const fixtures = inject("fixtures");

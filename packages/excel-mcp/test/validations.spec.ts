@@ -4,7 +4,7 @@ import {
   resolveWorkbookPath,
   type SandboxedPath,
 } from "../src/platform/paths.js";
-import { collectValidations, compressAddresses } from "../src/validations.js";
+import { collectValidations, compressAddresses } from "../src/metadata/validations.js";
 import {
   loadDocument,
   type LoadedWorkbook,

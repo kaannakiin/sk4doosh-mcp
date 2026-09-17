@@ -1,7 +1,7 @@
 import { describe, expect, inject, it } from "vitest";
 import ExcelJS from "exceljs";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { collectImages } from "../src/images.js";
+import { collectImages } from "../src/metadata/images.js";
 import { createWorkbookRoot } from "../src/platform/paths.js";
 import { parseSheetJs } from "../src/sheetjs-workbook.js";
 import { createHandlers } from "../src/tools.js";

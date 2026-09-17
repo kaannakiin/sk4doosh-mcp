@@ -1,4 +1,4 @@
-import type { MetadataLimitation } from "./metadata-support.js";
+import type { MetadataLimitation } from "./support.js";
 
 export interface DocumentMeta {
   readonly filePath: string;

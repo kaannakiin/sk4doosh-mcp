@@ -1,27 +1,27 @@
 import { canonical } from "@sk-mcp/file-core";
 import * as XLSX from "@e965/xlsx";
-import { conditionalFormatRuleCountOf } from "./conditional-formats.js";
-import type { MediaEntry } from "./images.js";
+import { conditionalFormatRuleCountOf } from "./metadata/conditional-formats.js";
+import type { MediaEntry } from "./metadata/images.js";
 import { SkMcpExcelError } from "./platform/errors.js";
-import { openPackage } from "./ooxml/package.js";
-import { zipSource } from "./ooxml/reader.js";
+import { openPackage } from "./metadata/spreadsheetml/package.js";
+import { zipSource } from "./metadata/spreadsheetml/reader.js";
 import {
   readConditionalFormats,
   type OoxmlConditionalBlock,
-} from "./ooxml/conditional-formats.js";
+} from "./metadata/spreadsheetml/conditional-formats.js";
 import {
   readFrozenPanes,
   readImages,
   type OoxmlImage,
   type OoxmlPanes,
-} from "./ooxml/images.js";
-import { readTables, type OoxmlTable } from "./ooxml/tables.js";
+} from "./metadata/spreadsheetml/images.js";
+import { readTables, type OoxmlTable } from "./metadata/spreadsheetml/tables.js";
 import {
   readValidations,
   type OoxmlValidations,
-} from "./ooxml/validations.js";
+} from "./metadata/spreadsheetml/validations.js";
 import { limits } from "./platform/limits.js";
-import { metadataLimitations } from "./metadata-support.js";
+import { metadataLimitations } from "./metadata/support.js";
 import {
   formatCellRef,
   formatRange,
@@ -34,7 +34,7 @@ import type {
   DocumentMeta,
   SheetSummary,
   WorkbookDescription,
-} from "./types.js";
+} from "./metadata/description.js";
 
 export interface SheetJsWorkbook {
   readonly book: XLSX.WorkBook;
