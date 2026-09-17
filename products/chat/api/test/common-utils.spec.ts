@@ -4,10 +4,7 @@ import {
   deriveSha256Key,
   sha256Bytes,
 } from "../src/common/utils/crypto.utils.ts";
-import {
-  errorMessage,
-  errorName,
-} from "../src/common/utils/error.utils.ts";
+import { errorMessage, errorName } from "../src/common/utils/error.utils.ts";
 import {
   isRecord,
   property,

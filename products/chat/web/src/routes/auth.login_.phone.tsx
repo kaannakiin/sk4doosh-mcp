@@ -79,7 +79,12 @@ function LoginPhoneRoute() {
         </Alert>
       )}
 
-      <form onSubmit={submit} noValidate aria-busy={isSubmitting} className="mt-8">
+      <form
+        onSubmit={submit}
+        noValidate
+        aria-busy={isSubmitting}
+        className="mt-8"
+      >
         <PhoneField control={form.control} name="phoneE164" />
 
         <Button

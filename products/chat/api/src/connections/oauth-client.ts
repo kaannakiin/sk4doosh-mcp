@@ -29,10 +29,7 @@ export interface OauthTransport {
 }
 
 export type MetadataFailure =
-  | "blocked_address"
-  | "unreachable"
-  | "malformed"
-  | "identity_mismatch";
+  "blocked_address" | "unreachable" | "malformed" | "identity_mismatch";
 
 export type MetadataOutcome<T> =
   | { readonly kind: "ok"; readonly value: T }

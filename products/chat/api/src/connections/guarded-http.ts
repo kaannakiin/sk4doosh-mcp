@@ -7,10 +7,7 @@ import {
   type EndpointPolicy,
 } from "@chat/contracts/integration/discovery";
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
-import {
-  request as httpRequest,
-  type IncomingHttpHeaders,
-} from "node:http";
+import { request as httpRequest, type IncomingHttpHeaders } from "node:http";
 import { request as httpsRequest } from "node:https";
 import type { LookupFunction } from "node:net";
 

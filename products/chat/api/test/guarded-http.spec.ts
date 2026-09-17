@@ -28,7 +28,9 @@ describe("publicOnlyLookup", () => {
   });
 
   it("allows the same name once the caller states the policy", async () => {
-    const { error, value } = await resolve("localhost", { allowLoopback: true });
+    const { error, value } = await resolve("localhost", {
+      allowLoopback: true,
+    });
 
     expect(error).toBeNull();
     expect(value).toMatch(/^(127\.0\.0\.1|::1)$/u);
@@ -49,10 +51,9 @@ describe("publicOnlyLookup", () => {
   });
 
   it("reports a name that does not resolve as an error rather than allowing it", async () => {
-    const { error } = await resolve(
-      "no-such-host.invalid",
-      { allowLoopback: true },
-    );
+    const { error } = await resolve("no-such-host.invalid", {
+      allowLoopback: true,
+    });
 
     expect(error).not.toBeNull();
   });

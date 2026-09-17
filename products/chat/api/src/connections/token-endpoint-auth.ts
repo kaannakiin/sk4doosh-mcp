@@ -8,9 +8,7 @@
  * table is one this process can act on.
  */
 export type TokenEndpointAuthMethod =
-  | "client_secret_basic"
-  | "client_secret_post"
-  | "none";
+  "client_secret_basic" | "client_secret_post" | "none";
 
 const SUPPORTED: Record<TokenEndpointAuthMethod, true> = {
   client_secret_basic: true,

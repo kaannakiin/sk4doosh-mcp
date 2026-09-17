@@ -4,7 +4,11 @@ export {
   resolveDocumentPath,
   listDocuments,
 } from "./host/platform/paths.js";
-export type { DocumentEntry, DocumentListing, DocumentRoot } from "./host/platform/paths.js";
+export type {
+  DocumentEntry,
+  DocumentListing,
+  DocumentRoot,
+} from "./host/platform/paths.js";
 export { formats, type DocumentFormat } from "./host/platform/formats.js";
 export { limits, workerCapacityFor } from "./host/platform/limits.js";
 export { createGate, type Gate } from "./host/platform/gate.js";

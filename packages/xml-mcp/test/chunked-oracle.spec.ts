@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
 import { XmlDocument, XmlElement } from "libxml2-wasm";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import {
-  isRefusal,
-  scanRecordBoundaries,
-} from "../src/host/chunk/boundary.js";
+import { isRefusal, scanRecordBoundaries } from "../src/host/chunk/boundary.js";
 import type { BoundaryScan } from "../src/model/scan.js";
 import { wrapRecord } from "../src/host/chunk/fragment.js";
 import { HARDENED } from "../src/engine/policy.js";

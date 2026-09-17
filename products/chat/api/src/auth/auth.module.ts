@@ -18,10 +18,7 @@ import { AuthRepository } from "./auth.repository.ts";
 import { AuthService } from "./auth.service.ts";
 import { OAuthRepository } from "./oauth.repository.ts";
 import { NoStoreInterceptor } from "./no-store.interceptor.ts";
-import {
-  LoggingOtpDelivery,
-  OTP_DELIVERY,
-} from "./otp-delivery.ts";
+import { LoggingOtpDelivery, OTP_DELIVERY } from "./otp-delivery.ts";
 import { OAuthService } from "./oauth.service.ts";
 import { PasswordService } from "./password.service.ts";
 

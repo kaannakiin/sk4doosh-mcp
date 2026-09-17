@@ -56,7 +56,9 @@ export function exposedToolNameFor(
 
   const suffix = digestOf(remoteName, SUFFIX_LENGTH);
 
-  return segment === "" ? `${handle}_${suffix}` : `${handle}_${segment}_${suffix}`;
+  return segment === ""
+    ? `${handle}_${suffix}`
+    : `${handle}_${segment}_${suffix}`;
 }
 
 /**
@@ -99,7 +101,10 @@ export function resolveToolNames<T extends NamedRemoteTool>(
   const conflicts: T[] = [];
 
   for (const entry of tools) {
-    const exposed = exposedToolNameFor(entry.integrationPublicId, entry.remoteName);
+    const exposed = exposedToolNameFor(
+      entry.integrationPublicId,
+      entry.remoteName,
+    );
     if (byExposedName.has(exposed)) {
       conflicts.push(entry);
       continue;

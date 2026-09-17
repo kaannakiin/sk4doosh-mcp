@@ -74,10 +74,7 @@ export class ToolApprovalService {
       : "unknown_tool";
   }
 
-  async forget(
-    userId: UserId,
-    exposedName: string,
-  ): Promise<ApprovalChange> {
+  async forget(userId: UserId, exposedName: string): Promise<ApprovalChange> {
     if (isChatToolName(exposedName)) {
       return (await this.approvals.forget(userId, exposedName))
         ? "changed"

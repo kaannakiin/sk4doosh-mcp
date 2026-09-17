@@ -88,9 +88,7 @@ describe("decideToolApproval", () => {
     expect(
       decideToolApproval({
         ...base,
-        grants: [
-          { digest: DIGEST, expiresAt: new Date(NOW.getTime() - 1000) },
-        ],
+        grants: [{ digest: DIGEST, expiresAt: new Date(NOW.getTime() - 1000) }],
       }),
     ).toEqual({ outcome: "ask", reason: "grant_expired" });
   });
@@ -99,9 +97,7 @@ describe("decideToolApproval", () => {
     expect(
       decideToolApproval({
         ...base,
-        grants: [
-          { digest: DIGEST, expiresAt: new Date(NOW.getTime() + 1000) },
-        ],
+        grants: [{ digest: DIGEST, expiresAt: new Date(NOW.getTime() + 1000) }],
       }),
     ).toEqual({ outcome: "allow", reason: "remembered" });
   });

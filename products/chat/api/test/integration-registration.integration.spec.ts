@@ -190,8 +190,10 @@ withDatabase("IntegrationRegistrationService", () => {
 
   it("registers a server that asks for no credential in one step", async () => {
     stub = await startStub(
-      mcpStub({ open: true, tools: [{ name: "list_sections" }, { name: "get_docs" }] })
-        .handler,
+      mcpStub({
+        open: true,
+        tools: [{ name: "list_sections" }, { name: "get_docs" }],
+      }).handler,
     );
     const userId = await owner();
 
@@ -216,7 +218,9 @@ withDatabase("IntegrationRegistrationService", () => {
    * accepts.
    */
   it("opens a connection carrying no token at all", async () => {
-    stub = await startStub(mcpStub({ open: true, tools: [{ name: "t" }] }).handler);
+    stub = await startStub(
+      mcpStub({ open: true, tools: [{ name: "t" }] }).handler,
+    );
     const userId = await owner();
     const created = await service.register(userId, {
       mcpUrl: `${stub.origin}/mcp`,
@@ -256,7 +260,11 @@ withDatabase("IntegrationRegistrationService", () => {
         const frame = JSON.parse(call.body) as { method: string };
 
         return frame.method === "initialize"
-          ? { status: 200, headers: { "content-type": "application/json" }, body: "{}" }
+          ? {
+              status: 200,
+              headers: { "content-type": "application/json" },
+              body: "{}",
+            }
           : {
               status: 401,
               headers: {
@@ -279,7 +287,9 @@ withDatabase("IntegrationRegistrationService", () => {
   });
 
   it("refuses a second add of an open server", async () => {
-    stub = await startStub(mcpStub({ open: true, tools: [{ name: "t" }] }).handler);
+    stub = await startStub(
+      mcpStub({ open: true, tools: [{ name: "t" }] }).handler,
+    );
     const userId = await owner();
     await service.register(userId, { mcpUrl: `${stub.origin}/mcp` });
 
@@ -344,11 +354,10 @@ withDatabase("IntegrationRegistrationService", () => {
       failure: "integration_duplicate",
     });
 
-    const authorization =
-      await db.client.integrationAuthorization.findFirst({
-        where: { integration: { publicId } },
-        select: { clientId: true },
-      });
+    const authorization = await db.client.integrationAuthorization.findFirst({
+      where: { integration: { publicId } },
+      select: { clientId: true },
+    });
 
     expect(authorization?.clientId).toBe("cid-stub");
     await expect(ownedCount(userId)).resolves.toBe(1);
@@ -408,8 +417,7 @@ withDatabase("IntegrationRegistrationService", () => {
       mcpUrl: `${stub.origin}/mcp`,
     });
 
-    const id =
-      created.kind === "created" ? created.integration.id : "missing";
+    const id = created.kind === "created" ? created.integration.id : "missing";
 
     await expect(integrations.removeOwned(theirs, id)).resolves.toBe(false);
     await expect(integrations.removeOwned(mine, id)).resolves.toBe(true);

@@ -65,10 +65,12 @@ describe("resourceMetadataUrlFrom", () => {
 
 describe("authorizationServerMetadataUrls", () => {
   it("tries the oauth document before the openid one", () => {
-    expect(authorizationServerMetadataUrls("https://partner.example/")).toEqual([
-      "https://partner.example/.well-known/oauth-authorization-server",
-      "https://partner.example/.well-known/openid-configuration",
-    ]);
+    expect(authorizationServerMetadataUrls("https://partner.example/")).toEqual(
+      [
+        "https://partner.example/.well-known/oauth-authorization-server",
+        "https://partner.example/.well-known/openid-configuration",
+      ],
+    );
   });
 
   it("carries an issuer path as a suffix and adds the openid path form", () => {
@@ -102,7 +104,10 @@ describe("verifyAuthorizationServer", () => {
   });
 
   it("accepts a server whose issuer matches where the document came from", () => {
-    const result = verifyAuthorizationServer("https://partner.example/", metadata);
+    const result = verifyAuthorizationServer(
+      "https://partner.example/",
+      metadata,
+    );
 
     expect(result).toEqual({
       ok: true,

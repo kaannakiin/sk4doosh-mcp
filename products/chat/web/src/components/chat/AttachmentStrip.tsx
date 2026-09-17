@@ -58,7 +58,8 @@ export function AttachmentStrip({
    * would leave the visitor watching nothing happen.
    */
   const foldable = files.length > COLLAPSED_COUNT + 1;
-  const visible = foldable && !showAll ? files.slice(0, COLLAPSED_COUNT) : files;
+  const visible =
+    foldable && !showAll ? files.slice(0, COLLAPSED_COUNT) : files;
   const hidden = files.length - visible.length;
 
   /**
@@ -134,11 +135,7 @@ export function AttachmentStrip({
               </UnstyledButton>
 
               {removable ? (
-                <RemoveChip
-                  sessionId={sessionId}
-                  locale={locale}
-                  file={file}
-                />
+                <RemoveChip sessionId={sessionId} locale={locale} file={file} />
               ) : null}
             </li>
           );

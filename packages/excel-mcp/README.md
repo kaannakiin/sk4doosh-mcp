@@ -92,12 +92,12 @@ Chart, pivot table ve sparkline **hiçbir formatta** okunamaz — bu bir CSV kı
 
 Okunanlar ve nereden:
 
-| tool | kaynak |
-| --- | --- |
-| `get_data_validations` | worksheet part, `dataValidations/dataValidation`. Aralıklar `sqref`'ten olduğu gibi alınır, hücre hücre açılmaz — tüm sütunu kaplayan kural da tam sayılır, `dataValidationRuleCountExact` her zaman `true` |
-| `get_tables` | worksheet `tableParts` → sheet rels → `xl/tables/*.xml`. `filterButton` `colId` ile eşlenir, konumla değil |
-| `get_conditional_formats` | worksheet `conditionalFormatting/cfRule`. `containsText` ailesi tip + operatöre ayrıştırılır. `cfvo type="formula"` eşiğinin ifadesi `formula` alanında korunur |
-| `get_images` | worksheet `drawing` → sheet rels → `xl/drawings/*.xml` → `a:blip r:embed` → drawing rels → `xl/media/*`. `twoCell`, `oneCell` ve `absolute` anchor'ların üçü de raporlanır; absolute anchor'ın hücre aralığı yoktur, uydurmak yerine `range` alanı düşer |
+| tool                      | kaynak                                                                                                                                                                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_data_validations`    | worksheet part, `dataValidations/dataValidation`. Aralıklar `sqref`'ten olduğu gibi alınır, hücre hücre açılmaz — tüm sütunu kaplayan kural da tam sayılır, `dataValidationRuleCountExact` her zaman `true`                                              |
+| `get_tables`              | worksheet `tableParts` → sheet rels → `xl/tables/*.xml`. `filterButton` `colId` ile eşlenir, konumla değil                                                                                                                                               |
+| `get_conditional_formats` | worksheet `conditionalFormatting/cfRule`. `containsText` ailesi tip + operatöre ayrıştırılır. `cfvo type="formula"` eşiğinin ifadesi `formula` alanında korunur                                                                                          |
+| `get_images`              | worksheet `drawing` → sheet rels → `xl/drawings/*.xml` → `a:blip r:embed` → drawing rels → `xl/media/*`. `twoCell`, `oneCell` ve `absolute` anchor'ların üçü de raporlanır; absolute anchor'ın hücre aralığı yoktur, uydurmak yerine `range` alanı düşer |
 
 Chart, pivot table ve sparkline hâlâ okunmaz — `capabilities` bloğu üçünü de her formatta `false` bildirir ve `get_images` bu türler açıkça istendiğinde `unsupported_object_kind` döner.
 

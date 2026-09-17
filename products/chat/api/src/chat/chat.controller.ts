@@ -172,7 +172,10 @@ export class ChatController {
     @Param("sessionId", { schema: sessionIdSchema }) sessionId: SessionId,
     @Req() request: ChatRequest,
   ): Promise<void> {
-    const removed = await this.history.remove(this.userIdOf(request), sessionId);
+    const removed = await this.history.remove(
+      this.userIdOf(request),
+      sessionId,
+    );
     if (!removed) {
       throw this.fail("session_not_found", HttpStatus.NOT_FOUND);
     }

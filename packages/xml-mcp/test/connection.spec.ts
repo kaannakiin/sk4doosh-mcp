@@ -130,7 +130,8 @@ describe("the sandbox holds for XML shapes", () => {
     const code = await codeOf(async () => {
       const resolved = await resolveDocumentPath(root, "trap.xml");
       const { createXmlWorkerPool } = await import("../src/host/pool.js");
-      const { createXmlDocumentCache } = await import("../src/host/document.js");
+      const { createXmlDocumentCache } =
+        await import("../src/host/document.js");
       const pool = createXmlWorkerPool();
       try {
         await createXmlDocumentCache(pool, root.real).load(resolved);

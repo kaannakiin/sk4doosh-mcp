@@ -102,9 +102,7 @@ export class AuthorizationDiscoveryService {
    * forwarded verbatim, and a process that will fetch its own loopback on
    * request reaches admin surfaces no client can.
    */
-  constructor(
-    @Inject(ConfigService) config: ConfigService<AppConfig, true>,
-  ) {
+  constructor(@Inject(ConfigService) config: ConfigService<AppConfig, true>) {
     this.policy = {
       allowLoopback:
         config.get("environment", { infer: true }) !== "production",

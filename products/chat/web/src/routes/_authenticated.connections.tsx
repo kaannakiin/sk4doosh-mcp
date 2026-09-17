@@ -137,7 +137,12 @@ function ConnectionsRoute() {
         />
       )}
 
-      <form onSubmit={submit} noValidate aria-busy={isSubmitting} className="mt-6">
+      <form
+        onSubmit={submit}
+        noValidate
+        aria-busy={isSubmitting}
+        className="mt-6"
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <TextInput
             {...form.register("mcpUrl")}
@@ -177,9 +182,7 @@ function ConnectionsRoute() {
           <IntegrationCard
             key={integration.id}
             integration={integration}
-            busy={
-              disconnect.isPending || remove.isPending || refresh.isPending
-            }
+            busy={disconnect.isPending || remove.isPending || refresh.isPending}
             locale={locale}
             expanded={expanded === integration.id}
             onToggleApprovals={() => {

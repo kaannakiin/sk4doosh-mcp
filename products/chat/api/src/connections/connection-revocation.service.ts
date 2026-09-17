@@ -20,7 +20,8 @@ const REVOKE_TIMEOUT_MS = 10_000;
 
 const MAX_REVOKE_BYTES = 16 * 1024;
 
-export type DisconnectOutcome = "disconnected" | "not_connected" | "unknown_integration";
+export type DisconnectOutcome =
+  "disconnected" | "not_connected" | "unknown_integration";
 
 @Injectable()
 export class ConnectionRevocationService {
@@ -93,7 +94,11 @@ export class ConnectionRevocationService {
    * leave the renewable half of the grant alive.
    */
   private async revokeRemotely(
-    integration: { readonly id: bigint; readonly publicId: string; readonly mcpUrl: string },
+    integration: {
+      readonly id: bigint;
+      readonly publicId: string;
+      readonly mcpUrl: string;
+    },
     connection: {
       readonly publicId: string;
       readonly sealedAccessToken: string | undefined;

@@ -158,7 +158,9 @@ withDatabase("ConnectionTokenService", () => {
     );
 
     const connection = await db.client.connection.findUniqueOrThrow({
-      where: { userId_integrationId: { userId: user.id, integrationId: row.id } },
+      where: {
+        userId_integrationId: { userId: user.id, integrationId: row.id },
+      },
       select: { id: true },
     });
 

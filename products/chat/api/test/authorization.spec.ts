@@ -9,7 +9,13 @@ import {
   BlockedAddressError,
   guardedOauthFetch,
 } from "../src/connections/oauth-fetch.ts";
-import { json, startStub, type Stub, type StubHandler, type StubReply } from "./oauth-stub.ts";
+import {
+  json,
+  startStub,
+  type Stub,
+  type StubHandler,
+  type StubReply,
+} from "./oauth-stub.ts";
 
 const CONFIG = {
   get: (key: string): unknown => {
@@ -116,7 +122,9 @@ function routes(options: Routes = {}): StubHandler {
     }
 
     if (call.path === "/.well-known/oauth-protected-resource/mcp") {
-      const reply = (options.resource ?? ((at: string) => json(protectedResource(at))))(origin);
+      const reply = (
+        options.resource ?? ((at: string) => json(protectedResource(at)))
+      )(origin);
 
       return options.cookie === true
         ? {
@@ -127,7 +135,9 @@ function routes(options: Routes = {}): StubHandler {
     }
 
     if (call.path === "/.well-known/oauth-authorization-server") {
-      return (options.oauthWellKnown ?? ((at: string) => json(metadata(at))))(origin);
+      return (options.oauthWellKnown ?? ((at: string) => json(metadata(at))))(
+        origin,
+      );
     }
 
     if (call.path === "/.well-known/openid-configuration") {
@@ -210,9 +220,9 @@ describe("probeAuthorization", () => {
     await stub.close();
     const { discovery } = await services();
 
-    await expect(discovery.probeAuthorization(`${origin}/mcp`)).resolves.toEqual(
-      { kind: "unanswered" },
-    );
+    await expect(
+      discovery.probeAuthorization(`${origin}/mcp`),
+    ).resolves.toEqual({ kind: "unanswered" });
   });
 });
 
@@ -320,7 +330,9 @@ describe("AuthorizationDiscoveryService", () => {
     const stub = await serve(
       routes({
         oauthWellKnown: (origin) =>
-          json(metadata(origin, { code_challenge_methods_supported: ["plain"] })),
+          json(
+            metadata(origin, { code_challenge_methods_supported: ["plain"] }),
+          ),
       }),
     );
     const { discovery } = await services();
@@ -335,7 +347,11 @@ describe("AuthorizationDiscoveryService", () => {
     const stub = await serve(
       routes({
         oauthWellKnown: (origin) =>
-          json(metadata(origin, { token_endpoint: "http://partner.example/token" })),
+          json(
+            metadata(origin, {
+              token_endpoint: "http://partner.example/token",
+            }),
+          ),
       }),
     );
     const { discovery } = await services();
@@ -367,7 +383,8 @@ describe("AuthorizationDiscoveryService", () => {
   it("refuses a server whose endpoints are not strings", async () => {
     const stub = await serve(
       routes({
-        oauthWellKnown: (origin) => json(metadata(origin, { token_endpoint: 7 })),
+        oauthWellKnown: (origin) =>
+          json(metadata(origin, { token_endpoint: 7 })),
       }),
     );
     const { discovery } = await services();
@@ -385,7 +402,10 @@ describe("AuthorizationDiscoveryService", () => {
         AuthorizationDiscoveryService,
         {
           provide: ConfigService,
-          useValue: { get: (key: string) => (key === "environment" ? "production" : undefined) },
+          useValue: {
+            get: (key: string) =>
+              key === "environment" ? "production" : undefined,
+          },
         },
       ],
     }).compile();
@@ -405,7 +425,11 @@ describe("ClientRegistrationService", () => {
     const stub = await serve(handler);
     const { discovery, registration } = await services();
 
-    return { stub, registration, server: await discovery.discover(`${stub.origin}/mcp`) };
+    return {
+      stub,
+      registration,
+      server: await discovery.discover(`${stub.origin}/mcp`),
+    };
   }
 
   it("registers a client and reads the issued values back", async () => {
@@ -414,7 +438,10 @@ describe("ClientRegistrationService", () => {
       throw new Error("discovery failed");
     }
 
-    const outcome = await registration.register(server.server, server.resourceScopes);
+    const outcome = await registration.register(
+      server.server,
+      server.resourceScopes,
+    );
 
     expect(outcome).toEqual({
       kind: "registered",
@@ -540,7 +567,9 @@ describe("ClientRegistrationService", () => {
     const { registration, server } = await discovered(
       routes({
         register: (origin) =>
-          issuedClient(origin, { token_endpoint_auth_method: "private_key_jwt" }),
+          issuedClient(origin, {
+            token_endpoint_auth_method: "private_key_jwt",
+          }),
       }),
     );
     if (!server.ok) {

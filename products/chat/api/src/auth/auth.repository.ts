@@ -293,7 +293,9 @@ export class AuthRepository {
     });
   }
 
-  async findPasswordLogin(email: string): Promise<PasswordLoginRow | undefined> {
+  async findPasswordLogin(
+    email: string,
+  ): Promise<PasswordLoginRow | undefined> {
     const found = await this.db.client.user.findUnique({
       where: { email },
       include: {

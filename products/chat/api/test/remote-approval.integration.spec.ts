@@ -149,7 +149,9 @@ withDatabase("remote tool approvals", () => {
     const exposed = exposedToolNameFor(integration.id, "list_zones");
 
     expect(await ask(userId, exposed)).toBe(true);
-    expect(await approvals.remember(userId, exposed, GLOBAL_SCOPE)).toBe("changed");
+    expect(await approvals.remember(userId, exposed, GLOBAL_SCOPE)).toBe(
+      "changed",
+    );
     expect(await ask(userId, exposed)).toBe(false);
 
     const rows = await db.client.toolApproval.count({
@@ -203,7 +205,9 @@ withDatabase("remote tool approvals", () => {
     ]);
     const exposed = exposedToolNameFor(integration.id, "delete_zone");
 
-    expect(await approvals.remember(userId, exposed, GLOBAL_SCOPE)).toBe("changed");
+    expect(await approvals.remember(userId, exposed, GLOBAL_SCOPE)).toBe(
+      "changed",
+    );
     expect(await ask(userId, exposed)).toBe(true);
   });
 

@@ -93,9 +93,7 @@ function MessageBubbleComponent({
         }
 
         if (isFileUIPart(part)) {
-          return (
-            <FilePart key={key} url={part.url} filename={part.filename} />
-          );
+          return <FilePart key={key} url={part.url} filename={part.filename} />;
         }
 
         return null;

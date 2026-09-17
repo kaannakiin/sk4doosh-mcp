@@ -150,11 +150,7 @@ export class RemoteToolSetService {
       tools,
       byExposedName,
       instructions: this.manifest(usable, locale),
-      activeToolsFor: (local) => [
-        ...local,
-        "find_tools",
-        ...revealed,
-      ],
+      activeToolsFor: (local) => [...local, "find_tools", ...revealed],
     };
   }
 
@@ -180,7 +176,10 @@ export class RemoteToolSetService {
           .slice(0, MAX_SEARCH_RESULTS);
 
         if (scored.length === 0) {
-          return { found: [], note: this.i18n.t("chat:tools.none", {}, locale) };
+          return {
+            found: [],
+            note: this.i18n.t("chat:tools.none", {}, locale),
+          };
         }
 
         const found = scored.map(({ entry }) => {
@@ -209,7 +208,9 @@ export class RemoteToolSetService {
 
     return tool({
       description: message,
-      inputSchema: jsonSchema(OPAQUE_INPUT as unknown as Record<string, unknown>),
+      inputSchema: jsonSchema(
+        OPAQUE_INPUT as unknown as Record<string, unknown>,
+      ),
       execute: () => Promise.resolve({ ok: false, error: message }),
     });
   }
@@ -236,7 +237,11 @@ function namesIn(history: readonly ModelMessage[]): ReadonlySet<string> {
     }
 
     for (const part of message.content) {
-      if (typeof part === "object" && part !== null && part.type === "tool-call") {
+      if (
+        typeof part === "object" &&
+        part !== null &&
+        part.type === "tool-call"
+      ) {
         names.add(part.toolName);
       }
     }

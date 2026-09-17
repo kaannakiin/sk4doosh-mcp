@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
 /** How far from the bottom still counts as "reading the newest turn". */
 const STICK_THRESHOLD_PX = 72;

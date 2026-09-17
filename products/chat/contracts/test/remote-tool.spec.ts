@@ -11,7 +11,6 @@ import {
 import { readToolCallResult } from "../src/integration/tool-result.ts";
 import { remoteToolSchema } from "../src/integration/remote-tool.ts";
 
-
 describe("toolAnnotations", () => {
   it("keeps fields it does not model", () => {
     const parsed = toolAnnotationsSchema.parse({

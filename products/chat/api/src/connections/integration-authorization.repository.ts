@@ -185,7 +185,11 @@ export class IntegrationAuthorizationRepository {
 
       await tx.integrationAuthorization.upsert({
         where: { integrationId: input.integrationId },
-        create: { integrationId: input.integrationId, discoveredAt: now, ...metadata },
+        create: {
+          integrationId: input.integrationId,
+          discoveredAt: now,
+          ...metadata,
+        },
         update: issuerChanged ? { ...metadata, ...CLEARED_CLIENT } : metadata,
       });
 
@@ -237,27 +241,25 @@ export class IntegrationAuthorizationRepository {
       input.sealedClientSecret !== undefined ||
       input.sealedRegistrationAccessToken !== undefined;
 
-    const { count } =
-      await this.db.client.integrationAuthorization.updateMany({
-        where: {
-          integrationId: input.integrationId,
-          issuer: input.issuer,
-          clientId: null,
-        },
-        data: {
-          clientIssuer: input.issuer,
-          clientId: input.clientId,
-          clientSecret: input.sealedClientSecret ?? null,
-          registrationAccessToken:
-            input.sealedRegistrationAccessToken ?? null,
-          registrationClientUri: input.registrationClientUri ?? null,
-          tokenEndpointAuthMethod: input.tokenEndpointAuthMethod,
-          registeredRedirectUri: input.registeredRedirectUri,
-          clientSecretExpiresAt: input.clientSecretExpiresAt ?? null,
-          keyVersion: sealed ? input.keyVersion : null,
-          registeredAt: new Date(),
-        },
-      });
+    const { count } = await this.db.client.integrationAuthorization.updateMany({
+      where: {
+        integrationId: input.integrationId,
+        issuer: input.issuer,
+        clientId: null,
+      },
+      data: {
+        clientIssuer: input.issuer,
+        clientId: input.clientId,
+        clientSecret: input.sealedClientSecret ?? null,
+        registrationAccessToken: input.sealedRegistrationAccessToken ?? null,
+        registrationClientUri: input.registrationClientUri ?? null,
+        tokenEndpointAuthMethod: input.tokenEndpointAuthMethod,
+        registeredRedirectUri: input.registeredRedirectUri,
+        clientSecretExpiresAt: input.clientSecretExpiresAt ?? null,
+        keyVersion: sealed ? input.keyVersion : null,
+        registeredAt: new Date(),
+      },
+    });
 
     return count === 1;
   }

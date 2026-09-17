@@ -13,7 +13,8 @@ export const chatKeys = {
   all: ["chat"] as const,
   sessions: () => [...chatKeys.all, "sessions"] as const,
   sessionLists: () => [...chatKeys.sessions(), "list"] as const,
-  sessionList: (limit: number) => [...chatKeys.sessionLists(), { limit }] as const,
+  sessionList: (limit: number) =>
+    [...chatKeys.sessionLists(), { limit }] as const,
   session: (sessionId: SessionId) =>
     [...chatKeys.sessions(), "detail", sessionId] as const,
   attachments: (sessionId: SessionId) =>

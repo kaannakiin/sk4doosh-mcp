@@ -39,7 +39,8 @@ function scopeFor(
   integration: { readonly origin: string; readonly scopes: readonly string[] },
   advertised: readonly string[],
 ): string | undefined {
-  const scopes = integration.origin === "partner" ? integration.scopes : advertised;
+  const scopes =
+    integration.origin === "partner" ? integration.scopes : advertised;
 
   return scopes.length === 0 ? undefined : scopes.join(" ");
 }

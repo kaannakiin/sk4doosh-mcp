@@ -12,8 +12,7 @@ import { internalHref } from "~/lib/redirect-target";
  */
 export const Route = createFileRoute("/auth_/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
-    auth:
-      typeof search.auth === "string" ? search.auth : "oauth_state_invalid",
+    auth: typeof search.auth === "string" ? search.auth : "oauth_state_invalid",
     next: internalHref(search.next),
   }),
   beforeLoad: async ({ context, search }) => {

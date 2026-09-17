@@ -6,7 +6,10 @@ import {
   type IntegrationListResponse,
   type IntegrationSummary,
 } from "@chat/contracts/integration/registration";
-import type { GrantScope, GrantTtl } from "@chat/contracts/integration/grant-scope";
+import type {
+  GrantScope,
+  GrantTtl,
+} from "@chat/contracts/integration/grant-scope";
 import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
 import { useMutation } from "@tanstack/react-query";
 

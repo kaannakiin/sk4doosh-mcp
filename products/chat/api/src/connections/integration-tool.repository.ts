@@ -68,7 +68,9 @@ export class IntegrationToolRepository {
     });
 
     return rows.flatMap((row) => {
-      const scopedNames = new Set(row.toolScopes.map(({ toolName }) => toolName));
+      const scopedNames = new Set(
+        row.toolScopes.map(({ toolName }) => toolName),
+      );
 
       return row.tools.map((tool) => ({
         integrationId: row.id,

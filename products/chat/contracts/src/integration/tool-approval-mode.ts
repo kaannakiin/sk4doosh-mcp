@@ -10,8 +10,6 @@ export const toolApprovalModeSchema = z.enum(["always_ask", "remember"]);
 
 export type ToolApprovalMode = z.infer<typeof toolApprovalModeSchema>;
 
-export function isToolApprovalMode(
-  value: unknown,
-): value is ToolApprovalMode {
+export function isToolApprovalMode(value: unknown): value is ToolApprovalMode {
   return toolApprovalModeSchema.safeParse(value).success;
 }

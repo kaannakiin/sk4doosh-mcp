@@ -51,7 +51,9 @@ export function IntegrationCard({
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline px-4 py-3">
       <div className="min-w-0 grow">
         <div className="flex items-center gap-2">
-          <span className="truncate font-medium">{integration.displayName}</span>
+          <span className="truncate font-medium">
+            {integration.displayName}
+          </span>
           <Badge
             size="sm"
             variant="light"

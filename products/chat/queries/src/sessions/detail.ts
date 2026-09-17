@@ -4,11 +4,7 @@ import type { SessionId } from "@chat/contracts/chat/session";
 import { sessionDetailResponseSchema } from "@chat/contracts/chat/session-detail";
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
 import type { Locale } from "@chat/contracts/common/locale";
-import {
-  queryOptions,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 import { isSessionNotFound, type ChatClient } from "../client.ts";

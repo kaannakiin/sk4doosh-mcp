@@ -1,8 +1,4 @@
-import type {
-  ExpandedName,
-  NamespaceBinding,
-  NodeAddress,
-} from "./node.js";
+import type { ExpandedName, NamespaceBinding, NodeAddress } from "./node.js";
 
 export type MemberKind =
   | "element"

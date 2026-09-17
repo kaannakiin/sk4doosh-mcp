@@ -27,7 +27,8 @@ export interface ToolDecision {
  * which is what it used to do for every destructive one.
  */
 function rememberable(part: ReaderToolPart): boolean {
-  const policy = (part.toolMetadata as { policy?: unknown } | undefined)?.policy;
+  const policy = (part.toolMetadata as { policy?: unknown } | undefined)
+    ?.policy;
 
   return policy !== "always";
 }

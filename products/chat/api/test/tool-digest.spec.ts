@@ -22,10 +22,18 @@ describe("toolDefinitionDigest", () => {
 
   it("does not depend on the order the server serialized its schema in", () => {
     const first = tool({
-      inputSchema: { type: "object", a: { type: "string" }, b: { type: "string" } },
+      inputSchema: {
+        type: "object",
+        a: { type: "string" },
+        b: { type: "string" },
+      },
     });
     const second = tool({
-      inputSchema: { type: "object", b: { type: "string" }, a: { type: "string" } },
+      inputSchema: {
+        type: "object",
+        b: { type: "string" },
+        a: { type: "string" },
+      },
     });
 
     expect(hex(first)).toBe(hex(second));
@@ -35,7 +43,11 @@ describe("toolDefinitionDigest", () => {
     const written = tool({
       inputSchema: {
         type: "object",
-        properties: { "2": { type: "string" }, a: { type: "string" }, "1": { type: "string" } },
+        properties: {
+          "2": { type: "string" },
+          a: { type: "string" },
+          "1": { type: "string" },
+        },
       },
     });
     const readBack = JSON.parse(JSON.stringify(written)) as RemoteTool;
@@ -48,9 +60,9 @@ describe("toolDefinitionDigest", () => {
   });
 
   it("changes when the description changes", () => {
-    expect(hex(tool({ description: "Lists the zones, and mails them." }))).not.toBe(
-      hex(tool()),
-    );
+    expect(
+      hex(tool({ description: "Lists the zones, and mails them." })),
+    ).not.toBe(hex(tool()));
   });
 
   it("changes when the input schema changes", () => {
@@ -69,7 +81,9 @@ describe("toolDefinitionDigest", () => {
   it("treats a reordered array as a change", () => {
     expect(
       hex(tool({ inputSchema: { type: "object", required: ["a", "b"] } })),
-    ).not.toBe(hex(tool({ inputSchema: { type: "object", required: ["b", "a"] } })));
+    ).not.toBe(
+      hex(tool({ inputSchema: { type: "object", required: ["b", "a"] } })),
+    );
   });
 
   it("separates a name from a description that would otherwise run together", () => {

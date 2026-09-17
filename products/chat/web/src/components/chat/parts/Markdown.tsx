@@ -30,7 +30,11 @@ const COMPONENTS: Components = {
       <table>{children}</table>
     </div>
   ),
-  pre: ({ children }) => <pre className="max-h-104 overflow-auto rounded-lg border border-hairline bg-raised px-3.5 py-3 font-mono text-[0.8125rem] leading-relaxed [&_code]:font-[inherit]">{children}</pre>,
+  pre: ({ children }) => (
+    <pre className="max-h-104 overflow-auto rounded-lg border border-hairline bg-raised px-3.5 py-3 font-mono text-[0.8125rem] leading-relaxed [&_code]:font-[inherit]">
+      {children}
+    </pre>
+  ),
 };
 
 export interface MarkdownProps {

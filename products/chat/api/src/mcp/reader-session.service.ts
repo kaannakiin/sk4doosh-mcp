@@ -108,7 +108,9 @@ export class ReaderSessionService implements OnModuleDestroy {
         await client.close();
       }
     } catch (cause) {
-      this.logger.warn(`reader probe failed (${family}): ${errorMessage(cause)}`);
+      this.logger.warn(
+        `reader probe failed (${family}): ${errorMessage(cause)}`,
+      );
       this.readiness.set(family, "failed");
 
       return "failed";
@@ -178,7 +180,9 @@ export class ReaderSessionService implements OnModuleDestroy {
     } catch (cause) {
       this.clients.delete(key);
       this.readiness.set(family, "failed");
-      this.logger.warn(`reader unavailable (${family}): ${errorMessage(cause)}`);
+      this.logger.warn(
+        `reader unavailable (${family}): ${errorMessage(cause)}`,
+      );
 
       return {};
     }

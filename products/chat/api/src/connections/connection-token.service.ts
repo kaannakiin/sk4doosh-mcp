@@ -96,10 +96,7 @@ export class ConnectionTokenService {
     }
 
     const owner = BigInt(userId);
-    const connection = await this.connections.loadSealed(
-      owner,
-      integration.id,
-    );
+    const connection = await this.connections.loadSealed(owner, integration.id);
 
     if (connection === undefined) {
       return { kind: "not_connected" };
@@ -145,7 +142,11 @@ export class ConnectionTokenService {
    */
   private async renew(
     owner: bigint,
-    integration: { readonly id: bigint; readonly publicId: string; readonly mcpUrl: string },
+    integration: {
+      readonly id: bigint;
+      readonly publicId: string;
+      readonly mcpUrl: string;
+    },
     connectionId: bigint,
   ): Promise<TokenOutcome> {
     if (!(await this.connections.takeRefreshLease(connectionId, LEASE_MS))) {
@@ -187,7 +188,11 @@ export class ConnectionTokenService {
 
   private async spendRefreshToken(
     owner: bigint,
-    integration: { readonly id: bigint; readonly publicId: string; readonly mcpUrl: string },
+    integration: {
+      readonly id: bigint;
+      readonly publicId: string;
+      readonly mcpUrl: string;
+    },
     connectionId: bigint,
   ): Promise<TokenOutcome> {
     const connection = await this.connections.loadSealed(owner, integration.id);
@@ -210,7 +215,10 @@ export class ConnectionTokenService {
     if (!this.isSpent(connection.tokenExpiresAt)) {
       await this.connections.releaseRefreshLease(connectionId);
 
-      return this.unseal(connection.publicId, connection.sealedAccessToken ?? "");
+      return this.unseal(
+        connection.publicId,
+        connection.sealedAccessToken ?? "",
+      );
     }
 
     const prepared = await this.authorization.ensureClient(integration);

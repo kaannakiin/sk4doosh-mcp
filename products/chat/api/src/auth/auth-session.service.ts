@@ -44,9 +44,7 @@ export class AuthSessionService {
     userAgent?: string,
   ): Promise<SessionGrant> {
     const material = this.createMaterial(userAgent);
-    const session = await this.repository.createSession(userId,
-      material.seed,
-    );
+    const session = await this.repository.createSession(userId, material.seed);
 
     return this.grant(session, material.refreshToken);
   }
@@ -76,7 +74,8 @@ export class AuthSessionService {
     if (identity === undefined) {
       this.errors.fail("unauthorized", HttpStatus.UNAUTHORIZED);
     }
-    const session = await this.repository.findActiveSession(identity.sessionPublicId,
+    const session = await this.repository.findActiveSession(
+      identity.sessionPublicId,
       new Date(),
     );
     if (
@@ -89,7 +88,9 @@ export class AuthSessionService {
     return { sessionPublicId: session.publicId, user: session.user };
   }
 
-  async optional(accessToken: string | undefined): Promise<AuthPrincipal | undefined> {
+  async optional(
+    accessToken: string | undefined,
+  ): Promise<AuthPrincipal | undefined> {
     if (accessToken === undefined) {
       return undefined;
     }
@@ -97,11 +98,13 @@ export class AuthSessionService {
     if (identity === undefined) {
       return undefined;
     }
-    const session = await this.repository.findActiveSession(identity.sessionPublicId,
+    const session = await this.repository.findActiveSession(
+      identity.sessionPublicId,
       new Date(),
     );
 
-    return session === undefined || session.user.publicId !== identity.userPublicId
+    return session === undefined ||
+      session.user.publicId !== identity.userPublicId
       ? undefined
       : { sessionPublicId: session.publicId, user: session.user };
   }
@@ -111,7 +114,8 @@ export class AuthSessionService {
       this.errors.fail("session_expired", HttpStatus.UNAUTHORIZED);
     }
     const next = this.crypto.createRefresh();
-    const outcome = await this.repository.rotateRefreshToken(this.crypto.hashRefresh(rawToken),
+    const outcome = await this.repository.rotateRefreshToken(
+      this.crypto.hashRefresh(rawToken),
       next.hash,
       new Date(Date.now() + WEB_REFRESH_TTL_MS),
       new Date(),
@@ -138,7 +142,8 @@ export class AuthSessionService {
       return;
     }
     if (refreshToken !== undefined) {
-      await this.repository.revokeSessionByRefreshToken(this.crypto.hashRefresh(refreshToken),
+      await this.repository.revokeSessionByRefreshToken(
+        this.crypto.hashRefresh(refreshToken),
         new Date(),
       );
     }

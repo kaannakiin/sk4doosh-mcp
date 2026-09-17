@@ -77,9 +77,7 @@ export class ClientRegistrationService {
 
   readonly redirectUri: string;
 
-  constructor(
-    @Inject(ConfigService) config: ConfigService<AppConfig, true>,
-  ) {
+  constructor(@Inject(ConfigService) config: ConfigService<AppConfig, true>) {
     this.policy = {
       allowLoopback:
         config.get("environment", { infer: true }) !== "production",
@@ -150,7 +148,10 @@ export class ClientRegistrationService {
     }
 
     if (response.kind === "failed") {
-      return { kind: "refused", failure: REGISTRATION_FAILURE[response.failure] };
+      return {
+        kind: "refused",
+        failure: REGISTRATION_FAILURE[response.failure],
+      };
     }
 
     return this.issued(response.client);

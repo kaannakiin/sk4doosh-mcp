@@ -1,6 +1,9 @@
 import { oauthStartPath } from "@chat/queries/auth/path";
 import { Button, Divider, Loader } from "@mantine/core";
-import { IconBrandGithubFilled, IconBrandGoogleFilled } from "@tabler/icons-react";
+import {
+  IconBrandGithubFilled,
+  IconBrandGoogleFilled,
+} from "@tabler/icons-react";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 

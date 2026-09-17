@@ -7,7 +7,11 @@ import { negotiateLocale } from "@chat/contracts/common/negotiate-locale";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequestHeader } from "@tanstack/react-start/server";
 
-import { LOCALE_COOKIE, parseLocaleCookie, readLocaleCookie } from "./locale-cookie";
+import {
+  LOCALE_COOKIE,
+  parseLocaleCookie,
+  readLocaleCookie,
+} from "./locale-cookie";
 
 /**
  * Guard: the explicit choice outranks `Accept-Language`, which is only a first

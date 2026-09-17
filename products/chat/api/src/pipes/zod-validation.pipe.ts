@@ -68,12 +68,15 @@ export class ZodValidationPipe implements PipeTransform {
         typeof segment === "symbol" ? segment.toString() : segment,
       ),
       code: issue.code,
-      message: this.i18n.t(`validation:issues.${validationRuleOf(issue, blank)}`, {
-        field: this.i18n.t(`validation:fields.${fieldKey}`, {
-          defaultValue: fieldKey,
-        }),
-        limit: validationLimitOf(issue),
-      }),
+      message: this.i18n.t(
+        `validation:issues.${validationRuleOf(issue, blank)}`,
+        {
+          field: this.i18n.t(`validation:fields.${fieldKey}`, {
+            defaultValue: fieldKey,
+          }),
+          limit: validationLimitOf(issue),
+        },
+      ),
     };
   }
 }

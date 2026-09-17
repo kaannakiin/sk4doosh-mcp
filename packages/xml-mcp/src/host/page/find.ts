@@ -8,7 +8,11 @@ import { cursorTtlMs, encodePosition } from "./cursor.js";
 import { SkMcpXmlError } from "../platform/errors.js";
 import type { FindMatch, FindPage } from "../../model/find.js";
 import { limits } from "../platform/limits.js";
-import { parseNodeId, type NodeAddress, type NodePath } from "../../model/node.js";
+import {
+  parseNodeId,
+  type NodeAddress,
+  type NodePath,
+} from "../../model/node.js";
 
 const cursorSlackBytes = 32;
 

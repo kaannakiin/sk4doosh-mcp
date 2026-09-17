@@ -187,10 +187,7 @@ export class ConnectionRepository {
       where: {
         id: connectionId,
         status: "active",
-        OR: [
-          { refreshLeaseUntil: null },
-          { refreshLeaseUntil: { lt: now } },
-        ],
+        OR: [{ refreshLeaseUntil: null }, { refreshLeaseUntil: { lt: now } }],
       },
       data: { refreshLeaseUntil: new Date(now.getTime() + leaseMs) },
     });

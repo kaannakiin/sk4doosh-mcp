@@ -108,7 +108,8 @@ export class AttachmentStoreService {
     session: SessionId,
     attachmentId: string,
   ): Promise<boolean> {
-    const removed = await this.repository.softDeleteAttachment(userId,
+    const removed = await this.repository.softDeleteAttachment(
+      userId,
       session,
       attachmentId,
     );
@@ -141,7 +142,8 @@ export class AttachmentStoreService {
     session: SessionId,
     filePath: string,
   ): Promise<void> {
-    const record = await this.repository.findBySandboxPath(userId,
+    const record = await this.repository.findBySandboxPath(
+      userId,
       session,
       filePath,
     );
@@ -158,7 +160,8 @@ export class AttachmentStoreService {
     attachmentId: string,
     asked: PresignDisposition,
   ): Promise<PresignedUrlResponse | undefined> {
-    const record = await this.repository.findAttachment(userId,
+    const record = await this.repository.findAttachment(
+      userId,
       session,
       attachmentId,
     );
@@ -229,30 +232,34 @@ export class AttachmentStoreService {
       throw this.reject("storage_unavailable", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    const outcome = await this.repository.createAttachment({
-      userId,
-      sessionId: session,
-      attachmentId,
-      filename: file.originalname,
-      mediaType,
-      family,
-      sandboxPath: family === null ? null : storedName,
-      objectKey,
-      bytes: file.size,
-      checksum,
-      maxFiles: this.uploads.maxFiles,
-      maxBytes: this.uploads.maxBytes,
-    }).catch((cause: unknown) => {
-      this.logger.error(`attachment insert failed: ${errorMessage(cause)}`);
+    const outcome = await this.repository
+      .createAttachment({
+        userId,
+        sessionId: session,
+        attachmentId,
+        filename: file.originalname,
+        mediaType,
+        family,
+        sandboxPath: family === null ? null : storedName,
+        objectKey,
+        bytes: file.size,
+        checksum,
+        maxFiles: this.uploads.maxFiles,
+        maxBytes: this.uploads.maxBytes,
+      })
+      .catch((cause: unknown) => {
+        this.logger.error(`attachment insert failed: ${errorMessage(cause)}`);
 
-      return { ok: false, reason: "session_not_found" } as const;
-    });
+        return { ok: false, reason: "session_not_found" } as const;
+      });
 
     if (!outcome.ok) {
       await this.objects
         .remove(objectKey)
         .catch((cause: unknown) =>
-          this.logger.error(`orphan object ${objectKey}: ${errorMessage(cause)}`),
+          this.logger.error(
+            `orphan object ${objectKey}: ${errorMessage(cause)}`,
+          ),
         );
       throw this.reject(outcome.reason, statusFor(outcome.reason));
     }

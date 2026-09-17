@@ -15,7 +15,8 @@ import {
 } from "../src/generated/enums.ts";
 
 const execFileAsync = promisify(execFile);
-const integration = process.env.CHAT_RUN_DB_TESTS === "true" ? describe : describe.skip;
+const integration =
+  process.env.CHAT_RUN_DB_TESTS === "true" ? describe : describe.skip;
 
 integration("Prisma sensitive-field omit", () => {
   let container: StartedPostgreSqlContainer | undefined;
@@ -28,7 +29,9 @@ integration("Prisma sensitive-field omit", () => {
     }
     const connectionString = configuredUrl ?? container?.getConnectionUri();
     if (connectionString === undefined) {
-      throw new Error("A disposable PostgreSQL connection could not be created");
+      throw new Error(
+        "A disposable PostgreSQL connection could not be created",
+      );
     }
     await execFileAsync("pnpm", ["exec", "prisma", "migrate", "deploy"], {
       cwd: new URL("..", import.meta.url),

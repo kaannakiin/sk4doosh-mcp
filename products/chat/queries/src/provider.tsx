@@ -11,9 +11,7 @@ export function ChatClientProvider({
   client: ChatClient;
   children: ReactNode;
 }) {
-  return (
-    <ChatClientContext value={client}>{children}</ChatClientContext>
-  );
+  return <ChatClientContext value={client}>{children}</ChatClientContext>;
 }
 
 export function useChatClient(): ChatClient {

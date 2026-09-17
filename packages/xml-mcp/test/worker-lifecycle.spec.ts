@@ -2,7 +2,10 @@ import { basename } from "node:path";
 import { writeFile } from "node:fs/promises";
 import { describe, expect, inject, it } from "vitest";
 import { createXmlDocumentCache } from "../src/host/document.js";
-import { createDocumentRoot, resolveDocumentPath } from "../src/host/platform/paths.js";
+import {
+  createDocumentRoot,
+  resolveDocumentPath,
+} from "../src/host/platform/paths.js";
 import { createXmlWorkerPool } from "../src/host/pool.js";
 
 describe("the parse worker lifecycle", () => {

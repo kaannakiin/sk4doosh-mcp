@@ -78,7 +78,9 @@ export class IntegrationCatalogService {
     userId: UserId,
     integration: StaleIntegration,
   ): Promise<void> {
-    if (!(await this.tools.claimRefresh(integration.id, STALE_AFTER_MS, LEASE_MS))) {
+    if (
+      !(await this.tools.claimRefresh(integration.id, STALE_AFTER_MS, LEASE_MS))
+    ) {
       return;
     }
 
@@ -124,7 +126,10 @@ export class IntegrationCatalogService {
       return undefined;
     }
 
-    const token = await this.tokens.accessTokenFor(userId, integration.publicId);
+    const token = await this.tokens.accessTokenFor(
+      userId,
+      integration.publicId,
+    );
 
     return token.kind === "ok" ? token.accessToken : undefined;
   }

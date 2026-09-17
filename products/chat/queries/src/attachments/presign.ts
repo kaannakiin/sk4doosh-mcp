@@ -44,7 +44,13 @@ export interface PresignParams {
  */
 export function presignOptions(
   client: ChatClient,
-  { sessionId, attachmentId, disposition, locale, enabled = true }: PresignParams,
+  {
+    sessionId,
+    attachmentId,
+    disposition,
+    locale,
+    enabled = true,
+  }: PresignParams,
 ) {
   return queryOptions({
     queryKey: chatKeys.presign(sessionId, attachmentId, disposition),

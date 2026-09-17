@@ -1,6 +1,9 @@
 import { json } from "@sk-mcp/file-core";
 
-import { createXmlDocumentCache, type XmlDocumentCache } from "../host/document.js";
+import {
+  createXmlDocumentCache,
+  type XmlDocumentCache,
+} from "../host/document.js";
 import {
   createSpanCache,
   describeChunked,

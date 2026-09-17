@@ -92,7 +92,8 @@ export class AuthService {
   async requestPhoneLogin(phoneE164: string): Promise<PendingChallenge> {
     const otp = this.crypto.createOtp();
     const expiresAt = this.challengeExpiry();
-    const challenge = await this.repository.createPhoneLoginChallenge(phoneE164,
+    const challenge = await this.repository.createPhoneLoginChallenge(
+      phoneE164,
       { secretHash: otp.encodedHash, expiresAt },
       new Date(Date.now() - AUTH_CHALLENGE_RESEND_MS),
     );
@@ -128,7 +129,8 @@ export class AuthService {
     const contact = contactOf(input);
     const otp = this.crypto.createOtp();
     const now = new Date();
-    const challenge = await this.repository.createVerificationChallenge(contact,
+    const challenge = await this.repository.createVerificationChallenge(
+      contact,
       { secretHash: otp.encodedHash, expiresAt: this.challengeExpiry() },
       new Date(now.getTime() - AUTH_CHALLENGE_RESEND_MS),
       now,
@@ -175,7 +177,8 @@ export class AuthService {
     }
 
     const otp = this.crypto.createOtp();
-    const next = await this.repository.replaceChallenge(previous,
+    const next = await this.repository.replaceChallenge(
+      previous,
       {
         secretHash: otp.encodedHash,
         expiresAt: this.challengeExpiry(),
@@ -213,7 +216,8 @@ export class AuthService {
       this.errors.fail("verification_required", HttpStatus.FORBIDDEN);
     }
     if (this.passwords.needsRehash(found.passwordHash)) {
-      await this.repository.updatePasswordHash(found.user.internalId,
+      await this.repository.updatePasswordHash(
+        found.user.internalId,
         await this.passwords.hash(input.password),
       );
     }
@@ -249,7 +253,8 @@ export class AuthService {
     }
 
     const material = this.sessions.createMaterial(userAgent);
-    const session = await this.repository.consumeChallengeAndCreateSession(challenge,
+    const session = await this.repository.consumeChallengeAndCreateSession(
+      challenge,
       material.seed,
       now,
     );

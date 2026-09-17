@@ -44,7 +44,9 @@ const byLocale = new Map(
   locales.map((locale) => [
     locale,
     flatten(
-      JSON.parse(readFileSync(join(LOCALES_DIR, locale, "common.json"), "utf8")),
+      JSON.parse(
+        readFileSync(join(LOCALES_DIR, locale, "common.json"), "utf8"),
+      ),
     ),
   ]),
 );

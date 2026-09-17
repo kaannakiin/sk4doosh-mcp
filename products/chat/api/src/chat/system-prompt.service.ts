@@ -106,10 +106,7 @@ export class SystemPromptService {
    * upload. Ollama reuses its cache by longest common token prefix, so the
    * volatile content belongs after everything a turn can keep.
    */
-  private files(
-    input: SystemPromptInput,
-    locale: Locale,
-  ): string | undefined {
+  private files(input: SystemPromptInput, locale: Locale): string | undefined {
     const { readable, images } = input.attachments;
     if (readable.length === 0 && images.length === 0) {
       return input.codex === undefined

@@ -27,7 +27,10 @@ export function useInfiniteSentinel<T extends Element = HTMLDivElement>({
     }
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting) && !isFetchingNextPage) {
+      if (
+        entries.some((entry) => entry.isIntersecting) &&
+        !isFetchingNextPage
+      ) {
         fetchNextPage();
       }
     });

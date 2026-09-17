@@ -348,9 +348,9 @@ describe("scopeMapConflicts", () => {
   });
 
   it("does not report a tool a single scope lists twice", () => {
-    expect(scopeMapConflicts({ "orders.read": ["get_order", "get_order"] })).toEqual(
-      [],
-    );
+    expect(
+      scopeMapConflicts({ "orders.read": ["get_order", "get_order"] }),
+    ).toEqual([]);
   });
 
   it("names nothing for a map that partitions its tools", () => {

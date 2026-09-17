@@ -85,7 +85,6 @@ function VerifyRoute() {
   return <VerifyStep key={challenge.challengeId} challenge={challenge} />;
 }
 
-
 /**
  * Guard: keyed on the challenge id so a resend remounts the step. Every counter
  * here — the digits, the local failures, the announcement — describes one
@@ -108,7 +107,10 @@ function VerifyStep({ challenge }: Readonly<{ challenge: PendingChallenge }>) {
   const confirm =
     challenge.purpose === "phoneLogin" ? confirmPhoneLogin : confirmContact;
 
-  const expiresIn = useCountdown(Date.parse(challenge.expiresAt), EXPIRY_TICK_MS);
+  const expiresIn = useCountdown(
+    Date.parse(challenge.expiresAt),
+    EXPIRY_TICK_MS,
+  );
   const resendIn = useCountdown(Date.parse(challenge.resendAt), RESEND_TICK_MS);
 
   const expired = expiresIn === 0;
@@ -145,7 +147,9 @@ function VerifyStep({ challenge }: Readonly<{ challenge: PendingChallenge }>) {
   }
 
   async function sendAnother(): Promise<void> {
-    const next = await resend.mutateAsync({ challengeId: challenge.challengeId });
+    const next = await resend.mutateAsync({
+      challengeId: challenge.challengeId,
+    });
     await navigate({ to: "/auth/verify", search: next, replace: true });
   }
 
@@ -155,7 +159,9 @@ function VerifyStep({ challenge }: Readonly<{ challenge: PendingChallenge }>) {
    * at all. People paste the message, not the digits.
    */
   function acceptPaste(event: ClipboardEvent<HTMLInputElement>): void {
-    const digits = event.clipboardData.getData("text/plain").replaceAll(/\D/gu, "");
+    const digits = event.clipboardData
+      .getData("text/plain")
+      .replaceAll(/\D/gu, "");
     if (digits.length === 0) {
       return;
     }
@@ -227,7 +233,11 @@ function VerifyStep({ challenge }: Readonly<{ challenge: PendingChallenge }>) {
            */
           labelElement="div"
           label={t("auth.fields.code.label")}
-          error={failures > 0 && !dead ? t("auth.errors.challenge_wrong.body") : undefined}
+          error={
+            failures > 0 && !dead
+              ? t("auth.errors.challenge_wrong.body")
+              : undefined
+          }
         >
           <PinInput
             ref={pin}
@@ -264,7 +274,9 @@ function VerifyStep({ challenge }: Readonly<{ challenge: PendingChallenge }>) {
               : t("auth.otp.expiresIn", {
                   count: Math.ceil(expiresIn / MINUTE_MS),
                 })}
-            {failures > 0 ? ` ${t("auth.otp.attemptsLeft", { count: attemptsLeft })}` : ""}
+            {failures > 0
+              ? ` ${t("auth.otp.attemptsLeft", { count: attemptsLeft })}`
+              : ""}
           </p>
         )}
       </div>

@@ -67,7 +67,12 @@ function CompleteRoute() {
         </Alert>
       )}
 
-      <form onSubmit={submit} noValidate aria-busy={isSubmitting} className="mt-8">
+      <form
+        onSubmit={submit}
+        noValidate
+        aria-busy={isSubmitting}
+        className="mt-8"
+      >
         <div className="grid grid-cols-2 gap-3">
           <TextInput
             {...form.register("firstName")}

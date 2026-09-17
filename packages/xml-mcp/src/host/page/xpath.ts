@@ -7,7 +7,11 @@ import {
 import { cursorTtlMs, encodePosition } from "./cursor.js";
 import { SkMcpXmlError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
-import type { NodeSetMember, NumberKind, XPathOutcome } from "../../model/query.js";
+import type {
+  NodeSetMember,
+  NumberKind,
+  XPathOutcome,
+} from "../../model/query.js";
 import {
   emptyResultDiagnostic,
   type QueryDiagnostic,

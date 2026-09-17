@@ -7,10 +7,7 @@ import {
 } from "../model/node.js";
 import { surveyNamespaces } from "./namespaces.js";
 import { firstChildOf, nextSibling, stepOf } from "./traverse.js";
-import type {
-  DescribeFacts,
-  RootFacts,
-} from "../model/describe.js";
+import type { DescribeFacts, RootFacts } from "../model/describe.js";
 
 export function rootFactsOf(document: XmlDocument): RootFacts {
   const root = document.root;

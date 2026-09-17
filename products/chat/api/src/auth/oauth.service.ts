@@ -92,11 +92,16 @@ export class OAuthService {
     const as = this.authorizationServer(provider);
     const authorizationEndpoint = as.authorization_endpoint;
     if (authorizationEndpoint === undefined) {
-      throw new Error(`OAuth authorization endpoint is missing for ${provider}`);
+      throw new Error(
+        `OAuth authorization endpoint is missing for ${provider}`,
+      );
     }
     const authorizationUrl = new URL(authorizationEndpoint);
     authorizationUrl.searchParams.set("client_id", providerConfig.clientId);
-    authorizationUrl.searchParams.set("redirect_uri", providerConfig.redirectUri);
+    authorizationUrl.searchParams.set(
+      "redirect_uri",
+      providerConfig.redirectUri,
+    );
     authorizationUrl.searchParams.set("response_type", "code");
     authorizationUrl.searchParams.set(
       "scope",
@@ -150,7 +155,8 @@ export class OAuthService {
       parsed.data.verifier,
       parsed.data.nonce,
     );
-    const linked = await this.repository.findOAuthUser(provider,
+    const linked = await this.repository.findOAuthUser(
+      provider,
       profile.providerAccountId,
     );
 
@@ -161,7 +167,8 @@ export class OAuthService {
       ) {
         this.errors.fail("oauth_state_invalid", HttpStatus.UNAUTHORIZED);
       }
-      const activeSession = await this.sessionRepository.findActiveSession(parsed.data.sessionPublicId,
+      const activeSession = await this.sessionRepository.findActiveSession(
+        parsed.data.sessionPublicId,
         new Date(),
       );
       if (
@@ -175,7 +182,8 @@ export class OAuthService {
       }
       if (linked === undefined) {
         try {
-          await this.repository.linkOAuthAccount(parsed.data.userId,
+          await this.repository.linkOAuthAccount(
+            parsed.data.userId,
             provider,
             profile.providerAccountId,
           );
@@ -186,7 +194,8 @@ export class OAuthService {
           throw error;
         }
       }
-      await this.sessionRepository.revokeSession(parsed.data.sessionPublicId,
+      await this.sessionRepository.revokeSession(
+        parsed.data.sessionPublicId,
         new Date(),
       );
 
@@ -210,7 +219,8 @@ export class OAuthService {
     if (
       profile.email !== null &&
       profile.emailVerified &&
-      (await this.repository.findUserByVerifiedEmail(profile.email)) !== undefined
+      (await this.repository.findUserByVerifiedEmail(profile.email)) !==
+        undefined
     ) {
       return { kind: "link_required" };
     }
@@ -264,7 +274,8 @@ export class OAuthService {
     if (!parsed.success) {
       this.errors.fail("oauth_state_invalid", HttpStatus.UNAUTHORIZED);
     }
-    const existing = await this.repository.findOAuthUser(parsed.data.provider,
+    const existing = await this.repository.findOAuthUser(
+      parsed.data.provider,
       parsed.data.providerAccountId,
     );
     if (existing !== undefined) {
@@ -273,7 +284,8 @@ export class OAuthService {
     if (
       parsed.data.email !== null &&
       parsed.data.emailVerified &&
-      (await this.repository.findUserByVerifiedEmail(parsed.data.email)) !== undefined
+      (await this.repository.findUserByVerifiedEmail(parsed.data.email)) !==
+        undefined
     ) {
       this.errors.fail("oauth_link_required", HttpStatus.CONFLICT);
     }
@@ -299,13 +311,17 @@ export class OAuthService {
   }
 
   private async createOAuthSession(
-    profile: ProviderProfile & { readonly firstName: string; readonly lastName: string },
+    profile: ProviderProfile & {
+      readonly firstName: string;
+      readonly lastName: string;
+    },
     provider: AuthProvider,
     userAgent?: string,
   ): Promise<SessionGrant> {
     const material = this.sessions.createMaterial(userAgent);
     try {
-      const session = await this.repository.createOAuthUserAndSession({
+      const session = await this.repository.createOAuthUserAndSession(
+        {
           provider,
           providerAccountId: profile.providerAccountId,
           email: profile.email,
@@ -337,7 +353,12 @@ export class OAuthService {
     const client: oauth.Client = { client_id: providerConfig.clientId };
     let params: URLSearchParams;
     try {
-      params = oauth.validateAuthResponse(as, client, callbackUrl, expectedState);
+      params = oauth.validateAuthResponse(
+        as,
+        client,
+        callbackUrl,
+        expectedState,
+      );
     } catch {
       this.errors.fail("oauth_state_invalid", HttpStatus.UNAUTHORIZED);
     }
@@ -399,7 +420,9 @@ export class OAuthService {
         headers,
       ),
     ]);
-    const profile = githubOAuthProfileSchema.parse(await profileResponse.json());
+    const profile = githubOAuthProfileSchema.parse(
+      await profileResponse.json(),
+    );
     const emails = githubOAuthEmailsSchema.parse(await emailResponse.json());
     const email =
       emails.find((candidate) => candidate.primary && candidate.verified) ??
@@ -418,13 +441,18 @@ export class OAuthService {
   private providerConfig(provider: AuthProvider): OAuthProviderConfig {
     const config = this.authConfig[provider];
     if (config === undefined) {
-      this.errors.fail("oauth_provider_unavailable", HttpStatus.SERVICE_UNAVAILABLE);
+      this.errors.fail(
+        "oauth_provider_unavailable",
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
     return config;
   }
 
-  private authorizationServer(provider: AuthProvider): oauth.AuthorizationServer {
+  private authorizationServer(
+    provider: AuthProvider,
+  ): oauth.AuthorizationServer {
     return provider === "google" ? GOOGLE_AS : GITHUB_AS;
   }
 }

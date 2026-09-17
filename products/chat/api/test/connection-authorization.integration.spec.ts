@@ -467,5 +467,4 @@ withDatabase("ConnectionAuthorizationService", () => {
       ),
     ).resolves.toBe("access_denied");
   });
-
 });

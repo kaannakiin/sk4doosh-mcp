@@ -11,7 +11,15 @@ const LOCALES = ["en", "tr"] as const;
 
 function reasonsOf(locale: string): Record<string, string> {
   const raw = readFileSync(
-    join(import.meta.dirname, "..", "src", "i18n", "locales", locale, "chat.json"),
+    join(
+      import.meta.dirname,
+      "..",
+      "src",
+      "i18n",
+      "locales",
+      locale,
+      "chat.json",
+    ),
     "utf8",
   );
 

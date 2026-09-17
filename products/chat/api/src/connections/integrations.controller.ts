@@ -68,7 +68,10 @@ export class IntegrationsController {
     @Body({ schema: createIntegrationSchema }) body: CreateIntegration,
     @Req() request: RequestWithAuth,
   ): Promise<IntegrationSummary> {
-    const outcome = await this.registration.register(this.userIdOf(request), body);
+    const outcome = await this.registration.register(
+      this.userIdOf(request),
+      body,
+    );
 
     if (outcome.kind === "refused") {
       throw this.fail(outcome.failure, HttpStatus.UNPROCESSABLE_ENTITY);

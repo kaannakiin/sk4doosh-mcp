@@ -218,7 +218,9 @@ withDatabase("IntegrationCatalogService", () => {
     await connect(userId, stub?.origin ?? "");
 
     const tools = await catalog.catalogFor(userId);
-    const destroyer = tools.find(({ remoteName }) => remoteName === "delete_zone");
+    const destroyer = tools.find(
+      ({ remoteName }) => remoteName === "delete_zone",
+    );
     const lister = tools.find(({ remoteName }) => remoteName === "list_zones");
 
     expect(destroyer?.destructive).toBe(true);

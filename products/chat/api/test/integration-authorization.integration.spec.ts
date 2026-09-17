@@ -103,7 +103,8 @@ withDatabase("IntegrationAuthorizationRepository", () => {
     await repository.saveDiscovery({
       integrationId: integration.id,
       resource: integration.mcpUrl,
-      metadataUrl: "https://partner.example/.well-known/oauth-authorization-server",
+      metadataUrl:
+        "https://partner.example/.well-known/oauth-authorization-server",
       server: serverAt("https://partner.example"),
       staleAfter: inADay(),
     });
@@ -121,7 +122,8 @@ withDatabase("IntegrationAuthorizationRepository", () => {
     await repository.saveDiscovery({
       integrationId: integration.id,
       resource: integration.mcpUrl,
-      metadataUrl: "https://stale.example/.well-known/oauth-authorization-server",
+      metadataUrl:
+        "https://stale.example/.well-known/oauth-authorization-server",
       server: serverAt("https://stale.example"),
       staleAfter: inADay(),
     });
@@ -150,7 +152,8 @@ withDatabase("IntegrationAuthorizationRepository", () => {
     await repository.saveDiscovery({
       integrationId: integration.id,
       resource: integration.mcpUrl,
-      metadataUrl: "https://moving.example/.well-known/oauth-authorization-server",
+      metadataUrl:
+        "https://moving.example/.well-known/oauth-authorization-server",
       server: serverAt("https://moving.example"),
       staleAfter: inADay(),
     });
@@ -182,7 +185,8 @@ withDatabase("IntegrationAuthorizationRepository", () => {
       const changed = await repository.saveDiscovery({
         integrationId: integration.id,
         resource: integration.mcpUrl,
-        metadataUrl: "https://elsewhere.example/.well-known/oauth-authorization-server",
+        metadataUrl:
+          "https://elsewhere.example/.well-known/oauth-authorization-server",
         server: serverAt("https://elsewhere.example"),
         staleAfter: inADay(),
       });
@@ -197,7 +201,9 @@ withDatabase("IntegrationAuthorizationRepository", () => {
         registeredRedirectUri: undefined,
       });
       await expect(
-        db.client.connection.findUniqueOrThrow({ where: { id: connection.id } }),
+        db.client.connection.findUniqueOrThrow({
+          where: { id: connection.id },
+        }),
       ).resolves.toMatchObject({ status: "reauth_required" });
       await expect(
         db.client.connectionEvent.count({
@@ -218,7 +224,8 @@ withDatabase("IntegrationAuthorizationRepository", () => {
     await repository.saveDiscovery({
       integrationId: integration.id,
       resource: integration.mcpUrl,
-      metadataUrl: "https://raced.example/.well-known/oauth-authorization-server",
+      metadataUrl:
+        "https://raced.example/.well-known/oauth-authorization-server",
       server: serverAt("https://raced.example"),
       staleAfter: inADay(),
     });
@@ -297,7 +304,10 @@ withDatabase("IntegrationAuthorizationRepository", () => {
       redirectUri: CALLBACK,
     });
 
-    const stored = await repository.loadFresh(integration.id, integration.mcpUrl);
+    const stored = await repository.loadFresh(
+      integration.id,
+      integration.mcpUrl,
+    );
 
     expect(stored?.sealedClientSecret).not.toContain("live-secret");
     await expect(

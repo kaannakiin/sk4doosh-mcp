@@ -224,10 +224,7 @@ describe("compose array styles", () => {
     expect(compose(template, { "x-tag": ["a", "b"] }).headers).toEqual({
       "x-tag": "a,b",
     });
-    expectError(
-      () => compose(template, { "x-tag": "a" }),
-      "invalid_type",
-    );
+    expectError(() => compose(template, { "x-tag": "a" }), "invalid_type");
   });
 
   it("rejects a control character smuggled through a header array item", () => {

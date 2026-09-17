@@ -181,9 +181,7 @@ export class IntegrationAuthorizationService {
       client.sealedClientSecret,
     );
 
-    return secret === undefined
-      ? undefined
-      : { method: client.method, secret };
+    return secret === undefined ? undefined : { method: client.method, secret };
   }
 
   private reuse(

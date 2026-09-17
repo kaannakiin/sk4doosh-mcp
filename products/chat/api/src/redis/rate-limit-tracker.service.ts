@@ -4,10 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { deriveSha256Key } from "../common/utils/crypto.utils.ts";
-import {
-  property,
-  stringProperty,
-} from "../common/utils/object.utils.ts";
+import { property, stringProperty } from "../common/utils/object.utils.ts";
 import { normalizeBoundedString } from "../common/utils/string.utils.ts";
 import type { AppConfig } from "../config/configuration.ts";
 

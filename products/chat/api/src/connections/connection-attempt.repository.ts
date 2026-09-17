@@ -69,9 +69,7 @@ export class ConnectionAttemptRepository {
    * @param stateHash the digest of the state the callback carried
    * @returns the snapshot taken when the browser was sent away, or `undefined`
    */
-  async consume(
-    stateHash: Uint8Array,
-  ): Promise<ConsumedAttempt | undefined> {
+  async consume(stateHash: Uint8Array): Promise<ConsumedAttempt | undefined> {
     return this.db.client.$transaction(async (tx) => {
       const { count } = await tx.connectionAttempt.updateMany({
         where: {

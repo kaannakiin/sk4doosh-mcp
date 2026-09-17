@@ -38,14 +38,21 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
   const upload = useUploadAttachment(sessionId, locale);
   const { mutate: rememberTool } = useRememberTool(locale);
 
-  const { messages, sendMessage, status, stop, error, clearError, addToolApprovalResponse } =
-    useChatSession({
-      sessionId,
-      locale,
-      initialMessages: view.messages,
-      session: view.session,
-      attachmentCount: view.attachments.length,
-    });
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    error,
+    clearError,
+    addToolApprovalResponse,
+  } = useChatSession({
+    sessionId,
+    locale,
+    initialMessages: view.messages,
+    session: view.session,
+    attachmentCount: view.attachments.length,
+  });
 
   const busy = status === "submitted" || status === "streaming";
 
@@ -141,7 +148,11 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
         )}
 
         {upload.isError ? (
-          <Alert color="red" variant="light" className="mx-auto mt-3 max-w-measure py-2">
+          <Alert
+            color="red"
+            variant="light"
+            className="mx-auto mt-3 max-w-measure py-2"
+          >
             {upload.error.message}
           </Alert>
         ) : null}

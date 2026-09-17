@@ -72,8 +72,7 @@ export type RefreshOutcome =
   | { readonly kind: "replayed" };
 
 export type VerificationContact =
-  | { readonly email: string }
-  | { readonly phoneE164: string };
+  { readonly email: string } | { readonly phoneE164: string };
 
 export interface NewChallenge {
   readonly secretHash: Uint8Array;

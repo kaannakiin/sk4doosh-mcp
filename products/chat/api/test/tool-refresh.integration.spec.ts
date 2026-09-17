@@ -15,7 +15,12 @@ import { IntegrationToolsService } from "../src/connections/integration-tools.se
 import { DbService } from "../src/db/db.service.ts";
 import type { UserId } from "../src/db/ids.ts";
 import { mcpStub, type StubTool } from "./mcp-stub.ts";
-import { startStub, type StubCall, type StubReply, type Stub } from "./oauth-stub.ts";
+import {
+  startStub,
+  type StubCall,
+  type StubReply,
+  type Stub,
+} from "./oauth-stub.ts";
 
 const url = process.env.CHAT_TEST_DATABASE_URL;
 

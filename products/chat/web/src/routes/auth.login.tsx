@@ -99,7 +99,12 @@ function LoginRoute() {
         </Alert>
       )}
 
-      <form onSubmit={submit} noValidate aria-busy={isSubmitting} className="mt-8">
+      <form
+        onSubmit={submit}
+        noValidate
+        aria-busy={isSubmitting}
+        className="mt-8"
+      >
         <div className="flex flex-col gap-4">
           <TextInput
             {...form.register("email")}

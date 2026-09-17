@@ -39,7 +39,9 @@ type RawColumns = z.infer<typeof columns>;
 type RawWhere = z.infer<typeof where>;
 type RawItem = z.infer<typeof itemAddress>;
 
-export function bindingsOf(raw: RawBindings | undefined): readonly NamespaceBinding[] {
+export function bindingsOf(
+  raw: RawBindings | undefined,
+): readonly NamespaceBinding[] {
   const seen = new Set<string>();
   const bound: NamespaceBinding[] = [];
   for (const binding of raw ?? []) {
@@ -88,7 +90,10 @@ export function columnsOf(raw: RawColumns): readonly ColumnSpec[] {
   });
 }
 
-export function columnIndex(specs: readonly ColumnSpec[], label: string): number {
+export function columnIndex(
+  specs: readonly ColumnSpec[],
+  label: string,
+): number {
   const index = specs.findIndex((spec) => spec.label === label);
   if (index === -1) {
     throw new SkMcpXmlError(

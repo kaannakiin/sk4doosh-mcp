@@ -36,13 +36,25 @@ describe("ipv6Groups", () => {
 
 describe("isLoopbackHost", () => {
   it("names every form of loopback", () => {
-    for (const host of ["localhost", "localhost.", "127.0.0.1", "127.1.2.3", "::1", "[::1]"]) {
+    for (const host of [
+      "localhost",
+      "localhost.",
+      "127.0.0.1",
+      "127.1.2.3",
+      "::1",
+      "[::1]",
+    ]) {
       expect(isLoopbackHost(host), host).toBe(true);
     }
   });
 
   it("leaves other hosts alone", () => {
-    for (const host of ["partner.example", "10.0.0.5", "fe80::1", "128.0.0.1"]) {
+    for (const host of [
+      "partner.example",
+      "10.0.0.5",
+      "fe80::1",
+      "128.0.0.1",
+    ]) {
       expect(isLoopbackHost(host), host).toBe(false);
     }
   });

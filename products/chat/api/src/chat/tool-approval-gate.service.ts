@@ -117,16 +117,14 @@ export class ToolApprovalGateService {
          * `approved`. The two run the tool either way, but only one of them is
          * true — nobody granted anything for `describe_workbook`.
          */
-        return decision.reason === "policy_auto" ? "not-applicable" : "approved";
+        return decision.reason === "policy_auto"
+          ? "not-applicable"
+          : "approved";
       }
 
       return {
         type: "user-approval",
-        reason: this.i18n.t(
-          `chat:approval.reasons.${toolName}`,
-          {},
-          locale,
-        ),
+        reason: this.i18n.t(`chat:approval.reasons.${toolName}`, {}, locale),
       };
     };
   }

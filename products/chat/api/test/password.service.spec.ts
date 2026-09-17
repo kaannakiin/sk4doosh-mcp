@@ -20,6 +20,8 @@ describe("PasswordService", () => {
   it("burns the dummy hash for unknown accounts", async () => {
     const service = new PasswordService();
 
-    await expect(service.burnDummy("unknown account password")).resolves.toBeUndefined();
+    await expect(
+      service.burnDummy("unknown account password"),
+    ).resolves.toBeUndefined();
   });
 });

@@ -264,7 +264,10 @@ export class IntegrationRegistrationService {
     }
 
     return stale === undefined
-      ? { kind: "created", integration: this.summarize(subject, displayName, []) }
+      ? {
+          kind: "created",
+          integration: this.summarize(subject, displayName, []),
+        }
       : { kind: "refused", failure: "integration_duplicate" };
   }
 

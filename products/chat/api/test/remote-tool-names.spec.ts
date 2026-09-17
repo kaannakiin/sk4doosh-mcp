@@ -76,9 +76,9 @@ describe("resolveToolNames", () => {
 
     expect(byExposedName.size).toBe(2);
     expect(conflicts).toHaveLength(0);
-    expect(
-      byExposedName.get(exposedToolNameFor(SOLANA, "list_zones")),
-    ).toBe(tools[1]);
+    expect(byExposedName.get(exposedToolNameFor(SOLANA, "list_zones"))).toBe(
+      tools[1],
+    );
   });
 
   it("refuses a collision rather than renumbering it", () => {

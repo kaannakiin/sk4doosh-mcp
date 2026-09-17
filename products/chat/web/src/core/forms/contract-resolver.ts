@@ -16,7 +16,9 @@ import type { $ZodIssue } from "zod/v4/core";
  * issues it reports.
  */
 export interface ParsableSchema<TOutput> {
-  safeParse: (input: unknown) =>
+  safeParse: (
+    input: unknown,
+  ) =>
     | { success: true; data: TOutput }
     | { success: false; error: { issues: readonly $ZodIssue[] } };
 }
@@ -69,11 +71,7 @@ function place(
   cursor[leaf] ??= { type: issue.code, message };
 }
 
-function messageFor(
-  issue: $ZodIssue,
-  t: TFunction,
-  blank: boolean,
-): string {
+function messageFor(issue: $ZodIssue, t: TFunction, blank: boolean): string {
   const name = issue.path.at(-1);
   const field = t(`validation.fields.${String(name ?? "root")}`, {
     defaultValue: String(name ?? ""),

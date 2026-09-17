@@ -82,7 +82,12 @@ function RegisterPhoneRoute() {
         </Alert>
       )}
 
-      <form onSubmit={submit} noValidate aria-busy={isSubmitting} className="mt-6">
+      <form
+        onSubmit={submit}
+        noValidate
+        aria-busy={isSubmitting}
+        className="mt-6"
+      >
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <TextInput

@@ -1,4 +1,9 @@
-import { json, type StubCall, type StubHandler, type StubReply } from "./oauth-stub.ts";
+import {
+  json,
+  type StubCall,
+  type StubHandler,
+  type StubReply,
+} from "./oauth-stub.ts";
 
 export interface StubTool {
   readonly name: string;
@@ -101,7 +106,10 @@ export function mcpStub(options: McpStubOptions = {}): McpStub {
   let issued = 0;
   let expired = false;
 
-  const issue = (grantType: string, resource: string | undefined): StubReply => {
+  const issue = (
+    grantType: string,
+    resource: string | undefined,
+  ): StubReply => {
     issued += 1;
     state.grants.push({ grantType, resource });
     state.accessToken = `at-${issued}`;
@@ -205,7 +213,9 @@ export function mcpStub(options: McpStubOptions = {}): McpStub {
       return frame(
         request.id,
         {
-          content: [{ type: "text", text: `ran ${request.params?.name}${padding}` }],
+          content: [
+            { type: "text", text: `ran ${request.params?.name}${padding}` },
+          ],
           ...(options.callIsError === true ? { isError: true } : {}),
         },
         options.eventStream === true,

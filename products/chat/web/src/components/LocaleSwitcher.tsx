@@ -11,7 +11,11 @@ export function LocaleSwitcher() {
   const choose = useLocaleChoice();
 
   return (
-    <div className="flex items-center gap-0.5" role="group" aria-label={t("locale.label")}>
+    <div
+      className="flex items-center gap-0.5"
+      role="group"
+      aria-label={t("locale.label")}
+    >
       {SUPPORTED_LOCALES.map((locale) => (
         <UnstyledButton
           key={locale}

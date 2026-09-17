@@ -28,7 +28,11 @@ export function ThemeSwitcher() {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   return (
-    <div className="flex items-center gap-0.5" role="group" aria-label={t("theme.label")}>
+    <div
+      className="flex items-center gap-0.5"
+      role="group"
+      aria-label={t("theme.label")}
+    >
       {OPTIONS.map(({ value, Icon }) => (
         <UnstyledButton
           key={value}

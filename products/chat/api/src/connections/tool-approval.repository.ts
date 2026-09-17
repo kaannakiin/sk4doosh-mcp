@@ -1,5 +1,8 @@
 import type { SessionId } from "@chat/contracts/chat/session";
-import type { GrantScope, GrantTtl } from "@chat/contracts/integration/grant-scope";
+import type {
+  GrantScope,
+  GrantTtl,
+} from "@chat/contracts/integration/grant-scope";
 import { grantExpiryFor } from "@chat/contracts/integration/grant-scope";
 import type { IntegrationId } from "@chat/contracts/integration/integration";
 import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
@@ -316,7 +319,12 @@ export class ToolApprovalRepository {
     return rows.map((row) => {
       const live = current.get(row.toolName);
 
-      return toApprovalRow(row, live?.destructive ?? false, live !== undefined, live?.digest);
+      return toApprovalRow(
+        row,
+        live?.destructive ?? false,
+        live !== undefined,
+        live?.digest,
+      );
     });
   }
 

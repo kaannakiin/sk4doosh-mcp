@@ -190,7 +190,10 @@ export class RemoteToolInvoker {
    * the same window as the reader's own words — the system instructions name
    * this field so an instruction hidden in a tool result stays data.
    */
-  private render(outcome: ToolCallOutcome, locale: Locale): ToolInvocationResult {
+  private render(
+    outcome: ToolCallOutcome,
+    locale: Locale,
+  ): ToolInvocationResult {
     const parts = outcome.blocks.map((block) =>
       block.type === "text"
         ? block.text
