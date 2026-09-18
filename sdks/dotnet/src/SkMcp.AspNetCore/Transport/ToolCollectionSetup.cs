@@ -4,7 +4,7 @@ using ModelContextProtocol.Server;
 
 namespace SkMcp.AspNetCore.Transport;
 
-internal sealed class ToolCollectionSetup : IPostConfigureOptions<McpServerOptions>
+internal sealed class ToolCollectionSetup(IOptions<SkMcpOptions> skMcpOptions) : IPostConfigureOptions<McpServerOptions>
 {
     public void PostConfigure(string? name, McpServerOptions options)
     {
@@ -14,7 +14,7 @@ internal sealed class ToolCollectionSetup : IPostConfigureOptions<McpServerOptio
         IEnumerable<McpServerTool> existing = options.ToolCollection ?? [];
         foreach (McpServerTool tool in existing)
         {
-            collection.Add(tool);
+            collection.Add(new SkMcpBudgetTool(tool, skMcpOptions));
         }
         options.ToolCollection = collection;
 

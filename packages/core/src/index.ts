@@ -121,7 +121,9 @@ export type { Auth } from "./generated/endpoint-descriptor.js";
 export {
   builtInRecognizers,
   codeFor,
+  isInvokeError,
   isMappedError,
+  isSdkError,
   mapInvokeResult,
   parseBody,
   retryableStatuses,
@@ -139,7 +141,23 @@ export type {
   InvokeResult,
   InvokeSuccess,
   MappedError,
+  PayloadFacts,
+  PayloadShape,
+  PayloadShapeKind,
+  SdkError,
+  SdkErrorCode,
 } from "./generated/invoke-result.js";
+export {
+  describePayload,
+  invokeLimits,
+  maxNarrowingArguments,
+  narrowingArguments,
+  narrowingFallback,
+  refuseOversizeResponse,
+  refuseTimedOutInvoke,
+  sdkError,
+} from "./invoke-guard.js";
+export type { OversizeResponse } from "./invoke-guard.js";
 export { forwardable, inspect } from "./leak-filter.js";
 export type { LeakRule, LeakVerdict } from "./leak-filter.js";
 export type {

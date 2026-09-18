@@ -126,6 +126,32 @@ public sealed record InvokeSuccess
     public string? Location { get; init; }
 }
 
+public enum SdkErrorCode { UnknownTool, NotInvocable, UnknownArgument, InvalidPathType, MissingPathParameter, HeaderInjection, NullNotAllowed, InvalidType, DeferredValueMissing, DeferredValueInvalid, ResponseTooLarge, InvokeTimeout, InternalError }
+
+public enum PayloadShapeKind { Array, Object, Text }
+
+public sealed record PayloadShape
+{
+    public required PayloadShapeKind Kind { get; init; }
+    public int? Count { get; init; }
+}
+
+public sealed record PayloadFacts
+{
+    public required int Bytes { get; init; }
+    public required int Limit { get; init; }
+    public required PayloadShape Shape { get; init; }
+}
+
+public sealed record SdkError
+{
+    public required SdkErrorCode Error { get; init; }
+    public required string Message { get; init; }
+    public required bool Retryable { get; init; }
+    public IReadOnlyList<FieldError>? Fields { get; init; }
+    public PayloadFacts? Payload { get; init; }
+}
+
 public sealed record TypeShape
 {
     public required TypeNode Root { get; init; }

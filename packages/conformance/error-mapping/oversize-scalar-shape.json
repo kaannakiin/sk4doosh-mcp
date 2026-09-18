@@ -1,0 +1,22 @@
+{
+  "kind": "error-mapping",
+  "description": "skaler govde sayisiz text olur; fonksiyon toplamdir, hicbir girdide patlamaz",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 300000,
+    "limit": 262144,
+    "payload": 12345
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 300000 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is not a JSON array or object. No argument of this call narrows the response.",
+    "retryable": false,
+    "payload": {
+      "bytes": 300000,
+      "limit": 262144,
+      "shape": {
+        "kind": "text"
+      }
+    }
+  }
+}

@@ -23,6 +23,26 @@ public sealed class SkMcpOptions
     public ResourceServerOptions ResourceServer { get; } = new();
     public DiagnosticsOptions Diagnostics { get; } = new();
     public ArgumentCurationOptions Arguments { get; } = new();
+    public InvokeOptions Invoke { get; } = new();
+}
+
+/// <summary>What a per-endpoint budget or timeout override sees.</summary>
+public readonly record struct InvokeTarget(string Tool, string Method, string Route);
+
+public sealed class InvokeOptions
+{
+    /// <summary>The largest tool response, in UTF-8 bytes, that may reach the agent.</summary>
+    public int MaxResponseBytes { get; set; } = SdkErrors.DefaultMaxResponseBytes;
+
+    /// <summary>
+    /// How long an invocation waits for the backend. <see cref="TimeSpan.Zero"/> means no deadline.
+    /// Values at or above one minute are unreachable through a stock MCP client, whose own request
+    /// timeout cancels first.
+    /// </summary>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromMilliseconds(SdkErrors.DefaultInvokeTimeoutMs);
+
+    public Func<InvokeTarget, int?>? MaxResponseBytesFor { get; set; }
+    public Func<InvokeTarget, TimeSpan?>? TimeoutFor { get; set; }
 }
 
 public sealed class DiagnosticsOptions

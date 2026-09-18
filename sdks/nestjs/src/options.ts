@@ -1,5 +1,6 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
+import { invokeLimits } from "@sk-mcp/core";
 import type { Recognizer, SelectionDefault } from "@sk-mcp/core";
 import type { ArgumentRule, JsonValue } from "./decorators.js";
 import type { CatalogSeverity } from "./discovery/diagnostics.js";
@@ -192,6 +193,27 @@ export interface SkMcpCacheOptions {
   maxCallers: number;
 }
 
+/** What a per-endpoint budget or timeout override sees. */
+export interface InvokeTarget {
+  readonly tool: string;
+  readonly method: string;
+  readonly route: string;
+}
+
+export interface SkMcpInvokeOptions {
+  /** The largest tool response, in UTF-8 bytes, that may reach the agent. */
+  maxResponseBytes: number;
+  /**
+   * How long an invocation waits for the backend, in whole milliseconds. Zero means no deadline.
+   *
+   * Values at or above 60000 are unreachable through a stock MCP client, whose own request timeout
+   * cancels first.
+   */
+  timeoutMs: number;
+  maxResponseBytesFor?: (target: InvokeTarget) => number | undefined;
+  timeoutMsFor?: (target: InvokeTarget) => number | undefined;
+}
+
 export class ErrorMappingOptions {
   private readonly items: Recognizer[] = [];
 
@@ -259,6 +281,10 @@ export class SkMcpOptions {
     probeTopK: 25,
     probeConcurrency: 4,
     probeValues: new Map<string, string>(),
+  };
+  readonly invoke: SkMcpInvokeOptions = {
+    maxResponseBytes: invokeLimits.maxResponseBytes,
+    timeoutMs: invokeLimits.invokeTimeoutMs,
   };
   schema?: TypeShapeBinderOptions;
   resourceServer?: SkMcpResourceServerOptions;

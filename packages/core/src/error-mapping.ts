@@ -5,6 +5,7 @@ import type {
   InvokeResult,
   InvokeSuccess,
   MappedError,
+  SdkError,
 } from "./generated/invoke-result.js";
 
 export interface BackendResponse {
@@ -40,7 +41,22 @@ export interface ErrorMappingOptions {
   readonly hiddenFields?: readonly string[];
 }
 
+/**
+ * `status` is what separates the two error branches: an `SdkError` also carries `error`, so the
+ * looser `"error" in result` test returns the right boolean with the wrong narrowed type. Pinned by
+ * the sdk-envelope fixtures in conformance/error-mapping.
+ */
 export function isMappedError(result: InvokeResult): result is MappedError {
+  return "error" in result && "status" in result;
+}
+
+export function isSdkError(result: InvokeResult): result is SdkError {
+  return "error" in result && !("status" in result);
+}
+
+export function isInvokeError(
+  result: InvokeResult,
+): result is MappedError | SdkError {
   return "error" in result;
 }
 

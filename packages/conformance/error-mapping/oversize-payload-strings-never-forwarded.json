@@ -1,0 +1,27 @@
+{
+  "kind": "error-mapping",
+  "description": "atilan govdedeki hicbir string zarfa gecmez; leak ozelligi yapisal olarak saglanir",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 900000,
+    "limit": 262144,
+    "payload": {
+      "password": "hunter2",
+      "connection": "Server=db;Password=secret",
+      "token": "eyJhbGciOiJIUzI1NiJ9.payload.sig"
+    }
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 900000 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is an object with 3 properties. No argument of this call narrows the response.",
+    "retryable": false,
+    "payload": {
+      "bytes": 900000,
+      "limit": 262144,
+      "shape": {
+        "kind": "object",
+        "count": 3
+      }
+    }
+  }
+}

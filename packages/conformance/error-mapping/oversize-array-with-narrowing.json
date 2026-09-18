@@ -1,0 +1,50 @@
+{
+  "kind": "error-mapping",
+  "description": "bute asan dizi, cagrinin kendi daraltici argumanlarini adiyla sayar",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 812345,
+    "limit": 262144,
+    "payload": [
+      {
+        "id": 1
+      },
+      {
+        "id": 2
+      }
+    ],
+    "narrowing": [
+      {
+        "name": "limit",
+        "message": "Maximum number of rows to return."
+      },
+      {
+        "name": "status",
+        "message": "Filters by order status."
+      }
+    ]
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 812345 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is an array of 2 items. Narrow it and call again: limit, status.",
+    "retryable": false,
+    "fields": [
+      {
+        "name": "limit",
+        "message": "Maximum number of rows to return."
+      },
+      {
+        "name": "status",
+        "message": "Filters by order status."
+      }
+    ],
+    "payload": {
+      "bytes": 812345,
+      "limit": 262144,
+      "shape": {
+        "kind": "array",
+        "count": 2
+      }
+    }
+  }
+}

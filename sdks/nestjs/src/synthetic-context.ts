@@ -3,10 +3,37 @@ import { Socket } from "node:net";
 import type { DispatchResult } from "./dispatcher.js";
 import type { OuterConnection } from "./outer-connection.js";
 
+export type DispatchAbortReason = "timeout" | "caller" | "pipeline";
+
+/** Raised when a dispatch is abandoned before the Nest pipeline ended the response. */
+export class SkMcpDispatchAborted extends Error {
+  constructor(readonly reason: DispatchAbortReason) {
+    super(messageFor(reason));
+    this.name = "SkMcpDispatchAborted";
+  }
+}
+
+function messageFor(reason: DispatchAbortReason): string {
+  switch (reason) {
+    case "timeout":
+      return "sk-mcp: the backend did not answer within the invoke deadline.";
+    case "caller":
+      return "sk-mcp: the caller cancelled the request.";
+    case "pipeline":
+      return "sk-mcp: the Nest pipeline threw before it produced a response.";
+  }
+}
+
 export interface SyntheticContext {
   req: IncomingMessage;
   res: ServerResponse;
   result: Promise<DispatchResult>;
+  /**
+   * Abandons the dispatch and delivers a client disconnect to the handler.
+   *
+   * @param reason why the dispatch was abandoned
+   */
+  abort(reason: DispatchAbortReason): void;
 }
 
 function captureHeaders(res: ServerResponse): Record<string, string> {
@@ -62,8 +89,13 @@ export function createSyntheticContext(
 
   const res = new ServerResponse(req);
   const chunks: Buffer[] = [];
-  const result = new Promise<DispatchResult>((resolve) => {
+  let settled = false;
+  let abandon: ((reason: DispatchAbortReason) => void) | undefined;
+  const result = new Promise<DispatchResult>((resolve, reject) => {
     const capture = (chunk: unknown, encoding: unknown): void => {
+      if (settled) {
+        return;
+      }
       if (typeof chunk === "string") {
         chunks.push(
           Buffer.from(
@@ -94,6 +126,9 @@ export function createSyntheticContext(
       encoding?: unknown,
       callback?: unknown,
     ): ServerResponse {
+      if (settled) {
+        return res;
+      }
       if (typeof chunk !== "function") {
         capture(chunk, encoding);
       }
@@ -101,6 +136,7 @@ export function createSyntheticContext(
         (arg) => typeof arg === "function",
       );
       const responseHeaders = captureHeaders(res);
+      settled = true;
       resolve({
         status: res.statusCode,
         body: Buffer.concat(chunks).toString("utf8"),
@@ -114,7 +150,39 @@ export function createSyntheticContext(
       }
       return res;
     } as typeof res.end;
+    /**
+     * `settled` is the single guard: without it an abandoned handler that later calls `res.end()`
+     * resolves an already-rejected dispatch, emits a second `finish`/`close` into Nest's own
+     * listeners, and mutates `chunks` after the body string was built from it. Nest does not
+     * unsubscribe a route handler on disconnect, so an abandoned handler running to completion is
+     * the normal case, not the exception. Pinned by the abandoned-handler tests in
+     * test/dispatch-abort.spec.ts.
+     */
+    abandon = (reason: DispatchAbortReason): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      reject(new SkMcpDispatchAborted(reason));
+      try {
+        req.emit("aborted");
+        req.emit("close");
+        res.emit("close");
+        socket.emit("close");
+      } catch (error) {
+        process.stderr.write(
+          `sk-mcp: a disconnect listener threw: ${String(error)}\n`,
+        );
+      }
+    };
   });
 
-  return { req, res, result };
+  return {
+    req,
+    res,
+    result,
+    abort: (reason: DispatchAbortReason): void => {
+      abandon?.(reason);
+    },
+  };
 }

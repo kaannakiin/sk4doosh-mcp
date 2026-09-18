@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "host tarafindan dusurulmus deadline; sayinin mesaja tam sayi olarak girdigini sabitler",
+  "input": {
+    "sdkError": "invoke_timeout",
+    "limitMs": 5000
+  },
+  "expected": {
+    "error": "invoke_timeout",
+    "message": "The backend did not answer within 5000 ms and the call was abandoned. The operation may already have been applied; re-read before retrying.",
+    "retryable": true
+  }
+}

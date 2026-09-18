@@ -19,6 +19,7 @@ treat a file as binding without reading it.
 | `visibility.md`              | Visibility decision, three-valued semantics      | normative, two implementations           |
 | `search-semantics.md`        | Search-first contract, tokenization, cards       | normative, two implementations           |
 | `error-mapping.md`           | Error envelope, code dictionary, leak prevention | normative, two implementations           |
+| `invoke-semantics.md`        | Response budget, invoke deadline, cancellation   | normative, two implementations           |
 | `transport.md`               | Streamable HTTP, PRM, the 401 rule               | normative, two implementations           |
 | `fixture-format.md`          | Fixture envelope and kinds                       | normative, two implementations           |
 | `schema-conversion-rules.md` | TypeShape → JSON Schema                          | **rule layer normative, binding partly** |

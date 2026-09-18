@@ -1,0 +1,27 @@
+{
+  "kind": "error-mapping",
+  "description": "nesne govdede sayim kendi ozellik sayisidir",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 500000,
+    "limit": 262144,
+    "payload": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    }
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 500000 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is an object with 3 properties. No argument of this call narrows the response.",
+    "retryable": false,
+    "payload": {
+      "bytes": 500000,
+      "limit": 262144,
+      "shape": {
+        "kind": "object",
+        "count": 3
+      }
+    }
+  }
+}

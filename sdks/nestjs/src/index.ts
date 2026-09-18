@@ -60,14 +60,27 @@ export {
 } from "./visibility/probe.js";
 export type { ProbeEvaluator } from "./visibility/probe.js";
 export { CallerVisibilityProvider } from "./visibility/provider.js";
-export type { DispatchResult, ProbeResult } from "./dispatcher.js";
+export type {
+  DispatchDeadline,
+  DispatchResult,
+  ProbeResult,
+} from "./dispatcher.js";
+export { SkMcpDispatchAborted } from "./synthetic-context.js";
+export type { DispatchAbortReason } from "./synthetic-context.js";
 export {
   ErrorMappingOptions,
   IdentityForwardingOptions,
   SkMcpOptions,
   SK_MCP_OPTIONS,
 } from "./options.js";
+export {
+  SkMcpConfigurationError,
+  collectConfigurationFailures,
+  validateSkMcpOptions,
+} from "./options-validation.js";
 export type {
+  InvokeTarget,
+  SkMcpInvokeOptions,
   SkMcpDiagnosticsOptions,
   SkMcpNamingOptions,
   SkMcpSelectionOptions,
@@ -115,7 +128,9 @@ export {
 export {
   compose,
   createRequestTemplate,
+  isInvokeError,
   isMappedError,
+  isSdkError,
   mapInvokeResult,
   SkMcpArgumentError,
   SkMcpTemplateError,

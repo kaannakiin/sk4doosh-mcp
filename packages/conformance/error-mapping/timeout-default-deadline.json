@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "varsayilan 30000 ms deadline; retryable true ve payload alani yoktur",
+  "input": {
+    "sdkError": "invoke_timeout",
+    "limitMs": 30000
+  },
+  "expected": {
+    "error": "invoke_timeout",
+    "message": "The backend did not answer within 30000 ms and the call was abandoned. The operation may already have been applied; re-read before retrying.",
+    "retryable": true
+  }
+}

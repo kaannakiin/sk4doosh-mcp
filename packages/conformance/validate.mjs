@@ -23,24 +23,54 @@ const validate = ajv.compile(
 let checked = 0;
 let failed = 0;
 
-for (const dir of [
-  "naming",
-  "metadata-extraction",
+const expectedKinds = [
   "argument-mapping",
+  "card",
+  "error-mapping",
+  "metadata-extraction",
+  "naming",
+  "schema-simplification",
+  "search",
   "selection",
   "visibility",
-  "search",
-  "error-mapping",
-  "schema-simplification",
-  "card",
-]) {
-  let files = [];
-  try {
-    files = readdirSync(path.join(here, dir)).filter((f) =>
-      f.endsWith(".json"),
-    );
-  } catch {
-    continue;
+];
+
+/**
+ * The kind list is derived from disk and compared with `expectedKinds` in both directions: a
+ * hardcoded list alone let a whole directory stop being validated the moment it was renamed, and
+ * the previous `catch { continue }` swallowed exactly that. A new kind must be declared here, and
+ * a declared kind must exist.
+ */
+const presentKinds = readdirSync(here, { withFileTypes: true })
+  .filter(
+    (entry) =>
+      entry.isDirectory() &&
+      !entry.name.startsWith(".") &&
+      entry.name !== "node_modules",
+  )
+  .map((entry) => entry.name)
+  .sort();
+
+for (const kind of expectedKinds) {
+  if (!presentKinds.includes(kind)) {
+    console.error(`FAIL missing fixture directory: ${kind}`);
+    failed += 1;
+  }
+}
+for (const kind of presentKinds) {
+  if (!expectedKinds.includes(kind)) {
+    console.error(`FAIL undeclared fixture directory: ${kind}`);
+    failed += 1;
+  }
+}
+
+for (const dir of expectedKinds.filter((kind) => presentKinds.includes(kind))) {
+  const files = readdirSync(path.join(here, dir)).filter((f) =>
+    f.endsWith(".json"),
+  );
+  if (files.length === 0) {
+    console.error(`FAIL empty fixture directory: ${dir}`);
+    failed += 1;
   }
   for (const file of files) {
     const rel = path.join(dir, file);

@@ -1,0 +1,23 @@
+{
+  "kind": "error-mapping",
+  "description": "daraltici argumani olmayan cagri; load_tool durumunun karsiligi",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 300000,
+    "limit": 262144,
+    "payload": [1, 2, 3]
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 300000 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is an array of 3 items. No argument of this call narrows the response.",
+    "retryable": false,
+    "payload": {
+      "bytes": 300000,
+      "limit": 262144,
+      "shape": {
+        "kind": "array",
+        "count": 3
+      }
+    }
+  }
+}

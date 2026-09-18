@@ -1,0 +1,26 @@
+{
+  "kind": "error-mapping",
+  "description": "sayim daima ust seviye elemanlardir; ic ice gezinmez, ozet ucuz kalir",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 400000,
+    "limit": 262144,
+    "payload": [
+      [1, 2, 3, 4],
+      [5, 6]
+    ]
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 400000 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is an array of 2 items. No argument of this call narrows the response.",
+    "retryable": false,
+    "payload": {
+      "bytes": 400000,
+      "limit": 262144,
+      "shape": {
+        "kind": "array",
+        "count": 2
+      }
+    }
+  }
+}

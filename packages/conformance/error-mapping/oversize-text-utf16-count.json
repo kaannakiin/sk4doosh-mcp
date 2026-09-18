@@ -1,0 +1,23 @@
+{
+  "kind": "error-mapping",
+  "description": "metin govdede sayim UTF-16 kod birimidir; BMP disi karakter iki birim sayilir",
+  "input": {
+    "sdkError": "response_too_large",
+    "bytes": 700000,
+    "limit": 262144,
+    "payload": "ab😀"
+  },
+  "expected": {
+    "error": "response_too_large",
+    "message": "The response is 700000 bytes; the limit is 262144 bytes. It is refused, not truncated: no part of the body was returned. The body is a text value of 4 characters. No argument of this call narrows the response.",
+    "retryable": false,
+    "payload": {
+      "bytes": 700000,
+      "limit": 262144,
+      "shape": {
+        "kind": "text",
+        "count": 4
+      }
+    }
+  }
+}

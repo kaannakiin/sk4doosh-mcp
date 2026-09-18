@@ -124,6 +124,12 @@ public sealed class ErrorMappingTests
             Assert.Equal("error-mapping", root.GetProperty("kind").GetString());
             JsonElement input = root.GetProperty("input");
 
+            if (input.TryGetProperty("sdkError", out JsonElement sdkCode))
+            {
+                AssertSdkFixture(file, sdkCode, input, root.GetProperty("expected"));
+                continue;
+            }
+
             BackendResponse response = BuildBackendResponse(input);
             HashSet<string> knownFields = input.TryGetProperty("knownFields", out JsonElement knownFieldsElement)
                 ? knownFieldsElement.EnumerateArray().Select(f => f.GetString()!).ToHashSet(StringComparer.Ordinal)
@@ -156,6 +162,38 @@ public sealed class ErrorMappingTests
                 JsonNode.DeepEquals(expectedNode, producedNode),
                 $"{Path.GetFileName(file)}\nexpected: {expectedNode.ToJsonString()}\nproduced: {producedNode.ToJsonString()}");
         }
+    }
+
+    private static void AssertSdkFixture(string file, JsonElement sdkCode, JsonElement input, JsonElement expected)
+    {
+        string code = sdkCode.GetString()!;
+        SdkError produced = code switch
+        {
+            "response_too_large" => SdkErrors.RefuseOversize(new OversizeResponse(
+                input.TryGetProperty("bytes", out JsonElement bytes) ? bytes.GetInt32() : 0,
+                input.TryGetProperty("limit", out JsonElement limit) ? limit.GetInt32() : 1,
+                SdkErrors.Describe(input.TryGetProperty("payload", out JsonElement payload)
+                    ? JsonNode.Parse(payload.GetRawText())
+                    : null),
+                input.TryGetProperty("narrowing", out JsonElement narrowing)
+                    ? [.. narrowing.EnumerateArray().Select(entry => new FieldError
+                    {
+                        Name = entry.GetProperty("name").GetString(),
+                        Message = entry.GetProperty("message").GetString()!,
+                    })]
+                    : null)),
+            "invoke_timeout" => SdkErrors.RefuseTimedOut(
+                input.TryGetProperty("limitMs", out JsonElement limitMs) ? limitMs.GetInt32() : 0),
+            _ => SdkErrors.Create(
+                JsonSerializer.Deserialize<SdkErrorCode>($"\"{code}\"", SkMcpJson.Wire),
+                input.TryGetProperty("message", out JsonElement message) ? message.GetString()! : string.Empty),
+        };
+
+        JsonNode producedNode = JsonSerializer.SerializeToNode(produced, SkMcpJson.Wire)!;
+        JsonNode expectedNode = JsonNode.Parse(expected.GetRawText())!;
+        Assert.True(
+            JsonNode.DeepEquals(expectedNode, producedNode),
+            $"{Path.GetFileName(file)}\nexpected: {expectedNode.ToJsonString()}\nproduced: {producedNode.ToJsonString()}");
     }
 
     [Fact]

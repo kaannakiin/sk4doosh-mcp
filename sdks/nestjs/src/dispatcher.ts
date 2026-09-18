@@ -25,6 +25,13 @@ export interface ProbeResult extends DispatchResult {
   readonly shortCircuited: boolean;
 }
 
+/** The lifetime bound of one dispatch: the caller's cancellation channel and the clock. */
+export interface DispatchDeadline {
+  readonly signal?: AbortSignal;
+  /** Whole milliseconds; zero or absent means no deadline. */
+  readonly timeoutMs?: number;
+}
+
 type PipelineFunction = (req: unknown, res: unknown) => void;
 
 const defaultUserAgent = "sk-mcp/0.0.0";
@@ -40,42 +47,54 @@ export class SkMcpDispatcher {
     method: string,
     path: string,
     outer?: OuterRequest,
+    deadline?: DispatchDeadline,
   ): Promise<DispatchResult>;
   dispatch(
     template: RequestTemplate,
     args: unknown,
     outer?: OuterRequest,
     deferred?: Readonly<Record<string, unknown>>,
+    deadline?: DispatchDeadline,
   ): Promise<DispatchResult>;
   async dispatch(
     target: string | RequestTemplate,
     second: unknown,
     outer?: OuterRequest,
-    deferred?: Readonly<Record<string, unknown>>,
+    third?: Readonly<Record<string, unknown>> | DispatchDeadline,
+    fourth?: DispatchDeadline,
   ): Promise<DispatchResult> {
     let method: string;
     let composed: ComposedRequest;
+    let deadline: DispatchDeadline | undefined;
     if (typeof target === "string") {
       method = target.toUpperCase();
       composed = { pathAndQuery: second as string, headers: {} };
+      deadline = third as DispatchDeadline | undefined;
     } else {
       method = target.method;
-      composed = compose(target, second, deferred);
+      composed = compose(
+        target,
+        second,
+        third as Readonly<Record<string, unknown>> | undefined,
+      );
+      deadline = fourth;
     }
 
-    return this.run(method, composed, outer, false);
+    return this.run(method, composed, outer, false, deadline);
   }
 
   async probe(
     method: string,
     path: string,
     outer?: OuterRequest,
+    deadline?: DispatchDeadline,
   ): Promise<ProbeResult> {
     const result = await this.run(
       method.toUpperCase(),
       { pathAndQuery: path, headers: {} },
       outer,
       true,
+      deadline,
     );
     return result;
   }
@@ -85,6 +104,7 @@ export class SkMcpDispatcher {
     composed: ComposedRequest,
     outer: OuterRequest | undefined,
     probe: boolean,
+    deadline: DispatchDeadline | undefined,
   ): Promise<ProbeResult> {
     const pipeline =
       this.adapterHost.httpAdapter?.getInstance<PipelineFunction>();
@@ -132,7 +152,7 @@ export class SkMcpDispatcher {
       body = Buffer.from(JSON.stringify(composed.bodyJson), "utf8");
     }
 
-    const { req, res, result } = createSyntheticContext(
+    const { req, res, result, abort } = createSyntheticContext(
       method,
       composed.pathAndQuery,
       headers,
@@ -141,8 +161,49 @@ export class SkMcpDispatcher {
       outer?.connection,
     );
     markSyntheticRequest(req, probe);
-    pipeline(req, res);
-    const dispatched = await result;
-    return { ...dispatched, shortCircuited: wasShortCircuited(req) };
+
+    const signal = deadline?.signal;
+    const onAbort = (): void => abort("caller");
+    if (signal?.aborted === true) {
+      abort("caller");
+    } else {
+      signal?.addEventListener("abort", onAbort, { once: true });
+    }
+
+    const timeoutMs = deadline?.timeoutMs ?? 0;
+    /**
+     * An un-unref'd handle keeps the event loop alive for the whole deadline after the dispatch
+     * already settled, which stops a test runner and a CLI from exiting. `clearTimeout` in the
+     * `finally` is the primary release; `unref` is what makes a missed one harmless.
+     */
+    const timer =
+      timeoutMs > 0 ? setTimeout(() => abort("timeout"), timeoutMs) : undefined;
+    timer?.unref?.();
+
+    try {
+      pipeline(req, res);
+    } catch (error) {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+      signal?.removeEventListener("abort", onAbort);
+      abort("pipeline");
+      /**
+       * Settling the context rejects `result`, which nothing awaits on this path because the
+       * pipeline's own error is the useful one. Without this no-op handler that rejection is
+       * unhandled and crashes the process under Node's default policy.
+       */
+      result.catch(() => undefined);
+      throw error;
+    }
+    try {
+      const dispatched = await result;
+      return { ...dispatched, shortCircuited: wasShortCircuited(req) };
+    } finally {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+      signal?.removeEventListener("abort", onAbort);
+    }
   }
 }

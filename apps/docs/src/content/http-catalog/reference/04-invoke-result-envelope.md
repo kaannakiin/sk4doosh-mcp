@@ -12,10 +12,10 @@ for.
 
 ## Two layers
 
-| Layer          | Produced                                | Has `status` | Codes                                         |
-| -------------- | --------------------------------------- | ------------ | --------------------------------------------- |
-| Backend-mapped | After your pipeline ran and responded   | Yes          | Nine `BackendErrorCode` values, in the schema |
-| SDK-side       | Before dispatch, from the tool's schema | **No**       | Eight, in code only                           |
+| Layer          | Produced                              | Has `status` | Codes                                         |
+| -------------- | ------------------------------------- | ------------ | --------------------------------------------- |
+| Backend-mapped | After your pipeline ran and responded | Yes          | Nine `BackendErrorCode` values, in the schema |
+| SDK-side       | Without a usable backend response     | **No**       | Thirteen `SdkErrorCode` values, in the schema |
 
 The presence or absence of `status` is the discriminator. It is the one thing to branch on: an
 envelope with a `status` describes what your backend did; an envelope without one describes what
@@ -68,7 +68,7 @@ the operation is unusable — a repaired `validation_failed` call is a new reque
 
 ## SDK-side errors
 
-These never reached your backend, so there is no HTTP status to report:
+These either never reached your backend, or reached it and got an answer sk-mcp refused to send. Either way there is no HTTP status to report:
 
 ```json
 {
@@ -94,8 +94,16 @@ These never reached your backend, so there is no HTTP status to report:
 }
 ```
 
-The eight codes are `unknown_argument`, `invalid_path_type`, `missing_path_parameter`,
-`header_injection`, `null_not_allowed`, `invalid_type`, `unknown_tool` and `not_invocable`.
+The thirteen codes are `unknown_argument`, `invalid_path_type`, `missing_path_parameter`,
+`header_injection`, `null_not_allowed`, `invalid_type`, `deferred_value_missing`,
+`deferred_value_invalid`, `unknown_tool`, `not_invocable`, `response_too_large`, `invoke_timeout`
+and `internal_error`.
+
+The last three come from the invoke guards rather than from argument composition, and two of them
+carry more than the envelope above: `response_too_large` adds a `payload` block and a `fields` list
+naming the arguments that narrow the call, and `invoke_timeout` is the one SDK-side code with
+`retryable: true`. See
+[how to keep a response from flooding the agent](/docs/http-catalog/keep-a-response-from-flooding-the-agent).
 
 This list is deliberately not tabulated with meanings here. Unlike the backend codes it has no
 schema and no spec table yet — it lives in

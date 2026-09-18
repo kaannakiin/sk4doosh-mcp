@@ -16,13 +16,28 @@ Converts the backend's HTTP errors into an MCP result the agent can act on **by 
 An `invoke_tool` result stays JSON inside a single text content block. Success and failure share the same `CallToolResult` carrier and are distinguished by the `isError` flag:
 
 - **Success** (when the backend returned `< 400`) → [`InvokeSuccess`](schemas/invoke-result.schema.json): `status`; `body` (the parsed value when the content type is JSON, otherwise the raw string together with `contentType`; when there is no body the field is absent entirely); `location` (when the response is a 3xx redirect).
-- **Every error** — the backend's 4xx/5xx, the SDK's argument-composition errors, `unknown_tool`, `not_invocable` — → `CallToolResult.isError = true` plus a [`MappedError`](schemas/invoke-result.schema.json) envelope: `error` (a `BackendErrorCode`), `message`, `status` (present only for backend errors; absent for SDK-side codes), `retryable`, `fields?`, `retryAfterSeconds?`, `reference?`.
+- **A backend error** (4xx/5xx) → `CallToolResult.isError = true` plus a [`MappedError`](schemas/invoke-result.schema.json) envelope: `error` (a `BackendErrorCode`), `message`, `status`, `retryable`, `fields?`, `retryAfterSeconds?`, `reference?`.
+- **An SDK-side error** — argument composition, `unknown_tool`, `not_invocable`, and the invoke guards of [invoke-semantics.md](invoke-semantics.md) — → `CallToolResult.isError = true` plus an [`SdkError`](schemas/invoke-result.schema.json) envelope: `error` (an `SdkErrorCode`), `message`, `retryable`, `fields?`, `payload?`. `status` MUST NOT be present: the backend was never reached, or its answer was discarded.
 
-`load_tool`'s `unknown_tool` answer — for a tool hidden by visibility or one that genuinely does not exist ([visibility.md](visibility.md)) — uses the same `isError: true` plus `MappedError` shape; the two meta-tools speak one error language.
+`load_tool`'s `unknown_tool` answer — for a tool hidden by visibility or one that genuinely does not exist ([visibility.md](visibility.md)) — uses the same `isError: true` plus `SdkError` shape; the two meta-tools speak one error language.
 
 A JSON-RPC level error is used **only** for a protocol violation (a malformed `arguments` type, an invalid catalog state). A request the backend rejected MUST NEVER become a JSON-RPC error — it is always a normal result carrying `isError: true`. The rationale: that is the parsing agents and [sdks/nestjs/samples/agent-client](../../sdks/nestjs/samples/agent-client) already implement, and two separate error channels would require two branches in agent code.
 
-SDK-side codes (`unknown_argument`, `invalid_path_type`, `missing_path_parameter`, `header_injection`, `null_not_allowed`, `invalid_type` — see [argument-mapping.md](argument-mapping.md); plus `unknown_tool`, `not_invocable`) are preserved verbatim, are fixture-pinned, and are independent of any backend status code: `{ error, message, retryable: false }` (no `status`, because the backend was never reached).
+### SDK-side codes
+
+Independent of any backend status code, fixture-pinned, and carried by `SdkError`. The two enums MUST stay disjoint; a shared member breaks the `InvokeResult` union.
+
+| code                                                                                                                      | `retryable` | when                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
+| `unknown_argument`, `invalid_path_type`, `missing_path_parameter`, `header_injection`, `null_not_allowed`, `invalid_type` | false       | Composition rejected the arguments ([argument-mapping.md](argument-mapping.md))      |
+| `deferred_value_missing`, `deferred_value_invalid`                                                                        | false       | A curated value could not be resolved ([argument-curation.md](argument-curation.md)) |
+| `unknown_tool`                                                                                                            | false       | No such operation, or one the caller may not see                                     |
+| `not_invocable`                                                                                                           | false       | The operation has no request template                                                |
+| `response_too_large`                                                                                                      | false       | The answer exceeded the payload budget ([invoke-semantics.md](invoke-semantics.md))  |
+| `invoke_timeout`                                                                                                          | **true**    | The invoke deadline expired ([invoke-semantics.md](invoke-semantics.md))             |
+| `internal_error`                                                                                                          | false       | The layer itself threw; the message passes the leak filter first                     |
+
+The first four families carry a message the SDK writes from the argument or tool name. `response_too_large` and `invoke_timeout` have standard messages pinned in [invoke-semantics.md](invoke-semantics.md); `response_too_large` also carries `fields` and `payload`.
 
 ## Code dictionary
 

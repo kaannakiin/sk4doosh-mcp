@@ -46,7 +46,14 @@
           "minLength": 1
         },
         "input": {
-          "$ref": "#/$defs/BackendResponseSpec"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/BackendResponseSpec"
+            },
+            {
+              "$ref": "#/$defs/SdkErrorSpec"
+            }
+          ]
         },
         "expected": {
           "$ref": "invoke-result.schema.json"
@@ -107,6 +114,40 @@
             "type": "string"
           },
           "description": "Wire field names the agent cannot set; a reported field matching one is emitted without a name."
+        }
+      }
+    },
+    "SdkErrorSpec": {
+      "title": "SdkErrorSpec",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sdkError"],
+      "properties": {
+        "sdkError": {
+          "$ref": "invoke-result.schema.json#/$defs/SdkErrorCode"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {},
+        "limitMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "narrowing": {
+          "type": "array",
+          "items": {
+            "$ref": "invoke-result.schema.json#/$defs/FieldError"
+          }
         }
       }
     },

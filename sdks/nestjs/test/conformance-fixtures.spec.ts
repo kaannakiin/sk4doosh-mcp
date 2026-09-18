@@ -13,7 +13,11 @@ import {
   routePlaceholderNames,
   evaluateVisibility,
   isSelected,
+  describePayload,
   mapInvokeResult,
+  refuseOversizeResponse,
+  refuseTimedOutInvoke,
+  sdkError,
   simplifySchema,
   SkMcpArgumentError,
   SkMcpCatalogError,
@@ -21,6 +25,7 @@ import {
   ToolIndex,
   type ArgumentFill,
   type BackendResponse,
+  type InvokeResult,
   type CurationRelief,
   type EndpointDescriptor,
   type Fixture,
@@ -270,16 +275,20 @@ describe("conformance: visibility", () => {
   }
 });
 
-function rawBody(
-  body: FixtureOf<"error-mapping">["input"]["body"],
-): string | undefined {
+type ErrorMappingInput = FixtureOf<"error-mapping">["input"];
+type BackendInput = Extract<ErrorMappingInput, { status: number }>;
+type SdkInput = Extract<ErrorMappingInput, { sdkError: string }>;
+
+function isSdkInput(input: ErrorMappingInput): input is SdkInput {
+  return "sdkError" in input;
+}
+
+function rawBody(body: BackendInput["body"]): string | undefined {
   if (body === undefined) return undefined;
   return typeof body === "string" ? body : JSON.stringify(body);
 }
 
-function backendResponseFrom(
-  input: FixtureOf<"error-mapping">["input"],
-): BackendResponse {
+function backendResponseFrom(input: BackendInput): BackendResponse {
   const body = rawBody(input.body);
   return {
     status: input.status,
@@ -291,9 +300,28 @@ function backendResponseFrom(
   };
 }
 
+function sdkResultFrom(input: SdkInput): InvokeResult {
+  if (input.sdkError === "response_too_large") {
+    return refuseOversizeResponse({
+      bytes: input.bytes ?? 0,
+      limit: input.limit ?? 1,
+      shape: describePayload(input.payload),
+      ...(input.narrowing === undefined ? {} : { narrowing: input.narrowing }),
+    });
+  }
+  if (input.sdkError === "invoke_timeout") {
+    return refuseTimedOutInvoke(input.limitMs ?? 0);
+  }
+  return sdkError(input.sdkError, input.message ?? "");
+}
+
 describe("conformance: error-mapping", () => {
   for (const [file, fixture] of fixturesOf("error-mapping")) {
     it(file, () => {
+      if (isSdkInput(fixture.input)) {
+        expect(sdkResultFrom(fixture.input)).toEqual(fixture.expected);
+        return;
+      }
       const response = backendResponseFrom(fixture.input);
       const options = {
         ...(fixture.input.knownFields === undefined

@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "arguman kodlari da ayni zarfi tasir; ajanin tek ayristirma yolu vardir",
+  "input": {
+    "sdkError": "unknown_argument",
+    "message": "Unknown argument 'tenantId'. The input schema does not declare it."
+  },
+  "expected": {
+    "error": "unknown_argument",
+    "message": "Unknown argument 'tenantId'. The input schema does not declare it.",
+    "retryable": false
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "error-mapping",
+  "description": "unknown_tool SdkError zarfini kullanir: status yok, retryable false",
+  "input": {
+    "sdkError": "unknown_tool",
+    "message": "No operation named 'ghost'. Use search_tools to find the exact name."
+  },
+  "expected": {
+    "error": "unknown_tool",
+    "message": "No operation named 'ghost'. Use search_tools to find the exact name.",
+    "retryable": false
+  }
+}

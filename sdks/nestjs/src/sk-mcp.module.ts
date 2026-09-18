@@ -37,6 +37,7 @@ import {
 } from "./extension-points.js";
 import { DefaultInvokeResultMapper } from "./invoke-result-mapper.js";
 import { SK_MCP_OPTIONS, SkMcpOptions } from "./options.js";
+import { validateSkMcpOptions } from "./options-validation.js";
 import { withAudienceCheck } from "./transport/audience.js";
 import {
   protectedResourceMetadataHandler,
@@ -141,6 +142,7 @@ export class SkMcpModule implements NestModule {
   ): DynamicModule {
     const options = new SkMcpOptions();
     configure?.(options);
+    validateSkMcpOptions(options);
     return {
       module: SkMcpModule,
       imports: [DiscoveryModule],
@@ -160,7 +162,11 @@ export class SkMcpModule implements NestModule {
       providers: [
         {
           provide: SK_MCP_OPTIONS,
-          useFactory: asyncOptions.useFactory,
+          useFactory: async (...args: unknown[]) => {
+            const options = await asyncOptions.useFactory(...(args as never[]));
+            validateSkMcpOptions(options);
+            return options;
+          },
           inject: asyncOptions.inject ?? [],
         },
         ...defaultProviders(),

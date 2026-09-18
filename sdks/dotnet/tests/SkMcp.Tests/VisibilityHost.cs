@@ -287,7 +287,7 @@ internal static class VisibilityHost
     public static async Task<(HashSet<string> Names, HashSet<string> Uncertain, int Total, string Raw)> SearchAsync(
         SkMcpMetaTools tools, string query = "")
     {
-        string raw = await tools.SearchTools(query, SkMcpMetaTools.MaxLimit);
+        string raw = TextOf(await tools.SearchTools(query, SkMcpMetaTools.MaxLimit));
         using JsonDocument document = JsonDocument.Parse(raw);
         HashSet<string> names = new(StringComparer.Ordinal);
         HashSet<string> uncertain = new(StringComparer.Ordinal);

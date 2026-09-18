@@ -8,6 +8,9 @@
     },
     {
       "$ref": "#/$defs/MappedError"
+    },
+    {
+      "$ref": "#/$defs/SdkError"
     }
   ],
   "$defs": {
@@ -98,6 +101,91 @@
         "location": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "SdkErrorCode": {
+      "title": "SdkErrorCode",
+      "type": "string",
+      "enum": [
+        "unknown_tool",
+        "not_invocable",
+        "unknown_argument",
+        "invalid_path_type",
+        "missing_path_parameter",
+        "header_injection",
+        "null_not_allowed",
+        "invalid_type",
+        "deferred_value_missing",
+        "deferred_value_invalid",
+        "response_too_large",
+        "invoke_timeout",
+        "internal_error"
+      ]
+    },
+    "PayloadShapeKind": {
+      "title": "PayloadShapeKind",
+      "type": "string",
+      "enum": ["array", "object", "text"]
+    },
+    "PayloadShape": {
+      "title": "PayloadShape",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/PayloadShapeKind"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "PayloadFacts": {
+      "title": "PayloadFacts",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "limit", "shape"],
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "shape": {
+          "$ref": "#/$defs/PayloadShape"
+        }
+      }
+    },
+    "SdkError": {
+      "title": "SdkError",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "message", "retryable"],
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/SdkErrorCode"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldError"
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/PayloadFacts"
         }
       }
     }

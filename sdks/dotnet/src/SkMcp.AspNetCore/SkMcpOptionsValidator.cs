@@ -25,6 +25,14 @@ internal sealed class SkMcpOptionsValidator : IValidateOptions<SkMcpOptions>
         {
             failures.Add("Visibility.ProbeConcurrency must be at least 1.");
         }
+        if (options.Invoke.MaxResponseBytes < 1)
+        {
+            failures.Add("Invoke.MaxResponseBytes must be at least 1.");
+        }
+        if (options.Invoke.Timeout < TimeSpan.Zero)
+        {
+            failures.Add("Invoke.Timeout must be zero or positive.");
+        }
         if (options.Synthetic.Scheme is not (null or "http" or "https"))
         {
             failures.Add("Synthetic.Scheme must be null, 'http' or 'https'.");

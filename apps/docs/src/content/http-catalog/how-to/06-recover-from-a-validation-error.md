@@ -72,12 +72,17 @@ discriminator:
 ```
 
 An error with a `status` came from your backend and was mapped. An error without one was produced
-before dispatch — the argument names or types do not match the schema you loaded, so re-read the
-schema with `load_tool` instead of retrying.
+by sk-mcp itself: for the argument codes, the names or types do not match the schema you loaded, so
+re-read the schema with `load_tool` instead of retrying.
 
 The codes that arrive without a `status` are `unknown_argument`, `invalid_path_type`,
-`missing_path_parameter`, `header_injection`, `null_not_allowed`, `invalid_type`, `unknown_tool`
-and `not_invocable`. The full envelope shape is on the
+`missing_path_parameter`, `header_injection`, `null_not_allowed`, `invalid_type`,
+`deferred_value_missing`, `deferred_value_invalid`, `unknown_tool`, `not_invocable`,
+`response_too_large`, `invoke_timeout` and `internal_error`. The last three are the invoke guards
+rather than argument problems, and `invoke_timeout` is the only one of the thirteen that is
+retryable — see
+[how to keep a response from flooding the agent](/docs/http-catalog/keep-a-response-from-flooding-the-agent).
+The full envelope shape is on the
 [invoke result envelope](/docs/http-catalog/invoke-result-envelope) page.
 
 ## Do not retry every error

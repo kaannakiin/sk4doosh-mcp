@@ -7,7 +7,8 @@ import {
 import { of, type Observable } from "rxjs";
 import type { VisibilityDecision } from "@sk-mcp/core";
 import type { CatalogEntry } from "../catalog.js";
-import { SkMcpDispatcher } from "../dispatcher.js";
+import { SkMcpDispatcher, type ProbeResult } from "../dispatcher.js";
+import { SkMcpDispatchAborted } from "../synthetic-context.js";
 import {
   isSkMcpProbe,
   markShortCircuited,
@@ -56,11 +57,23 @@ export class SkMcpProbeEvaluator implements ProbeEvaluator {
     outer: OuterRequest | undefined,
   ): Promise<VisibilityDecision> {
     const path = this.pathFor(entry);
-    const result = await this.dispatcher.probe(
-      entry.descriptor.method,
-      path,
-      outer,
-    );
+    let result: ProbeResult;
+    try {
+      result = await this.dispatcher.probe(
+        entry.descriptor.method,
+        path,
+        outer,
+      );
+    } catch (error) {
+      if (!(error instanceof SkMcpDispatchAborted)) {
+        throw error;
+      }
+      this.disabled.set(
+        entry.tool.name,
+        "the probe was abandoned before the pipeline produced a response",
+      );
+      return "unknown";
+    }
 
     if (result.status === 401 || result.status === 403) {
       return "deny";

@@ -62,7 +62,7 @@ Karşılaştırmaya girmeden önce onların modelini kendi terimleriyle:
 | **Versiyonlama**                  | `version=`, `VersionFilter`, `_meta.fastmcp.version`                                                                                                | Yok; aynı handler'ın URI versiyonları tek tool'a katlanır                                                                                                                                                                                   | Bizim için alakasız; backend versiyonu route'ta                                                                                                  |
 | **Katalog değişikliği**           | `list_changed` otomatik                                                                                                                             | `_meta["sk-mcp/catalogGeneration"]` + reload'da tek `listChanged`                                                                                                                                                                           | Parite                                                                                                                                           |
 | **Kaynak**                        | Herhangi bir dil, spec varsa                                                                                                                        | Framework başına SDK                                                                                                                                                                                                                        | Stratejik fark (§5)                                                                                                                              |
-| **Doğrulama**                     | pytest, tek implementasyon                                                                                                                          | Spec + 202 fixture + iki bağımsız implementasyon                                                                                                                                                                                            | **Biz**                                                                                                                                          |
+| **Doğrulama**                     | pytest, tek implementasyon                                                                                                                          | Spec + 220 fixture + iki bağımsız implementasyon                                                                                                                                                                                            | **Biz**                                                                                                                                          |
 
 ---
 
@@ -77,14 +77,13 @@ Karşılaştırmaya girmeden önce onların modelini kendi terimleriyle:
 - `invoke_tool` sabit bir meta-tool olduğu için `structuredContent`, istemci tarafında statik şemayla doğrulanamaz. Bu yüzden şema `load_tool`'da yeter; `InvokeSuccess` değişmez. Karta tek satır `returns` eklenmesi ayrıca tartışılır.
 - Spec: [metadata-contract.md](../../packages/spec/metadata-contract.md) tool definition tablosu, [search-semantics.md](../../packages/spec/search-semantics.md) meta-tool kontratı, `tool-definition.schema.json`. Fixture: `metadata-extraction` altına 3–4 vaka (object kök, array kök, 204 boş, 2xx yok).
 
-### 4.2 Invoke payload bütçesi ve timeout
+### 4.2 Invoke payload bütçesi ve timeout — **sevk edildi (§9)**
 
-Bugün her iki SDK'da da yok. `file-core`'daki `coreLimits.maxPayloadBytes` kapısının ilkesi HTTP kataloğa taşınır.
+Karar kaydı: [invoke-korumalari-karari.md](invoke-korumalari-karari.md). Spec: [invoke-semantics.md](../../packages/spec/invoke-semantics.md).
 
-- `InvokeSuccess`'e `truncated: true` + `bytes` (orijinal boyut). Kesme JSON'u bozmamalı: ya `body` string'i kesilir ve `contentType` korunur, ya da `body` yerine `bodyPreview` yazılır. İkinci tercih daha dürüst: kesik JSON'u parse eden ajan yanlış sonuç alır.
-- `options.invoke.timeoutMs`. Aşımda SDK-side kod; `backend_unavailable` ailesine yakın ama backend'e ulaşılmadığı için `status` yok. Yeni kod `invoke_timeout`, `retryable: true`.
-- Nest tarafında sentetik istek in-process olduğu için handler asılı kalırsa MCP çağrısı da asılı kalır; timeout burada sadece ajanı kurtarır, handler'ı iptal etmez. Bunu docs'ta söylemek gerekir.
-- Spec: [error-mapping.md](../../packages/spec/error-mapping.md) SDK-side kodlar listesi, `invoke-result.schema.json`. Fixture: `error-mapping`.
+Bu maddenin ilk hali kesmeyi (`truncated: true` + `bodyPreview`) öneriyordu ve **yanlıştı**: preview, kapının koruduğu bütçenin tamamını harcayıp kullanılamaz bir parça verir, kesik diziden cevap üretilemeyeceği için retry'ı zaten zorunlu kılar, ve ajanın bayrağı atlayıp parçadan emin cevap verme riskini ekler. Üstelik `file-core` bu kararı ters yönde çoktan vermişti (reddeder), yani aynı üründe iki cevap olurdu.
+
+Sevk edilen: **reddet, asla kesme**; üç meta-tool'da da; red `bytes`/`limit`/`shape` ve tool'un kendi daraltıcı argümanlarını taşır. `invoke_timeout` yalnız deadline dolduğunda, `retryable: true`. İptal L0/L1/L2 merdiveni olarak normatif ve L2 asla vaat edilmiyor.
 
 ### 4.3 Parametre adlarını ve açıklamalarını indeksle
 
@@ -178,16 +177,16 @@ Per-endpoint, host tarafında sunulacak üç işlem:
 
 ## 6. Önerilen sıra
 
-| Adım | İçerik                                                                     | Spec dokunuşu                                                | Fixture                                   |
-| ---- | -------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
-| 1    | §4.1 `outputSchema` **(tamamlandı, §8)** + §4.2 payload bütçesi ve timeout | metadata-contract, search-semantics, error-mapping; iki şema | metadata-extraction, error-mapping        |
-| 2    | §4.3 parametre indeksleme                                                  | search-semantics alan tablosu                                | search                                    |
-| 3    | §4.5 `detail` + §4.7 `tags`                                                | search-semantics meta-tool kontratı                          | search, card                              |
-| 4    | §4.6 `selection.rule`                                                      | selection-hierarchy                                          | selection                                 |
-| 5    | §4.4 argüman küratörlüğü                                                   | **Tamamlandı** (§7)                                          | mevcut dört kind genişledi, yeni kind yok |
-| 6    | §4.8 form body                                                             | schema-conversion-rules Tablo 7, argument-mapping            | argument-mapping                          |
+| Adım | İçerik                                                                                          | Spec dokunuşu                                                | Fixture                                   |
+| ---- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
+| 1    | §4.1 `outputSchema` **(tamamlandı, §8)** + §4.2 payload bütçesi ve timeout **(tamamlandı, §9)** | metadata-contract, search-semantics, error-mapping; iki şema | metadata-extraction, error-mapping        |
+| 2    | §4.3 parametre indeksleme                                                                       | search-semantics alan tablosu                                | search                                    |
+| 3    | §4.5 `detail` + §4.7 `tags`                                                                     | search-semantics meta-tool kontratı                          | search, card                              |
+| 4    | §4.6 `selection.rule`                                                                           | selection-hierarchy                                          | selection                                 |
+| 5    | §4.4 argüman küratörlüğü                                                                        | **Tamamlandı** (§7)                                          | mevcut dört kind genişledi, yeni kind yok |
+| 6    | §4.8 form body                                                                                  | schema-conversion-rules Tablo 7, argument-mapping            | argument-mapping                          |
 
-Adım 1 ve 2 küçük spec değişikliği + fixture ile kapanır. **Adım 5 sıradan çıktı ve önce sevk edildi** — gerekçesi ve sonucu §7'de. **Adım 1'in `outputSchema` yarısı §8'de kapandı; §4.2 açık kaldı.** Adım 6 ve §4.9 talep gelince.
+Adım 1 ve 2 küçük spec değişikliği + fixture ile kapanır. **Adım 5 sıradan çıktı ve önce sevk edildi** — gerekçesi ve sonucu §7'de. **Adım 1 iki yarısıyla da kapandı: `outputSchema` §8'de, payload bütçesi ve timeout §9'da.** Adım 6 ve §4.9 talep gelince.
 
 ---
 
@@ -204,12 +203,12 @@ Bu bölüm notun yazılmasından sonra ne değiştiğini kaydeder. Yukarıdaki �
 - **Kural katmanı:** tek çözümleyici iki tüketiciye veriyor — `packages/core/src/curation.ts` ve `SkMcp.AspNetCore/Curation.cs`. Şablon iki ad taşıyor (tel + ajan), `compose` üçüncü bir saf parametre (`deferred`) alıyor, deny-list serbest biçimli gövdede bile geçerli, doldurulan değerler ajanın gönderdiğiyle aynı tip kapısından ve aynı kodlamadan geçiyor.
 - **Host yüzeyleri:** Nest'te `arguments` + `hidden.value/from/omit` + `curate<T>()` + `@McpVariant` + `options.arguments.provide/curate/seal/everywhere`; ASP.NET'te `[McpArgument]`, `[McpToolVariant]`, `McpToolAttribute.Description`, `options.Arguments`.
 - **Yol üstünde kapanan parite boşluğu:** `extra.authInfo` Nest'te sınırda atılıyordu; artık `OuterRequest.auth` olarak okunuyor ve görünürlük de bundan faydalanıyor.
-- **Fixture:** 35 yeni, toplam 202. Yeni kind eklenmedi; dört mevcut kind'ın girdi şekli genişledi ve 167 eski fixture değişmeden geçti.
+- **Fixture:** 35 yeni, toplam 207. Yeni kind eklenmedi; dört mevcut kind'ın girdi şekli genişledi ve 167 eski fixture değişmeden geçti.
 - **Dokümantasyon:** yeni how-to sayfası `apps/docs/.../08-curate-the-arguments-an-agent-sees.md`, yapılandırma referansı ve iki SDK README'si.
 
 ### Ne değişmedi
 
-Notun geri kalan maddeleri açık: §4.1 `outputSchema` (§8'de kapandı), §4.2 payload bütçesi ve timeout, §4.3 parametre indeksleme, §4.5 `detail`, §4.6 `selection.rule`, §4.7 `tags`, §4.8 form/multipart body, §4.9 `deepObject` ve cookie. §5'in kopyalanmayacaklar listesi ve dört tartışma noktası aynen duruyor.
+Notun geri kalan maddeleri açık: §4.1 `outputSchema` (§8'de kapandı), §4.2 payload bütçesi ve timeout (§9'da kapandı), §4.3 parametre indeksleme, §4.5 `detail`, §4.6 `selection.rule`, §4.7 `tags`, §4.8 form/multipart body, §4.9 `deepObject` ve cookie. §5'in kopyalanmayacaklar listesi ve dört tartışma noktası aynen duruyor.
 
 Küratörlüğün kendisinde de bilinçli sınırlar var ve karar kaydında gerekçeleriyle yazılı: şema daraltma yok, görünür `default` yok, argüman yeniden sıralama yok, açıklama silme yok, çağırana göre küratörlük yok.
 
@@ -234,9 +233,23 @@ Küratörlüğün kendisinde de bilinçli sınırlar var ve karar kaydında gere
 | `@sk-mcp/core`       | 360/360                                              |
 | `@sk-mcp/sdk-nestjs` | 325/325 (17 atlanan, hepsi gerekçeli "unproducible") |
 | `@sk-mcp/sdk-dotnet` | 170/170, net8.0 ve net10.0                           |
-| `pnpm validate`      | 202/202                                              |
+| `pnpm validate`      | 207/207                                              |
 | `pnpm check-types`   | 24/24                                                |
 | `pnpm boundaries`    | 1714 dosya temiz                                     |
 | `dotnet build`       | 0 uyarı, 0 hata                                      |
 
 Testlerin yakaladığı ve derlemenin yakalayamayacağı üç gerçek hata vardı: iki TS runner'ı `naming` fixture'ının `variants` alanını descriptor'a hiç taşımıyordu; `@McpVariant` yığını varyantları kaynakta yazılanın **tersi** sırada yayınlıyordu (metot decorator'ları aşağıdan yukarı çalışır); ve 13 yeni `metadata-extraction` fixture'ı Nest round-trip'inin kapsam kontrolüne hiç kaydedilmemişti. Sonuncusunu kapatırken 11 fixture gerçek decorator'larla üretilir hâle geldi, yani küratörlük yüzeyi artık `@McpTool`/`@McpVariant`'tan descriptor'a kadar uçtan uca sabitli.
+
+---
+
+## 9. Güncelleme — 18 Eylül 2026
+
+§4.2 sevk edildi. Karar kaydı [invoke-korumalari-karari.md](invoke-korumalari-karari.md), normatif spec [packages/spec/invoke-semantics.md](../../packages/spec/invoke-semantics.md) — composition ile backend yanıtı arasını tarif eden ilk doküman.
+
+**Ne sevk edildi.** Yanıt bütçesi (üç meta-tool, 256 KiB, reddeder), invoke deadline'ı (30 000 ms), iptal merdiveni (L0/L1/L2, L2 asla vaat edilmez), her iki SDK'da tek bir çıkış noktası, ve C# tarafında `DelegatingMcpServerTool` üzerinden aşılamaz bir ikinci kapı. Şema tarafında `invoke-result.schema.json` üçüncü bir `oneOf` dalı kazandı (`SdkError`, `status` required değil); `BackendErrorCode` dokuz backend kodu olarak saf kaldı. 13 yeni fixture, toplam 220; yeni kind açılmadı.
+
+**Yan kapanış.** `error-mapping.md` "SDK-side kodlarda `status` yoktur" diyordu ama şema `status`'ü required yapıyordu — yani `unknown_tool` zarfı kendi yayınlanmış şemasına uymuyordu. Kapandı, ve üç SDK-side kod ilk kez fixture'landı.
+
+**Altı defekt kapandı**, üçü güvenlik/kararlılık sınıfında: yanıtı hiç bitirmeyen bir handler MCP çağrısını sonsuza kadar asıyordu; MCP SDK'sının kendi catch'i handler fırlatmalarını filtresiz yayıyordu; `extra.signal` hiç okunmuyordu. Ayrıntılar karar kaydının §3 ve §4'ünde.
+
+**Ne değişmedi.** §4.3 parametre indeksleme, §4.5 `detail`, §4.6 `selection.rule`, §4.7 `tags`, §4.8 form/multipart body, §4.9 `deepObject` ve cookie açık. §5'in kopyalanmayacaklar listesi ve dört tartışma noktası aynen duruyor.

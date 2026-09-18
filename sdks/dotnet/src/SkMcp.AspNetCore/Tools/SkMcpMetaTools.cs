@@ -11,6 +11,7 @@ using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Requests;
+using SkMcp.AspNetCore.Spec;
 using SkMcp.AspNetCore.Visibility;
 
 namespace SkMcp.AspNetCore.Tools;
@@ -33,7 +34,7 @@ internal sealed class SkMcpMetaTools(
 
     [McpServerTool(Name = "search_tools", ReadOnly = true, Idempotent = true)]
     [Description("Search the backend's API operations by keyword. Returns compact cards: name, short description and a parameter summary. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Call load_tool for the full input schema before invoke_tool.")]
-    public async Task<string> SearchTools(
+    public async Task<CallToolResult> SearchTools(
         [Description("Keywords matched by prefix against operation names, descriptions, tags and routes. Empty lists everything.")]
         string query = "",
         [Description("Maximum number of results, 1-50.")]
@@ -101,7 +102,7 @@ internal sealed class SkMcpMetaTools(
         }
         int total = catalog.Result.Entries.Count(entry => IsVisible(context.Decide(entry)));
 
-        return JsonSerializer.Serialize(new { total, results }, SkMcpJson.Wire);
+        return Respond(new { total, results }, isError: false, summaryOf: results, narrowing: SearchNarrowing);
     }
 
     [McpServerTool(Name = "load_tool", ReadOnly = true, Idempotent = true)]
@@ -130,7 +131,7 @@ internal sealed class SkMcpMetaTools(
         {
             return UnknownTool(name);
         }
-        return TextResult(JsonSerializer.Serialize(new
+        return Respond(new
         {
             entry.Tool.Name,
             entry.Tool.Description,
@@ -138,7 +139,7 @@ internal sealed class SkMcpMetaTools(
             entry.Tool.OutputSchema,
             entry.Tool.Annotations,
             AuthUncertain = Uncertain(decision),
-        }, SkMcpJson.Wire), isError: false);
+        }, isError: false);
     }
 
     [McpServerTool(Name = "invoke_tool")]
@@ -158,7 +159,7 @@ internal sealed class SkMcpMetaTools(
         }
         if (entry.Template is not { } template)
         {
-            return ErrorResult("not_invocable", $"Operation '{name}' cannot be invoked through sk-mcp; see the catalog diagnostics.");
+            return ErrorResult(SdkErrorCode.NotInvocable, $"Operation '{name}' cannot be invoked through sk-mcp; see the catalog diagnostics.");
         }
 
         try
@@ -168,20 +169,38 @@ internal sealed class SkMcpMetaTools(
                 options.Value.Arguments,
                 CallerFactory.From(httpContextAccessor.HttpContext),
                 cancellationToken);
-            DispatchResult result = await dispatcher.DispatchAsync(
-                template, arguments, httpContextAccessor.HttpContext?.Request, cancellationToken,
-                deferred);
+            InvokeTarget target = new(entry.Tool.Name, entry.Descriptor.Method, entry.Descriptor.Route);
+            TimeSpan deadline = TimeoutFor(target);
+            DispatchResult result;
+            try
+            {
+                result = await dispatcher.DispatchAsync(
+                    template, arguments, httpContextAccessor.HttpContext?.Request, cancellationToken,
+                    deferred, deadline);
+            }
+            catch (SkMcpDispatchTimeout)
+            {
+                return Respond(
+                    SdkErrors.RefuseTimedOut((int)deadline.TotalMilliseconds),
+                    isError: true);
+            }
             InvokeOutcome outcome = mapper.Map(result.ToBackendResponse(), VocabularyOf(entry, template));
+            IReadOnlyList<FieldError> narrowing = SdkErrors.NarrowingArguments(entry.Tool.InputSchema);
             return outcome switch
             {
-                InvokeSucceeded succeeded => TextResult(JsonSerializer.Serialize(succeeded.Success, SkMcpJson.Wire), isError: false),
-                InvokeFailed failed => TextResult(JsonSerializer.Serialize(failed.Error, SkMcpJson.Wire), isError: true),
+                InvokeSucceeded succeeded => Respond(
+                    succeeded.Success, isError: false,
+                    summaryOf: succeeded.Success.Body, narrowing: narrowing, target: target),
+                InvokeFailed failed => Respond(
+                    failed.Error, isError: true, narrowing: narrowing, target: target),
                 _ => throw new InvalidOperationException($"Unhandled invoke outcome: {outcome.GetType()}"),
             };
         }
         catch (SkMcpArgumentException ex)
         {
-            return ErrorResult(ex.Code, ex.Message);
+            return Respond(
+                SdkErrors.Create(JsonSerializer.Deserialize<SdkErrorCode>($"\"{ex.Code}\"", SkMcpJson.Wire), ex.Message),
+                isError: true);
         }
     }
 
@@ -333,15 +352,66 @@ internal sealed class SkMcpMetaTools(
         return fields;
     }
 
-    private static CallToolResult TextResult(string json, bool isError) => new()
+    private static readonly IReadOnlyList<FieldError> SearchNarrowing =
+    [
+        new FieldError { Name = "query", Message = "Keywords that select fewer operations." },
+        new FieldError { Name = "limit", Message = "Maximum number of results, 1-50." },
+    ];
+
+    private static CallToolResult Wire(string json, bool isError) => new()
     {
         IsError = isError,
         Content = [new TextContentBlock { Text = json }],
     };
 
-    private static CallToolResult ErrorResult(string code, string message) =>
-        TextResult(JsonSerializer.Serialize(new { error = code, message, retryable = false }, SkMcpJson.Wire), isError: true);
+    /// <summary>
+    /// The single place a meta-tool answer becomes a wire result, so none of them can reach the
+    /// agent without passing the payload budget. <see cref="SkMcpBudgetTool"/> backs it up for any
+    /// tool added to this type later. Pinned by ResponseBudgetTests.
+    /// </summary>
+    /// <param name="payload">The value to emit.</param>
+    /// <param name="isError">Whether the answer is an error.</param>
+    /// <param name="summaryOf">The value a refusal summarises; <paramref name="payload"/> when null.</param>
+    /// <param name="narrowing">The arguments a refusal names as narrowing this call.</param>
+    /// <param name="target">The endpoint a per-endpoint budget override sees.</param>
+    private CallToolResult Respond(
+        object payload,
+        bool isError,
+        object? summaryOf = null,
+        IReadOnlyList<FieldError>? narrowing = null,
+        InvokeTarget? target = null)
+    {
+        string json = JsonSerializer.Serialize(payload, SkMcpJson.Wire);
+        int bytes = Encoding.UTF8.GetByteCount(json);
+        int limit = BudgetFor(target);
+        if (bytes <= limit)
+        {
+            return Wire(json, isError);
+        }
+        SdkError refusal = SdkErrors.RefuseOversize(new OversizeResponse(
+            bytes,
+            limit,
+            SdkErrors.Describe(JsonSerializer.SerializeToNode(summaryOf ?? payload, SkMcpJson.Wire)),
+            narrowing));
+        return Wire(JsonSerializer.Serialize(refusal, SkMcpJson.Wire), isError: true);
+    }
 
-    private static CallToolResult UnknownTool(string name) =>
-        ErrorResult("unknown_tool", $"No operation named '{name}'. Use search_tools to find the exact name.");
+    private int BudgetFor(InvokeTarget? target)
+    {
+        InvokeOptions invoke = options.Value.Invoke;
+        int? over = target is { } value ? invoke.MaxResponseBytesFor?.Invoke(value) : null;
+        return over ?? invoke.MaxResponseBytes;
+    }
+
+    private TimeSpan TimeoutFor(InvokeTarget target)
+    {
+        InvokeOptions invoke = options.Value.Invoke;
+        return invoke.TimeoutFor?.Invoke(target) ?? invoke.Timeout;
+    }
+
+    private CallToolResult ErrorResult(SdkErrorCode code, string message) =>
+        Respond(SdkErrors.Create(code, message), isError: true);
+
+    private CallToolResult UnknownTool(string name) =>
+        ErrorResult(SdkErrorCode.UnknownTool, $"No operation named '{name}'. Use search_tools to find the exact name.");
 }
