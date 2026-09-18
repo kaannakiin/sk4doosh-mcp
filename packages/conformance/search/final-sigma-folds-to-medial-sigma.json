@@ -1,0 +1,24 @@
+{
+  "kind": "search",
+  "description": "kelime sonundaki buyuk sigma orta form sigmaya katlanir: ODOS iceren tool, medial sigma ile yazilmis sorguyla bulunur. JS toLowerCase kosullu Final_Sigma kuralini uygular, .NET ToLowerInvariant uygulamaz; katlama olmadan iki SDK ayni metni ayri indeksler",
+  "input": {
+    "tools": [
+      {
+        "name": "list_routes",
+        "description": "ΟΔΟΣ listesi",
+        "route": "/Rest/Route/List"
+      },
+      {
+        "name": "list_records",
+        "description": "kayit listesi",
+        "route": "/Rest/Record/List"
+      }
+    ],
+    "query": "οδοσ"
+  },
+  "expected": {
+    "names": [
+      "list_routes"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "kind": "search",
+  "description": "kok parametrenin kendi aciklamasi indekste kalir: ayni katalogda 'filtre' filter parametresini tasiyan tool'u bulur",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "Siparisleri listeler",
+        "route": "/Rest/Orders/List",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "object",
+              "description": "Filtre govdesi",
+              "properties": {
+                "tenantId": {
+                  "type": "integer",
+                  "description": "Kiraci numarasi"
+                }
+              }
+            }
+          },
+          "$defs": {
+            "TenantRef": {
+              "type": "object",
+              "properties": {
+                "tenantCode": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "report_status",
+        "description": "Durum raporu",
+        "route": "/Rest/Status/Report",
+        "inputSchema": { "type": "object" }
+      }
+    ],
+    "query": "filtre"
+  },
+  "expected": { "names": ["list_orders"] }
+}

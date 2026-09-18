@@ -1,0 +1,33 @@
+{
+  "kind": "search",
+  "description": "ad alani (3.0) parametre alanindan (1.0) agirdir: terim adda gecen tool, ayni terimi parametresinde tasiyanin onunde gelir",
+  "input": {
+    "tools": [
+      {
+        "name": "create_document",
+        "description": "Belge olusturur",
+        "route": "/Rest/Document/Create",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "invoice": { "type": "string" },
+            "page": { "type": "integer" }
+          }
+        }
+      },
+      {
+        "name": "get_invoice",
+        "description": "Tek kaydi dondurur",
+        "route": "/Rest/Doc/Get",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" }
+          }
+        }
+      }
+    ],
+    "query": "invoice"
+  },
+  "expected": { "names": ["get_invoice", "create_document"] }
+}

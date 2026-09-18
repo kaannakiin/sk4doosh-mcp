@@ -1,0 +1,33 @@
+{
+  "kind": "search",
+  "description": "tag katlamasi birlesik isaretleri dusurur: 'siparis' filtresi 'Siparis' tag'inin aksanli halini yakalar",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "kayit listeler",
+        "tags": [
+          "Sipariş"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_incidents",
+        "description": "kayit listeler",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/List"
+      }
+    ],
+    "query": "kayit",
+    "tags": [
+      "siparis"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_orders"
+    ]
+  }
+}

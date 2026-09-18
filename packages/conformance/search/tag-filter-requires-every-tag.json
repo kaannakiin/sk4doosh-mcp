@@ -1,0 +1,43 @@
+{
+  "kind": "search",
+  "description": "filtre VE anlamlidir: tool istenen tag'lerin hepsini tasimalidir, birini tasimak yetmez",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "siparis ozeti",
+        "tags": [
+          "Orders",
+          "Report"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_invoices",
+        "description": "fatura ozeti",
+        "tags": [
+          "Report"
+        ],
+        "route": "/Rest/Invoice/List"
+      },
+      {
+        "name": "create_order",
+        "description": "siparis ozeti olusturur",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Order/Create"
+      }
+    ],
+    "query": "ozeti",
+    "tags": [
+      "orders",
+      "report"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_orders"
+    ]
+  }
+}

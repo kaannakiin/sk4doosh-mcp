@@ -194,6 +194,13 @@ public sealed class CatalogFixtureTests
     [Fact]
     public void C5_SearchFixtures_AllPass()
     {
+        // Guard: the fixture corpus is not type-checked against fixture.schema.json on this side,
+        // so a runner that stopped reading inputSchema would silently score every parameter
+        // fixture against an index with no parameters, and one that stopped reading input.tags
+        // would silently drop every tag filter. Most cases would fail, but nothing structural
+        // says so.
+        bool projected = false;
+        bool filtered = false;
         foreach (JsonElement root in Fixtures("search"))
         {
             Assert.Equal("search", root.GetProperty("kind").GetString());
@@ -210,19 +217,30 @@ public sealed class CatalogFixtureTests
                     tool.GetProperty("route").GetString()!,
                     tool.TryGetProperty("alternateRoutes", out JsonElement alternates)
                         ? [.. alternates.EnumerateArray().Select(a => a.GetString()!)]
+                        : null,
+                    tool.TryGetProperty("inputSchema", out JsonElement inputSchema)
+                        ? SearchParameters.From(JsonObject.Create(inputSchema))
                         : null));
+                projected |= tool.TryGetProperty("inputSchema", out _);
             }
             int limit = input.TryGetProperty("limit", out JsonElement declared)
                 ? declared.GetInt32()
                 : SkMcpMetaTools.DefaultLimit;
+            IReadOnlyList<string>? tagFilter = input.TryGetProperty("tags", out JsonElement declaredTags)
+                ? [.. declaredTags.EnumerateArray().Select(t => t.GetString()!)]
+                : null;
+            filtered |= tagFilter is not null;
 
             string[] expected = root.GetProperty("expected").GetProperty("names")
                 .EnumerateArray().Select(n => n.GetString()!).ToArray();
             IReadOnlyList<string> produced = new ToolIndex(documents)
-                .Search(input.GetProperty("query").GetString(), limit);
+                .Search(input.GetProperty("query").GetString(), limit, tagFilter);
 
             Assert.Equal(expected, produced);
         }
+
+        Assert.True(projected, "no search fixture carried an inputSchema");
+        Assert.True(filtered, "no search fixture carried a tags filter");
     }
 
     [Fact]
@@ -312,6 +330,28 @@ public sealed class CatalogFixtureTests
 
             JsonNode produced = JsonSerializer.SerializeToNode(
                 SkMcpMetaTools.CardFor(tool, decision), SkMcpJson.Wire)!;
+            JsonNode? want = JsonNode.Parse(root.GetProperty("expected").GetRawText());
+            Assert.True(
+                JsonNode.DeepEquals(want, produced),
+                $"expected {want?.ToJsonString()} but produced {produced.ToJsonString()}");
+        }
+    }
+
+    [Fact]
+    public void C14_DetailFixtures_AllPass()
+    {
+        foreach (JsonElement root in Fixtures("detail"))
+        {
+            Assert.Equal("detail", root.GetProperty("kind").GetString());
+            JsonElement input = root.GetProperty("input");
+            ToolDefinition tool = input.GetProperty("tool").Deserialize<ToolDefinition>(Neutral)!;
+            VisibilityDecision decision =
+                input.TryGetProperty("decision", out JsonElement declared)
+                    ? Enum.Parse<VisibilityDecision>(declared.GetString()!, ignoreCase: true)
+                    : VisibilityDecision.Allow;
+
+            JsonNode produced = JsonSerializer.SerializeToNode(
+                SkMcpMetaTools.DetailFor(tool, decision), SkMcpJson.Wire)!;
             JsonNode? want = JsonNode.Parse(root.GetProperty("expected").GetRawText());
             Assert.True(
                 JsonNode.DeepEquals(want, produced),

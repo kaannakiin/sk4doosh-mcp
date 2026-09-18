@@ -4,12 +4,14 @@ export interface SearchDocument {
   readonly tags?: readonly string[];
   readonly route: string;
   readonly alternateRoutes?: readonly string[];
+  readonly parameters?: readonly string[];
 }
 
 export const nameWeight = 3.0;
 export const descriptionWeight = 1.5;
 export const tagWeight = 1.0;
 export const routeWeight = 1.0;
+export const parameterWeight = 1.0;
 export const prefixMinimumLength = 3;
 
 const k1 = 1.2;
@@ -17,6 +19,15 @@ const b = 0.75;
 
 const letterOrDigit = /[\p{L}\p{N}]/u;
 const nonSpacingMark = /\p{Mn}/gu;
+/**
+ * Guard: Greek writes one uppercase sigma and two lowercase ones, medial `σ` and final `ς`, so
+ * lowercasing `Σ` is a context-dependent choice. JavaScript's `toLowerCase` applies Unicode's
+ * conditional Final_Sigma rule and .NET's `ToLowerInvariant` does not, which indexed `ΟΔΟΣ` as
+ * `οδος` on one side and `οδοσ` on the other. NFD cannot reconcile them the way it reconciles the
+ * dotted `İ`: neither sigma decomposes. Unicode's own case folding settles the direction
+ * (CaseFolding.txt `03C2; C; 03C3`).
+ */
+const finalSigma = /\u03C2/gu;
 const upper = /\p{Lu}/u;
 const lower = /\p{Ll}/u;
 
@@ -30,11 +41,16 @@ interface MutablePostingList {
   readonly frequencies: number[];
 }
 
+/**
+ * Normalises an arbitrary string for comparison: NFD, drop `\p{Mn}`, lowercase, fold final sigma,
+ * NFC. It does not tokenize, split, trim or stem; a multi-word tag folds whole, spaces included.
+ */
 export function foldToken(text: string): string {
   return text
     .normalize("NFD")
     .replace(nonSpacingMark, "")
     .toLowerCase()
+    .replace(finalSigma, "\u03C3")
     .normalize("NFC");
 }
 
@@ -133,19 +149,34 @@ export class ToolIndex {
   private readonly postingFrequencies: Float64Array;
   private readonly postingOffsets: Uint32Array;
   private readonly vocabulary: readonly string[];
+  private readonly tagVocabulary: readonly string[];
+  private readonly documentTagIds: Uint32Array;
+  private readonly documentTagOffsets: Uint32Array;
 
   constructor(documents: Iterable<SearchDocument>) {
     const mutablePostings = new Map<string, MutablePostingList>();
+    const documentTags: string[][] = [];
+    const allTags = new Set<string>();
     for (const document of documents) {
       const terms = new Map<string, number>();
       accumulate(terms, document.name, nameWeight);
       accumulate(terms, document.description, descriptionWeight);
+      const foldedTags: string[] = [];
       for (const tag of document.tags ?? []) {
         accumulate(terms, tag, tagWeight);
+        const folded = foldToken(tag);
+        if (!foldedTags.includes(folded)) {
+          foldedTags.push(folded);
+          allTags.add(folded);
+        }
       }
+      documentTags.push(foldedTags);
       accumulate(terms, document.route, routeWeight);
       for (const alternate of document.alternateRoutes ?? []) {
         accumulate(terms, alternate, routeWeight);
+      }
+      for (const parameter of document.parameters ?? []) {
+        accumulate(terms, parameter, parameterWeight);
       }
       let length = 0;
       for (const value of terms.values()) {
@@ -206,22 +237,89 @@ export class ToolIndex {
       }
     }
     this.postingOffsets[this.vocabulary.length] = postingIndex;
+    this.tagVocabulary = [...allTags].sort(ordinal);
+    let tagCount = 0;
+    for (const tags of documentTags) {
+      tagCount += tags.length;
+    }
+    this.documentTagIds = new Uint32Array(tagCount);
+    this.documentTagOffsets = new Uint32Array(documentTags.length + 1);
+    let tagIndex = 0;
+    for (const [documentId, tags] of documentTags.entries()) {
+      this.documentTagOffsets[documentId] = tagIndex;
+      for (const tag of tags) {
+        this.documentTagIds[tagIndex] = lowerBound(this.tagVocabulary, tag);
+        tagIndex++;
+      }
+    }
+    this.documentTagOffsets[documentTags.length] = tagIndex;
+  }
+
+  private tagFilterIds(
+    tags: readonly string[] | undefined,
+  ): Uint32Array | undefined {
+    if (tags === undefined || tags.length === 0) {
+      return undefined;
+    }
+    const ids = new Uint32Array(tags.length);
+    for (let index = 0; index < tags.length; index++) {
+      const folded = foldToken(tags[index] as string);
+      const vocabularyIndex = lowerBound(this.tagVocabulary, folded);
+      ids[index] =
+        this.tagVocabulary[vocabularyIndex] === folded
+          ? vocabularyIndex
+          : this.tagVocabulary.length;
+    }
+    return ids;
+  }
+
+  private carriesEveryTag(documentId: number, filterIds: Uint32Array): boolean {
+    const start = this.documentTagOffsets[documentId] as number;
+    const end = this.documentTagOffsets[documentId + 1] as number;
+    for (let index = 0; index < filterIds.length; index++) {
+      const wanted = filterIds[index] as number;
+      let found = false;
+      for (let cursor = start; cursor < end; cursor++) {
+        if (this.documentTagIds[cursor] === wanted) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return false;
+      }
+    }
+    return true;
   }
 
   get count(): number {
     return this.documents.length;
   }
 
-  search(query: string | undefined, limit: number): string[] {
+  search(
+    query: string | undefined,
+    limit: number,
+    tags?: readonly string[],
+  ): string[] {
     if (!(limit > 0)) {
       throw new RangeError("limit must be positive");
     }
+    const filterIds = this.tagFilterIds(tags);
     const queryTerms = tokenize(query);
     if (queryTerms.length === 0) {
       const names: string[] = [];
-      const count = Math.min(limit, this.ordinalDocumentIds.length);
-      for (let index = 0; index < count; index++) {
+      for (
+        let index = 0;
+        index < this.ordinalDocumentIds.length && names.length < limit;
+        index++
+      ) {
         const documentId = this.ordinalDocumentIds[index] as number;
+        if (
+          filterIds !== undefined &&
+          !this.carriesEveryTag(documentId, filterIds)
+        ) {
+          continue;
+        }
         names.push((this.documents[documentId] as IndexedDocument).name);
       }
       return names;
@@ -264,6 +362,11 @@ export class ToolIndex {
           );
         }
       }
+      /**
+       * Guard: df counts the whole corpus. Narrowing the tag filter in above this line raises
+       * idf for every term the removed documents carried, so a tags argument would reorder the
+       * tools it did not remove. Pinned by tag-filter-preserves-document-frequency.json.
+       */
       const documentFrequency = matchingDocumentIds.length;
       if (documentFrequency === 0) {
         continue;
@@ -287,7 +390,14 @@ export class ToolIndex {
       }
     }
 
-    return scoredDocumentIds
+    const survivors =
+      filterIds === undefined
+        ? scoredDocumentIds
+        : scoredDocumentIds.filter((documentId) =>
+            this.carriesEveryTag(documentId, filterIds),
+          );
+
+    return survivors
       .sort((left, right) => {
         const scoreDifference =
           (scores[right] as number) - (scores[left] as number);

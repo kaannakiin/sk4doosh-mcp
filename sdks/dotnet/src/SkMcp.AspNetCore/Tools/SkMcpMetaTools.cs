@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -11,6 +12,7 @@ using SkMcp.AspNetCore.Caching;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Requests;
+using SkMcp.AspNetCore.Search;
 using SkMcp.AspNetCore.Spec;
 using SkMcp.AspNetCore.Visibility;
 
@@ -30,17 +32,41 @@ internal sealed class SkMcpMetaTools(
     public const int MaxLimit = 50;
     public const int CardDescriptionBudget = 160;
 
+    /// <summary>
+    /// How many distinct tags the answer will list before offering none at all.
+    /// </summary>
+    /// <remarks>
+    /// Guard: the vocabulary describes the catalog, not the query, so none of the narrowing
+    /// arguments shrinks it and an over-budget answer would be unactionable. Truncating instead
+    /// would be worse than omitting: an agent that does not see a tag concludes it does not exist.
+    /// </remarks>
+    public const int MaxTagVocabulary = 200;
+
     private sealed record DecisionContext(Func<CatalogEntry, VisibilityDecision> Decide, CallerScope Scope, HttpRequest? Outer);
 
+    /// <remarks>
+    /// Guard: <c>detail</c> is a string carrying <see cref="AllowedValuesAttribute"/> rather than a CLR
+    /// enum. An enum parameter is deserialized during argument binding, so an unrecognised value would
+    /// throw before this method runs and the answer would be neither the clamp
+    /// <see href="../../../../packages/spec/search-semantics.md">search-semantics.md</see> requires nor an
+    /// sk-mcp envelope from <see cref="Respond"/>. The attribute only decorates the published schema, which
+    /// is what keeps the clamp reachable in both SDKs. T16 pins the published shape.
+    /// </remarks>
     [McpServerTool(Name = "search_tools", ReadOnly = true, Idempotent = true)]
-    [Description("Search the backend's API operations by keyword. Returns compact cards: name, short description and a parameter summary. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Call load_tool for the full input schema before invoke_tool.")]
+    [Description("Search the backend's API operations by keyword. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Results are compact cards — name, short description and a parameter summary — and load_tool gives the full input schema of the one you pick. When you already know which operation you want, pass detail=\"schema\" with a small limit to get that schema here and skip the load_tool call.")]
     public async Task<CallToolResult> SearchTools(
-        [Description("Keywords matched by prefix against operation names, descriptions, tags and routes. Empty lists everything.")]
+        [Description("Keywords matched by prefix against operation names, descriptions, routes, argument names and tag text; keywords rank results, they do not filter them. Empty lists everything. To require a whole tag, use tags.")]
         string query = "",
         [Description("Maximum number of results, 1-50.")]
         int limit = DefaultLimit,
+        [Description("Shape of each result: \"card\" for the compact card, \"schema\" for the same shape load_tool returns. Any other value is card. A schema page is much larger; pair it with a small limit.")]
+        [AllowedValues("card", "schema")]
+        string detail = "card",
+        [Description("Tags every result must carry, matched against the whole tag and insensitive to case and accents. Empty applies no filter; the answer\u0027s tags field lists what is available.")]
+        string[] tags = null!,
         CancellationToken cancellationToken = default)
     {
+        bool wantsSchema = string.Equals(detail, "schema", StringComparison.Ordinal);
         catalog.EnsureValid();
         DecisionContext context = await DecideAsync(cancellationToken);
         int capped = Math.Clamp(limit, 1, MaxLimit);
@@ -49,7 +75,7 @@ internal sealed class SkMcpMetaTools(
             ? Math.Max(0, options.Value.Visibility.ProbeTopK)
             : 0;
 
-        List<CatalogEntry> ranked = [.. catalog.Search(query, everything)];
+        List<CatalogEntry> ranked = [.. catalog.Search(query, everything, tags)];
         Dictionary<string, VisibilityDecision> decisions = new(StringComparer.Ordinal);
         List<CatalogEntry> probeQueue = [];
         foreach (CatalogEntry entry in ranked)
@@ -94,15 +120,33 @@ internal sealed class SkMcpMetaTools(
             {
                 continue;
             }
-            results.Add(Card(entry, decision));
+            results.Add(wantsSchema ? Detail(entry, decision) : Card(entry, decision));
             if (results.Count == capped)
             {
                 break;
             }
         }
-        int total = catalog.Result.Entries.Count(entry => IsVisible(context.Decide(entry)));
+        int total = 0;
+        HashSet<string> vocabulary = new(StringComparer.Ordinal);
+        foreach (CatalogEntry entry in catalog.Result.Entries)
+        {
+            if (!IsVisible(context.Decide(entry)))
+            {
+                continue;
+            }
+            total += 1;
+            foreach (string tag in entry.Descriptor.Tags ?? [])
+            {
+                vocabulary.Add(ToolIndex.FoldToken(tag));
+            }
+        }
+        string[]? known = vocabulary.Count is 0 or > MaxTagVocabulary
+            ? null
+            : [.. vocabulary.Order(StringComparer.Ordinal)];
 
-        return Respond(new { total, results }, isError: false, summaryOf: results, narrowing: SearchNarrowing);
+        return Respond(
+            new { total, results, tags = known },
+            isError: false, summaryOf: results, narrowing: SearchNarrowing);
     }
 
     [McpServerTool(Name = "load_tool", ReadOnly = true, Idempotent = true)]
@@ -131,15 +175,7 @@ internal sealed class SkMcpMetaTools(
         {
             return UnknownTool(name);
         }
-        return Respond(new
-        {
-            entry.Tool.Name,
-            entry.Tool.Description,
-            entry.Tool.InputSchema,
-            entry.Tool.OutputSchema,
-            entry.Tool.Annotations,
-            AuthUncertain = Uncertain(decision),
-        }, isError: false);
+        return Respond(DetailFor(entry.Tool, decision), isError: false);
     }
 
     [McpServerTool(Name = "invoke_tool")]
@@ -233,6 +269,29 @@ internal sealed class SkMcpMetaTools(
         AuthUncertain = Uncertain(decision),
     };
 
+    private static object Detail(CatalogEntry entry, VisibilityDecision decision) =>
+        DetailFor(entry.Tool, decision);
+
+    /// <summary>
+    /// Projects a tool into its loaded shape: name, untruncated description, input schema, output schema
+    /// when the endpoint declares a success body, and annotations. <c>load_tool</c> and
+    /// <c>search_tools</c> under <c>detail: "schema"</c> both answer with this.
+    /// </summary>
+    /// <remarks>
+    /// Guard: the members are named one by one instead of serializing the definition, because a policy
+    /// name MUST NOT reach the agent (visibility.md invariant 3). detail/auth-is-never-emitted.json fails
+    /// on either SDK that emits <c>auth</c>.
+    /// </remarks>
+    internal static object DetailFor(Spec.ToolDefinition tool, VisibilityDecision decision) => new
+    {
+        tool.Name,
+        tool.Description,
+        tool.InputSchema,
+        tool.OutputSchema,
+        tool.Annotations,
+        AuthUncertain = Uncertain(decision),
+    };
+
     private static string Truncate(string text)
     {
         if (text.Length <= CardDescriptionBudget)
@@ -250,7 +309,7 @@ internal sealed class SkMcpMetaTools(
         {
             foreach (JsonNode? node in names)
             {
-                if (node?.GetValue<string>() is { } requiredName)
+                if (node is JsonValue value && value.TryGetValue(out string? requiredName))
                 {
                     required.Add(requiredName);
                 }
@@ -356,6 +415,8 @@ internal sealed class SkMcpMetaTools(
     [
         new FieldError { Name = "query", Message = "Keywords that select fewer operations." },
         new FieldError { Name = "limit", Message = "Maximum number of results, 1-50." },
+        new FieldError { Name = "detail", Message = "Use \"card\" for the compact shape." },
+        new FieldError { Name = "tags", Message = "Tags every result must carry." },
     ];
 
     private static CallToolResult Wire(string json, bool isError) => new()

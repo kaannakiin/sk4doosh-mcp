@@ -1,0 +1,41 @@
+{
+  "kind": "search",
+  "description": "tag filtresinde token'lastirma yoktur: 'order' ne 'Orders'e ne 'OrderItems'e eslesir, yalniz tam esit 'Order' tag'ine eslesir; ne cogul s dusurme ne camelCase bolme uygulanir",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "kayit listeler",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_order_items",
+        "description": "kayit listeler",
+        "tags": [
+          "OrderItems"
+        ],
+        "route": "/Rest/OrderItem/List"
+      },
+      {
+        "name": "create_order",
+        "description": "kayit listeler",
+        "tags": [
+          "Order"
+        ],
+        "route": "/Rest/Order/Create"
+      }
+    ],
+    "query": "kayit",
+    "tags": [
+      "order"
+    ]
+  },
+  "expected": {
+    "names": [
+      "create_order"
+    ]
+  }
+}

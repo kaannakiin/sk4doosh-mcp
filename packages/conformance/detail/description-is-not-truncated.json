@@ -1,0 +1,47 @@
+{
+  "kind": "detail",
+  "description": "160 butcesi kartin: ayni tool card/truncates-at-last-space-before-budget.json'da kesilirken burada aciklama aynen tasinir",
+  "input": {
+    "tool": {
+      "name": "list_items",
+      "description": "kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      },
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "list_items",
+    "description": "kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime kelime",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    }
+  }
+}

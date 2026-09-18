@@ -26,6 +26,7 @@ const defaults: Readonly<Record<string, CatalogSeverity>> = {
   ambiguous_curation: "fatal",
   curated_open_body: "warning",
   curation_leaks_name: "warning",
+  curation_leaks_name_in_argument: "warning",
   curation_unused_on_kept_route: "warning",
   variant_indistinguishable: "warning",
   route_folded: "warning",

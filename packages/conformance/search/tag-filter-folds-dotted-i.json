@@ -1,0 +1,33 @@
+{
+  "kind": "search",
+  "description": "tag katlamasi noktali I'yi dil-bagimsiz cozer: 'iade' filtresi noktali I tasiyan tag'i yakalar; katlamayi atlayip dogrudan kucuk harfe cevirmek iki SDK'da ayri sonuc verirdi",
+  "input": {
+    "tools": [
+      {
+        "name": "list_returns",
+        "description": "kayit listeler",
+        "tags": [
+          "İADE"
+        ],
+        "route": "/Rest/Return/List"
+      },
+      {
+        "name": "list_incidents",
+        "description": "kayit listeler",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/List"
+      }
+    ],
+    "query": "kayit",
+    "tags": [
+      "iade"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_returns"
+    ]
+  }
+}

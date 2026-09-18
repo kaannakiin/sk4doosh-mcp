@@ -1,0 +1,44 @@
+{
+  "kind": "search",
+  "description": "yalniz kok properties indekslenir: ic ice govdedeki tenantId ve $defs'teki tenantCode aranmaz",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "Siparisleri listeler",
+        "route": "/Rest/Orders/List",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "object",
+              "description": "Filtre govdesi",
+              "properties": {
+                "tenantId": {
+                  "type": "integer",
+                  "description": "Kiraci numarasi"
+                }
+              }
+            }
+          },
+          "$defs": {
+            "TenantRef": {
+              "type": "object",
+              "properties": {
+                "tenantCode": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "report_status",
+        "description": "Durum raporu",
+        "route": "/Rest/Status/Report",
+        "inputSchema": { "type": "object" }
+      }
+    ],
+    "query": "tenant"
+  },
+  "expected": { "names": [] }
+}

@@ -29,6 +29,18 @@ public sealed class McpToolAttribute : Attribute, IMcpSelectionMetadata
     /// </remarks>
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Replaces the grouping labels derived from the container, rather than adding to them.
+    /// </summary>
+    /// <remarks>
+    /// A host that groups four controllers under one tag would otherwise carry four container
+    /// names it never chose into the vocabulary agents browse. The type is <c>string[]</c> because
+    /// an attribute argument must be a constant or an array creation expression, which rules out
+    /// <c>IReadOnlyList&lt;string&gt;</c>; a collection expression is not one either, so the value
+    /// is written <c>Tags = new[] { "billing" }</c>.
+    /// </remarks>
+    public string[]? Tags { get; set; }
+
     public bool ReadOnly
     {
         get => _readOnly ?? false;

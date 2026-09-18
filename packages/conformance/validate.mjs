@@ -26,6 +26,7 @@ let failed = 0;
 const expectedKinds = [
   "argument-mapping",
   "card",
+  "detail",
   "error-mapping",
   "metadata-extraction",
   "naming",

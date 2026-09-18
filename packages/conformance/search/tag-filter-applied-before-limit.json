@@ -1,0 +1,42 @@
+{
+  "kind": "search",
+  "description": "filtre limitten once uygulanir: en ustteki tool elense de limit hayatta kalanlari sayar, sonuc bos donmez",
+  "input": {
+    "tools": [
+      {
+        "name": "get_invoice",
+        "description": "invoice kaydini dondurur",
+        "tags": [
+          "Integration"
+        ],
+        "route": "/Rest/Invoice"
+      },
+      {
+        "name": "render_report",
+        "description": "invoice ciktisi uretir",
+        "tags": [
+          "Billing"
+        ],
+        "route": "/Rest/Report/Render"
+      },
+      {
+        "name": "sync_feed",
+        "description": "invoice akisini esitler",
+        "tags": [
+          "Billing"
+        ],
+        "route": "/Rest/Feed/Sync"
+      }
+    ],
+    "query": "invoice",
+    "limit": 1,
+    "tags": [
+      "billing"
+    ]
+  },
+  "expected": {
+    "names": [
+      "render_report"
+    ]
+  }
+}

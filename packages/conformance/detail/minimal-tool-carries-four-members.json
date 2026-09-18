@@ -1,0 +1,37 @@
+{
+  "kind": "detail",
+  "description": "outputSchema yoksa ve karar allow ise sekil dort uye tasir; outputSchema ve authUncertain anahtarlari hic yazilmaz",
+  "input": {
+    "tool": {
+      "name": "ping",
+      "description": "Servisin ayakta oldugunu bildirir.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      },
+      "auth": {
+        "anonymous": "yes",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "ping",
+    "description": "Servisin ayakta oldugunu bildirir.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    }
+  }
+}

@@ -24,6 +24,13 @@ public sealed class SkMcpOptions
     public DiagnosticsOptions Diagnostics { get; } = new();
     public ArgumentCurationOptions Arguments { get; } = new();
     public InvokeOptions Invoke { get; } = new();
+
+    /// <summary>
+    /// Grouping labels for a container the host cannot decorate, keyed by the container's full
+    /// type name. It sits below a <c>[McpTool(Tags = ...)]</c> declaration and above the
+    /// container-derived default, and like a declaration it replaces that default.
+    /// </summary>
+    public Func<string, IReadOnlyList<string>?>? Tags { get; set; }
 }
 
 /// <summary>What a per-endpoint budget or timeout override sees.</summary>

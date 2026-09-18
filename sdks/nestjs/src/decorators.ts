@@ -106,6 +106,12 @@ export interface McpToolOptions {
    * agent-facing surface and span the body too.
    */
   readonly arguments?: Readonly<Record<string, ArgumentRule>>;
+  /**
+   * The operation's grouping labels, replacing the one derived from the container rather than
+   * adding to it, so a host can remove a grouping it did not choose. They are `search_tools`
+   * filter keys and search index vocabulary at once ([search-semantics.md]).
+   */
+  readonly tags?: readonly string[];
   readonly readOnly?: boolean;
   readonly destructive?: boolean;
   readonly idempotent?: boolean;

@@ -119,7 +119,11 @@ method-level rule that only renames something else.
 
 Hiding `tenantId` makes a description that says "filter by tenant and status" a lie, and the agent
 has no way to notice. The SDK checks for you: when a tool's **name or description** still contains
-the wire name of a hidden or renamed argument, it reports `curation_leaks_name`.
+the wire name of a hidden or renamed argument, it reports `curation_leaks_name`. A description you
+write on a curated argument is checked too, under `curation_leaks_name_in_argument`: those
+descriptions are indexed for search, so naming a hidden argument there makes the tool findable by a
+word the agent cannot send. Descriptions your DTOs already carry are not checked — you did not write
+them while curating, and generic names like `type` would fire constantly.
 
 The check is heuristic — a one-word name like `page` will fire on "page size" — so it is a warning.
 Read it, then either fix the sentence or ignore that one.

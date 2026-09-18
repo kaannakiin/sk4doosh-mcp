@@ -25,7 +25,7 @@ import {
   type ToolDefinition,
 } from "@sk-mcp/core";
 import { describe, expect, it } from "vitest";
-import { declaredDescriptor, toCuration } from "../src/catalog.js";
+import { cleanTags, declaredDescriptor, toCuration } from "../src/catalog.js";
 import { curate, hidden, McpTool, McpVariant } from "../src/decorators.js";
 import {
   discoverEndpoints,
@@ -361,6 +361,14 @@ class CurationItemBody {
 }
 
 @Controller("orders")
+class TagsController {
+  @Get()
+  @McpTool({ description: "Lists orders.", tags: ["billing", "orders"] })
+  @UseGuards(AnonymousGuard)
+  declaredTags(): void {}
+}
+
+@Controller("orders")
 class CurationController {
   @Get()
   @McpTool({
@@ -530,6 +538,10 @@ const hosts: Record<string, HostCase> = {
     controller: OrdersController,
     handler: "cancelOrder",
   },
+  "declared-tags-replace-container-tag.json": {
+    controller: TagsController,
+    handler: "declaredTags",
+  },
   "curated-rename-keeps-position.json": {
     controller: CurationController,
     handler: "renamePage",
@@ -618,7 +630,10 @@ const unproducible: Record<string, string> = {
     "A query parameter whose schema is a $ref beside its own $defs: query parameters are bound from scalar DTO members, so no parameter schema the binder emits carries a bag.",
 };
 
-function discover(host: HostCase): EndpointDescriptor {
+function discover(host: HostCase): {
+  readonly descriptor: EndpointDescriptor;
+  readonly declaresTags: boolean;
+} {
   const found = discoverEndpoints(
     [{ metatype: host.controller }],
     host.options ?? {},
@@ -630,7 +645,17 @@ function discover(host: HostCase): EndpointDescriptor {
     entry,
     `discovery produced no endpoint for ${host.handler}`,
   ).toBeDefined();
-  return declaredDescriptor(entry!, toCuration(entry!.hints.arguments ?? {}));
+  const declared = entry!.hints.tags;
+  return {
+    descriptor: declaredDescriptor(
+      entry!,
+      toCuration(entry!.hints.arguments ?? {}),
+      declared === undefined
+        ? undefined
+        : cleanTags(declared, host.handler, () => {}),
+    ),
+    declaresTags: declared !== undefined,
+  };
 }
 
 function toolOf(descriptor: EndpointDescriptor, name: string): ToolDefinition {
@@ -662,7 +687,7 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
     }
 
     it(file, () => {
-      const descriptor = discover(host);
+      const { descriptor, declaresTags } = discover(host);
       const expected = fixture.expected;
 
       expect(descriptor.method).toBe(fixture.input.method);
@@ -675,6 +700,15 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
       expect(descriptor.responses ?? {}).toEqual(fixture.input.responses ?? {});
       expect(descriptor.arguments ?? []).toEqual(fixture.input.arguments ?? []);
       expect(descriptor.variants ?? []).toEqual(fixture.input.variants ?? []);
+      /**
+       * Guard: gated on the host declaring tags, not on the fixture carrying them. Seven fixtures
+       * carry illustrative `tags` that no Nest controller could produce — discovery derives the
+       * tag from the container's class name — so comparing whenever the fixture has the field
+       * would fail them over a fact none of them is about.
+       */
+      if (declaresTags) {
+        expect(descriptor.tags).toEqual(fixture.input.tags);
+      }
 
       if ("error" in expected) {
         try {

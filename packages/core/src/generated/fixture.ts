@@ -7,7 +7,8 @@ export type Fixture =
   | SearchFixture
   | ErrorMappingFixture
   | SchemaSimplificationFixture
-  | CardFixture;
+  | CardFixture
+  | DetailFixture;
 export type ArgumentFill = (
   | {
       kind: "constant";
@@ -377,6 +378,7 @@ export interface SearchFixture {
     tools: [SearchTool, ...SearchTool[]];
     query: string;
     limit?: number;
+    tags?: string[];
   };
   expected: SearchExpectation;
 }
@@ -386,6 +388,7 @@ export interface SearchTool {
   tags?: string[];
   route: string;
   alternateRoutes?: string[];
+  inputSchema?: JsonSchemaObject;
 }
 export interface SearchExpectation {
   names: string[];
@@ -536,5 +539,22 @@ export interface CardExpectation {
   name: string;
   description: string;
   parameters: string;
+  authUncertain?: boolean;
+}
+export interface DetailFixture {
+  kind: "detail";
+  description: string;
+  input: {
+    tool: ToolDefinition;
+    decision?: "allow" | "deny" | "unknown";
+  };
+  expected: DetailExpectation;
+}
+export interface DetailExpectation {
+  name: string;
+  description: string;
+  inputSchema: JsonSchemaObject;
+  outputSchema?: JsonSchemaObject;
+  annotations: ToolAnnotations;
   authUncertain?: boolean;
 }

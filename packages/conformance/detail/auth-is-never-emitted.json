@@ -1,0 +1,52 @@
+{
+  "kind": "detail",
+  "description": "Tool dolu bir auth tasisa bile sekilde auth uyesi yoktur: politika adlari ajana sizmaz (visibility.md degismez 3)",
+  "input": {
+    "tool": {
+      "name": "delete_invoice",
+      "description": "Faturayi siler.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
+      },
+      "auth": {
+        "anonymous": "no",
+        "policies": [
+          "FinanceAdmin",
+          "InvoiceWrite"
+        ],
+        "imperative": true
+      }
+    }
+  },
+  "expected": {
+    "name": "delete_invoice",
+    "description": "Faturayi siler.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  }
+}

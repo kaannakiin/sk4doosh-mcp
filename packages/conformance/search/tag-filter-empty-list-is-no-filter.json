@@ -1,0 +1,32 @@
+{
+  "kind": "search",
+  "description": "bos tags listesi filtre uygulamaz: sonuc argumansiz cagriyla ayni kalir",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "kayit listeler",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_incidents",
+        "description": "kayit listeler",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/List"
+      }
+    ],
+    "query": "kayit",
+    "tags": []
+  },
+  "expected": {
+    "names": [
+      "list_incidents",
+      "list_orders"
+    ]
+  }
+}

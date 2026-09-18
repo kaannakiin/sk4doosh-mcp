@@ -1,0 +1,45 @@
+{
+  "kind": "detail",
+  "description": "annotations yalniz gecerli hint'leri tasir; yazilmayan hint false ile doldurulmaz, bos nesne bos kalir",
+  "input": {
+    "tool": {
+      "name": "create_note",
+      "description": "Yeni not olusturur.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {},
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "create_note",
+    "description": "Yeni not olusturur.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {}
+  }
+}

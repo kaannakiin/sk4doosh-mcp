@@ -1,0 +1,38 @@
+{
+  "kind": "metadata-extraction",
+  "description": "beyan edilen tags container kaynakli tag yerine gecer; descriptor tasir, ToolDefinition tasimaz",
+  "input": {
+    "operationId": "ListOrders",
+    "method": "GET",
+    "route": "/orders",
+    "description": "Lists orders.",
+    "tags": [
+      "billing",
+      "orders"
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "list_orders",
+    "description": "Lists orders.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

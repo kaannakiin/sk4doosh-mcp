@@ -86,16 +86,24 @@ export type {
 export {
   cardDescriptionBudget,
   createCard,
+  createDetail,
   defaultSearchLimit,
   maxSearchLimit,
+  maxSearchTagVocabulary,
+  searchParameters,
   summarizeParameters,
   truncateDescription,
 } from "./card.js";
-export type { Card } from "./card.js";
+export type { Card, ToolDetail } from "./card.js";
 export { createRequestTemplateFromEndpoint, createTool } from "./tool.js";
 export type { Tool } from "./tool.js";
-export { ToolIndex, tokenize } from "./search.js";
-export { curationShapeOf, emptyCuration, resolveCuration } from "./curation.js";
+export { foldToken, ToolIndex, tokenize } from "./search.js";
+export {
+  curatedDescriptions,
+  curationShapeOf,
+  emptyCuration,
+  resolveCuration,
+} from "./curation.js";
 export type {
   ArgumentSlot,
   CurationRelief,

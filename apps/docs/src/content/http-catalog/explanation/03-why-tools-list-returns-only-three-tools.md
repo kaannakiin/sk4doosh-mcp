@@ -30,6 +30,14 @@ calls `load_tool` for that one's schema, then `invoke_tool`.
 The cost of a tool the agent did not choose is one card, not one schema. And because the card is
 generated from the same catalog entry as the schema, there is nothing to keep in sync.
 
+That ladder is the default, not a rule. An agent that already knows which operation it wants pays
+a turn to learn a schema it could have been handed, so `search_tools` takes a `detail` argument:
+`detail: "schema"` returns each result in the shape `load_tool` would have returned, and the agent
+goes straight to `invoke_tool`. Cards stay the default because the question the ladder answers has
+not changed — in a catalog of any size, the schemas of the operations the agent did not pick are
+the whole cost, and a page of them is far larger than a page of cards. Which side of that trade a
+call is on is something the agent knows and the SDK does not, so the SDK stops guessing and asks.
+
 ## The second-order effects
 
 Two consequences are easy to miss and are most of why the design pays for itself.

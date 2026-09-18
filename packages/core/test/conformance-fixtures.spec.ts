@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   compose,
   createCard,
+  createDetail,
   arraySeparatorFor,
   createRequestTemplate,
   createToolDefinition,
@@ -17,6 +18,7 @@ import {
   mapInvokeResult,
   refuseOversizeResponse,
   refuseTimedOutInvoke,
+  searchParameters,
   sdkError,
   simplifySchema,
   SkMcpArgumentError,
@@ -353,10 +355,17 @@ describe("conformance: search", () => {
           ...(t.alternateRoutes === undefined
             ? {}
             : { alternateRoutes: t.alternateRoutes }),
+          ...(t.inputSchema === undefined
+            ? {}
+            : { parameters: searchParameters(t.inputSchema) }),
         })),
       );
       expect(
-        index.search(fixture.input.query, fixture.input.limit ?? 20),
+        index.search(
+          fixture.input.query,
+          fixture.input.limit ?? 20,
+          fixture.input.tags,
+        ),
       ).toEqual(fixture.expected.names);
     });
   }
@@ -390,6 +399,18 @@ describe("conformance: card", () => {
         fixture.input.decision ?? "allow",
       );
       expect(card).toEqual(fixture.expected);
+    });
+  }
+});
+
+describe("conformance: detail", () => {
+  for (const [file, fixture] of fixturesOf("detail")) {
+    it(file, () => {
+      const detail = createDetail(
+        fixture.input.tool as ToolDefinition,
+        fixture.input.decision ?? "allow",
+      );
+      expect(detail).toEqual(fixture.expected);
     });
   }
 });

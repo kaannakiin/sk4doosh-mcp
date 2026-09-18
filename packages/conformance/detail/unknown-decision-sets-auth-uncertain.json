@@ -1,0 +1,53 @@
+{
+  "kind": "detail",
+  "description": "Karar unknown ise sekil authUncertain tasir; kart ile ayni kural, ayni bayrak",
+  "input": {
+    "tool": {
+      "name": "get_receipt",
+      "description": "Fisi dondurur.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      },
+      "auth": {
+        "anonymous": "no",
+        "policies": [],
+        "imperative": false
+      }
+    },
+    "decision": "unknown"
+  },
+  "expected": {
+    "name": "get_receipt",
+    "description": "Fisi dondurur.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "authUncertain": true
+  }
+}

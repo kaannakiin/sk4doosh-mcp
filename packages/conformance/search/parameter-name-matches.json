@@ -1,0 +1,33 @@
+{
+  "kind": "search",
+  "description": "parametre adi indekslenir: 'customer' ad, aciklama ve route'ta gecmezken customerId parametresi olan tool'u bulur",
+  "input": {
+    "tools": [
+      {
+        "name": "list_records",
+        "description": "Kayitlari listeler",
+        "route": "/Rest/Records/List",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customerId": { "type": "integer" },
+            "page": { "type": "integer" }
+          }
+        }
+      },
+      {
+        "name": "report_status",
+        "description": "Durum raporu",
+        "route": "/Rest/Status/Report",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "since": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "query": "customer"
+  },
+  "expected": { "names": ["list_records"] }
+}

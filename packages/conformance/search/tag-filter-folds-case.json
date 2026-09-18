@@ -1,0 +1,33 @@
+{
+  "kind": "search",
+  "description": "tag esitligi katlanmis metin uzerindedir: 'orders' filtresi 'ORDERS' tag'ini yakalar",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "kayit listeler",
+        "tags": [
+          "ORDERS"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_incidents",
+        "description": "kayit listeler",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/List"
+      }
+    ],
+    "query": "kayit",
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_orders"
+    ]
+  }
+}

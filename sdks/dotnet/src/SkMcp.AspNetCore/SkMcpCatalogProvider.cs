@@ -79,10 +79,10 @@ internal sealed class SkMcpCatalogProvider(
     public CatalogEntry? Find(string name) =>
         Current.ByName.TryGetValue(name, out CatalogEntry? entry) ? entry : null;
 
-    public IReadOnlyList<CatalogEntry> Search(string? query, int limit)
+    public IReadOnlyList<CatalogEntry> Search(string? query, int limit, IReadOnlyList<string>? tags = null)
     {
         Snapshot snapshot = Current;
-        return snapshot.Index.Search(query, limit)
+        return snapshot.Index.Search(query, limit, tags)
             .Select(name => snapshot.ByName[name])
             .ToArray();
     }
@@ -154,6 +154,7 @@ internal sealed class SkMcpCatalogProvider(
             hasFallbackPolicy: hasFallbackPolicy,
             prefixMode: options.Value.Naming.PrefixMode,
             containerPrefix: options.Value.Naming.Prefix,
+            containerTags: options.Value.Tags,
             severityOf: options.Value.Diagnostics.SeverityOf,
             curation: options.Value.Arguments);
         if (schemaNotes.Count > 0)
@@ -168,7 +169,8 @@ internal sealed class SkMcpCatalogProvider(
             e.Tool.Description,
             e.Descriptor.Tags ?? [],
             e.Descriptor.Route,
-            e.AlternateRoutes)));
+            e.AlternateRoutes,
+            SearchParameters.From(e.Tool.InputSchema))));
         CatalogDiagnostic[] fatal = result.Diagnostics
             .Where(d => options.Value.Diagnostics.SeverityOf(d.Code)
                 >= options.Value.Diagnostics.FailOn)

@@ -1,0 +1,51 @@
+{
+  "kind": "search",
+  "description": "bos sorgu ad siralamasiyla listeler ve tags filtresi bu dala da uygulanir; kesme en sonda oldugu icin liste elenen tool'lari atlayarak limit kadar sonuc toplar",
+  "input": {
+    "tools": [
+      {
+        "name": "create_incident",
+        "description": "olay kaydi acar",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/Create"
+      },
+      {
+        "name": "list_orders",
+        "description": "siparis listeler",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_returns",
+        "description": "iade listeler",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Return/List"
+      },
+      {
+        "name": "update_incident",
+        "description": "olay kaydi gunceller",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/Update"
+      }
+    ],
+    "query": "",
+    "limit": 2,
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_orders",
+      "list_returns"
+    ]
+  }
+}

@@ -109,6 +109,27 @@ export interface CurationRelief {
   readonly onUnused: (name: string) => void;
 }
 
+/**
+ * The descriptions the host wrote in its own curation declarations, after variant replacement.
+ *
+ * Distinct from the descriptions on the published schema, which also carry prose inherited from
+ * the backend's own types. Only the host-authored half is evidence that a curated argument was
+ * named while it was being curated away, so only this half is searched for a leak
+ * ([argument-curation.md](../../spec/argument-curation.md)).
+ */
+export function curatedDescriptions(
+  endpoint: EndpointDescriptor,
+  variant: ToolVariant | undefined,
+): readonly string[] {
+  const descriptions: string[] = [];
+  for (const record of declarations(endpoint, variant)) {
+    if (record.description !== undefined) {
+      descriptions.push(record.description);
+    }
+  }
+  return descriptions;
+}
+
 export function resolveCuration(
   endpoint: EndpointDescriptor,
   variant: ToolVariant | undefined,

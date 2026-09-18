@@ -1,0 +1,25 @@
+{
+  "kind": "search",
+  "description": "parametre alani tag ile ayni katmandadir (1.0): esit uzunluktaki iki tool berabere kalir ve ad ordinaline gore siralanir",
+  "input": {
+    "tools": [
+      {
+        "name": "alpha_probe",
+        "route": "/a",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "orders": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "beta_probe",
+        "route": "/b",
+        "tags": ["Orders"]
+      }
+    ],
+    "query": "orders"
+  },
+  "expected": { "names": ["alpha_probe", "beta_probe"] }
+}

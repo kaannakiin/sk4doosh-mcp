@@ -1,0 +1,33 @@
+{
+  "kind": "search",
+  "description": "tags filtresi sonucu daraltir: iki tool da 'raporu' ile eslesir, yalniz Orders tag'li olan doner",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "siparis raporu dondurur",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_incidents",
+        "description": "olay raporu dondurur",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/List"
+      }
+    ],
+    "query": "raporu",
+    "tags": [
+      "orders"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_orders"
+    ]
+  }
+}

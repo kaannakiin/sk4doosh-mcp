@@ -79,9 +79,8 @@ internal sealed class ResolvedCuration
     /// security-shaped silent failure. A record carrying only a name therefore resets that argument
     /// to the endpoint's own shape.
     /// </remarks>
-    public static ResolvedCuration Resolve(
-        EndpointDescriptor endpoint, ToolVariant? variant, CurationShape shape,
-        CurationRelief? relief = null)
+    private static Dictionary<string, ArgumentCuration> Declarations(
+        EndpointDescriptor endpoint, ToolVariant? variant)
     {
         Dictionary<string, ArgumentCuration> merged = new(StringComparer.Ordinal);
         foreach (ArgumentCuration record in endpoint.Arguments ?? [])
@@ -104,6 +103,37 @@ internal sealed class ResolvedCuration
             }
             merged[record.Name] = record;
         }
+        return merged;
+    }
+
+    /// <summary>
+    /// The descriptions the host wrote in its own curation declarations, after variant replacement.
+    /// </summary>
+    /// <remarks>
+    /// Distinct from the descriptions on the published schema, which also carry prose inherited
+    /// from the backend's own types. Only the host-authored half is evidence that a curated
+    /// argument was named while it was being curated away, so only this half is searched for a
+    /// leak (argument-curation.md).
+    /// </remarks>
+    public static IReadOnlyList<string> CuratedDescriptions(
+        EndpointDescriptor endpoint, ToolVariant? variant)
+    {
+        List<string> descriptions = [];
+        foreach (ArgumentCuration record in Declarations(endpoint, variant).Values)
+        {
+            if (record.Description is { } description)
+            {
+                descriptions.Add(description);
+            }
+        }
+        return descriptions;
+    }
+
+    public static ResolvedCuration Resolve(
+        EndpointDescriptor endpoint, ToolVariant? variant, CurationShape shape,
+        CurationRelief? relief = null)
+    {
+        Dictionary<string, ArgumentCuration> merged = Declarations(endpoint, variant);
         if (merged.Count == 0)
         {
             return Empty;

@@ -5,6 +5,14 @@ import type { VisibilityDecision } from "./visibility.js";
 export const cardDescriptionBudget = 160;
 export const defaultSearchLimit = 20;
 export const maxSearchLimit = 50;
+/**
+ * How many distinct tags a `search_tools` answer lists before offering none at all.
+ *
+ * Guard: the vocabulary describes the catalog, not the query, so none of the narrowing arguments
+ * shrinks it and an over-budget answer would be unactionable. Truncating instead would be worse
+ * than omitting: an agent that does not see a tag concludes it does not exist.
+ */
+export const maxSearchTagVocabulary = 200;
 
 export interface Card {
   readonly name: string;
@@ -25,12 +33,29 @@ export function truncateDescription(text: string): string {
   return `${body}…`;
 }
 
+/**
+ * Guard: the schema may be a host-supplied verbatim schema that no validator has
+ * seen, so `properties`, `required`, a member schema and a member `type` can each
+ * be any JSON value. Each unusable shape contributes nothing rather than throwing,
+ * and the same four decisions are made by `Summarize` in the .NET SDK. Without the
+ * narrowing a malformed member threw here, which took down the whole `search_tools`
+ * call rather than one card, while the .NET side returned a degraded card.
+ */
 export function summarizeParameters(inputSchema: JsonSchemaObject): string {
-  const properties = inputSchema.properties;
-  if (properties === undefined) {
+  const properties: unknown = inputSchema.properties;
+  if (
+    typeof properties !== "object" ||
+    properties === null ||
+    Array.isArray(properties)
+  ) {
     return "";
   }
-  const required = new Set(inputSchema.required ?? []);
+  const declared: unknown = inputSchema.required;
+  const required = new Set(
+    Array.isArray(declared)
+      ? declared.filter((name): name is string => typeof name === "string")
+      : [],
+  );
   const parts: string[] = [];
   for (const [name, schema] of Object.entries(properties)) {
     const type = typeLabel(schema);
@@ -39,6 +64,40 @@ export function summarizeParameters(inputSchema: JsonSchemaObject): string {
     );
   }
   return parts.join(", ");
+}
+
+/**
+ * Projects a tool's published `inputSchema` into the terms the search index
+ * carries under `parameters`: each root property key, and that property's
+ * `description` when it is a string.
+ *
+ * Guard: `inputSchema` may be a host-supplied verbatim schema that no validator
+ * has seen, so `properties`, a member schema and a `description` can each be any
+ * JSON value. Narrowing each one keeps a malformed schema from throwing during
+ * catalog construction, and keeps this projection identical to
+ * `SearchParameters.From` in the .NET SDK.
+ */
+export function searchParameters(
+  inputSchema: JsonSchemaObject,
+): readonly string[] {
+  const properties: unknown = inputSchema.properties;
+  if (
+    typeof properties !== "object" ||
+    properties === null ||
+    Array.isArray(properties)
+  ) {
+    return [];
+  }
+  const terms: string[] = [];
+  for (const [name, schema] of Object.entries(properties)) {
+    terms.push(name);
+    const description: unknown = (schema as { description?: unknown } | null)
+      ?.description;
+    if (typeof description === "string") {
+      terms.push(description);
+    }
+  }
+  return terms;
 }
 
 export function createCard(
@@ -53,15 +112,52 @@ export function createCard(
   return decision === "unknown" ? { ...card, authUncertain: true } : card;
 }
 
+/**
+ * The shape `load_tool` returns and `search_tools` returns per result under
+ * `detail: "schema"`.
+ */
+export type ToolDetail = Pick<
+  ToolDefinition,
+  "name" | "description" | "inputSchema" | "outputSchema" | "annotations"
+> & { readonly authUncertain?: boolean };
+
+/**
+ * Projects a tool into its loaded shape: name, untruncated description, input
+ * schema, output schema when the endpoint declares a success body, and
+ * annotations.
+ *
+ * Guard: `auth` is picked away rather than spread past, because a policy name
+ * MUST NOT reach the agent ([visibility.md](../../spec/visibility.md) invariant
+ * 3). `Pick` makes `{ ...tool }` a type error here, and
+ * `detail/auth-is-never-emitted.json` fails on either SDK that emits the member
+ * anyway.
+ */
+export function createDetail(
+  tool: ToolDefinition,
+  decision: VisibilityDecision = "allow",
+): ToolDetail {
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    ...(tool.outputSchema === undefined
+      ? {}
+      : { outputSchema: tool.outputSchema }),
+    annotations: tool.annotations,
+    ...(decision === "unknown" ? { authUncertain: true } : {}),
+  };
+}
+
 function typeLabel(schema: JsonSchemaObject): string {
-  const type = schema.type;
+  const type: unknown = (schema as { type?: unknown } | null)?.type;
   if (typeof type === "string") {
     return type;
   }
   if (Array.isArray(type)) {
-    const named = type.find((candidate) => candidate !== "null");
-    if (named !== undefined) {
-      return named;
+    for (const candidate of type) {
+      if (typeof candidate === "string" && candidate !== "null") {
+        return candidate;
+      }
     }
   }
   return "any";

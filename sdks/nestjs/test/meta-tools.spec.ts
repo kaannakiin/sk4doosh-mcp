@@ -228,6 +228,92 @@ describe("nest meta-tools", () => {
     expect(card?.parameters).toBe("id: integer (required)");
   });
 
+  it("search_tools publishes detail as an enum defaulting to card", async () => {
+    const listed = await (await clientFor("alice")).listTools();
+    const search = listed.tools.find((tool) => tool.name === "search_tools");
+    const detail = (
+      search?.inputSchema.properties as Record<string, Record<string, unknown>>
+    )["detail"];
+    expect(detail?.["type"]).toBe("string");
+    expect(detail?.["enum"]).toEqual(["card", "schema"]);
+    expect(detail?.["default"]).toBe("card");
+    expect(typeof detail?.["description"]).toBe("string");
+  });
+
+  /**
+   * The twin of this test is T17 in sdks/dotnet/tests/SkMcp.Tests/TransportTests.cs, and the
+   * description is asserted verbatim in both because nothing else can compare two SDKs running in
+   * two processes. The `default` is null rather than an empty array because a C# array parameter's
+   * default must be a compile-time constant; zod's `meta` publishes the same null here.
+   */
+  it("search_tools publishes tags as an optional string array", async () => {
+    const listed = await (await clientFor("alice")).listTools();
+    const search = listed.tools.find((tool) => tool.name === "search_tools");
+    const tags = (
+      search?.inputSchema.properties as Record<string, Record<string, unknown>>
+    )["tags"];
+    expect(tags?.["type"]).toBe("array");
+    expect(tags?.["items"]).toEqual({ type: "string" });
+    expect(tags?.["default"]).toBeNull();
+    expect(tags?.["description"]).toBe(
+      "Tags every result must carry, matched against the whole tag and insensitive to case and accents. Empty applies no filter; the answer's tags field lists what is available.",
+    );
+    expect(search?.inputSchema["required"] ?? []).not.toContain("tags");
+  });
+
+  /**
+   * The twin of T18 in sdks/dotnet/tests/SkMcp.Tests/TransportTests.cs. `arguments` publishes a
+   * description and no `type` on purpose: the argument accepts raw JSON so a non-object value
+   * reaches the handler and leaves as an sk-mcp envelope rather than a raw MCP validation error.
+   */
+  it("invoke_tool publishes name and arguments as required", async () => {
+    const listed = await (await clientFor("alice")).listTools();
+    const invoke = listed.tools.find((tool) => tool.name === "invoke_tool");
+    const properties = invoke?.inputSchema.properties as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(properties["name"]?.["type"]).toBe("string");
+    expect(properties["name"]?.["description"]).toBe(
+      "Operation name exactly as returned by search_tools.",
+    );
+    expect(properties["arguments"]?.["description"]).toBe(
+      "Arguments as a JSON object whose keys are the input schema's properties.",
+    );
+    expect(properties["arguments"]).not.toHaveProperty("type");
+    expect(
+      [...((invoke?.inputSchema["required"] as string[]) ?? [])].sort(),
+    ).toEqual(["arguments", "name"]);
+  });
+
+  it("search_tools with detail schema answers what load_tool would", async () => {
+    const name = [...catalog.current.byName.keys()].find((candidate) =>
+      candidate.endsWith("get_order"),
+    ) as string;
+    const { parsed } = await call<{
+      results: Record<string, unknown>[];
+    }>("search_tools", { query: "order", detail: "schema" }, "alice");
+    const entry = parsed.results.find((result) => result["name"] === name);
+    const { parsed: loaded } = await call<Record<string, unknown>>(
+      "load_tool",
+      { name },
+      "alice",
+    );
+    expect(entry).toEqual(loaded);
+    expect(entry?.["auth"]).toBeUndefined();
+  });
+
+  it("search_tools falls back to cards for any other detail value", async () => {
+    const { parsed } = await call<{
+      results: Record<string, unknown>[];
+    }>("search_tools", { query: "order", detail: "banana" }, "alice");
+    expect(parsed.results.length).toBeGreaterThan(0);
+    for (const result of parsed.results) {
+      expect(typeof result["parameters"]).toBe("string");
+      expect(result["inputSchema"]).toBeUndefined();
+    }
+  });
+
   it("load_tool returns the schema and never the auth model", async () => {
     const name = [...catalog.current.byName.keys()].find((candidate) =>
       candidate.endsWith("get_order"),

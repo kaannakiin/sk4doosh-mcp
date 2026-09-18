@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   descriptionWeight,
+  foldToken,
   nameWeight,
+  parameterWeight,
   prefixMinimumLength,
   routeWeight,
   tagWeight,
@@ -14,6 +16,7 @@ interface ReferenceDocument {
   readonly name: string;
   readonly terms: ReadonlyMap<string, number>;
   readonly length: number;
+  readonly tags: ReadonlySet<string>;
 }
 
 const k1 = 1.2;
@@ -58,11 +61,19 @@ class LinearReferenceIndex {
         accumulate(terms, tag, tagWeight);
       }
       accumulate(terms, document.route, routeWeight);
+      for (const parameter of document.parameters ?? []) {
+        accumulate(terms, parameter, parameterWeight);
+      }
       let length = 0;
       for (const value of terms.values()) {
         length += value;
       }
-      return { name: document.name, terms, length };
+      return {
+        name: document.name,
+        terms,
+        length,
+        tags: new Set((document.tags ?? []).map(foldToken)),
+      };
     });
     this.averageLength =
       this.documents.length === 0
@@ -71,13 +82,22 @@ class LinearReferenceIndex {
           this.documents.length;
   }
 
-  search(query: string | undefined, limit: number): string[] {
+  search(
+    query: string | undefined,
+    limit: number,
+    tags?: readonly string[],
+  ): string[] {
     if (!(limit > 0)) {
       throw new RangeError("limit must be positive");
     }
+    const required =
+      tags === undefined || tags.length === 0 ? [] : tags.map(foldToken);
+    const survives = (document: ReferenceDocument): boolean =>
+      required.every((tag) => document.tags.has(tag));
     const queryTerms = tokenize(query);
     if (queryTerms.length === 0) {
       return this.documents
+        .filter(survives)
         .map((document) => document.name)
         .sort(ordinal)
         .slice(0, limit);
@@ -94,6 +114,9 @@ class LinearReferenceIndex {
 
     const scored: Array<{ readonly name: string; readonly score: number }> = [];
     for (const document of this.documents) {
+      if (!survives(document)) {
+        continue;
+      }
       let score = 0;
       for (const term of queryTerms) {
         const tf = frequency(document, term);
@@ -155,9 +178,44 @@ function syntheticDocuments(seed: number, count: number): SearchDocument[] {
       description: `${verb} ${noun} records with status metadata ${unique}`,
       tags: index % 7 === 0 ? [noun, verb, "id"] : [noun, verb],
       route: `/v1/${noun}/${unique}`,
+      ...(index % 3 === 0
+        ? {
+            parameters: [
+              `${noun}Id`,
+              `The ${noun} this ${verb} applies to`,
+              "pageSize",
+            ],
+          }
+        : {}),
     };
   });
 }
+
+/**
+ * Guard: these two rules cannot be expressed as `search` fixtures without the fixture asserting a
+ * negative that a runner ignoring `input.tags` would also satisfy, so they are pinned here and by
+ * the paired cases in sdks/dotnet/tests/SkMcp.Tests/TagFilterTests.cs. Folding is what the two
+ * SDKs historically diverged on; a trim would diverge again, because JavaScript's
+ * `String.prototype.trim` strips U+FEFF and .NET's `string.Trim` does not.
+ */
+describe("ToolIndex tag filter", () => {
+  const documents: readonly SearchDocument[] = [
+    { name: "list_orders", tags: ["dolasım"], route: "/v1/orders" },
+    { name: "list_returns", tags: [" orders "], route: "/v1/returns" },
+  ];
+
+  it("keeps the dotless ı distinct from i", () => {
+    const index = new ToolIndex(documents);
+    expect(index.search("", 20, ["dolasim"])).toEqual([]);
+    expect(index.search("", 20, ["dolasım"])).toEqual(["list_orders"]);
+  });
+
+  it("does not trim a tag", () => {
+    const index = new ToolIndex(documents);
+    expect(index.search("", 20, ["orders"])).toEqual([]);
+    expect(index.search("", 20, [" orders "])).toEqual(["list_returns"]);
+  });
+});
 
 describe("ToolIndex inverted index", () => {
   it("matches the linear reference across deterministic catalogs", () => {
@@ -174,6 +232,16 @@ describe("ToolIndex inverted index", () => {
       "resource0007",
       "missing",
     ];
+    const tagFilters: (readonly string[] | undefined)[] = [
+      undefined,
+      [],
+      ["order"],
+      ["order", "get"],
+      ["id"],
+      ["çağrı"],
+      ["Order"],
+      ["missing"],
+    ];
     for (const seed of [1, 7, 42, 0x5eed]) {
       const documents = syntheticDocuments(seed, 250);
       const expected = new LinearReferenceIndex(documents);
@@ -181,10 +249,12 @@ describe("ToolIndex inverted index", () => {
       expect(actual.count).toBe(documents.length);
       for (const query of queries) {
         for (const limit of [1, 20, documents.length]) {
-          expect(
-            actual.search(query, limit),
-            `${seed}:${query}:${limit}`,
-          ).toEqual(expected.search(query, limit));
+          for (const tags of tagFilters) {
+            expect(
+              actual.search(query, limit, tags),
+              `${seed}:${query}:${limit}:${String(tags)}`,
+            ).toEqual(expected.search(query, limit, tags));
+          }
         }
       }
     }

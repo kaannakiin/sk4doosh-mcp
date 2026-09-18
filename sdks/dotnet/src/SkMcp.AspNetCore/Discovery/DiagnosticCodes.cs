@@ -9,7 +9,10 @@ public static class DiagnosticCodes
     public const string BodyFieldCollision = "body_field_collision";
     public const string CuratedOpenBody = "curated_open_body";
     public const string CurationLeaksName = "curation_leaks_name";
+    public const string CurationLeaksNameInArgument = "curation_leaks_name_in_argument";
     public const string CurationUnusedOnKeptRoute = "curation_unused_on_kept_route";
+    public const string DuplicateTag = "duplicate_tag";
+    public const string EmptyTag = "empty_tag";
     public const string EnumFormatUnresolved = "enum_format_unresolved";
     public const string InvalidName = "invalid_name";
     public const string LongToolName = "long_tool_name";

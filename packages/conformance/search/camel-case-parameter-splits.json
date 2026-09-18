@@ -1,0 +1,30 @@
+{
+  "kind": "search",
+  "description": "parametre adindaki camelCase parcalanir: iki harfli 'id' sorgusu tam eslesme ister ve customerId'nin ikinci parcasini yakalar",
+  "input": {
+    "tools": [
+      {
+        "name": "list_records",
+        "route": "/Rest/Records/List",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customerId": { "type": "integer" }
+          }
+        }
+      },
+      {
+        "name": "report_status",
+        "route": "/Rest/Status/Report",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "since": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "query": "id"
+  },
+  "expected": { "names": ["list_records"] }
+}

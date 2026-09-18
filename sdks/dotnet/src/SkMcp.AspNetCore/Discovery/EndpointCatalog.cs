@@ -52,6 +52,7 @@ internal static partial class EndpointCatalog
         bool hasFallbackPolicy = false,
         PrefixMode prefixMode = PrefixMode.Always,
         Func<string, string?>? containerPrefix = null,
+        Func<string, IReadOnlyList<string>?>? containerTags = null,
         Func<string, CatalogSeverity>? severityOf = null,
         ArgumentCurationOptions? curation = null)
     {
@@ -119,7 +120,8 @@ internal static partial class EndpointCatalog
 
                 EndpointDescriptor? descriptor = Describe(
                     api, route, action, metadata, useOperationIds, schema, hasFallbackPolicy,
-                    containerPrefix, diagnostics, curation ?? new ArgumentCurationOptions());
+                    containerPrefix, containerTags, diagnostics,
+                    curation ?? new ArgumentCurationOptions());
                 if (descriptor is null)
                 {
                     dropped += 1;
@@ -229,7 +231,11 @@ internal static partial class EndpointCatalog
                     ToolDefinitionFactory.Create(descriptor, name, variant, relief), overrides);
                 if (template is not null)
                 {
-                    ReportCurationLeaks(tool, template, diagnostics);
+                    ReportCurationLeaks(
+                        tool,
+                        template,
+                        ResolvedCuration.CuratedDescriptions(descriptor, variant),
+                        diagnostics);
                     if (template.BodyAllowsAdditionalProperties && template.BodyFills.Count > 0)
                     {
                         diagnostics.Add(new CatalogDiagnostic(
@@ -302,6 +308,7 @@ internal static partial class EndpointCatalog
         SchemaMapperOptions? mapper,
         bool hasFallbackPolicy,
         Func<string, string?>? containerPrefix,
+        Func<string, IReadOnlyList<string>?>? containerTags,
         List<CatalogDiagnostic> diagnostics,
         ArgumentCurationOptions curation)
     {
@@ -417,9 +424,7 @@ internal static partial class EndpointCatalog
             RequestBody = body,
             Responses = responses.Count == 0 ? null : responses,
             Auth = ReadAuth(metadata, hasFallbackPolicy),
-            Tags = action is ControllerActionDescriptor controller
-                ? [controller.ControllerName]
-                : api.GroupName is null ? null : [api.GroupName],
+            Tags = TagsFor(action, metadata, api, containerTags, diagnostics),
         };
     }
 
@@ -531,6 +536,79 @@ internal static partial class EndpointCatalog
             return controller.ControllerTypeInfo.GetCustomAttribute<McpToolAttribute>(inherit: true);
         }
         return metadata.OfType<McpToolAttribute>().LastOrDefault();
+    }
+
+    private static IReadOnlyList<string>? TagsFor(
+        ActionDescriptor action,
+        IReadOnlyList<object> metadata,
+        ApiDescription api,
+        Func<string, IReadOnlyList<string>?>? containerTags,
+        List<CatalogDiagnostic> diagnostics)
+    {
+        string owner = action is ControllerActionDescriptor named
+            ? $"{named.ControllerName}.{named.ActionName}"
+            : api.RelativePath ?? string.Empty;
+        if (DeclaredTags(action, metadata) is { } declared)
+        {
+            return CleanTags(declared, owner, diagnostics);
+        }
+        if (containerTags is not null
+            && action is ControllerActionDescriptor typed
+            && containerTags(typed.ControllerTypeInfo.FullName ?? typed.ControllerName) is { } central)
+        {
+            return CleanTags(central, owner, diagnostics);
+        }
+        return action is ControllerActionDescriptor controller
+            ? [controller.ControllerName]
+            : api.GroupName is null ? null : [api.GroupName];
+    }
+
+    private static IReadOnlyList<string>? DeclaredTags(
+        ActionDescriptor action, IReadOnlyList<object> metadata)
+    {
+        if (action is not ControllerActionDescriptor controller)
+        {
+            return metadata.OfType<McpToolAttribute>().LastOrDefault()?.Tags;
+        }
+        // Guard: read both levels rather than reusing SelectionAttribute, which returns the method
+        // attribute alone whenever one exists. A bare [McpTool] on a method would otherwise erase
+        // the container's declared tags, which the NestJS key-by-key merge keeps.
+        return controller.MethodInfo.GetCustomAttribute<McpToolAttribute>(inherit: true)?.Tags
+            ?? controller.ControllerTypeInfo.GetCustomAttribute<McpToolAttribute>(inherit: true)?.Tags;
+    }
+
+    /// <summary>Drops the tags that cannot survive folding, keeping the host's own spelling.</summary>
+    /// <remarks>
+    /// A tag that folds to nothing can never be matched. Two that fold alike are one filter key but
+    /// two index contributions, which doubles that term's search weight for what looks like a
+    /// spelling choice.
+    /// </remarks>
+    private static IReadOnlyList<string> CleanTags(
+        IReadOnlyList<string> declared, string owner, List<CatalogDiagnostic> diagnostics)
+    {
+        Dictionary<string, string> kept = new(StringComparer.Ordinal);
+        List<string> order = [];
+        foreach (string tag in declared)
+        {
+            string folded = ToolIndex.FoldToken(tag);
+            if (folded.Length == 0)
+            {
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.EmptyTag,
+                    $"{owner} declares a tag that is empty once folded; no caller can ask for it, so it was dropped."));
+                continue;
+            }
+            if (kept.TryGetValue(folded, out string? first))
+            {
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.DuplicateTag,
+                    $"{owner} declares '{tag}' and '{first}', which fold to the same tag; the later one was dropped because two equal tags double that term's search weight."));
+                continue;
+            }
+            kept[folded] = tag;
+            order.Add(tag);
+        }
+        return order;
     }
 
     private static string? PrefixFor(
@@ -670,10 +748,17 @@ internal static partial class EndpointCatalog
     /// <remarks>
     /// The name is checked as well as the description: a generated name carries
     /// <c>by_&lt;path parameter&gt;</c>, so hiding a path parameter leaves the wire name in the name
-    /// itself. The match is heuristic, which is why the code stays a warning.
+    /// itself. The match is heuristic, which is why both codes stay warnings.
+    ///
+    /// Two codes, because the two haystacks deserve separate severities: the tool's own name and
+    /// description, and the descriptions the host wrote in its curation declarations. Descriptions
+    /// inherited from the backend's types are deliberately not searched — the host did not write
+    /// them while curating, and a generic wire name such as <c>type</c> collides with ordinary
+    /// schema prose often enough to drown the signal.
     /// </remarks>
     private static void ReportCurationLeaks(
-        ToolDefinition tool, RequestTemplate template, List<CatalogDiagnostic> diagnostics)
+        ToolDefinition tool, RequestTemplate template, IReadOnlyList<string> descriptions,
+        List<CatalogDiagnostic> diagnostics)
     {
         List<string> curated = [
             .. template.Parameters
@@ -688,15 +773,28 @@ internal static partial class EndpointCatalog
         }
 
         IReadOnlyList<string> haystack = ToolIndex.Tokenize($"{tool.Name} {tool.Description}");
+        List<IReadOnlyList<string>> curatedProse =
+            [.. descriptions.Select(ToolIndex.Tokenize)];
         foreach (string wireName in curated)
         {
             IReadOnlyList<string> needle = ToolIndex.Tokenize(wireName);
-            if (needle.Count > 0 && ContainsSequence(haystack, needle))
+            if (needle.Count == 0)
+            {
+                continue;
+            }
+            if (ContainsSequence(haystack, needle))
             {
                 diagnostics.Add(new CatalogDiagnostic(
                     DiagnosticCodes.CurationLeaksName,
                     $"Tool '{tool.Name}' still names the curated argument '{wireName}' in its name or "
                     + "description; the agent cannot act on it."));
+            }
+            if (curatedProse.Any(prose => ContainsSequence(prose, needle)))
+            {
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.CurationLeaksNameInArgument,
+                    $"Tool '{tool.Name}' still names the curated argument '{wireName}' in a curated "
+                    + "argument description; the agent can search for it but cannot act on it."));
             }
         }
     }

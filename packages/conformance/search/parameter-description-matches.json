@@ -1,0 +1,32 @@
+{
+  "kind": "search",
+  "description": "parametre aciklamasi indekslenir: 'bildirim' yalniz channel parametresinin aciklamasinda gecer",
+  "input": {
+    "tools": [
+      {
+        "name": "create_message",
+        "description": "Mesaj olusturur",
+        "route": "/Rest/Message/Create",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "channel": { "type": "string", "description": "Bildirim kanali" }
+          }
+        }
+      },
+      {
+        "name": "report_status",
+        "description": "Durum raporu",
+        "route": "/Rest/Status/Report",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "since": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "query": "bildirim"
+  },
+  "expected": { "names": ["create_message"] }
+}

@@ -29,6 +29,9 @@
     },
     {
       "$ref": "#/$defs/CardFixture"
+    },
+    {
+      "$ref": "#/$defs/DetailFixture"
     }
   ],
   "$defs": {
@@ -703,6 +706,12 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 50
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -751,6 +760,9 @@
             "type": "string",
             "pattern": "^/"
           }
+        },
+        "inputSchema": {
+          "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
         }
       }
     },
@@ -870,6 +882,60 @@
             },
             "parameters": {
               "type": "string"
+            },
+            "authUncertain": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "DetailFixture": {
+      "title": "DetailFixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description", "input", "expected"],
+      "properties": {
+        "kind": {
+          "const": "detail"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool"],
+          "properties": {
+            "tool": {
+              "$ref": "tool-definition.schema.json"
+            },
+            "decision": {
+              "$ref": "#/$defs/VisibilityDecision"
+            }
+          }
+        },
+        "expected": {
+          "title": "DetailExpectation",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "description", "inputSchema", "annotations"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "inputSchema": {
+              "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+            },
+            "outputSchema": {
+              "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+            },
+            "annotations": {
+              "$ref": "tool-definition.schema.json#/$defs/ToolAnnotations"
             },
             "authUncertain": {
               "type": "boolean"

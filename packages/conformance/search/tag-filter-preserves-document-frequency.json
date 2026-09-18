@@ -1,0 +1,42 @@
+{
+  "kind": "search",
+  "description": "df tum korpus uzerinden hesaplanir ve tags filtresi puanlamadan sonra uygulanir: elenen sync_invoice_feed 'invoice' teriminin df'ini yukseltir, bu yuzden pdf ile eslesen render_document ustte kalir; filtre puanlamadan once uygulansaydi idf degisir ve iki tool ters sirada donerdi",
+  "input": {
+    "tools": [
+      {
+        "name": "export_invoice",
+        "description": "invoice kaydini disari aktarir",
+        "tags": [
+          "Billing"
+        ],
+        "route": "/Rest/Invoice/Export"
+      },
+      {
+        "name": "render_document",
+        "description": "pdf ciktisi uretir",
+        "tags": [
+          "Billing"
+        ],
+        "route": "/Rest/Document/Render"
+      },
+      {
+        "name": "sync_invoice_feed",
+        "description": "invoice akisini esitler",
+        "tags": [
+          "Integration"
+        ],
+        "route": "/Rest/Invoice/Sync"
+      }
+    ],
+    "query": "invoice pdf",
+    "tags": [
+      "billing"
+    ]
+  },
+  "expected": {
+    "names": [
+      "render_document",
+      "export_invoice"
+    ]
+  }
+}

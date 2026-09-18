@@ -1,0 +1,42 @@
+{
+  "kind": "search",
+  "description": "tag katlamasi da son sigmayi orta forma cevirir: buyuk harfle ve son-sigma ile yazilmis iki tag tek filtre anahtarina katlanir",
+  "input": {
+    "tools": [
+      {
+        "name": "list_routes",
+        "tags": [
+          "ΟΔΟΣ"
+        ],
+        "description": "kayit listeler",
+        "route": "/Rest/Route/List"
+      },
+      {
+        "name": "list_paths",
+        "tags": [
+          "οδος"
+        ],
+        "description": "kayit listeler",
+        "route": "/Rest/Path/List"
+      },
+      {
+        "name": "list_records",
+        "tags": [
+          "Kayit"
+        ],
+        "description": "kayit listeler",
+        "route": "/Rest/Record/List"
+      }
+    ],
+    "query": "kayit",
+    "tags": [
+      "οδοσ"
+    ]
+  },
+  "expected": {
+    "names": [
+      "list_paths",
+      "list_routes"
+    ]
+  }
+}

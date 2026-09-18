@@ -1,0 +1,31 @@
+{
+  "kind": "search",
+  "description": "hicbir tool'un tasimadigi tag bos sonuc verir, filtresiz sonuc degil",
+  "input": {
+    "tools": [
+      {
+        "name": "list_orders",
+        "description": "kayit listeler",
+        "tags": [
+          "Orders"
+        ],
+        "route": "/Rest/Order/List"
+      },
+      {
+        "name": "list_incidents",
+        "description": "kayit listeler",
+        "tags": [
+          "System"
+        ],
+        "route": "/Rest/Incident/List"
+      }
+    ],
+    "query": "kayit",
+    "tags": [
+      "billing"
+    ]
+  },
+  "expected": {
+    "names": []
+  }
+}

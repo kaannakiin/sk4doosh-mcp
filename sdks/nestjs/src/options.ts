@@ -286,6 +286,12 @@ export class SkMcpOptions {
     maxResponseBytes: invokeLimits.maxResponseBytes,
     timeoutMs: invokeLimits.invokeTimeoutMs,
   };
+  /**
+   * Grouping labels for a container the host cannot decorate. It sits below a `@McpTool({ tags })`
+   * declaration and above the container-derived default, and like a declaration it replaces that
+   * default rather than adding to it.
+   */
+  tags?: (container: string) => readonly string[] | undefined;
   schema?: TypeShapeBinderOptions;
   resourceServer?: SkMcpResourceServerOptions;
 }

@@ -483,4 +483,101 @@ public sealed class TransportTests
                 AuthorizationServers = { "http://localhost/oauth" },
             }));
     }
+
+    /// <remarks>
+    /// The published argument set is contract ([search-semantics.md]); before this test nothing checked
+    /// it on either side. It asserts values, not key order or dialect decoration, which the spec leaves
+    /// to each framework.
+    /// </remarks>
+    [Fact]
+    public async Task T16_ToolsList_SearchToolsPublishesDetailArgument()
+    {
+        await using TransportApp app = await HostAsync();
+        string token = app.AuthServer.IssueAccessToken("alice", new Uri("http://localhost/mcp"), scope: null);
+
+        McpClient client = await ConnectAsync(app, token);
+        await using (client)
+        {
+            IList<McpClientTool> tools = await client.ListToolsAsync(cancellationToken: CancellationToken.None);
+            McpClientTool search = tools.Single(tool => tool.ProtocolTool.Name == "search_tools");
+            JsonElement detail = search.ProtocolTool.InputSchema
+                .GetProperty("properties")
+                .GetProperty("detail");
+
+            Assert.Equal("string", detail.GetProperty("type").GetString());
+            Assert.Equal("card", detail.GetProperty("default").GetString());
+            Assert.Equal(
+                ["card", "schema"],
+                detail.GetProperty("enum").EnumerateArray().Select(value => value.GetString()!).ToArray());
+            Assert.False(string.IsNullOrWhiteSpace(detail.GetProperty("description").GetString()));
+        }
+    }
+
+    /// <remarks>
+    /// The twin of this test is "search_tools publishes tags as an optional string array" in
+    /// sdks/nestjs/test/meta-tools.spec.ts, and the description is asserted verbatim in both
+    /// because nothing else can compare two SDKs running in two processes. The <c>default</c> is
+    /// null rather than an empty array because a C# array parameter's default must be a
+    /// compile-time constant; the NestJS shape publishes the same null through zod's `meta`.
+    /// </remarks>
+    [Fact]
+    public async Task T17_ToolsList_SearchToolsPublishesTagsArgument()
+    {
+        await using TransportApp app = await HostAsync();
+        string token = app.AuthServer.IssueAccessToken("alice", new Uri("http://localhost/mcp"), scope: null);
+
+        McpClient client = await ConnectAsync(app, token);
+        await using (client)
+        {
+            IList<McpClientTool> tools = await client.ListToolsAsync(cancellationToken: CancellationToken.None);
+            McpClientTool search = tools.Single(tool => tool.ProtocolTool.Name == "search_tools");
+            JsonElement schema = search.ProtocolTool.InputSchema;
+            JsonElement tags = schema.GetProperty("properties").GetProperty("tags");
+
+            Assert.Equal("array", tags.GetProperty("type").GetString());
+            Assert.Equal("string", tags.GetProperty("items").GetProperty("type").GetString());
+            Assert.Equal(JsonValueKind.Null, tags.GetProperty("default").ValueKind);
+            Assert.Equal(
+                "Tags every result must carry, matched against the whole tag and insensitive to case and accents. Empty applies no filter; the answer's tags field lists what is available.",
+                tags.GetProperty("description").GetString());
+            Assert.False(
+                schema.TryGetProperty("required", out JsonElement required)
+                    && required.EnumerateArray().Any(name => name.GetString() == "tags"));
+        }
+    }
+
+    /// <remarks>
+    /// The twin of "invoke_tool publishes name and arguments as required" in
+    /// sdks/nestjs/test/meta-tools.spec.ts. <c>arguments</c> publishes a description and no
+    /// <c>type</c> on purpose: the parameter binds as raw JSON so a non-object value reaches the
+    /// handler and leaves as an sk-mcp envelope rather than a raw MCP validation error.
+    /// </remarks>
+    [Fact]
+    public async Task T18_ToolsList_InvokeToolPublishesItsArguments()
+    {
+        await using TransportApp app = await HostAsync();
+        string token = app.AuthServer.IssueAccessToken("alice", new Uri("http://localhost/mcp"), scope: null);
+
+        McpClient client = await ConnectAsync(app, token);
+        await using (client)
+        {
+            IList<McpClientTool> tools = await client.ListToolsAsync(cancellationToken: CancellationToken.None);
+            JsonElement schema = tools.Single(tool => tool.ProtocolTool.Name == "invoke_tool").ProtocolTool.InputSchema;
+            JsonElement properties = schema.GetProperty("properties");
+
+            Assert.Equal("string", properties.GetProperty("name").GetProperty("type").GetString());
+            Assert.Equal("Operation name exactly as returned by search_tools.", properties.GetProperty("name").GetProperty("description").GetString());
+
+            JsonElement arguments = properties.GetProperty("arguments");
+            Assert.Equal("Arguments as a JSON object whose keys are the input schema's properties.", arguments.GetProperty("description").GetString());
+            Assert.False(arguments.TryGetProperty("type", out _));
+
+            Assert.Equal(
+                ["arguments", "name"],
+                schema.GetProperty("required").EnumerateArray()
+                    .Select(value => value.GetString()!)
+                    .Order(StringComparer.Ordinal)
+                    .ToArray());
+        }
+    }
 }

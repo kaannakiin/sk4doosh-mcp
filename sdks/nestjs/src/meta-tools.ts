@@ -5,11 +5,14 @@ import type {
 import {
   compose,
   createCard,
+  createDetail,
   defaultSearchLimit,
   describePayload,
+  foldToken,
   forwardable,
   isInvokeError,
   maxSearchLimit,
+  maxSearchTagVocabulary,
   narrowingArguments,
   refuseOversizeResponse,
   refuseTimedOutInvoke,
@@ -57,13 +60,25 @@ export const catalogGenerationMetaKey = "sk-mcp/catalogGeneration";
 const searchNarrowing: readonly FieldError[] = [
   { name: "query", message: "Keywords that select fewer operations." },
   { name: "limit", message: "Maximum number of results, 1-50." },
+  { name: "detail", message: 'Use "card" for the compact shape.' },
+  { name: "tags", message: "Tags every result must carry." },
 ];
 
 const searchDescription =
-  "Search the backend's API operations by keyword. Returns compact cards: name, short description and a parameter summary. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Call load_tool for the full input schema before invoke_tool.";
+  'Search the backend\'s API operations by keyword. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Results are compact cards — name, short description and a parameter summary — and load_tool gives the full input schema of the one you pick. When you already know which operation you want, pass detail="schema" with a small limit to get that schema here and skip the load_tool call.';
+
+/**
+ * Guard: `.catch` is what makes an unrecognised `detail` fall back to `card`
+ * instead of failing validation. Without it zod rejects the call while the .NET
+ * SDK, whose `[AllowedValues]` only decorates the published schema, answers with
+ * cards — two SDKs disagreeing on one argument. It does not change the published
+ * schema, which still carries `enum` and `default`.
+ */
+const detailDescription =
+  'Shape of each result: "card" for the compact card, "schema" for the same shape load_tool returns. Any other value is card. A schema page is much larger; pair it with a small limit.';
 
 const loadDescription =
-  "Load the full input schema of one operation. Call it before invoke_tool.";
+  "Load the full definition of one operation: description, JSON input schema and behavior hints. Use the exact name returned by search_tools.";
 
 const invokeDescription =
   "Invoke one backend operation with a JSON object of arguments.";
@@ -277,16 +292,36 @@ export function registerSkMcpTools(
           .string()
           .default("")
           .describe(
-            "Keywords matched by prefix against operation names, descriptions, tags and routes. Empty lists everything.",
+            "Keywords matched by prefix against operation names, descriptions, routes, argument names and tag text; keywords rank results, they do not filter them. Empty lists everything. To require a whole tag, use tags.",
           ),
         limit: z
           .number()
           .int()
           .default(defaultSearchLimit)
           .describe("Maximum number of results, 1-50."),
+        detail: z
+          .enum(["card", "schema"])
+          .catch("card")
+          .default("card")
+          .describe(detailDescription),
+        /**
+         * Guard: `meta` publishes the `default: null` that the ASP.NET SDK emits for this argument
+         * and cannot omit, because a C# array parameter's default has to be a compile-time
+         * constant and `null` is the only one. Without it the two SDKs publish different schemas
+         * for the same argument, which search-semantics.md makes contract. It decorates the
+         * schema only; `parse` still yields `undefined` for an absent value. Pinned by T16 and by
+         * test/meta-tools.spec.ts.
+         */
+        tags: z
+          .array(z.string())
+          .describe(
+            "Tags every result must carry, matched against the whole tag and insensitive to case and accents. Empty applies no filter; the answer's tags field lists what is available.",
+          )
+          .optional()
+          .meta({ default: null }),
       },
     },
-    async ({ query, limit }, extra) =>
+    async ({ query, limit, detail, tags }, extra) =>
       emitGuarded(deps, async () => {
         deps.catalog.ensureValid();
         const outer = outerFrom(extra);
@@ -294,10 +329,12 @@ export function registerSkMcpTools(
           Math.max(limit ?? defaultSearchLimit, 1),
           maxSearchLimit,
         );
+        const wantsSchema = detail === "schema";
         const snapshot = deps.catalog.current;
         const ranked = snapshot.index.search(
           query ?? "",
           Math.max(snapshot.entries.length, 1),
+          tags,
         );
         const decide = await decider(deps, outer);
 
@@ -343,20 +380,37 @@ export function registerSkMcpTools(
           if (!deps.visibility.visible(decision)) {
             continue;
           }
-          results.push(createCard(entry.tool, decision));
+          results.push(
+            wantsSchema
+              ? createDetail(entry.tool, decision)
+              : createCard(entry.tool, decision),
+          );
           if (results.length >= capped) {
             break;
           }
         }
 
-        const total = [...snapshot.byName.values()].filter((entry) =>
-          deps.visibility.visible(decide(entry)),
-        ).length;
+        const vocabulary = new Set<string>();
+        let total = 0;
+        for (const entry of snapshot.byName.values()) {
+          if (!deps.visibility.visible(decide(entry))) {
+            continue;
+          }
+          total += 1;
+          for (const tag of entry.descriptor.tags ?? []) {
+            vocabulary.add(foldToken(tag));
+          }
+        }
+        const known =
+          vocabulary.size === 0 || vocabulary.size > maxSearchTagVocabulary
+            ? undefined
+            : [...vocabulary].sort();
 
-        return textResult({ total, results }, false, {
-          summaryOf: results,
-          narrowing: searchNarrowing,
-        });
+        return textResult(
+          { total, results, ...(known === undefined ? {} : { tags: known }) },
+          false,
+          { summaryOf: results, narrowing: searchNarrowing },
+        );
       }),
   );
 
@@ -396,19 +450,7 @@ export function registerSkMcpTools(
         if (!deps.visibility.visible(decision)) {
           return unknownTool(name);
         }
-        return textResult(
-          {
-            name: entry.tool.name,
-            description: entry.tool.description,
-            inputSchema: entry.tool.inputSchema,
-            ...(entry.tool.outputSchema === undefined
-              ? {}
-              : { outputSchema: entry.tool.outputSchema }),
-            annotations: entry.tool.annotations,
-            ...(decision === "unknown" ? { authUncertain: true } : {}),
-          },
-          false,
-        );
+        return textResult(createDetail(entry.tool, decision), false);
       }),
   );
 
@@ -418,13 +460,23 @@ export function registerSkMcpTools(
       description: invokeDescription,
       _meta: generationMeta(),
       inputSchema: {
-        name: z.string().describe("Operation name."),
+        name: z
+          .string()
+          .describe("Operation name exactly as returned by search_tools."),
+        /**
+         * Guard: `unknown` rather than a record, so a non-object value reaches the handler and
+         * leaves as an sk-mcp envelope. `z.record` rejected it during argument binding, which the
+         * MCP SDK reports as a raw `-32602` with no envelope and no leak filter — the failure §9
+         * closed for handler throws, reintroduced through the schema. `nonoptional` keeps the
+         * argument required, which is what the ASP.NET SDK publishes. Pinned by
+         * test/meta-tools.spec.ts and by T18.
+         */
         arguments: z
-          .record(z.string(), z.unknown())
-          .default({})
+          .unknown()
           .describe(
             "Arguments as a JSON object whose keys are the input schema's properties.",
-          ),
+          )
+          .nonoptional(),
       },
     },
     async ({ name, arguments: args }, extra) =>

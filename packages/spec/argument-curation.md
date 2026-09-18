@@ -11,7 +11,7 @@ A backend's DTO is written for its HTTP clients. Handed to an agent unchanged, i
 Two things it is not:
 
 - **Curation is not enforcement.** Hiding `tenantId` and filling it from a verified token does not isolate tenants. The backend's own pipeline decides, exactly as it does for every other request. This is the argument-shaped form of the rule in [visibility.md](visibility.md), and it needs stating more loudly there than here: visibility only filters a list, whereas curation writes a value onto the wire and therefore looks like a boundary.
-- **Curation is not confidentiality.** A hidden path parameter's name survives in the route, and the route is a search field ([search-semantics.md](search-semantics.md)). What curation withholds is a **slot**, not a **vocabulary**.
+- **Curation is not confidentiality.** A hidden path parameter's name survives in the route, and the route is a search field ([search-semantics.md](search-semantics.md)). What curation withholds is a **slot**, not a **vocabulary**. The `parameters` search field is the other way round: it is built from the published schema, so a hidden argument's name never enters it and a renamed one enters only as `as`.
 
 ## The declaration
 
@@ -114,6 +114,10 @@ Published argument names are agent names while the backend reports wire names, s
 
 A variant MUST declare its own `name` and `description`. The requirement is not stylistic. A description written for an endpoint cannot honestly describe two tools whose arguments are hidden differently, and the same failure exists in a milder form on a single tool — "filter by tenant and status" describes an argument the agent cannot reach once `tenantId` is hidden. Implementations SHOULD therefore emit `curation_leaks_name` when a tool's **name or description** contains the wire name of a hidden or renamed argument as a contiguous token sequence, using the tokenizer of [search-semantics.md](search-semantics.md). Checking the name is not optional: a generated name carries `by_<path parameter>`, so hiding a path parameter leaves the wire name in the name itself. The diagnostic is heuristic — a single-token wire name such as `page` will fire on "page size" — so it is a warning and MUST NOT default to fatal.
 
+A second haystack earns a second code. The descriptions the host writes in its own `arguments` records are published on the tool's schema **and indexed** as the `parameters` search field ([search-semantics.md](search-semantics.md)), so prose there that names a curated-away argument does more than confuse a reader: discovery routes an agent to a tool by a term `invoke_tool` will refuse. Implementations SHOULD therefore emit `curation_leaks_name_in_argument` when any **curation-declared description** on the tool contains such a wire name, by the same tokenizer and the same contiguous-sequence rule.
+
+The haystack is deliberately only the host's own declarations, resolved through the variant's whole-record replacement — never a description inherited from the operation's parameters or body type. Inherited prose is not evidence that anything was curated: the host did not write it while hiding or renaming the argument, and a single-token wire name such as `type` or `source` collides with ordinary schema prose often enough to drown the signal at the scale of a whole property set. The separate code exists so a host can tune or silence this heuristic without losing the tool-description one; like it, it is a warning and MUST NOT default to fatal.
+
 A variant's `arguments` merge with the endpoint's by **whole-record replacement per wire name**, never field by field. Field-level merging means a host who omits `tenantId` from one variant leaks it, which is a security-shaped silent failure. A record carrying only `name` resets that argument to the endpoint's own shape, and is the only way to un-hide an argument in one variant.
 
 Operation identity is unchanged: `(container, operationId, method)`. Variants produce tools, not operations, and tool uniqueness is already enforced by `name_collision` ([naming.md](naming.md)). Expansion happens **strictly after** route folding, so the folding rule needs no change.
@@ -140,19 +144,20 @@ A host that can declare curation at several levels MUST resolve them by specific
 
 ## Diagnostics
 
-| Code                            | Result                                      | When                                                                                                                                      |
-| ------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `curation_unresolved`           | endpoint dropped                            | A declaration names no parameter, no flattened body field and no body root — including naming a body field while the body is in root mode |
-| `invalid_fill_constant`         | endpoint dropped                            | A constant whose JSON type does not satisfy the binding, or `null` on a path, query or header slot                                        |
-| `hidden_required_omitted`       | endpoint dropped; fatal on a path parameter | A required argument is hidden with `omit`                                                                                                 |
-| `unknown_fill_source`           | endpoint dropped                            | A declared `source` has no registered provider                                                                                            |
-| `curated_open_body`             | warning                                     | An argument is hidden on a body that accepts additional properties, so only the composer can enforce the hide                             |
-| `curation_leaks_name`           | warning                                     | A tool name or description still names a hidden or renamed argument                                                                       |
-| `curation_unused_on_kept_route` | warning                                     | See above                                                                                                                                 |
-| `variant_declaration_conflict`  | endpoint dropped                            | `toolName` and `variants` are both declared                                                                                               |
-| `variant_indistinguishable`     | warning                                     | Two variants produce an equal input schema and an equal description                                                                       |
-| `ambiguous_curation`            | fatal                                       | Two declarations of equal specificity set the same argument to different values                                                           |
-| `sealed_curation_overridden`    | fatal                                       | A sealed declaration is overridden from any level                                                                                         |
+| Code                              | Result                                      | When                                                                                                                                      |
+| --------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `curation_unresolved`             | endpoint dropped                            | A declaration names no parameter, no flattened body field and no body root — including naming a body field while the body is in root mode |
+| `invalid_fill_constant`           | endpoint dropped                            | A constant whose JSON type does not satisfy the binding, or `null` on a path, query or header slot                                        |
+| `hidden_required_omitted`         | endpoint dropped; fatal on a path parameter | A required argument is hidden with `omit`                                                                                                 |
+| `unknown_fill_source`             | endpoint dropped                            | A declared `source` has no registered provider                                                                                            |
+| `curated_open_body`               | warning                                     | An argument is hidden on a body that accepts additional properties, so only the composer can enforce the hide                             |
+| `curation_leaks_name`             | warning                                     | A tool name or description still names a hidden or renamed argument                                                                       |
+| `curation_leaks_name_in_argument` | warning                                     | A curation-declared argument description still names a hidden or renamed argument                                                         |
+| `curation_unused_on_kept_route`   | warning                                     | See above                                                                                                                                 |
+| `variant_declaration_conflict`    | endpoint dropped                            | `toolName` and `variants` are both declared                                                                                               |
+| `variant_indistinguishable`       | warning                                     | Two variants produce an equal input schema and an equal description                                                                       |
+| `ambiguous_curation`              | fatal                                       | Two declarations of equal specificity set the same argument to different values                                                           |
+| `sealed_curation_overridden`      | fatal                                       | A sealed declaration is overridden from any level                                                                                         |
 
 Reused rather than added: two declarations for one wire name is `duplicate_argument`; an `as` collision is `argument_collision`; an agent sending a refused name is `unknown_argument`; two variants producing one tool name is `name_collision`; an over-long variant name is `long_tool_name`.
 

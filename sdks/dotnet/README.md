@@ -163,6 +163,19 @@ The endpoint speaks Streamable HTTP. `tools/list` returns only three meta-tools:
 The catalog is not dumped into `tools/list`: on a 700-endpoint backend that drowns the agent's
 context. The agent searches first, then loads, then calls.
 
+`search_tools` takes `query`, `limit`, `detail` and `tags`. `tags` narrows the answer to endpoints
+carrying every tag listed, matched whole and insensitive to case and accents; every answer carries
+the vocabulary the caller may see, so the agent reads a tag rather than guessing one. Each endpoint
+is tagged with its controller name unless you say otherwise:
+
+```csharp
+[McpTool(Name = "find_orders", Tags = new[] { "billing", "read" })]
+```
+
+A declaration replaces the controller-derived tag rather than adding to it, and `options.Tags` sets
+the same thing centrally for controllers you cannot decorate. Tags are search text too, so changing
+them changes ranking — see the how-to on grouping operations.
+
 To protect `/mcp`, attach your own authorization:
 
 ```csharp

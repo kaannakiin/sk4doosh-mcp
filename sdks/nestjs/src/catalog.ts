@@ -12,10 +12,13 @@ import {
   createRequestTemplateFromEndpoint,
   createToolDefinition,
   createToolNames,
+  curatedDescriptions,
   deduplicateOperations,
   expandToolProductions,
+  foldToken,
   isSelected,
   routePlaceholderNames,
+  searchParameters,
   SkMcpCatalogError,
   SkMcpTemplateError,
   tokenize,
@@ -193,10 +196,18 @@ export class SkMcpCatalog {
       }
     }
 
+    const tagsOf = new Map<DiscoveredEndpoint, readonly string[]>();
+    for (const endpoint of chosen) {
+      const tags = this.tagsFor(endpoint, report);
+      if (tags !== undefined) {
+        tagsOf.set(endpoint, tags);
+      }
+    }
+
     const alternates = new Map<DiscoveredEndpoint, string[]>();
     const operations = deduplicateOperations(
       chosen,
-      (endpoint) => this.declared(endpoint),
+      (endpoint) => this.declared(endpoint, tagsOf.get(endpoint)),
       ({ kept, folded }) => {
         const routes = folded.map((endpoint) => endpoint.descriptor.route);
         alternates.set(kept, routes);
@@ -214,7 +225,9 @@ export class SkMcpCatalog {
      * than the operations: with variants the two lists differ in length and a positional zip over
      * operations would attach the wrong name to the wrong tool.
      */
-    const declaredList = operations.map((endpoint) => this.declared(endpoint));
+    const declaredList = operations.map((endpoint) =>
+      this.declared(endpoint, tagsOf.get(endpoint)),
+    );
     const sourceOf = new Map<EndpointDescriptor, DiscoveredEndpoint>();
     operations.forEach((endpoint, index) => {
       const declared = declaredList[index];
@@ -283,7 +296,12 @@ export class SkMcpCatalog {
         });
         continue;
       }
-      reportCurationLeaks(tool, template, report);
+      reportCurationLeaks(
+        tool,
+        template,
+        curatedDescriptions(descriptor, variant),
+        report,
+      );
       if (
         template.bodyAllowsAdditionalProperties &&
         (template.bodyFills?.size ?? 0) > 0
@@ -336,6 +354,7 @@ export class SkMcpCatalog {
           ...(entry.alternateRoutes === undefined
             ? {}
             : { alternateRoutes: entry.alternateRoutes }),
+          parameters: searchParameters(entry.tool.inputSchema),
         })),
       ),
       diagnostics,
@@ -369,8 +388,31 @@ export class SkMcpCatalog {
     });
   }
 
-  private declared(endpoint: DiscoveredEndpoint): EndpointDescriptor {
-    return declaredDescriptor(endpoint, this.curationFor(endpoint));
+  private declared(
+    endpoint: DiscoveredEndpoint,
+    tags: readonly string[] | undefined,
+  ): EndpointDescriptor {
+    return declaredDescriptor(endpoint, this.curationFor(endpoint), tags);
+  }
+
+  /**
+   * Resolves the tag ladder: an operation or container declaration, else the host rule, else the
+   * container-derived tag discovery already wrote. A declaration replaces that derived tag; it does
+   * not add to it, so a host can remove a grouping it did not choose.
+   */
+  private tagsFor(
+    endpoint: DiscoveredEndpoint,
+    report: (diagnostic: CatalogDiagnostic) => void,
+  ): readonly string[] | undefined {
+    const declared =
+      endpoint.hints.tags ?? this.options.tags?.(endpoint.controller.name);
+    return declared === undefined
+      ? undefined
+      : cleanTags(
+          declared,
+          `${endpoint.controller.name}.${endpoint.handlerName}`,
+          report,
+        );
   }
 
   /**
@@ -523,14 +565,21 @@ function missingFillSource(
 }
 
 /**
- * Warns when the published name or description still names an argument the agent cannot reach.
+ * Warns when the published prose still names an argument the agent cannot reach.
  *
- * Heuristic by construction: a single-token wire name such as `page` fires on "page size". It is a
- * warning for that reason and is not escalated by default.
+ * Two codes, because the two haystacks deserve separate severities: the tool's own name and
+ * description, and the descriptions the host wrote in its curation declarations. Descriptions
+ * inherited from the backend's types are deliberately not searched — the host did not write them
+ * while curating, and a generic wire name such as `type` collides with ordinary schema prose often
+ * enough to drown the signal.
+ *
+ * Heuristic by construction: a single-token wire name such as `page` fires on "page size". Both
+ * codes are warnings for that reason and are not escalated by default.
  */
 function reportCurationLeaks(
   tool: ToolDefinition,
   template: RequestTemplate,
+  descriptions: readonly string[],
   report: (diagnostic: CatalogDiagnostic) => void,
 ): void {
   const curated = [
@@ -547,12 +596,22 @@ function reportCurationLeaks(
     return;
   }
   const haystack = tokenize(`${tool.name} ${tool.description}`);
+  const curatedProse = descriptions.map((description) => tokenize(description));
   for (const wireName of curated) {
     const needle = tokenize(wireName);
-    if (needle.length > 0 && containsSequence(haystack, needle)) {
+    if (needle.length === 0) {
+      continue;
+    }
+    if (containsSequence(haystack, needle)) {
       report({
         code: "curation_leaks_name",
         message: `Tool '${tool.name}' still names the curated argument '${wireName}' in its name or description; the agent cannot act on it.`,
+      });
+    }
+    if (curatedProse.some((prose) => containsSequence(prose, needle))) {
+      report({
+        code: "curation_leaks_name_in_argument",
+        message: `Tool '${tool.name}' still names the curated argument '${wireName}' in a curated argument description; the agent can search for it but cannot act on it.`,
       });
     }
   }
@@ -602,15 +661,50 @@ function reportIndistinguishableVariants(
  * `containerPrefix` are. The curation list arrives resolved because the ladder that produces it
  * needs the host's central rules, which are not a property of the endpoint.
  */
+/**
+ * Drops the tags that cannot survive folding: one that folds to nothing can never be matched, and
+ * two that fold alike are one filter key but two index contributions, which doubles that term's
+ * search weight for what looks like a spelling choice. The host's own spelling is kept.
+ */
+export function cleanTags(
+  declared: readonly string[],
+  owner: string,
+  report: (diagnostic: CatalogDiagnostic) => void,
+): readonly string[] {
+  const kept = new Map<string, string>();
+  for (const tag of declared) {
+    const folded = foldToken(tag);
+    if (folded === "") {
+      report({
+        code: "empty_tag",
+        message: `${owner} declares a tag that is empty once folded; no caller can ask for it, so it was dropped.`,
+      });
+      continue;
+    }
+    const first = kept.get(folded);
+    if (first !== undefined) {
+      report({
+        code: "duplicate_tag",
+        message: `${owner} declares '${tag}' and '${first}', which fold to the same tag; the later one was dropped because two equal tags double that term's search weight.`,
+      });
+      continue;
+    }
+    kept.set(folded, tag);
+  }
+  return [...kept.values()];
+}
+
 export function declaredDescriptor(
   endpoint: DiscoveredEndpoint,
   curation: readonly ArgumentCuration[],
+  tags?: readonly string[],
 ): EndpointDescriptor {
   const hints = endpoint.hints;
   return {
     ...endpoint.descriptor,
     ...(hints.name === undefined ? {} : { toolName: hints.name }),
     ...(hints.prefix === undefined ? {} : { containerPrefix: hints.prefix }),
+    ...(tags === undefined ? {} : { tags: [...tags] }),
     ...(curation.length === 0 ? {} : { arguments: [...curation] }),
     ...(hints.variants === undefined || hints.variants.length === 0
       ? {}

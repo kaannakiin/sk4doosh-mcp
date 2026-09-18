@@ -1,7 +1,9 @@
 # Meta-tool contract
 
-`tools/list` returns exactly three tools, whatever the catalog contains. The two SDKs emit
-byte-identical names, descriptions and input schemas.
+`tools/list` returns exactly three tools, whatever the catalog contains. The two SDKs publish the
+same argument names, types and defaults. The key order of a published schema, and the dialect
+decoration a generator writes around it — a `$schema` keyword, the numeric bounds of an integer —
+are framework detail, not contract.
 
 > **Source of truth.** The search and card semantics are normative in
 > [`packages/spec/search-semantics.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/search-semantics.md)
@@ -31,7 +33,7 @@ A client that caches tool definitions can compare the stamp instead of diffing t
   "type": "object",
   "properties": {
     "query": {
-      "description": "Keywords matched by prefix against operation names, descriptions, tags and routes. Empty lists everything.",
+      "description": "Keywords matched by prefix against operation names, descriptions, routes, argument names and tag text; keywords rank results, they do not filter them. Empty lists everything. To require a whole tag, use tags.",
       "type": "string",
       "default": ""
     },
@@ -39,19 +41,44 @@ A client that caches tool definitions can compare the stamp instead of diffing t
       "description": "Maximum number of results, 1-50.",
       "type": "integer",
       "default": 20
+    },
+    "detail": {
+      "description": "Shape of each result: \"card\" for the compact card, \"schema\" for the same shape load_tool returns. Any other value is card. A schema page is much larger; pair it with a small limit.",
+      "type": "string",
+      "enum": ["card", "schema"],
+      "default": "card"
+    },
+    "tags": {
+      "description": "Tags every result must carry, matched against the whole tag and insensitive to case and accents. Empty applies no filter; the answer's tags field lists what is available.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": null
     }
   }
 }
 ```
 
 `limit` is clamped to `1..50` rather than rejected, so an out-of-range value returns results
-instead of an error.
+instead of an error. `detail` is clamped the same way: anything that is not exactly `schema` —
+absent, empty, misspelled, or `Schema` — is `card`.
+
+`tags` is a conjunction: a result carries every tag in the list. Matching is on the whole tag after
+the same folding search uses, so case and accents are ignored, but a tag is never split into words
+— `Order Notes` is one tag and not two, and `order` does not match `Orders`. An empty list filters
+nothing, and a tag nobody carries returns nothing rather than everything. Unlike `limit`, the list
+is not clamped: dropping a tag would widen the answer, so a clamp would return operations the
+caller did not ask for.
+
+Its `default` is `null` rather than `[]` in both SDKs. A C# parameter default has to be a
+compile-time constant and `null` is the only one an array type has, so the NestJS shape publishes
+the same `null` to keep the two schemas identical; both mean "no filter".
 
 The result is a total and a list of compact cards:
 
 ```json
 {
   "total": 8,
+  "tags": ["billing", "orders"],
   "results": [
     {
       "name": "create_order",
@@ -67,12 +94,52 @@ The result is a total and a list of compact cards:
 }
 ```
 
-`total` counts what the caller may see, before `limit` is applied. `parameters` is a one-line
+`total` counts what the caller may see, before `limit` is applied. `tags` is the folded tag
+vocabulary of that same visible set — the catalog, not the result set — so an agent that narrowed
+to one tag still sees its siblings and can widen without an exploratory call. It is omitted when
+the visible catalog carries no tags, and omitted rather than shortened when there are more than the
+SDK will list, because a shortened list would say that a tag it left out does not exist. `parameters` is a one-line
 rendering of the input schema's top level, not the schema — an agent that intends to call has to
 `load_tool` first. Card descriptions are truncated at 160 characters on a word boundary.
 
 A card gains `authUncertain: true` when visibility could not be resolved for that caller. The card
 never carries policy names; see [visibility decision](/docs/http-catalog/visibility-decision).
+
+### Skipping the `load_tool` turn
+
+With `detail: "schema"` each entry of `results` is exactly what `load_tool` would return for that
+tool, so an agent that already knows which operation it wants calls `invoke_tool` next:
+
+```json
+{
+  "total": 8,
+  "results": [
+    {
+      "name": "get_order",
+      "description": "Fetches one order by id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "id": { "type": "integer" } },
+        "required": ["id"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "total": { "type": "number" }
+        }
+      },
+      "annotations": { "readOnlyHint": true, "idempotentHint": true }
+    }
+  ]
+}
+```
+
+It is a trade, not a free win: a page of schemas is far larger than a page of cards, and `detail`
+changes nothing else — ranking, `limit`, `total` and visibility filtering are what they were. At
+the default `limit` a schema page will usually exceed the response budget, and the refusal names
+`detail` alongside `query` and `limit` so the next call can drop back to cards rather than only
+shrink the page. `limit` keeps one meaning: no smaller cap applies in schema mode.
 
 ## `load_tool`
 
