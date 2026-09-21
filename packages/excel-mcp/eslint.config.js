@@ -24,7 +24,7 @@ const containerPackages = ["@sk-mcp/ooxml-core"];
 const formatPackages = [...parserPackages, ...containerPackages];
 const serverPackages = [
   "@sk-mcp/file-core",
-  "@modelcontextprotocol/sdk",
+  "@modelcontextprotocol/server",
   "zod",
 ];
 

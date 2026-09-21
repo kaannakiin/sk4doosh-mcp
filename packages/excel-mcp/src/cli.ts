@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { parseServerArgv } from "@sk-mcp/file-core";
+import { parseServerArgv, serveFileSourceStdio } from "@sk-mcp/file-core";
 import { createWorkbookRoot } from "./platform/paths.js";
 import { createExcelMcpServer } from "./server.js";
 
@@ -18,7 +17,13 @@ if (parsed.kind === "usage") {
 try {
   const root = await createWorkbookRoot(parsed.path);
   const server = createExcelMcpServer(root);
-  await server.connect(new StdioServerTransport());
+  /**
+   * Guard: stdio carries one connection per process, so pinning the single eagerly built instance
+   * is what `serveStdio`'s per-connection factory would produce anyway — and it keeps a
+   * construction failure fatal here instead of surfacing as an out-of-band error after the client
+   * has already opened.
+   */
+  serveFileSourceStdio(() => server);
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error), 1);
 }

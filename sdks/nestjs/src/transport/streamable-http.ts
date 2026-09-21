@@ -1,123 +1,61 @@
-import { randomUUID } from "node:crypto";
-import { Inject, Injectable } from "@nestjs/common";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { Injectable } from "@nestjs/common";
+import { createMcpHandler } from "@modelcontextprotocol/server";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { toNodeHandler } from "@modelcontextprotocol/node";
 import type { Request, Response } from "express";
-import { extensionTokens } from "../extension-points.js";
 import { connectionOf, runWithOuterConnection } from "../outer-connection.js";
-import { SK_MCP_OPTIONS, SkMcpOptions } from "../options.js";
-import type { SkMcpSessionStore } from "./session-store.js";
 
 export type SkMcpServerFactory = () => McpServer;
 
-const statefulKeepAliveMs = 30_000;
+export type SkMcpRequestHandler = (
+  req: Request,
+  res: Response,
+) => Promise<void>;
 
-function sessionIdFromHeader(req: Request): string | undefined {
-  const value = req.headers["mcp-session-id"];
-  return typeof value === "string" ? value : undefined;
+interface ServedEndpoint {
+  readonly dispatch: SkMcpRequestHandler;
+  readonly notifyToolsChanged: () => void;
 }
 
+/**
+ * Serves the MCP endpoint over Streamable HTTP on both protocol eras.
+ *
+ * The 2026-07-28 revision has no sessions and no `Mcp-Session-Id`, so there is nothing to store
+ * between requests: `createMcpHandler` builds one server per exchange from the factory, and its
+ * `legacy: 'stateless'` default answers 2025-era traffic the same way. A catalogue change reaches
+ * clients through the handler's `subscriptions/listen` bus rather than an unsolicited broadcast,
+ * which is the only delivery the 2026 revision has.
+ */
 @Injectable()
 export class SkMcpStreamableHttp {
-  constructor(
-    @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
-    @Inject(extensionTokens.sessionStore)
-    private readonly sessions: SkMcpSessionStore,
-  ) {}
+  private readonly served: ServedEndpoint[] = [];
 
-  async handle(
-    req: Request,
-    res: Response,
-    createServer: SkMcpServerFactory,
-  ): Promise<void> {
-    await runWithOuterConnection(connectionOf(req), async () => {
-      if (this.options.transport.sessionMode === "stateless") {
-        await this.handleStateless(req, res, createServer);
-        return;
-      }
-      await this.handleStateful(req, res, createServer);
+  /**
+   * Binds one endpoint to a server factory and returns its request handler.
+   *
+   * Guard: call this once per endpoint and keep the result — the handler owns the change-event bus
+   * every open `subscriptions/listen` stream is attached to, so building a fresh one per request
+   * would leave every subscriber listening to a bus nobody publishes on.
+   */
+  serve(createServer: SkMcpServerFactory): SkMcpRequestHandler {
+    const handler = createMcpHandler(createServer);
+    const dispatchNode = toNodeHandler(handler);
+    const dispatch: SkMcpRequestHandler = async (req, res) =>
+      runWithOuterConnection(connectionOf(req), async () => {
+        await dispatchNode(req, res, req.body);
+      });
+    this.served.push({
+      dispatch,
+      notifyToolsChanged: () => {
+        handler.notify.toolsChanged();
+      },
     });
+    return dispatch;
   }
 
   notifyToolListChanged(): void {
-    for (const entry of this.sessions.values()) {
-      entry.server.sendToolListChanged();
+    for (const endpoint of this.served) {
+      endpoint.notifyToolsChanged();
     }
-  }
-
-  private async handleStateless(
-    req: Request,
-    res: Response,
-    createServer: SkMcpServerFactory,
-  ): Promise<void> {
-    if (req.method === "GET" || req.method === "DELETE") {
-      res
-        .status(405)
-        .json({ error: "stateless transport does not support GET or DELETE" });
-      return;
-    }
-
-    const server = createServer();
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    });
-    res.on("close", () => {
-      void transport.close().catch(() => undefined);
-      void server.close().catch(() => undefined);
-    });
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
-  }
-
-  private async handleStateful(
-    req: Request,
-    res: Response,
-    createServer: SkMcpServerFactory,
-  ): Promise<void> {
-    const sessionId = sessionIdFromHeader(req);
-
-    if (sessionId !== undefined) {
-      const entry = this.sessions.get(sessionId);
-      if (entry === undefined) {
-        res.status(404).json({ error: "Session not found" });
-        return;
-      }
-      await entry.transport.handleRequest(
-        req,
-        res,
-        req.method === "POST" ? req.body : undefined,
-      );
-      return;
-    }
-
-    if (req.method !== "POST") {
-      res
-        .status(400)
-        .json({ error: "Bad Request: Mcp-Session-Id header is required" });
-      return;
-    }
-
-    const server = createServer();
-    const transport: StreamableHTTPServerTransport =
-      new StreamableHTTPServerTransport({
-        sessionIdGenerator: randomUUID,
-        enableJsonResponse: false,
-        keepAliveMs: statefulKeepAliveMs,
-        onsessioninitialized: (id) => {
-          this.sessions.set(id, { server, transport });
-        },
-        onsessionclosed: (id) => {
-          this.sessions.delete(id);
-        },
-      });
-    res.on("close", () => {
-      if (transport.sessionId === undefined) {
-        void transport.close().catch(() => undefined);
-        void server.close().catch(() => undefined);
-      }
-    });
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
   }
 }

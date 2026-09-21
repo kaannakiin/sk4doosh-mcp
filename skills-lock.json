@@ -18,6 +18,12 @@
       "sourceType": "github",
       "skillPath": "skills/turborepo/SKILL.md",
       "computedHash": "9fc79a6ea6cfab14b048a83818991ed3fcb681a205baf35343e0ab378c239b5f"
+    },
+    "typescript-mcp-server-generator": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/typescript-mcp-server-generator/SKILL.md",
+      "computedHash": "389dd5b2f6bf325e142ae1e88833193935c120b4eb0abe34d479a0a788f3c887"
     }
   }
 }

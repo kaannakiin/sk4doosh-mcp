@@ -10,6 +10,7 @@ const readJson = (p) => JSON.parse(readFileSync(p, "utf8"));
 
 const ajv = new Ajv2020.default({ allErrors: true, strict: true });
 addFormats.default(ajv);
+ajv.addSchema(readJson(path.join(schemasDir, "protocol-revision.schema.json")));
 ajv.addSchema(
   readJson(path.join(schemasDir, "endpoint-descriptor.schema.json")),
 );

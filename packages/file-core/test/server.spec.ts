@@ -1,6 +1,5 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
@@ -124,6 +123,13 @@ describe("createFileSourceServer", () => {
     expect(listed.map((tool) => tool.name).sort()).toEqual(
       [...toolNamesOf(definitions)].sort(),
     );
+  });
+
+  it("lists the tools in definition order on every call", async () => {
+    const first = (await client.listTools()).tools.map((tool) => tool.name);
+    const second = (await client.listTools()).tools.map((tool) => tool.name);
+    expect(first).toEqual([...toolNamesOf(definitions)]);
+    expect(second).toEqual(first);
   });
 
   it("reports the identity it was given", () => {

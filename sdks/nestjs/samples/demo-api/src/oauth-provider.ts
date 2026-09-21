@@ -1,20 +1,20 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import type { OAuthRegisteredClientsStore } from "@modelcontextprotocol/sdk/server/auth/clients.js";
-import {
-  InvalidGrantError,
-  InvalidTokenError,
-} from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import type {
-  AuthorizationParams,
-  OAuthServerProvider,
-  OAuthTokenVerifier,
-} from "@modelcontextprotocol/sdk/server/auth/provider.js";
-import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import type {
+  AuthInfo,
   OAuthClientInformationFull,
   OAuthTokenRevocationRequest,
   OAuthTokens,
-} from "@modelcontextprotocol/sdk/shared/auth.js";
+} from "@modelcontextprotocol/server";
+import {
+  InvalidGrantError,
+  InvalidTokenError,
+} from "@modelcontextprotocol/server-legacy/auth";
+import type {
+  OAuthRegisteredClientsStore,
+  AuthorizationParams,
+  OAuthServerProvider,
+  OAuthTokenVerifier,
+} from "@modelcontextprotocol/server-legacy/auth";
 import type { Response } from "express";
 import jwt from "jsonwebtoken";
 

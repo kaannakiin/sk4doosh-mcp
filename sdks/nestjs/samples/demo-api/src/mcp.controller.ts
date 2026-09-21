@@ -1,5 +1,5 @@
 import { All, Controller, Inject, Req, Res } from "@nestjs/common";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import {
   CallerVisibilityProvider,
   extensionTokens,
@@ -11,6 +11,7 @@ import {
   type CallerScopeResolver,
   type InvokeResultMapper,
   type SkMcpOptions,
+  type SkMcpRequestHandler,
 } from "@sk-mcp/sdk-nestjs";
 import type { Request, Response } from "express";
 
@@ -26,11 +27,8 @@ export class McpController {
     @Inject(extensionTokens.callerScopeResolver)
     private readonly scopes: CallerScopeResolver,
     @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
-  ) {}
-
-  @All("mcp")
-  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.streamableHttp.handle(req, res, () => {
+  ) {
+    this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "demo-api", version: "0.0.0" });
       registerSkMcpTools(server, {
         catalog: this.catalog,
@@ -42,5 +40,12 @@ export class McpController {
       });
       return server;
     });
+  }
+
+  private readonly serve: SkMcpRequestHandler;
+
+  @All("mcp")
+  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.serve(req, res);
   }
 }

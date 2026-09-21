@@ -1,8 +1,7 @@
 import { basename, join } from "node:path";
 import { mkdir, symlink, writeFile } from "node:fs/promises";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import { SkMcpXmlError } from "../src/host/platform/errors.js";
 import { formats } from "../src/host/platform/formats.js";

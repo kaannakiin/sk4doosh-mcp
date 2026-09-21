@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,

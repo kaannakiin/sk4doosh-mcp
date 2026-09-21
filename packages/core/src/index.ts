@@ -1,3 +1,9 @@
+export type { ProtocolRevision } from "./generated/protocol-revision.js";
+export {
+  defaultProtocolRevision,
+  isProtocolRevision,
+  protocolRevisions,
+} from "./protocol.js";
 export type { EndpointDescriptor } from "./generated/endpoint-descriptor.js";
 export type {
   ArgumentCuration,

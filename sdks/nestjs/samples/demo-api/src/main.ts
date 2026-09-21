@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
-import { hostHeaderValidation } from "@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js";
+import { hostHeaderValidation } from "@modelcontextprotocol/express";
+import { mcpAuthRouter } from "@modelcontextprotocol/server-legacy/auth";
 import { AppModule } from "./app.module.js";
 import {
   demoIssuerUrl,

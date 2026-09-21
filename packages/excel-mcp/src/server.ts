@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { createFileSourceServer } from "@sk-mcp/file-core";
 import type { WorkbookRoot } from "./platform/paths.js";
 import { toolDefinitions } from "./tools/definitions.js";

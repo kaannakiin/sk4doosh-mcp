@@ -7,6 +7,16 @@ public static class SkMcpSpec
     public const string Version = "1.0.0";
 }
 
+public static class ProtocolRevision
+{
+    public const string V20251125 = "2025-11-25";
+    public const string V20260728 = "2026-07-28";
+
+    public const string Default = "2026-07-28";
+
+    public static readonly IReadOnlyList<string> All = [V20251125, V20260728];
+}
+
 public sealed record EndpointDescriptor
 {
     public string? OperationId { get; init; }

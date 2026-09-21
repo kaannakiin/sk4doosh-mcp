@@ -15,14 +15,20 @@ The complete surface sk-mcp adds to the transport layer:
 
 sk-mcp MUST **never** set up `AddAuthentication`/`AddMcp` or an equivalent auth pipeline; enforcement is always whatever mechanism the host already has (JwtBearer plus `.RequireAuthorization()`, custom middleware, or nothing).
 
+## Protocol revisions
+
+The revisions sk-mcp speaks are declared in one place, [schemas/protocol-revision.schema.json](schemas/protocol-revision.schema.json), and reach every language through code generation — `ProtocolRevision` plus `protocolRevisions`/`defaultProtocolRevision` in TypeScript (`@sk-mcp/core`), the `ProtocolRevision` constants class in C# (`SkMcp.AspNetCore.Spec`). A revision spelled as a literal anywhere else is a defect: a server that advertises one set and a test that probes another negotiate against different protocols and the mismatch surfaces as a transport error with no revision named in it.
+
+`default` names what an sk-mcp server advertises when the caller states no preference. It is the newest revision in the enum, and it moves only when a new revision is added to the schema.
+
 ## Session mode
 
-Session mode stays at the transport layer's own default; sk-mcp adds no separate knob.
+There is no session mode, and sk-mcp offers no knob for one. The 2026-07-28 revision removed protocol-level sessions and the `Mcp-Session-Id` header, so both SDKs serve every request on its own.
 
 - **.NET:** `HttpServerTransportOptions.SessionMode` defaults to `Stateless` (the 2026-07-28 protocol, no `Mcp-Session-Id`). A host that wants otherwise changes it with `services.Configure<HttpServerTransportOptions>(o => o.SessionMode = StatefulForInitializeClients)` — ASP.NET's own idiom, a surface sk-mcp does not wrap.
-- **Nest:** because there is no counterpart surface (Express has no `HttpServerTransportOptions` equivalent), sk-mcp offers a legitimate knob here: `options.transport.sessionMode: "stateless" | "stateful"`. `stateless` → `sessionIdGenerator: undefined`, `enableJsonResponse: true`, a new `McpServer` per request; `stateful` → `randomUUID`, `enableJsonResponse: false`, `keepAliveMs: 30_000`, with sessions held in `SkMcpSessionStore` (`idleTimeoutMs: 2h`, `maxIdleSessions: 10_000` — mirroring the .NET defaults), and GET/DELETE routed to the stored session via `mcp-session-id`; in `stateless` mode GET/DELETE return `405`.
+- **Nest:** `SkMcpStreamableHttp.serve(factory)` binds one endpoint to `createMcpHandler`, which builds a fresh `McpServer` per exchange. Its `legacy: 'stateless'` default serves 2025-era traffic the same way, so GET and DELETE — the 2025 session operations — are answered with `405`.
 
-In stateless mode there is no server→client notification mechanism; `listChanged` is a no-op there **with no error at all** (no session is listening).
+A server that needs state across calls mints an explicit handle and passes it as an ordinary tool argument; nothing is keyed on the connection. Because `tools/list` no longer varies per connection, a catalogue that differs per caller is advertised with `cacheScope: "private"` — the SDK's default for every cacheable result, so a visibility-filtered catalogue is never published to a shared cache by accident.
 
 ## `listChanged` semantics
 
@@ -34,9 +40,9 @@ sk-mcp's three meta-tools (`search_tools`, `load_tool`, `invoke_tool`) do **not*
 
 **The .NET mechanism:** the `McpServerOptions.ToolCollection.Changed` event triggers the SDK's own `SendListChangedNotificationAsync` (covering both the pre-SEP-2575 broadcast and the 2026-07-28 `subscriptions/listen` routing). sk-mcp does not build its own session registry — commandeering the SDK's single-slot `RunSessionHandler`/`ConfigureSessionOptions` would mean rewriting the fan-out the SDK already performs. A single `NotifyChanged()` call reaches every live session in every mode; in stateless mode, with no listener, nothing happens silently.
 
-**The Nest mechanism:** while `registerSkMcpTools` registers the three meta-tools it stamps the generation into `_meta` and subscribes to catalog changes; on a change the three tools' `_meta` are re-stamped and **one** `listChanged` is sent to that session. Stamping is done by assigning `_meta` directly rather than through `RegisteredTool.update()`: `update()` emits its own notification on every call, so three tools would produce three notifications, and the rule is one notification per session. The subscription is released when the session's server closes. The host's manual path also remains: `SkMcpStreamableHttp.notifyToolListChanged()` calls `server.sendToolListChanged()` for every session in the registry (meaningful in stateful mode; with no sessions alive in stateless mode it has no effect).
+**The Nest mechanism:** `registerSkMcpTools` stamps the generation into each meta-tool's `_meta` as it registers them. Re-stamping a live instance is no longer a thing to do — the instance serving the next `tools/list` is built after the reload and reads the current generation — so the only moving part is delivery: the module subscribes to catalog changes once and calls `SkMcpStreamableHttp.notifyToolListChanged()`, which publishes `toolsChanged` on each endpoint's `subscriptions/listen` bus. A 2026-07-28 client that opened a listen stream receives exactly one notification per reload; a 2025-era stateless client has no server-to-client channel at all, so nothing is sent and nothing fails.
 
-**Known limit (documented):** on the .NET side, if the host uses its own `ConfigureSessionOptions` to create a per-session clone of the tool collection and that clone does not share sk-mcp's collection reference, the fan-out will not reach that session. In a multi-instance deployment the notification reaches only the sessions in the local process — cross-instance fan-out is outside sk-mcp's scope.
+**Known limit (documented):** on the .NET side, if the host uses its own `ConfigureSessionOptions` to create a per-session clone of the tool collection and that clone does not share sk-mcp's collection reference, the fan-out will not reach that session. In a multi-instance deployment the notification reaches only the sessions in the local process — cross-instance fan-out is outside sk-mcp's scope. The Nest side has the same limit for the same reason: `createMcpHandler`'s default change-event bus is in-process, and a multi-process deployment supplies its own `ServerEventBus`.
 
 ## Protected Resource Metadata (PRM)
 
@@ -67,14 +73,14 @@ Scope is fully **delegated** to the host: `ScopesSupported` is passed through in
 
 ## Host responsibilities
 
-| Responsibility               | .NET                                                                            | Nest                                                                          | sk-mcp's role                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Requiring auth (enforcement) | `.RequireAuthorization()` (on the builder `MapSkMcp` returns)                   | A guard or middleware, the host's choice                                      | Never calls it; offers no knob — the host already has an idiomatic path    |
-| Origin/CORS/DNS rebinding    | The host's own CORS middleware                                                  | `hostHeaderValidation([...])` (not the deprecated `allowedHosts`)             | Adds no middleware; if bearer is required, rebinding cannot obtain a token |
-| TLS                          | The host's hosting / reverse-proxy setup                                        | The same                                                                      | Out of scope                                                               |
-| Session and body limits      | `EnableLegacySse=false`, idle 2h, `MaxIdleSessionCount` 10k (SDK/host defaults) | `SkMcpSessionStore` defaults (`idleTimeoutMs: 2h`, `maxIdleSessions: 10_000`) | Documents them, does not wrap them                                         |
-| Session mode                 | `HttpServerTransportOptions.SessionMode` (defaults to `Stateless`)              | `options.transport.sessionMode`                                               | Binds the `listChanged` fan-out to that mode; does not choose the mode     |
-| Audience validation          | `JwtBearer.ValidAudience = Metadata.Resource`                                   | The `authInfo.resource` the `verifier` returns plus `withAudienceCheck`       | Provides the rule and the tests; the host's validator does the validating  |
+| Responsibility               | .NET                                                               | Nest                                                                    | sk-mcp's role                                                               |
+| ---------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Requiring auth (enforcement) | `.RequireAuthorization()` (on the builder `MapSkMcp` returns)      | A guard or middleware, the host's choice                                | Never calls it; offers no knob — the host already has an idiomatic path     |
+| Origin/CORS/DNS rebinding    | The host's own CORS middleware                                     | `hostHeaderValidation([...])` (not the deprecated `allowedHosts`)       | Adds no middleware; if bearer is required, rebinding cannot obtain a token  |
+| TLS                          | The host's hosting / reverse-proxy setup                           | The same                                                                | Out of scope                                                                |
+| Body limits                  | The host's own limits                                              | The host's own body parser limits                                       | Documents them, does not wrap them                                          |
+| Session mode                 | `HttpServerTransportOptions.SessionMode` (defaults to `Stateless`) | None — serving is per request                                           | Publishes `listChanged` on the subscription bus; there is no mode to choose |
+| Audience validation          | `JwtBearer.ValidAudience = Metadata.Resource`                      | The `authInfo.resource` the `verifier` returns plus `withAudienceCheck` | Provides the rule and the tests; the host's validator does the validating   |
 
 ## SDK parity
 
@@ -88,8 +94,8 @@ Scope is fully **delegated** to the host: `ScopesSupported` is passed through in
 | The full OAuth flow (DCR → PKCE → token → `search_tools`)                              | T5        | End to end with `sdks/nestjs/samples/agent-client` (against both demos) |
 | On a custom-middleware host, the body is preserved and a challenge is added            | T7        | — (the simulated host is .NET-specific)                                 |
 | With `ResourceServer` unconfigured, no PRM and no decoration at all                    | T8        | `transport.spec.ts` (N1–N6)                                             |
-| A stateful session receives `tools/list_changed` after `ReloadAsync`                   | T9        | `transport.spec.ts` (N1–N6)                                             |
-| In stateless mode, no notification and no error                                        | T10       | `transport.spec.ts` (N1–N6)                                             |
+| A subscribed client receives `tools/list_changed` after a catalogue reload             | T9        | `transport.spec.ts` (N1–N6)                                             |
+| With no subscription open, no notification and no error                                | T10       | `transport.spec.ts` (N1–N6)                                             |
 | `initialize` declares `tools.listChanged`                                              | T11       | `transport.spec.ts` (N1–N6)                                             |
 | `tools/list` carries the `_meta` generation and it increments after a change           | T12       | `transport.spec.ts` (N1–N6)                                             |
 | With the host's own `AddMcp`/`mcpAuthMetadataRouter`, no duplicate `resource_metadata` | T13       | `transport.spec.ts` (N1–N6)                                             |

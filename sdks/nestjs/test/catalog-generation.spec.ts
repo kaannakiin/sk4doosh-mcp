@@ -8,10 +8,11 @@ import {
   type INestApplication,
 } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import {
+  Client,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import type { Request, Response } from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CallerScopeResolver } from "../src/cache.js";
@@ -26,7 +27,10 @@ import {
 } from "../src/meta-tools.js";
 import { SK_MCP_OPTIONS, type SkMcpOptions } from "../src/options.js";
 import { SkMcpModule } from "../src/sk-mcp.module.js";
-import { SkMcpStreamableHttp } from "../src/transport/streamable-http.js";
+import {
+  SkMcpStreamableHttp,
+  type SkMcpRequestHandler,
+} from "../src/transport/streamable-http.js";
 import { CallerVisibilityProvider } from "../src/visibility/provider.js";
 
 interface Connected {
@@ -58,16 +62,15 @@ let options: SkMcpOptions | undefined;
 
 @Controller()
 class GenerationMcpController {
+  private readonly serve: SkMcpRequestHandler;
+
   constructor(
     private readonly streamableHttp: SkMcpStreamableHttp,
     private readonly catalog: SkMcpCatalog,
     private readonly dispatcher: SkMcpDispatcher,
     private readonly visibility: CallerVisibilityProvider,
-  ) {}
-
-  @All("mcp")
-  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.streamableHttp.handle(req, res, () => {
+  ) {
+    this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "generation", version: "0.0.0" });
       registerSkMcpTools(server, {
         catalog: this.catalog,
@@ -79,6 +82,11 @@ class GenerationMcpController {
       });
       return server;
     });
+  }
+
+  @All("mcp")
+  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.serve(req, res);
   }
 }
 
@@ -111,11 +119,7 @@ describe("nest catalog generation and connection reflection", () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [
-        SkMcpModule.forRoot((opts) => {
-          opts.transport.sessionMode = "stateful";
-        }),
-      ],
+      imports: [SkMcpModule.forRoot()],
       controllers: [EchoController, GenerationMcpController],
     }).compile();
     app = moduleRef.createNestApplication({ logger: false });
@@ -128,10 +132,21 @@ describe("nest catalog generation and connection reflection", () => {
     scopes = app.get<CallerScopeResolver>(extensionTokens.callerScopeResolver);
     options = app.get<SkMcpOptions>(SK_MCP_OPTIONS);
 
-    client = new Client({ name: "generation-probe", version: "0.0.0" });
-    client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
-      notifications += 1;
-    });
+    client = new Client(
+      { name: "generation-probe", version: "0.0.0" },
+      {
+        versionNegotiation: { mode: "auto" },
+        listChanged: {
+          tools: {
+            autoRefresh: false,
+            debounceMs: 0,
+            onChanged: () => {
+              notifications += 1;
+            },
+          },
+        },
+      },
+    );
     await client.connect(
       new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`)),
     );
@@ -150,7 +165,7 @@ describe("nest catalog generation and connection reflection", () => {
     }
   });
 
-  it("G2: a catalog reload restamps the live session and notifies it once", async () => {
+  it("G2: a catalog reload restamps the next answer and notifies once", async () => {
     const before = await generationsOf();
     const notifiedBefore = notifications;
 

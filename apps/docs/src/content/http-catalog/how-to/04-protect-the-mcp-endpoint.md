@@ -113,6 +113,6 @@ endpoints. The normative transport rules are in
 
 ## One transport detail that looks like a bug
 
-The default NestJS session mode is `stateless`, which serves `POST` only and answers `GET` and
-`DELETE` with `405`. Behind bearer verification you see `401` before that ever applies, which is
-why a `GET /mcp` probe tells you less than you might expect about whether the endpoint works.
+The endpoint serves `POST` only and answers `GET` and `DELETE` with `405` — there are no sessions to
+open or terminate. Behind bearer verification you see `401` before that ever applies, which is why a
+`GET /mcp` probe tells you less than you might expect about whether the endpoint works.

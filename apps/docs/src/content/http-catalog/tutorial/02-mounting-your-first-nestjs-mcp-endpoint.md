@@ -34,6 +34,8 @@ injected config.
 ```ts
 @Controller()
 export class McpController {
+  private readonly serve: SkMcpRequestHandler;
+
   constructor(
     private readonly streamableHttp: SkMcpStreamableHttp,
     private readonly catalog: SkMcpCatalog,
@@ -44,11 +46,8 @@ export class McpController {
     @Inject(extensionTokens.callerScopeResolver)
     private readonly scopes: CallerScopeResolver,
     @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
-  ) {}
-
-  @All("mcp")
-  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.streamableHttp.handle(req, res, () => {
+  ) {
+    this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "demo-api", version: "0.0.0" });
       registerSkMcpTools(server, {
         catalog: this.catalog,
@@ -61,6 +60,11 @@ export class McpController {
       return server;
     });
   }
+
+  @All("mcp")
+  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.serve(req, res);
+  }
 }
 ```
 
@@ -68,9 +72,13 @@ The seven injections are not guessable and the SDK cannot supply them for you �
 is your code, and the module has no way to add a route to it. `SkMcpModule` is `@Global()`, so the
 providers are available without importing anything else.
 
-`@All` matters. The default session mode is `stateless`, which answers `POST` and rejects `GET` and
-`DELETE` with a `405`; `@All` lets the transport produce that rejection itself instead of Nest
-producing a `404`.
+Bind the handler once, in the constructor, and keep it. `serve` creates the endpoint's handler, and
+that handler owns the change-event bus every `subscriptions/listen` stream attaches to — build a
+fresh one per request and subscribers end up listening to a bus nobody publishes on.
+
+`@All` matters. Requests are served one at a time with no session, so `GET` and `DELETE` — the
+operations the 2025-era protocol used for session management — are answered with `405`; `@All` lets
+the transport produce that rejection itself instead of Nest producing a `404`.
 
 ## 3. Bootstrap in the right order
 

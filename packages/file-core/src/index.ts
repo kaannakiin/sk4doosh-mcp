@@ -21,6 +21,7 @@ export {
 export { parseServerArgv, type ArgvOutcome } from "./cli.js";
 export {
   createFileSourceServer,
+  serveFileSourceStdio,
   toolNamesOf,
   type ServerIdentity,
 } from "./server.js";

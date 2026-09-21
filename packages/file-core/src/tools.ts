@@ -1,7 +1,7 @@
 import type {
   CallToolResult,
   ToolAnnotations,
-} from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/server";
 import type { z } from "zod";
 import {
   FileSourceError,

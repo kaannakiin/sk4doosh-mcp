@@ -2,7 +2,6 @@ import type { InjectionToken, Provider, Type } from "@nestjs/common";
 import type { SkMcpCache } from "@sk-mcp/core";
 import type { CallerScopeResolver } from "./cache.js";
 import type { InvokeResultMapper } from "./invoke-result-mapper.js";
-import type { SkMcpSessionStore } from "./transport/session-store.js";
 import type { VisibilityEvaluator } from "./visibility/evaluator.js";
 import type { ProbeEvaluator } from "./visibility/probe.js";
 
@@ -10,7 +9,6 @@ export interface ExtensionPoints {
   cache: SkMcpCache;
   callerScopeResolver: CallerScopeResolver;
   invokeResultMapper: InvokeResultMapper;
-  sessionStore: SkMcpSessionStore;
   visibilityEvaluator: VisibilityEvaluator;
   probeEvaluator: ProbeEvaluator;
 }
@@ -19,7 +17,6 @@ export const extensionTokens = {
   cache: Symbol("SK_MCP_CACHE"),
   callerScopeResolver: Symbol("SK_MCP_CALLER_SCOPE_RESOLVER"),
   invokeResultMapper: Symbol("SK_MCP_INVOKE_RESULT_MAPPER"),
-  sessionStore: Symbol("SK_MCP_SESSION_STORE"),
   visibilityEvaluator: Symbol("SK_MCP_VISIBILITY_EVALUATOR"),
   probeEvaluator: Symbol("SK_MCP_PROBE_EVALUATOR"),
 } as const satisfies { readonly [K in keyof ExtensionPoints]: symbol };

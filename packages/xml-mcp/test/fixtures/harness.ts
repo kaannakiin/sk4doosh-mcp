@@ -1,4 +1,4 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { createXmlDocumentCache } from "../../src/host/document.js";
 import { createDocumentRoot } from "../../src/host/platform/paths.js";
 import type { ToolHandlers } from "../../src/tools/definitions.js";

@@ -108,16 +108,11 @@ export {
 export type { CallerScopeResolver } from "./cache.js";
 export { DefaultInvokeResultMapper } from "./invoke-result-mapper.js";
 export type { InvokeResultMapper } from "./invoke-result-mapper.js";
-export { InMemorySessionStore } from "./transport/session-store.js";
-export type {
-  InMemorySessionStoreOptions,
-  SkMcpSessionEntry,
-  SkMcpSessionMode,
-  SkMcpSessionStore,
-  SkMcpTransportOptions,
-} from "./transport/session-store.js";
 export { SkMcpStreamableHttp } from "./transport/streamable-http.js";
-export type { SkMcpServerFactory } from "./transport/streamable-http.js";
+export type {
+  SkMcpRequestHandler,
+  SkMcpServerFactory,
+} from "./transport/streamable-http.js";
 export { withAudienceCheck } from "./transport/audience.js";
 export {
   protectedResourceMetadataHandler,

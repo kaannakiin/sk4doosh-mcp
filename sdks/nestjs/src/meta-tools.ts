@@ -1,7 +1,4 @@
-import type {
-  McpServer,
-  RegisteredTool,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import {
   compose,
   createCard,
@@ -51,10 +48,12 @@ export interface MetaToolDependencies {
   readonly options: SkMcpOptions;
 }
 
-interface ToolExtra {
-  readonly requestInfo?: { readonly headers?: Record<string, unknown> };
-  readonly authInfo?: VerifiedToken;
-  readonly signal?: AbortSignal;
+interface ToolContext {
+  readonly mcpReq?: { readonly signal?: AbortSignal };
+  readonly http?: {
+    readonly req?: { readonly headers: Headers };
+    readonly authInfo?: VerifiedToken;
+  };
 }
 
 export const catalogGenerationMetaKey = "sk-mcp/catalogGeneration";
@@ -218,24 +217,38 @@ function budgetFor(
 /**
  * The MCP call's cancellation channel, read separately from {@link outerFrom}.
  *
- * A stdio session has no `requestInfo`, so folding the signal into `OuterRequest` would either lose
- * it there or synthesize an outer request that never existed — which would start calling the host's
+ * A stdio session has no `ctx.http`, so folding the signal into `OuterRequest` would either lose it
+ * there or synthesize an outer request that never existed — which would start calling the host's
  * identity projector on a transport that carries no headers.
  */
-function deadlineFrom(extra: unknown): DispatchDeadline | undefined {
-  const signal = (extra as ToolExtra | undefined)?.signal;
+function deadlineFrom(ctx: unknown): DispatchDeadline | undefined {
+  const signal = (ctx as ToolContext | undefined)?.mcpReq?.signal;
   return signal === undefined ? undefined : { signal };
 }
 
-function outerFrom(extra: unknown): OuterRequest | undefined {
-  const headers = (extra as ToolExtra | undefined)?.requestInfo?.headers;
-  if (headers === undefined) {
+/**
+ * Guard: `ctx.http.req` is a Web `Request`, so its `Headers` has to be flattened into the Node
+ * record every identity carrier and value provider in this SDK reads. Iterating `Headers` already
+ * lower-cases each name and joins repeats with ", " — the same shape Node produces — so a carrier
+ * configured for `x-tenant-id` keeps matching across the v1 to v2 move.
+ */
+function headersOf(headers: Headers): OuterRequest["headers"] {
+  const record: Record<string, string> = {};
+  for (const [name, value] of headers) {
+    record[name] = value;
+  }
+  return record;
+}
+
+function outerFrom(ctx: unknown): OuterRequest | undefined {
+  const request = (ctx as ToolContext | undefined)?.http?.req;
+  if (request === undefined) {
     return undefined;
   }
   const connection = currentOuterConnection();
-  const auth = (extra as ToolExtra | undefined)?.authInfo;
+  const auth = (ctx as ToolContext | undefined)?.http?.authInfo;
   return {
-    headers: headers as OuterRequest["headers"],
+    headers: headersOf(request.headers),
     ...(connection === undefined ? {} : { connection }),
     ...(auth === undefined ? {} : { auth }),
   };
@@ -314,17 +327,17 @@ function vocabularyOf(entry: CatalogEntry): {
 export function registerSkMcpTools(
   server: McpServer,
   deps: MetaToolDependencies,
-): () => void {
+): void {
   const generationMeta = (): Record<string, unknown> => ({
     [catalogGenerationMetaKey]: deps.catalog.generation,
   });
 
-  const search = server.registerTool(
+  server.registerTool(
     "search_tools",
     {
       description: searchDescription,
       _meta: generationMeta(),
-      inputSchema: {
+      inputSchema: z.object({
         query: z
           .string()
           .default("")
@@ -356,12 +369,12 @@ export function registerSkMcpTools(
           )
           .optional()
           .meta({ default: null }),
-      },
+      }),
     },
-    async ({ query, limit, detail, tags }, extra) =>
+    async ({ query, limit, detail, tags }, ctx) =>
       emitGuarded(deps, async () => {
         deps.catalog.ensureValid();
-        const outer = outerFrom(extra);
+        const outer = outerFrom(ctx);
         const capped = Math.min(
           Math.max(limit ?? defaultSearchLimit, 1),
           maxSearchLimit,
@@ -451,7 +464,7 @@ export function registerSkMcpTools(
       }),
   );
 
-  const load = server.registerTool(
+  server.registerTool(
     "load_tool",
     {
       description: loadDescription,
@@ -460,7 +473,7 @@ export function registerSkMcpTools(
         .object({ name: namedArgument(operationName) })
         .meta({ required: ["name"] }),
     },
-    async ({ name }, extra) =>
+    async ({ name }, ctx) =>
       emitGuarded(deps, async () => {
         if (name === undefined) {
           return missingArgument("load_tool", "name");
@@ -473,7 +486,7 @@ export function registerSkMcpTools(
         if (entry === undefined) {
           return unknownTool(name);
         }
-        const outer = outerFrom(extra);
+        const outer = outerFrom(ctx);
         const decide = await decider(deps, outer);
         let decision = decide(entry);
         if (
@@ -495,7 +508,7 @@ export function registerSkMcpTools(
       }),
   );
 
-  const invoke = server.registerTool(
+  server.registerTool(
     "invoke_tool",
     {
       description: invokeDescription,
@@ -516,7 +529,7 @@ export function registerSkMcpTools(
         })
         .meta({ required: ["name", "arguments"] }),
     },
-    async ({ name, arguments: args }, extra) =>
+    async ({ name, arguments: args }, ctx) =>
       emitGuarded(deps, async () => {
         if (name === undefined) {
           return missingArgument("invoke_tool", "name");
@@ -535,7 +548,7 @@ export function registerSkMcpTools(
             `Operation '${name}' cannot be invoked through sk-mcp; see the catalog diagnostics.`,
           );
         }
-        const outer = outerFrom(extra);
+        const outer = outerFrom(ctx);
         const normalized = normalizeInvokeArguments(args);
         if (normalized.unwrapped) {
           logger.warn(
@@ -569,7 +582,7 @@ export function registerSkMcpTools(
             normalized.value,
             outer,
             deferred,
-            { ...deadlineFrom(extra), timeoutMs },
+            { ...deadlineFrom(ctx), timeoutMs },
           );
         } catch (error) {
           if (
@@ -592,22 +605,6 @@ export function registerSkMcpTools(
         });
       }),
   );
-
-  const stamped: readonly RegisteredTool[] = [search, load, invoke];
-  const release = deps.catalog.onChange(() => {
-    const meta = generationMeta();
-    for (const tool of stamped) {
-      tool._meta = meta;
-    }
-    server.sendToolListChanged();
-  });
-  const inner = server.server;
-  const previous = inner.onclose;
-  inner.onclose = () => {
-    release();
-    previous?.();
-  };
-  return release;
 }
 
 function knownFields(entry: CatalogEntry): string[] {

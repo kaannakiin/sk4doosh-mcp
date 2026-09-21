@@ -14,6 +14,7 @@ const specVersion = JSON.parse(
 ).version;
 
 const sources = [
+  "protocol-revision.schema.json",
   "endpoint-descriptor.schema.json",
   "tool-definition.schema.json",
   "invoke-result.schema.json",
@@ -76,9 +77,42 @@ function csharpType(schema, currentFile) {
   throw new Error(`Unsupported schema node: ${JSON.stringify(schema)}`);
 }
 
+const identifier = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
 function emitEnum(name, schema) {
   const members = schema.enum.map((value) => `${pascal(value)}`).join(", ");
   return `public enum ${name} { ${members} }`;
+}
+
+/**
+ * Emits a string-enum whose values are not C# identifiers as a class of constants.
+ *
+ * MCP protocol revisions are dates, and `pascal("2026-07-28")` is `20260728` — a token C# cannot
+ * name. Constants also keep the wire spelling, which an enum member drops: the revision travels
+ * as the literal string, so a member name that no longer carries it would need a second mapping
+ * to reconstruct.
+ */
+function emitConstants(name, schema) {
+  const member = (value) => {
+    const cased = pascal(value);
+    return identifier.test(cased) ? cased : `V${cased}`;
+  };
+  const lines = [`public static class ${name}`, "{"];
+  for (const value of schema.enum) {
+    lines.push(`    public const string ${member(value)} = "${value}";`);
+  }
+  if (schema.default !== undefined) {
+    lines.push("");
+    lines.push(`    public const string Default = "${schema.default}";`);
+  }
+  lines.push("");
+  lines.push(
+    `    public static readonly IReadOnlyList<string> All = [${schema.enum
+      .map(member)
+      .join(", ")}];`,
+  );
+  lines.push("}");
+  return lines.join("\n");
 }
 
 function emitRecord(name, schema, currentFile) {
@@ -126,7 +160,11 @@ for (const [file, schema] of schemas) {
       continue;
     }
     if (node.type === "string" && Array.isArray(node.enum)) {
-      emitted.set(name, emitEnum(name, node));
+      const named = node.enum.every((value) => identifier.test(pascal(value)));
+      emitted.set(
+        name,
+        named ? emitEnum(name, node) : emitConstants(name, node),
+      );
       continue;
     }
     if (node.type !== "object") {

@@ -1,6 +1,6 @@
 import { describe, expect, inject, it } from "vitest";
 import ExcelJS from "exceljs";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { loadDocument, type LoadedWorkbook } from "../src/format/document.js";
 import {
   createWorkbookRoot,

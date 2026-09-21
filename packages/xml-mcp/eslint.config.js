@@ -6,7 +6,11 @@ const workerEntry = ["src/xml-worker.ts"];
 const message =
   "The worker entry stays free of the host surface; it answers with a code string and the main side builds the error.";
 
-const hostPackages = ["@sk-mcp/file-core", "@modelcontextprotocol/sdk", "zod"];
+const hostPackages = [
+  "@sk-mcp/file-core",
+  "@modelcontextprotocol/server",
+  "zod",
+];
 
 const hostRootModules = [
   "./index.js",

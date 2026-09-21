@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,

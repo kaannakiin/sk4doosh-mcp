@@ -20,6 +20,7 @@ using ModelContextProtocol.Authentication;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using SkMcp.AspNetCore;
+using SkMcp.AspNetCore.Spec;
 using SkMcp.Samples.DemoAuthServer;
 
 namespace SkMcp.Tests;
@@ -37,7 +38,7 @@ internal sealed record TransportApp(WebApplication App, DemoAuthServer AuthServe
 
 public sealed class TransportTests
 {
-    private const string LegacyProtocolVersion = "2025-11-25";
+    private const string LegacyProtocolVersion = ProtocolRevision.V20251125;
 
     private const string GenerationMetaKey = "sk-mcp/catalogGeneration";
 
@@ -459,11 +460,22 @@ public sealed class TransportTests
     {
         await using TransportApp app = await HostAsync();
 
+        string initialize = JsonSerializer.Serialize(new
+        {
+            jsonrpc = "2.0",
+            id = 1,
+            method = "initialize",
+            @params = new
+            {
+                protocolVersion = LegacyProtocolVersion,
+                capabilities = new { },
+                clientInfo = new { name = "anon", version = "1.0" },
+            },
+        });
+
         using HttpRequestMessage request = new(HttpMethod.Post, "/mcp")
         {
-            Content = new StringContent(
-                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"anon","version":"1.0"}}}""",
-                System.Text.Encoding.UTF8, "application/json"),
+            Content = new StringContent(initialize, System.Text.Encoding.UTF8, "application/json"),
         };
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));

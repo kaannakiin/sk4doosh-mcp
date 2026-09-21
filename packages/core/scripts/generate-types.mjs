@@ -10,6 +10,7 @@ const schemasDir = path.resolve(here, "../../spec/schemas");
 const outDir = path.resolve(here, "../src/generated");
 
 const schemas = [
+  "protocol-revision.schema.json",
   "endpoint-descriptor.schema.json",
   "tool-definition.schema.json",
   "invoke-result.schema.json",

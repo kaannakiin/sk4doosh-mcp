@@ -7,20 +7,21 @@ import {
   type INestApplication,
 } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import type { OAuthTokenVerifier } from "@modelcontextprotocol/express";
+import {
+  Client,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import type { Request, Response } from "express";
+import { defaultProtocolRevision, protocolRevisions } from "@sk-mcp/core";
 import jwt from "jsonwebtoken";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  extensionTokens,
   SkMcpModule,
   SkMcpStreamableHttp,
   type SkMcpOptions,
-  type SkMcpSessionStore,
+  type SkMcpRequestHandler,
 } from "../src/index.js";
 
 const secret = "transport-test-secret-0123456789abcdef";
@@ -46,13 +47,24 @@ function verifier(): OAuthTokenVerifier {
   };
 }
 
+/**
+ * Guard: the legacy leg of `createMcpHandler` builds its transport with `sessionIdGenerator:
+ * undefined` and nothing else, so it answers a 2025-era POST as an SSE frame rather than the bare
+ * JSON body the hand-wired `enableJsonResponse: true` transport used to return.
+ */
+function frameOf(body: string): unknown {
+  const line = body
+    .split("\n")
+    .find((candidate) => candidate.startsWith("data:"));
+  return JSON.parse((line ?? body).replace(/^data:\s*/u, ""));
+}
+
 @Controller()
 class TransportProbeController {
-  constructor(private readonly streamableHttp: SkMcpStreamableHttp) {}
+  private readonly serve: SkMcpRequestHandler;
 
-  @All("mcp")
-  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.streamableHttp.handle(req, res, () => {
+  constructor(private readonly streamableHttp: SkMcpStreamableHttp) {
+    this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({
         name: "transport-test",
         version: "0.0.0",
@@ -62,6 +74,11 @@ class TransportProbeController {
       }));
       return server;
     });
+  }
+
+  @All("mcp")
+  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.serve(req, res);
   }
 }
 
@@ -187,51 +204,58 @@ describe("Nest streamable HTTP transport", () => {
         id: 1,
         method: "initialize",
         params: {
-          protocolVersion: "2026-07-28",
+          protocolVersion: defaultProtocolRevision,
           capabilities: {},
           clientInfo: { name: "probe", version: "0.0.0" },
         },
       }),
     });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { jsonrpc: string };
+    const body = frameOf(await res.text()) as {
+      jsonrpc: string;
+      result?: { protocolVersion?: string };
+    };
     expect(body.jsonrpc).toBe("2.0");
+    expect(protocolRevisions).toContain(body.result?.protocolVersion);
+    expect(body.result?.protocolVersion).not.toBe(defaultProtocolRevision);
   });
 
-  it("N5: a stateful session survives across requests, receives list_changed, and DELETE terminates it", async () => {
-    current = await createTransportApp((options) => {
-      options.transport.sessionMode = "stateful";
-    });
+  it("N5: a negotiating client receives a catalogue change over subscriptions/listen", async () => {
+    current = await createTransportApp(() => {});
 
-    const client = new Client({ name: "test-client", version: "0.0.0" });
     let notified = 0;
-    client.setNotificationHandler(ToolListChangedNotificationSchema, () => {
-      notified += 1;
-    });
+    const client = new Client(
+      { name: "test-client", version: "0.0.0" },
+      {
+        versionNegotiation: { mode: "auto" },
+        listChanged: {
+          tools: {
+            autoRefresh: false,
+            debounceMs: 0,
+            onChanged: () => {
+              notified += 1;
+            },
+          },
+        },
+      },
+    );
 
     const clientTransport = new StreamableHTTPClientTransport(
       new URL(`${current.baseUrl}/mcp`),
     );
     await client.connect(clientTransport);
+    expect(client.getProtocolEra()).toBe("modern");
 
     const tools = await client.listTools();
     expect(tools.tools.some((tool) => tool.name === "ping")).toBe(true);
 
-    const sessions = current.app.get<SkMcpSessionStore>(
-      extensionTokens.sessionStore,
-    );
-    expect([...sessions.values()].length).toBe(1);
-
     current.app.get(SkMcpStreamableHttp).notifyToolListChanged();
     await waitFor(() => notified > 0);
-
-    await clientTransport.terminateSession();
-    expect([...sessions.values()].length).toBe(0);
 
     await client.close();
   });
 
-  it("N6: a stateless transport rejects GET and DELETE with 405", async () => {
+  it("N6: a 2025-era request still gets 405 on GET and DELETE", async () => {
     current = await createTransportApp(() => {});
 
     const get = await fetch(`${current.baseUrl}/mcp`, {

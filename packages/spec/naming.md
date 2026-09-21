@@ -32,7 +32,7 @@ Because the prefix's source is `container`, the name carries only **one** level 
 
 ## Why the length limit is 256
 
-The pattern was once capped at 64 characters. That number has no counterpart in MCP or in model APIs: in the MCP schema (`schema/2025-06-18`) `Tool.name` is a plain `string` — no `maxLength`, no `minLength`, no `pattern` — and in the Anthropic API the tool-name space is `^[a-zA-Z0-9_-]{1,256}$`.
+The pattern was once capped at 64 characters. That number has no counterpart in MCP or in model APIs: in the MCP schema (`schema/2026-07-28`) `Tool.name` is a plain `string` — no `maxLength`, no `minLength`, no `pattern` — and in the Anthropic API the tool-name space is `^[a-zA-Z0-9_-]{1,256}$`.
 
 The two halves of the rule have opposite costs, so they are treated separately:
 

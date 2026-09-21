@@ -1,6 +1,8 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+  Client,
+  UnauthorizedError,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import { HeadlessOAuthProvider } from "./headless-oauth-provider.js";
 
 type CallToolResult = Awaited<ReturnType<Client["callTool"]>>;
@@ -114,7 +116,7 @@ async function connectWithOAuth(options: ConnectOptions): Promise<McpSession> {
     const retryTransport = new StreamableHTTPClientTransport(mcpUrl, {
       authProvider: provider,
     });
-    await retryTransport.finishAuth(provider.consumeAuthorizationCode());
+    await retryTransport.finishAuth(provider.consumeCallbackParams());
     await client.connect(retryTransport);
   }
 

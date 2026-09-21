@@ -14,7 +14,6 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
     "@sk-mcp/eslint-config": "workspace:*",
     "@sk-mcp/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",

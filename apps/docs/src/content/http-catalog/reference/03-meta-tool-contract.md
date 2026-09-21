@@ -233,9 +233,12 @@ const payload = JSON.parse(result.content[0].text);
 There is no `structuredContent` and no multi-block result. `isError` is `true` on failure and
 **absent** on success — test it for truthiness, not for `false`.
 
-## Session mode
+## Sessions
 
-The transport is Streamable HTTP. The default session mode is `stateless`: `POST` only, JSON
-responses, no `Mcp-Session-Id`, `GET` and `DELETE` answered with `405`. In `stateful` mode the
-server issues a session id on `initialize`, requires it on follow-up requests, and keeps SSE
-streams alive. `sessionMode` is a NestJS option; the .NET SDK exposes no equivalent property.
+The transport is Streamable HTTP and there are no sessions: protocol revision `2026-07-28` removed
+them along with the `Mcp-Session-Id` header, so every request is served on its own and `GET` and
+`DELETE` are answered with `405`. There is no session-mode option on either SDK.
+
+A 2025-era client is still served, per request, through the same endpoint. What it does not get is a
+server-to-client channel: catalogue changes reach a `2026-07-28` client that opened a
+`subscriptions/listen` stream, and nothing is sent to a client that opened none.

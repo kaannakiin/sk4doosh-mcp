@@ -28,6 +28,7 @@ try {
       private: true,
       type: "module",
       dependencies: {
+        "@modelcontextprotocol/client": "^2.0.0",
         "@sk-mcp/file-core-native": archive("sk-mcp-file-core-native-"),
         "@sk-mcp/file-core": archive("sk-mcp-file-core-0"),
         "@sk-mcp/ooxml-core": archive("sk-mcp-ooxml-core-"),
@@ -72,8 +73,8 @@ try {
     join(directory, "smoke.mjs"),
     `
 import assert from 'node:assert/strict';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 const require = createRequire(import.meta.url);
@@ -94,8 +95,8 @@ try {
     join(directory, "smoke-xml.mjs"),
     `
 import assert from 'node:assert/strict';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 const require = createRequire(import.meta.url);

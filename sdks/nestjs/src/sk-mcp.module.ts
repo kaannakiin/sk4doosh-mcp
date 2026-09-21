@@ -11,11 +11,12 @@ import {
   type Type,
 } from "@nestjs/common";
 import { APP_INTERCEPTOR, DiscoveryModule } from "@nestjs/core";
-import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { requireBearerAuth } from "@modelcontextprotocol/express";
 import { MemorySkMcpCache, type SkMcpCache } from "@sk-mcp/core";
 import { SkMcpCatalog } from "./catalog.js";
 
 const SK_MCP_PROBE_RESET = Symbol("SK_MCP_PROBE_RESET");
+const SK_MCP_LIST_CHANGED = Symbol("SK_MCP_LIST_CHANGED");
 import { DeclarativeVisibilityEvaluator } from "./visibility/evaluator.js";
 import {
   SkMcpProbeEvaluator,
@@ -44,7 +45,6 @@ import {
   protectedResourceMetadataPath,
   protectedResourceMetadataUrl,
 } from "./transport/protected-resource-metadata.js";
-import { InMemorySessionStore } from "./transport/session-store.js";
 import { SkMcpStreamableHttp } from "./transport/streamable-http.js";
 
 export interface SkMcpModuleAsyncOptions {
@@ -73,7 +73,6 @@ function defaultProviders(): Provider[] {
       provide: extensionTokens.invokeResultMapper,
       useClass: DefaultInvokeResultMapper,
     },
-    { provide: extensionTokens.sessionStore, useClass: InMemorySessionStore },
     {
       provide: extensionTokens.visibilityEvaluator,
       useClass: DeclarativeVisibilityEvaluator,
@@ -108,6 +107,20 @@ function defaultProviders(): Provider[] {
         extensionTokens.cache,
         SK_MCP_OPTIONS,
       ],
+    },
+    {
+      /**
+       * Guard: the 2026-07-28 revision delivers `tools/list_changed` only on a
+       * `subscriptions/listen` stream the client opened, so the notification has to be published on
+       * the handler's bus. It cannot be bound per session any more — there are no sessions, and the
+       * per-request server the handler builds is gone before the next catalogue reload.
+       */
+      provide: SK_MCP_LIST_CHANGED,
+      useFactory: (catalog: SkMcpCatalog, transport: SkMcpStreamableHttp) =>
+        catalog.onChange(() => {
+          transport.notifyToolListChanged();
+        }),
+      inject: [SkMcpCatalog, SkMcpStreamableHttp],
     },
     { provide: APP_INTERCEPTOR, useClass: SkMcpProbeInterceptor },
     SkMcpCatalog,

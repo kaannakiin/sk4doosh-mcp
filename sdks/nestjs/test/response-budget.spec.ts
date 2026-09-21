@@ -9,9 +9,11 @@ import {
   type INestApplication,
 } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import {
+  Client,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import type { Request, Response } from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SdkError } from "@sk-mcp/core";
@@ -24,7 +26,10 @@ import type { InvokeResultMapper } from "../src/invoke-result-mapper.js";
 import { registerSkMcpTools } from "../src/meta-tools.js";
 import { SK_MCP_OPTIONS, type SkMcpOptions } from "../src/options.js";
 import { SkMcpModule } from "../src/sk-mcp.module.js";
-import { SkMcpStreamableHttp } from "../src/transport/streamable-http.js";
+import {
+  SkMcpStreamableHttp,
+  type SkMcpRequestHandler,
+} from "../src/transport/streamable-http.js";
 import { CallerVisibilityProvider } from "../src/visibility/provider.js";
 
 @Controller()
@@ -64,16 +69,15 @@ let options: SkMcpOptions | undefined;
 
 @Controller()
 class BudgetMcpController {
+  private readonly serve: SkMcpRequestHandler;
+
   constructor(
     private readonly streamableHttp: SkMcpStreamableHttp,
     private readonly catalog: SkMcpCatalog,
     private readonly dispatcher: SkMcpDispatcher,
     private readonly visibility: CallerVisibilityProvider,
-  ) {}
-
-  @All("mcp")
-  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.streamableHttp.handle(req, res, () => {
+  ) {
+    this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "budget", version: "0.0.0" });
       registerSkMcpTools(server, {
         catalog: this.catalog,
@@ -85,6 +89,11 @@ class BudgetMcpController {
       });
       return server;
     });
+  }
+
+  @All("mcp")
+  async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.serve(req, res);
   }
 }
 
