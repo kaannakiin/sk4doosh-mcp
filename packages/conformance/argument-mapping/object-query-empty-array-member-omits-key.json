@@ -1,0 +1,41 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos dizi uye hic anahtar yazmaz: yok olandan ayirt edilemez kalir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "tags": [],
+        "status": "x"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter[status]=x"
+  }
+}

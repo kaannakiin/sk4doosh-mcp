@@ -262,3 +262,91 @@ describe("createTool", () => {
     expect([...tool.template.bodyProperties]).toEqual([]);
   });
 });
+
+describe("an object-valued query parameter", () => {
+  const filter = (
+    overrides: Record<string, unknown> = {},
+    properties: Record<string, unknown> = {
+      status: { type: "string" },
+      min: { type: "integer" },
+    },
+  ): EndpointDescriptor =>
+    endpoint({
+      method: "GET",
+      route: "/orders",
+      parameters: [
+        {
+          name: "filter",
+          in: "query",
+          required: false,
+          style: "deepObject",
+          schema: { type: "object", properties },
+          ...overrides,
+        },
+      ],
+    } as Partial<EndpointDescriptor>);
+
+  it("publishes one nested property, not one per member", () => {
+    const tool = createTool(filter());
+    expect(Object.keys(tool.definition.inputSchema.properties ?? {})).toEqual([
+      "filter",
+    ]);
+    expect(tool.definition.inputSchema.properties?.["filter"]).toEqual({
+      type: "object",
+      properties: { status: { type: "string" }, min: { type: "integer" } },
+    });
+  });
+
+  it("freezes the descriptor's property order into the binding", () => {
+    const tool = createTool(
+      filter({}, { z: { type: "string" }, a: { type: "string" } }),
+    );
+    expect(
+      tool.template.parameters[0]?.kind === "object" &&
+        tool.template.parameters[0].members.map((m) => m.name),
+    ).toEqual(["z", "a"]);
+  });
+
+  it("defaults the notation to bracket and carries dot when declared", () => {
+    const notationOf = (descriptor: EndpointDescriptor): unknown => {
+      const binding = createTool(descriptor).template.parameters[0];
+      return binding?.kind === "object" ? binding.notation : undefined;
+    };
+    expect(notationOf(filter())).toBe("bracket");
+    expect(notationOf(filter({ objectNotation: "dot" }))).toBe("dot");
+  });
+
+  it("refuses an object schema that does not declare deepObject", () => {
+    expect(codeOf(() => createTool(filter({ style: undefined })))).toBe(
+      "unsupported_object_style",
+    );
+  });
+
+  it("refuses deepObject with an explicit explode false", () => {
+    expect(codeOf(() => createTool(filter({ explode: false })))).toBe(
+      "unsupported_object_style",
+    );
+  });
+
+  it("refuses a member that is not a query scalar or an array of them", () => {
+    for (const member of [
+      { type: "object", properties: {} },
+      { type: "array", items: { type: "object" } },
+      { $ref: "#/$defs/Range" },
+    ]) {
+      expect(codeOf(() => createTool(filter({}, { range: member })))).toBe(
+        "unsupported_object_nesting",
+      );
+    }
+  });
+
+  it("accepts an array-of-scalar member", () => {
+    const tool = createTool(
+      filter({}, { tags: { type: "array", items: { type: "string" } } }),
+    );
+    const binding = tool.template.parameters[0];
+    expect(binding?.kind === "object" && binding.members).toEqual([
+      { name: "tags", kind: "string", isArray: true },
+    ]);
+  });
+});

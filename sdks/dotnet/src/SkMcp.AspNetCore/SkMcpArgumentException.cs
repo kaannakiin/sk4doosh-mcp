@@ -12,6 +12,8 @@ public sealed class SkMcpTemplateException(string code, string message) : Except
     public const string PathParameterArray = "path_parameter_array";
     public const string HeaderParameterArray = "header_parameter_array";
     public const string UnsupportedArrayStyle = "unsupported_array_style";
+    public const string UnsupportedObjectStyle = "unsupported_object_style";
+    public const string UnsupportedObjectNesting = "unsupported_object_nesting";
     public const string RoutePlaceholderMismatch = "route_placeholder_mismatch";
     public const string CurationUnresolved = "curation_unresolved";
     public const string InvalidFillConstant = "invalid_fill_constant";

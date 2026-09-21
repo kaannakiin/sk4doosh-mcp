@@ -33,6 +33,7 @@ public sealed record Parameter
     public required JsonObject Schema { get; init; }
     public string? Style { get; init; }
     public bool? Explode { get; init; }
+    public string? ObjectNotation { get; init; }
     public string? Description { get; init; }
 }
 

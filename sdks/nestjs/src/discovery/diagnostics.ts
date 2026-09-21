@@ -10,12 +10,14 @@ const defaults: Readonly<Record<string, CatalogSeverity>> = {
   ambiguous_selection: "fatal",
   invalid_name: "fatal",
   prm_path_prefixed: "fatal",
+  query_parser_not_extended: "fatal",
   argument_collision: "endpointDropped",
   multiple_body_bindings: "endpointDropped",
   unsupported_binding: "endpointDropped",
   unsupported_method: "endpointDropped",
   schema_def_conflict: "endpointDropped",
   template_rejected: "endpointDropped",
+  duplicate_argument: "endpointDropped",
   unresolved_query_shape: "endpointDropped",
   curation_unresolved: "endpointDropped",
   invalid_fill_constant: "endpointDropped",
@@ -36,6 +38,7 @@ const defaults: Readonly<Record<string, CatalogSeverity>> = {
   body_field_collision: "warning",
   unbound_query_object: "warning",
   unbound_header_object: "warning",
+  query_member_shadowed: "warning",
 };
 
 const rank: Readonly<Record<CatalogSeverity, number>> = {

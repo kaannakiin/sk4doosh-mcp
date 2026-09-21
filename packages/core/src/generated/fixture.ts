@@ -189,8 +189,9 @@ export interface Parameter {
   in: "path" | "query" | "header";
   required: boolean;
   schema: JsonSchemaObject;
-  style?: "form" | "spaceDelimited" | "pipeDelimited";
+  style?: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
   explode?: boolean;
+  objectNotation?: "bracket" | "dot";
   description?: string;
 }
 export interface JsonSchemaObject {
@@ -303,12 +304,19 @@ export interface RequestTemplateSpec {
 export interface TemplateParameter {
   name: string;
   in: "path" | "query" | "header";
-  type: "string" | "integer" | "number" | "boolean";
+  type: "string" | "integer" | "number" | "boolean" | "object";
   array?: boolean;
-  style?: "form" | "spaceDelimited" | "pipeDelimited";
+  style?: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
   explode?: boolean;
+  notation?: "bracket" | "dot";
+  members?: [TemplateObjectMember, ...TemplateObjectMember[]];
   as?: string;
   fill?: ArgumentFill1;
+}
+export interface TemplateObjectMember {
+  name: string;
+  type: "string" | "integer" | "number" | "boolean";
+  array?: boolean;
 }
 export interface TemplateBodyCuration {
   name: string;
@@ -397,6 +405,7 @@ export interface SearchTool {
   route: string;
   alternateRoutes?: string[];
   inputSchema?: JsonSchemaObject;
+  groupedParameters?: [string, ...string[]];
 }
 export interface SearchExpectation {
   names: string[];

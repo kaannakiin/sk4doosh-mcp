@@ -167,6 +167,48 @@ Variants also compete with each other in search: same route, adjacent descriptio
 Make the **first clause** of each description different, because the search card truncates at 160
 characters.
 
+## Keep a query DTO grouped instead of flattened
+
+By default a whole-object query binding is flattened: `ListOrdersQuery { Status, Min }` reaches the
+agent as two unrelated top-level arguments. Turn that off and the DTO stays one argument:
+
+```csharp
+builder.Services.AddSkMcp(options =>
+{
+    options.Query.Grouping = QueryObjectGrouping.Group;
+});
+```
+
+```ts
+SkMcpModule.forRoot((options) => {
+  options.query.grouping = "group";
+});
+```
+
+The agent then sends `{"filter": {"status": "open", "min": 3}}`, and the SDK composes the form its
+own backend binds — `?filter.status=open` on ASP.NET Core, `?filter[status]=open` on
+NestJS/Express. Reach for it when two DTOs on one endpoint share a member name, or when
+`[FromQuery(Name = "f")]` means the flattened keys are not the ones the model binder reads.
+
+Three things to know before you switch it on:
+
+- **It rewrites `inputSchema`.** Every affected tool's arguments change shape, and an agent's saved
+  plan is written against the old one. It also renames the namespace curation is keyed by, so an
+  `[McpArgument("Status", Name = "state")]` that pointed at a flattened leaf stops resolving and
+  reports `curation_unresolved`.
+- **NestJS needs Express's extended query parser.** Express 5 defaults to `simple`, which does not
+  parse brackets. Call `app.set('query parser', 'extended')`; without it the first `search_tools`
+  call fails with `query_parser_not_extended` rather than the tool composing filters the backend
+  silently ignores. It is the first call and not boot because the NestJS catalog is built lazily;
+  the ASP.NET catalog is built eagerly and reports its diagnostics at startup.
+- **Only NestJS's named bindings group.** `@Query('filter') dto: FilterDto` groups;
+  `@Query() dto: FilterDto` does not and never will, because Nest hands the bare form the whole
+  query object. On ASP.NET Core both spellings group.
+
+Members that cannot be a query value — a nested object, a dictionary — are left out and named in an
+`unbound_query_object` warning. If nothing is left, the SDK declines to group and keeps today's
+binding, so turning this on cannot make an endpoint disappear.
+
 ## What curation will not do
 
 It will not add an argument your backend does not accept, narrow an argument's schema, reorder

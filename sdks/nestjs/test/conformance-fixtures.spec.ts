@@ -91,17 +91,32 @@ function templateFrom(
     method: spec.method,
     route: spec.route,
     parameters: (spec.parameters ?? []).map((p): ParameterBinding => {
+      const named = {
+        name: p.name,
+        location: p.in,
+        ...(p.as === undefined ? {} : { argument: p.as }),
+      };
+      if (p.type === "object") {
+        return {
+          ...named,
+          kind: "object",
+          notation: p.notation ?? "bracket",
+          members: (p.members ?? []).map((member) => ({
+            name: member.name,
+            kind: member.type,
+            ...(member.array === true ? { isArray: true } : {}),
+          })),
+        };
+      }
       const isArray = p.array === true;
       const arraySeparator = isArray
         ? arraySeparatorFor(p.style, p.explode, p.name)
         : undefined;
       return {
-        name: p.name,
-        location: p.in,
+        ...named,
         kind: p.type,
         isArray,
         ...(arraySeparator === undefined ? {} : { arraySeparator }),
-        ...(p.as === undefined ? {} : { argument: p.as }),
         ...(p.fill === undefined ? {} : { fill: p.fill as ArgumentFill }),
       };
     }),
@@ -369,7 +384,12 @@ describe("conformance: search", () => {
             : { alternateRoutes: t.alternateRoutes }),
           ...(t.inputSchema === undefined
             ? {}
-            : { parameters: searchParameters(t.inputSchema) }),
+            : {
+                parameters: searchParameters(
+                  t.inputSchema,
+                  new Set(t.groupedParameters ?? []),
+                ),
+              }),
         })),
       );
       expect(

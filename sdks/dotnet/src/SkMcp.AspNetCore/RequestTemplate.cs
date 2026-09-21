@@ -9,6 +9,14 @@ public enum ParameterLocation { Path, Query, Header }
 
 public enum ParameterKind { String, Integer, Number, Boolean }
 
+public enum ObjectNotation { Bracket, Dot }
+
+/// <param name="Name">
+/// The member's wire name; the full query key is the parameter name, the notation's structural
+/// character, and this.
+/// </param>
+public sealed record ObjectMember(string Name, ParameterKind Kind, bool IsArray = false);
+
 /// <param name="ArraySeparator">
 /// The delimiter that joins array items into one value; <c>null</c> repeats the key
 /// instead. Normalised from the descriptor's style/explode pair by
@@ -19,9 +27,16 @@ public enum ParameterKind { String, Integer, Number, Boolean }
 /// so two bindings describing the same slot stay equal.
 /// </param>
 /// <param name="Fill">Non-null means hidden: the agent cannot send this, the value comes from here.</param>
+/// <param name="Members">
+/// Non-null means the parameter is object-valued; each member becomes its own query key, written
+/// in this order. Frozen at template-build time so the composer never reads a schema and the
+/// agent's own key order cannot change the composed string.
+/// </param>
 public sealed record ParameterBinding(
     string Name, ParameterLocation Location, ParameterKind Kind, bool IsArray = false,
-    string? ArraySeparator = null, string? Argument = null, ArgumentFill? Fill = null);
+    string? ArraySeparator = null, string? Argument = null, ArgumentFill? Fill = null,
+    IReadOnlyList<ObjectMember>? Members = null,
+    ObjectNotation Notation = ObjectNotation.Bracket);
 
 public sealed partial class RequestTemplate
 {
@@ -46,6 +61,12 @@ public sealed partial class RequestTemplate
     public static string? ArraySeparatorFor(string? style, bool? explode, string parameterName)
     {
         string resolved = style ?? "form";
+        if (resolved == "deepObject")
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedArrayStyle,
+                $"Parameter '{parameterName}' is an array and declares style 'deepObject', which addresses object members and has no array form.");
+        }
         if (!Delimiters.TryGetValue(resolved, out string? delimiter))
         {
             throw new SkMcpTemplateException(
@@ -202,6 +223,90 @@ public sealed partial class RequestTemplate
         }
     }
 
+    /// <summary>Normalises a descriptor's style/explode/notation triple for an object parameter.</summary>
+    /// <returns>The notation the composer writes between the parameter name and a member name.</returns>
+    /// <exception cref="SkMcpTemplateException">
+    /// <c>unsupported_object_style</c> for a triple that has no wire form. The twin is
+    /// <c>objectBindingFor</c> in packages/core/src/tool.ts.
+    /// </exception>
+    public static ObjectNotation ObjectNotationFor(
+        string? style, bool? explode, string? notation, string parameterName)
+    {
+        if (style != "deepObject")
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{parameterName}' has an object schema but declares style '{style ?? "form"}'; only deepObject has a wire form.");
+        }
+        if (explode == false)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{parameterName}' declares deepObject with explode false, which OpenAPI leaves undefined; omit explode or set it true.");
+        }
+        return notation switch
+        {
+            "dot" => ObjectNotation.Dot,
+            null or "bracket" => ObjectNotation.Bracket,
+            _ => throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{parameterName}' declares an unknown object notation '{notation}'."),
+        };
+    }
+
+    [GeneratedRegex(@"[\[\].]|^\d+$")]
+    private static partial Regex StructuralMemberName();
+
+    /// <summary>Gates an object-valued binding at tool-production time.</summary>
+    /// <remarks>
+    /// Guard: a member name the notation would re-read as structure is refused rather than
+    /// escaped. <c>filter[a.b]</c> and <c>filter.a.b</c> are both ambiguous, and Express's
+    /// <c>qs</c> reads <c>filter[0]</c> as array index 0 rather than a member named <c>0</c>, so
+    /// such a name does not address the member the host declared. The twin is
+    /// <c>assertObjectBinding</c> in packages/core/src/request-template.ts.
+    /// </remarks>
+    private static void AssertObjectBinding(ParameterBinding binding)
+    {
+        if (binding.Members is not { } members)
+        {
+            return;
+        }
+        if (binding.Location != ParameterLocation.Query || binding.IsArray)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{binding.Name}' is an object, which only a non-array query parameter can be.");
+        }
+        if (binding.Fill is not null)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{binding.Name}' is an object and cannot be hidden or filled.");
+        }
+        if (members.Count == 0)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{binding.Name}' is an object but declares no members.");
+        }
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (ObjectMember member in members)
+        {
+            if (StructuralMemberName().IsMatch(member.Name))
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.UnsupportedObjectNesting,
+                    $"Member '{binding.Name}.{member.Name}' carries a name the notation reads as structure; rename it.");
+            }
+            if (!seen.Add(member.Name))
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.UnsupportedObjectStyle,
+                    $"Parameter '{binding.Name}' declares two members named '{member.Name}'.");
+            }
+        }
+    }
+
     public static RequestTemplate Create(
         HttpMethod method,
         string routeTemplate,
@@ -236,6 +341,7 @@ public sealed partial class RequestTemplate
         HashSet<string> agentNames = new(StringComparer.Ordinal);
         foreach (ParameterBinding parameter in parameters)
         {
+            AssertObjectBinding(parameter);
             AssertConstantFits(parameter);
             if (parameter.Fill is null && !agentNames.Add(parameter.Argument ?? parameter.Name))
             {

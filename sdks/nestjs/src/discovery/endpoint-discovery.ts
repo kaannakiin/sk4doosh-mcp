@@ -114,6 +114,7 @@ export interface DiscoveryOptions {
   readonly globalGuards?: readonly unknown[];
   readonly severity?: (code: string) => CatalogSeverity;
   readonly report?: (diagnostic: DiscoveryDiagnostic) => void;
+  readonly queryGrouping?: "flatten" | "group";
 }
 
 export interface DiscoveredEndpoint {
@@ -334,12 +335,24 @@ function describe(
     switch (kind) {
       case QUERY: {
         if (name !== undefined) {
-          declared.push({
-            name,
-            in: "query",
-            required: false,
-            schema: scalarFor(entry, declaredType),
-          });
+          const grouped =
+            options.queryGrouping === "group"
+              ? groupedQueryFor(
+                  controller,
+                  handlerName,
+                  name,
+                  declaredType,
+                  tracked,
+                )
+              : undefined;
+          declared.push(
+            grouped ?? {
+              name,
+              in: "query",
+              required: false,
+              schema: scalarFor(entry, declaredType),
+            },
+          );
           break;
         }
         const members = queryFor(
@@ -428,6 +441,14 @@ function describe(
     ...pathParameters.map((parameter) => parameter.name),
     ...declared.map((parameter) => parameter.name),
   ]);
+  for (const parameter of expanded.filter((member) =>
+    claimed.has(member.name),
+  )) {
+    options.report?.({
+      code: "query_member_shadowed",
+      message: `${controller.name}.${handlerName} flattens a query member named '${parameter.name}', which a path parameter or a named binding already claims; the member is omitted from the tool. Rename it, or bind it by name.`,
+    });
+  }
   const parameters = [
     ...pathParameters,
     ...declared.filter((parameter) => parameter.in !== "path"),
@@ -810,6 +831,74 @@ function queryFor(
     });
   }
   return parameters;
+}
+
+/**
+ * Folds a named `@Query('x')` DTO into one object-valued parameter.
+ *
+ * Declining is not a failure: an unreadable or inexpressible shape falls back
+ * to the binding this SDK already produced, so turning grouping on cannot drop
+ * an endpoint that stands today. Express parses the bracket form only under
+ * `query parser: 'extended'`, which {@link SkMcpCatalog} checks once the
+ * catalog is built.
+ */
+function groupedQueryFor(
+  controller: NewableFunction,
+  handlerName: string,
+  groupAs: string,
+  declaredType: unknown,
+  options: DiscoveryOptions,
+): DescriptorParameter | undefined {
+  const { schema } = shapeOf(declaredType, options);
+  const flattenable = flattenableBody(schema);
+  const required = new Set(flattenable?.required ?? []);
+  const members: Record<string, JsonSchemaObject> = {};
+  const skipped: string[] = [];
+  for (const [name, property] of Object.entries(
+    flattenable?.properties ?? {},
+  )) {
+    if (isQueryable(property)) {
+      members[name] = property;
+    } else {
+      skipped.push(name);
+    }
+  }
+  const decline = (why: string): undefined => {
+    options.report?.({
+      code: "unbound_query_object",
+      message: `${controller.name}.${handlerName} binds the query object '${groupAs}', but ${why}, so it is not grouped. Decorate its properties with class-validator, or declare options.schema.typeShape.`,
+    });
+    return undefined;
+  };
+  if (allowsAdditional(schema)) {
+    return decline(`'${nameOf(declaredType)}' is open-ended`);
+  }
+  const names = Object.keys(members);
+  if (names.length === 0) {
+    return decline(
+      `no member of '${nameOf(declaredType)}' can be expressed as a query value`,
+    );
+  }
+  if (skipped.length > 0) {
+    options.report?.({
+      code: "unbound_query_object",
+      message: `${controller.name}.${handlerName} binds the query object '${groupAs}'; ${skipped.join(", ")} cannot be expressed as query values and are omitted from the '${groupAs}' argument.`,
+    });
+  }
+  const requiredMembers = names.filter((name) => required.has(name));
+  return {
+    name: groupAs,
+    in: "query",
+    required: false,
+    style: "deepObject",
+    objectNotation: "bracket",
+    schema: {
+      type: "object",
+      properties: members,
+      ...(requiredMembers.length === 0 ? {} : { required: requiredMembers }),
+      additionalProperties: false,
+    },
+  };
 }
 
 type DescriptorParameter = NonNullable<

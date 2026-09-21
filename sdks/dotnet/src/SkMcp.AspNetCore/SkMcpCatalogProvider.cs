@@ -157,7 +157,8 @@ internal sealed class SkMcpCatalogProvider(
             containerTags: options.Value.Tags,
             severityOf: options.Value.Diagnostics.SeverityOf,
             curation: options.Value.Arguments,
-            selectionRules: options.Value.Selection.Rules);
+            selectionRules: options.Value.Selection.Rules,
+            groupQueryObjects: options.Value.Query.Grouping == QueryObjectGrouping.Group);
         if (schemaNotes.Count > 0)
         {
             result = result with { Diagnostics = [.. schemaNotes, .. result.Diagnostics] };
@@ -171,7 +172,13 @@ internal sealed class SkMcpCatalogProvider(
             e.Descriptor.Tags ?? [],
             e.Descriptor.Route,
             e.AlternateRoutes,
-            SearchParameters.From(e.Tool.InputSchema))));
+            SearchParameters.From(
+                e.Tool.InputSchema,
+                new HashSet<string>(
+                    (e.Descriptor.Parameters ?? [])
+                        .Where(p => p.Style == "deepObject")
+                        .Select(p => p.Name),
+                    StringComparer.Ordinal)))));
         CatalogDiagnostic[] fatal = result.Diagnostics
             .Where(d => options.Value.Diagnostics.SeverityOf(d.Code)
                 >= options.Value.Diagnostics.FailOn)

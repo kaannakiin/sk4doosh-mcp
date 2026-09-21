@@ -11,6 +11,7 @@ public static class DiagnosticCodes
     public const string CurationLeaksName = "curation_leaks_name";
     public const string CurationLeaksNameInArgument = "curation_leaks_name_in_argument";
     public const string CurationUnusedOnKeptRoute = "curation_unused_on_kept_route";
+    public const string DuplicateArgument = "duplicate_argument";
     public const string DuplicateTag = "duplicate_tag";
     public const string EmptyTag = "empty_tag";
     public const string EnumFormatUnresolved = "enum_format_unresolved";
@@ -31,6 +32,7 @@ public static class DiagnosticCodes
     public const string UnreadableShape = "unreadable_shape";
     public const string UnsupportedMethod = "unsupported_method";
     public const string UnsupportedBinding = "unsupported_binding";
+    public const string UnboundQueryObject = "unbound_query_object";
     public const string UnflattenableBodyRoot = "unflattenable_body_root";
     public const string UnsupportedDictionaryKey = "unsupported_dictionary_key";
     public const string VariantIndistinguishable = "variant_indistinguishable";
@@ -42,6 +44,7 @@ public static class DiagnosticCodes
             [AmbiguousSelection] = CatalogSeverity.Fatal,
             [InvalidName] = CatalogSeverity.Fatal,
             [ArgumentCollision] = CatalogSeverity.EndpointDropped,
+            [DuplicateArgument] = CatalogSeverity.EndpointDropped,
             [SchemaDefConflict] = CatalogSeverity.EndpointDropped,
             [UnsupportedMethod] = CatalogSeverity.EndpointDropped,
             [MultipleBodyBindings] = CatalogSeverity.EndpointDropped,

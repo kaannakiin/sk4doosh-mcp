@@ -101,10 +101,15 @@
         },
         "style": {
           "type": "string",
-          "enum": ["form", "spaceDelimited", "pipeDelimited"]
+          "enum": ["form", "spaceDelimited", "pipeDelimited", "deepObject"]
         },
         "explode": {
           "type": "boolean"
+        },
+        "objectNotation": {
+          "type": "string",
+          "enum": ["bracket", "dot"],
+          "description": "How a deepObject parameter addresses its members on the wire. The discovering SDK writes it for the backend in front of it; absent means bracket."
         },
         "description": {
           "type": "string"

@@ -1,0 +1,41 @@
+{
+  "kind": "argument-mapping",
+  "description": "uyeler bildirim sirasinda yazilir: ajanin gonderdigi anahtar sirasi sizamaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "min": 3,
+        "status": "active"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter[status]=active&filter[min]=3"
+  }
+}

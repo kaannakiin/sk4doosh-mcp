@@ -11,6 +11,12 @@ import {
 } from "./oauth-provider.js";
 
 const app = await NestFactory.create(AppModule);
+/**
+ * Express 5 defaults `query parser` to `simple`, which delivers `?filter[owner]=x` as one literal
+ * key. The bracket notation the NestJS SDK writes needs the extended parser, and the catalog
+ * refuses to start with `query_parser_not_extended` without it.
+ */
+app.getHttpAdapter().getInstance().set("query parser", "extended");
 app.useGlobalPipes(new ValidationPipe({ transform: true }));
 app.use(hostHeaderValidation(["localhost", "127.0.0.1"]));
 app.use(

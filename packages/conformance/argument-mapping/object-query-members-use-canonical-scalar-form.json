@@ -1,0 +1,37 @@
+{
+  "kind": "argument-mapping",
+  "description": "uyeler parametrelerle ayni tip kapisindan gecer: 1.50 kanonik olarak 1.5 yazilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "notation": "dot",
+          "members": [
+            {
+              "name": "active",
+              "type": "boolean"
+            },
+            {
+              "name": "ratio",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "active": true,
+        "ratio": 1.5
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter.active=true&filter.ratio=1.5"
+  }
+}

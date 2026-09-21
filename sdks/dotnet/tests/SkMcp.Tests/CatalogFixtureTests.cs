@@ -206,10 +206,12 @@ public sealed class CatalogFixtureTests
         // Guard: the fixture corpus is not type-checked against fixture.schema.json on this side,
         // so a runner that stopped reading inputSchema would silently score every parameter
         // fixture against an index with no parameters, and one that stopped reading input.tags
-        // would silently drop every tag filter. Most cases would fail, but nothing structural
-        // says so.
+        // would silently drop every tag filter, and one that stopped reading
+        // input.tools[].groupedParameters would index no grouped member and still pass every
+        // other search fixture. Most cases would fail, but nothing structural says so.
         bool projected = false;
         bool filtered = false;
+        bool memberIndexed = false;
         foreach (JsonElement root in Fixtures("search"))
         {
             Assert.Equal("search", root.GetProperty("kind").GetString());
@@ -228,9 +230,10 @@ public sealed class CatalogFixtureTests
                         ? [.. alternates.EnumerateArray().Select(a => a.GetString()!)]
                         : null,
                     tool.TryGetProperty("inputSchema", out JsonElement inputSchema)
-                        ? SearchParameters.From(JsonObject.Create(inputSchema))
+                        ? SearchParameters.From(JsonObject.Create(inputSchema), Grouped(tool))
                         : null));
                 projected |= tool.TryGetProperty("inputSchema", out _);
+                memberIndexed |= Grouped(tool) is not null;
             }
             int limit = input.TryGetProperty("limit", out JsonElement declared)
                 ? declared.GetInt32()
@@ -250,7 +253,15 @@ public sealed class CatalogFixtureTests
 
         Assert.True(projected, "no search fixture carried an inputSchema");
         Assert.True(filtered, "no search fixture carried a tags filter");
+        Assert.True(memberIndexed, "no search fixture carried groupedParameters");
     }
+
+    private static IReadOnlySet<string>? Grouped(JsonElement tool) =>
+        tool.TryGetProperty("groupedParameters", out JsonElement grouped)
+            ? new HashSet<string>(
+                grouped.EnumerateArray().Select(name => name.GetString()!),
+                StringComparer.Ordinal)
+            : null;
 
     [Fact]
     public void C11_VisibilityFixtures_AllPass()

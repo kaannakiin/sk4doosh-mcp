@@ -14,6 +14,23 @@ public sealed record OrderResponse(
     [Required] int Quantity,
     [Required] string Owner);
 
+/// <remarks>
+/// A whole-object query binding, so the sample exercises <c>Query.Grouping</c> end to end. The
+/// action echoes the DTO the model binder produced, which is the only direct evidence that the
+/// key the composer wrote is the key the backend actually read.
+/// </remarks>
+public sealed class OrderFilter
+{
+    [Description("Order owner")]
+    public string? Owner { get; set; }
+
+    [Description("Smallest quantity to return")]
+    public int? MinQuantity { get; set; }
+
+    [Description("Item names to match")]
+    public List<string>? Items { get; set; }
+}
+
 public sealed record CreateOrderRequest(
     [Required, MinLength(1)][property: Description("Item name")] string Item,
     [Range(1, 100)][property: Description("Quantity")] int Quantity);
@@ -47,6 +64,41 @@ public sealed class OrdersController : ControllerBase
     [Description("Fetches one order by id.")]
     public IActionResult GetOrder([Description("Order id")] int id) =>
         Orders.TryGetValue(id, out var order) ? Ok(order) : NotFound();
+
+    [HttpGet("/orders")]
+    [Authorize(Policy = "OrdersRead")]
+    [Description("Searches orders by a filter object, echoing the filter the binder produced.")]
+    public IActionResult Search(
+        [FromQuery] OrderFilter filter,
+        [Description("Largest number of orders to return")] int? take)
+    {
+        object[] matched = [.. Orders.Values
+            .Where(order => Match(order, filter))
+            .Take(take ?? 10)];
+        return Ok(new { echoed = filter, take, matched });
+    }
+
+    /// <remarks>
+    /// The same binding with an explicit binder name, which the model binder reads as
+    /// <c>f.Owner</c>. Flattened, the tool composes <c>?Owner=</c> and the DTO arrives empty;
+    /// grouped, it composes <c>?f.Owner=</c> and binds. The echo shows which one happened.
+    /// </remarks>
+    [HttpGet("/orders/aliased")]
+    [Authorize(Policy = "OrdersRead")]
+    [Description("Searches orders through an aliased filter object; echoes what bound.")]
+    public IActionResult SearchAliased([FromQuery(Name = "f")] OrderFilter filter) =>
+        Ok(new { echoed = filter });
+
+    private static bool Match(object order, OrderFilter filter)
+    {
+        Type shape = order.GetType();
+        string owner = (string)shape.GetProperty("owner")!.GetValue(order)!;
+        string item = (string)shape.GetProperty("item")!.GetValue(order)!;
+        int quantity = (int)shape.GetProperty("quantity")!.GetValue(order)!;
+        return (filter.Owner is null || filter.Owner == owner)
+            && (filter.MinQuantity is null || quantity >= filter.MinQuantity)
+            && (filter.Items is null || filter.Items.Count == 0 || filter.Items.Contains(item));
+    }
 
     [HttpGet("/orders/{id:int}/receipt")]
     [Authorize]

@@ -1,0 +1,42 @@
+{
+  "kind": "argument-mapping",
+  "description": "yeniden adlandirma grubu butun olarak tasir: ajan 'f' gonderir, tel 'filter' yazar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "notation": "dot",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ],
+          "as": "f"
+        }
+      ]
+    },
+    "arguments": {
+      "f": {
+        "status": "x"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter.status=x"
+  }
+}

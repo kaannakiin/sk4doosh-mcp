@@ -7,6 +7,8 @@ export type SkMcpTemplateErrorCode =
   | "path_parameter_array"
   | "header_parameter_array"
   | "unsupported_array_style"
+  | "unsupported_object_style"
+  | "unsupported_object_nesting"
   | "argument_collision"
   | "route_placeholder_mismatch"
   | "schema_def_conflict"

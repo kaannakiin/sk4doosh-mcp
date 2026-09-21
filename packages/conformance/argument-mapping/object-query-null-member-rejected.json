@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "null uye omit edilmesi istenir, bos deger olarak yazilmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "status": null
+      }
+    }
+  },
+  "expected": {
+    "error": "null_not_allowed"
+  }
+}

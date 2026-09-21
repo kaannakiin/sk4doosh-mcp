@@ -12,10 +12,13 @@ import {
   Req,
   UseGuards,
 } from "@nestjs/common";
+import { Transform, Type } from "class-transformer";
 import { McpTool } from "@sk-mcp/sdk-nestjs";
 import {
+  IsArray,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Max,
   Min,
@@ -45,6 +48,35 @@ export class AddNoteDto {
   @IsString()
   @IsNotEmpty()
   text!: string;
+}
+
+/**
+ * A named `@Query('filter')` binding, so the sample exercises `query.grouping` end to end. The
+ * handler echoes the DTO the pipe produced, which is the only direct evidence that the key the
+ * composer wrote is the key Express actually parsed.
+ */
+export class OrderFilterDto {
+  @IsString()
+  @IsOptional()
+  owner?: string;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  minQuantity?: number;
+
+  /**
+   * Guard: a query key that appears once parses to a string, not a one-element array — the same
+   * in `?items=a` and `?filter[items]=a`. Every Express host with an array query member needs
+   * this, grouped or not.
+   */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || Array.isArray(value) ? value : [value],
+  )
+  items?: string[];
 }
 
 export class OrderResponse {
@@ -86,6 +118,31 @@ export class OrdersController {
   @McpTool({ description: "Returns the caller's identity." })
   me(@Req() request: AuthedRequest): { name: unknown } {
     return { name: request.user?.sub };
+  }
+
+  @Get("orders")
+  @UseGuards(JwtGuard, OrdersReadGuard)
+  @McpTool({
+    description:
+      "Searches orders by a filter object, echoing the filter the pipe produced.",
+  })
+  search(@Query("filter") filter: OrderFilterDto): {
+    echoed: OrderFilterDto;
+    matched: Order[];
+  } {
+    const wanted = filter ?? {};
+    return {
+      echoed: wanted,
+      matched: [...this.orders.values()].filter(
+        (order) =>
+          (wanted.owner === undefined || order.owner === wanted.owner) &&
+          (wanted.minQuantity === undefined ||
+            order.quantity >= wanted.minQuantity) &&
+          (wanted.items === undefined ||
+            wanted.items.length === 0 ||
+            wanted.items.includes(order.item)),
+      ),
+    };
   }
 
   @Get("orders/:id")

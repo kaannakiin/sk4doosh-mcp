@@ -1,0 +1,42 @@
+{
+  "kind": "argument-mapping",
+  "description": "ayni sablon dot notation ile ASP.NET model binder'in okudugu bicimi yazar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "notation": "dot",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "status": "active",
+        "min": 3
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter.status=active&filter.min=3"
+  }
+}

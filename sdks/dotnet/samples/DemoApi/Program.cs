@@ -44,6 +44,10 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddSkMcp(options =>
 {
     options.Visibility.Tier = VisibilityTier.Probe;
+    if (Environment.GetEnvironmentVariable("DEMOAPI_QUERY_GROUPING") == "group")
+    {
+        options.Query.Grouping = QueryObjectGrouping.Group;
+    }
     options.ResourceServer.Metadata = new ProtectedResourceMetadata
     {
         Resource = McpResource,

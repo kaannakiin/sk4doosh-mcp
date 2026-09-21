@@ -26,6 +26,9 @@ import { OrdersController } from "./orders.controller.js";
         verifier: demoVerifier,
       };
       options.visibility.tier = "probe";
+      if (process.env["DEMOAPI_QUERY_GROUPING"] === "group") {
+        options.query.grouping = "group";
+      }
     }),
   ],
   controllers: [AuthController, OrdersController, McpController],

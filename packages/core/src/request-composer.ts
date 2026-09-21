@@ -1,6 +1,12 @@
 import { SkMcpArgumentError } from "./errors.js";
 import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
-import type { ParameterBinding, RequestTemplate } from "./request-template.js";
+import type {
+  ObjectMemberBinding,
+  ObjectParameterBinding,
+  ParameterKind,
+  RequestTemplate,
+  ScalarParameterBinding,
+} from "./request-template.js";
 import {
   allowedArgumentNames,
   deniedArgumentNames,
@@ -30,11 +36,14 @@ export function compose(
 ): ComposedRequest {
   const entries = toArgumentMap(args);
   rejectUnknown(template, entries);
+  rejectUnknownMembers(template, entries);
   const wire = translate(template, entries);
   applyFills(template, wire, deferred);
 
   let path = template.routeTemplate;
-  for (const p of template.parameters.filter((x) => x.location === "path")) {
+  for (const p of template.parameters.filter(
+    (x): x is ScalarParameterBinding => x.location === "path",
+  )) {
     const value = wire.get(p.name);
     if (value === undefined || value === null) {
       throw new SkMcpArgumentError(
@@ -59,6 +68,10 @@ export function compose(
         "null_not_allowed",
         `Query argument '${p.name}' cannot be null; omit it instead.`,
       );
+    }
+    if (p.kind === "object") {
+      query.push(...objectQueryEntries(p, value));
+      continue;
     }
     if (p.isArray) {
       if (!Array.isArray(value)) {
@@ -90,7 +103,9 @@ export function compose(
   }
 
   const headers: Record<string, string> = {};
-  for (const p of template.parameters.filter((x) => x.location === "header")) {
+  for (const p of template.parameters.filter(
+    (x): x is ScalarParameterBinding => x.location === "header",
+  )) {
     if (!wire.has(p.name)) {
       continue;
     }
@@ -230,7 +245,10 @@ function resolveFill(
   return value;
 }
 
-function assertFilledParameter(value: unknown, p: ParameterBinding): void {
+function assertFilledParameter(
+  value: unknown,
+  p: ScalarParameterBinding,
+): void {
   const items = p.isArray === true ? value : [value];
   const shapeOk = p.isArray !== true || Array.isArray(value);
   const scalarsOk =
@@ -266,7 +284,7 @@ function applyFills(
   deferred: Readonly<Record<string, unknown>> | undefined,
 ): void {
   for (const p of template.parameters) {
-    if (p.fill === undefined) {
+    if (p.fill === undefined || p.kind === "object") {
       continue;
     }
     const required =
@@ -365,6 +383,102 @@ function rejectUnknown(
 }
 
 /**
+ * Guard: a member the template never declared would be dropped in silence,
+ * which is the failure {@link rejectUnknown} exists to prevent one level up.
+ * It runs in the agent namespace, before {@link translate}, for the same
+ * reason that one does.
+ */
+function rejectUnknownMembers(
+  template: RequestTemplate,
+  entries: ReadonlyMap<string, unknown>,
+): void {
+  for (const parameter of template.parameters) {
+    if (parameter.kind !== "object") {
+      continue;
+    }
+    const group = parameter.argument ?? parameter.name;
+    const value = entries.get(group);
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      continue;
+    }
+    const declared = new Set(parameter.members.map((member) => member.name));
+    const unknown = Object.keys(value).filter((name) => !declared.has(name));
+    if (unknown.length > 0) {
+      const allowed = parameter.members
+        .map((member) => `${group}.${member.name}`)
+        .sort();
+      throw new SkMcpArgumentError(
+        "unknown_argument",
+        `Unknown argument(s): ${unknown.map((name) => `${group}.${name}`).join(", ")}. Allowed: ${allowed.join(", ")}.`,
+      );
+    }
+  }
+}
+
+/**
+ * Guard: the structural character is appended raw, never through
+ * {@link percentEncode}, for {@link separatorFor}'s reason — both languages'
+ * encoders escape `[` and `]`, so encoding it would change what the backend's
+ * parser reads. The parameter name and the member name each go through the
+ * encoder on their own.
+ */
+function memberKey(
+  parameter: ObjectParameterBinding,
+  member: ObjectMemberBinding,
+): string {
+  const group = percentEncode(parameter.name);
+  const name = percentEncode(member.name);
+  return parameter.notation === "dot"
+    ? `${group}.${name}`
+    : `${group}[${name}]`;
+}
+
+function objectQueryEntries(
+  parameter: ObjectParameterBinding,
+  value: unknown,
+): readonly string[] {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SkMcpArgumentError(
+      "invalid_type",
+      `Query argument '${parameter.name}' must be an object.`,
+    );
+  }
+  const supplied = value as Readonly<Record<string, unknown>>;
+  return parameter.members.flatMap((member) => {
+    const item = supplied[member.name];
+    if (item === undefined) {
+      return [];
+    }
+    const slot = {
+      name: `${parameter.name}.${member.name}`,
+      kind: member.kind,
+    };
+    if (item === null) {
+      throw new SkMcpArgumentError(
+        "null_not_allowed",
+        `Query argument '${slot.name}' cannot be null; omit it instead.`,
+      );
+    }
+    const key = memberKey(parameter, member);
+    if (member.isArray !== true) {
+      return [
+        `${key}=${percentEncode(formatScalar(item, slot, "invalid_type"))}`,
+      ];
+    }
+    if (!Array.isArray(item)) {
+      throw new SkMcpArgumentError(
+        "invalid_type",
+        `Query argument '${slot.name}' must be an array.`,
+      );
+    }
+    return item.map(
+      (element) =>
+        `${key}=${percentEncode(formatScalar(element, slot, "invalid_type"))}`,
+    );
+  });
+}
+
+/**
  * Renders a delimiter for the query string. The caller appends the result raw,
  * never through {@link percentEncode}: the two languages' encoders disagree on
  * `,` (`encodeURIComponent` leaves it, `Uri.EscapeDataString` escapes it to
@@ -384,7 +498,7 @@ function percentEncode(value: string): string {
 
 function formatScalar(
   value: unknown,
-  parameter: ParameterBinding,
+  parameter: { readonly name: string; readonly kind: ParameterKind },
   errorCode: "invalid_path_type" | "invalid_type",
 ): string {
   switch (parameter.kind) {

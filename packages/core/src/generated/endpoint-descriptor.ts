@@ -45,8 +45,9 @@ export interface Parameter {
   in: "path" | "query" | "header";
   required: boolean;
   schema: JsonSchemaObject;
-  style?: "form" | "spaceDelimited" | "pipeDelimited";
+  style?: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
   explode?: boolean;
+  objectNotation?: "bracket" | "dot";
   description?: string;
 }
 export interface JsonSchemaObject {

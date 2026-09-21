@@ -15,6 +15,7 @@ public sealed class SkMcpOptions
     public IdentityForwardingOptions Identity { get; } = new();
     public SyntheticRequestOptions Synthetic { get; } = new();
     public SelectionOptions Selection { get; } = new();
+    public QueryOptions Query { get; } = new();
     public SchemaOptions Schema { get; } = new();
     public NamingOptions Naming { get; } = new();
     public VisibilityOptions Visibility { get; } = new();
@@ -106,6 +107,23 @@ public sealed class SelectionOptions
     /// specific rules that disagree are a build error rather than a silent first-match win.
     /// </summary>
     public List<SelectionRule> Rules { get; } = [];
+}
+
+public enum QueryObjectGrouping { Flatten, Group }
+
+public sealed class QueryOptions
+{
+    /// <summary>
+    /// How a whole-object query binding reaches the agent. <see cref="QueryObjectGrouping.Flatten"/>
+    /// keeps every member a top-level tool argument; <see cref="QueryObjectGrouping.Group"/>
+    /// publishes one object argument the composer writes in ASP.NET's dotted form.
+    /// </summary>
+    /// <remarks>
+    /// The default is <see cref="QueryObjectGrouping.Flatten"/> because switching rewrites the
+    /// <c>inputSchema</c> of every affected tool and renames the namespace argument curation is
+    /// keyed by, so an existing <c>[McpArgument("Status", ...)]</c> stops resolving.
+    /// </remarks>
+    public QueryObjectGrouping Grouping { get; set; } = QueryObjectGrouping.Flatten;
 }
 
 public sealed class NamingOptions

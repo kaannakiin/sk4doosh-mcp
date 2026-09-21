@@ -247,6 +247,18 @@ export interface SkMcpSelectionOptions {
   rules?: readonly SelectionRule[];
 }
 
+/**
+ * How a named, object-typed query binding reaches the agent.
+ *
+ * `flatten` leaves today's binding alone; `group` publishes one object-valued
+ * argument the composer expands in the notation this SDK's backend parses. The
+ * default is `flatten` because switching rewrites the `inputSchema` of every
+ * affected tool and renames the namespace curation is keyed by.
+ */
+export interface SkMcpQueryOptions {
+  grouping: "flatten" | "group";
+}
+
 export interface SkMcpNamingOptions {
   prefixMode: "always" | "onCollision";
   prefix?: (container: string) => string | undefined;
@@ -275,6 +287,7 @@ export class SkMcpOptions {
   readonly errors = new ErrorMappingOptions();
   readonly transport: SkMcpTransportOptions = { sessionMode: "stateless" };
   readonly selection: SkMcpSelectionOptions = { default: "exclude" };
+  readonly query: SkMcpQueryOptions = { grouping: "flatten" };
   readonly naming: SkMcpNamingOptions = { prefixMode: "always" };
   readonly diagnostics: SkMcpDiagnosticsOptions = {
     failOn: "fatal",

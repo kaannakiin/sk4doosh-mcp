@@ -1,0 +1,41 @@
+{
+  "kind": "argument-mapping",
+  "description": "dizi uye tum anahtari eleman sirasinda tekrarlar, virgulle birlestirmez",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "notation": "dot",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "tags": ["a", "b"]
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter.tags=a&filter.tags=b"
+  }
+}

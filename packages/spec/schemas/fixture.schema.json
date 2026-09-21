@@ -499,17 +499,30 @@
         },
         "type": {
           "type": "string",
-          "enum": ["string", "integer", "number", "boolean"]
+          "enum": ["string", "integer", "number", "boolean", "object"]
         },
         "array": {
           "type": "boolean"
         },
         "style": {
           "type": "string",
-          "enum": ["form", "spaceDelimited", "pipeDelimited"]
+          "enum": ["form", "spaceDelimited", "pipeDelimited", "deepObject"]
         },
         "explode": {
           "type": "boolean"
+        },
+        "notation": {
+          "type": "string",
+          "enum": ["bracket", "dot"],
+          "description": "Only meaningful with type 'object'; absent means bracket."
+        },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/TemplateObjectMember"
+          },
+          "description": "The members of an object parameter, in the order the composer writes them. Only meaningful with type 'object'."
         },
         "as": {
           "type": "string",
@@ -519,6 +532,25 @@
         "fill": {
           "$ref": "endpoint-descriptor.schema.json#/$defs/ArgumentFill",
           "description": "Present means hidden: the agent cannot send this parameter and the value is written from here."
+        }
+      }
+    },
+    "TemplateObjectMember": {
+      "title": "TemplateObjectMember",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean"]
+        },
+        "array": {
+          "type": "boolean"
         }
       }
     },
@@ -796,6 +828,12 @@
         },
         "inputSchema": {
           "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
+        },
+        "groupedParameters": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Root properties the descriptor declared deepObject. Their members are indexed one level down; every other nested object is not."
         }
       }
     },

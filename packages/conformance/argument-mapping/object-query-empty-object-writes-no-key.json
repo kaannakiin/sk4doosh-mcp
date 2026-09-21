@@ -1,0 +1,38 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos nesne hic anahtar yazmaz, soru isareti bile olusmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {}
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items"
+  }
+}

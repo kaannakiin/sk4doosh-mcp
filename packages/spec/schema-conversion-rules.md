@@ -387,6 +387,9 @@ own freedom is carried by the schema of that property.
 | Code                            | When                                                                                  | Result                         |
 | ------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------ |
 | `argument_collision`            | a parameter name collides with the body root name `body`                              | the endpoint is dropped        |
+| `duplicate_argument`            | two parameters declare the same argument name                                         | the endpoint is dropped        |
+| `unsupported_object_style`      | an object-valued parameter's declaration has no wire form                             | the endpoint is dropped        |
+| `unsupported_object_nesting`    | an object-valued parameter's member cannot be addressed one level deep                | the endpoint is dropped        |
 | `multiple_body_bindings`        | more than one body declaration                                                        | the endpoint is dropped        |
 | `unsupported_binding`           | a form or file binding                                                                | the endpoint is dropped        |
 | `unsupported_method`            | the HTTP method has no counterpart in the neutral model                               | the endpoint is dropped        |
@@ -397,6 +400,8 @@ own freedom is carried by the schema of that property.
 | `optional_body_argument`        | a body declared `required: false` was wrapped into an optional `body` argument        | warning                        |
 | `body_field_collision`          | a body field name collides with a parameter name                                      | warning, the body is wrapped   |
 | `unbound_query_object`          | some members of a whole-object query binding are not expressible                      | warning, those members dropped |
+| `query_member_shadowed`         | a flattened query member's name is already claimed by another binding                 | warning, that member dropped   |
+| `query_parser_not_extended`     | a bracketed query object on an Express host that does not parse brackets              | fatal                          |
 | `unbound_header_object`         | a whole-object header binding                                                         | warning, the binding dropped   |
 | `route_folded`                  | one operation was bound to several routes ([naming.md](naming.md))                    | warning                        |
 | `unsupported_dictionary_key`    | a dictionary key that cannot be serialized                                            | the value shape is dropped     |
@@ -428,6 +433,16 @@ endpoint survives with `unbound_query_object`, because the members that were rea
 tool is still narrower than no tool. A host that prefers a filterless tool to no tool adds
 `unresolved_query_shape` to `Diagnostics.Downgrade`. Both messages MUST name the way out: decorate
 the type so the binding layer can read it, or declare the shape through the host's type-shape hook.
+
+Grouping moves neither diagnostic. `unresolved_query_shape` fires on exactly the same condition — a
+whole-object binding no member of which can be read — and still drops the endpoint, for the same
+reason: the composer writes only the members the template declares, grouped or not, so query has no
+`additionalProperties: true` escape in either form. `unbound_query_object` fires on exactly the same
+condition and stays a warning; only its message changes, to name the argument the surviving members
+landed in. What grouping changes is what the _non-failing_ path produces, never what fails. An SDK
+that cannot group a particular binding — because the shape is unreadable, or because every member is
+a dictionary or a nested object — falls back to the binding it already produced and says so with
+`unbound_query_object`, so turning grouping on cannot drop an endpoint that stands without it.
 
 ## Unpinned areas
 

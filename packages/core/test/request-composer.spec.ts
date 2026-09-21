@@ -247,3 +247,164 @@ describe("compose array styles", () => {
     );
   });
 });
+
+describe("object-valued query parameters", () => {
+  const filterTemplate = (
+    notation: "bracket" | "dot",
+    extra: Record<string, unknown> = {},
+  ): RequestTemplate =>
+    createRequestTemplate({
+      method: "GET",
+      route: "/items",
+      parameters: [
+        {
+          name: "filter",
+          location: "query",
+          kind: "object",
+          notation,
+          members: [
+            { name: "status", kind: "string" },
+            { name: "min", kind: "integer" },
+            { name: "tags", kind: "string", isArray: true },
+          ],
+          ...extra,
+        },
+      ],
+    });
+
+  it("writes bracket notation, one key per supplied member", () => {
+    expect(
+      compose(filterTemplate("bracket"), {
+        filter: { status: "active", min: 3 },
+      }).pathAndQuery,
+    ).toBe("/items?filter[status]=active&filter[min]=3");
+  });
+
+  it("writes dot notation from the same template shape", () => {
+    expect(
+      compose(filterTemplate("dot"), { filter: { status: "active", min: 3 } })
+        .pathAndQuery,
+    ).toBe("/items?filter.status=active&filter.min=3");
+  });
+
+  it("writes members in declaration order, not the order the agent sent them", () => {
+    expect(
+      compose(filterTemplate("bracket"), { filter: { min: 3, status: "a" } })
+        .pathAndQuery,
+    ).toBe("/items?filter[status]=a&filter[min]=3");
+  });
+
+  it("repeats the whole key for an array member and omits an empty one", () => {
+    expect(
+      compose(filterTemplate("dot"), { filter: { tags: ["a", "b"] } })
+        .pathAndQuery,
+    ).toBe("/items?filter.tags=a&filter.tags=b");
+    expect(
+      compose(filterTemplate("dot"), { filter: { tags: [] } }).pathAndQuery,
+    ).toBe("/items");
+  });
+
+  it("writes no key at all for an empty or absent object", () => {
+    expect(
+      compose(filterTemplate("bracket"), { filter: {} }).pathAndQuery,
+    ).toBe("/items");
+    expect(compose(filterTemplate("bracket"), {}).pathAndQuery).toBe("/items");
+  });
+
+  it("encodes the member value but never the structural character", () => {
+    expect(
+      compose(filterTemplate("bracket"), { filter: { status: "a[b] c" } })
+        .pathAndQuery,
+    ).toBe("/items?filter[status]=a%5Bb%5D%20c");
+  });
+
+  it("leaves a dot inside a member value unescaped, as RFC 3986 does", () => {
+    expect(
+      compose(filterTemplate("dot"), { filter: { status: "a.b" } })
+        .pathAndQuery,
+    ).toBe("/items?filter.status=a.b");
+  });
+
+  it("encodes a parameter name and a member name that need it", () => {
+    const template = createRequestTemplate({
+      method: "GET",
+      route: "/items",
+      parameters: [
+        {
+          name: "f o",
+          location: "query",
+          kind: "object",
+          notation: "bracket",
+          members: [{ name: "a b", kind: "string" }],
+        },
+      ],
+    });
+    expect(compose(template, { "f o": { "a b": "x" } }).pathAndQuery).toBe(
+      "/items?f%20o[a%20b]=x",
+    );
+  });
+
+  it("renames the group as a whole", () => {
+    expect(
+      compose(filterTemplate("dot", { argument: "f" }), {
+        f: { status: "x" },
+      }).pathAndQuery,
+    ).toBe("/items?filter.status=x");
+  });
+
+  it("applies the scalar type gate to each member", () => {
+    expectError(
+      () => compose(filterTemplate("dot"), { filter: { min: "3" } }),
+      "invalid_type",
+    );
+    expectError(
+      () => compose(filterTemplate("dot"), { filter: { tags: "a" } }),
+      "invalid_type",
+    );
+    expect(
+      compose(filterTemplate("dot"), { filter: { min: 1.0 } }).pathAndQuery,
+    ).toBe("/items?filter.min=1");
+  });
+
+  it("rejects a non-object where the group is expected", () => {
+    expectError(
+      () => compose(filterTemplate("dot"), { filter: "status=a" }),
+      "invalid_type",
+    );
+    expectError(
+      () => compose(filterTemplate("dot"), { filter: ["a"] }),
+      "invalid_type",
+    );
+  });
+
+  it("rejects null, both on the group and on a member", () => {
+    expectError(
+      () => compose(filterTemplate("dot"), { filter: null }),
+      "null_not_allowed",
+    );
+    expectError(
+      () => compose(filterTemplate("dot"), { filter: { status: null } }),
+      "null_not_allowed",
+    );
+  });
+
+  it("rejects a member the template never declared, naming it dotted", () => {
+    const error = expectError(
+      () => compose(filterTemplate("bracket"), { filter: { statu: "a" } }),
+      "unknown_argument",
+    );
+    expect(error.message).toContain("filter.statu");
+    expect(error.message).toContain("filter.status");
+  });
+
+  it("names the agent's own key when the group is renamed", () => {
+    const error = expectError(
+      () =>
+        compose(filterTemplate("dot", { argument: "f" }), {
+          f: { nope: "a" },
+        }),
+      "unknown_argument",
+    );
+    expect(error.message).toContain("f.nope");
+  });
+});

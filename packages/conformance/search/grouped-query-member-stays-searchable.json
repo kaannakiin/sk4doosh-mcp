@@ -1,0 +1,45 @@
+{
+  "kind": "search",
+  "description": "gruplanmis query nesnesinin uyesi aranabilir kalir: 'status' sorgusu filtreyi grup icinde tasiyan tool'u bulur",
+  "input": {
+    "tools": [
+      {
+        "name": "order_search",
+        "route": "/Rest/Orders/Search",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "minQuantity": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "groupedParameters": ["filter"]
+      },
+      {
+        "name": "report_summary",
+        "route": "/Rest/Summary/Report",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "since": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "query": "status"
+  },
+  "expected": {
+    "names": ["order_search"]
+  }
+}

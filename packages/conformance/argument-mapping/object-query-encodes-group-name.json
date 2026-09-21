@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "grup adi kendi basina kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "f o",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "f o": {
+        "status": "x"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?f%20o[status]=x"
+  }
+}

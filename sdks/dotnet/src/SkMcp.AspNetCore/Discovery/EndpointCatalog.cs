@@ -55,7 +55,8 @@ internal static partial class EndpointCatalog
         Func<string, IReadOnlyList<string>?>? containerTags = null,
         Func<string, CatalogSeverity>? severityOf = null,
         ArgumentCurationOptions? curation = null,
-        IReadOnlyList<SelectionRule>? selectionRules = null)
+        IReadOnlyList<SelectionRule>? selectionRules = null,
+        bool groupQueryObjects = false)
     {
         ArgumentNullException.ThrowIfNull(apiDescriptions);
         severityOf ??= DiagnosticCodes.SeverityOf;
@@ -124,7 +125,7 @@ internal static partial class EndpointCatalog
                 EndpointDescriptor? descriptor = Describe(
                     api, route, action, metadata, useOperationIds, schema, hasFallbackPolicy,
                     containerPrefix, containerTags, diagnostics,
-                    curation ?? new ArgumentCurationOptions());
+                    curation ?? new ArgumentCurationOptions(), groupQueryObjects);
                 if (descriptor is null)
                 {
                     dropped += 1;
@@ -313,7 +314,8 @@ internal static partial class EndpointCatalog
         Func<string, string?>? containerPrefix,
         Func<string, IReadOnlyList<string>?>? containerTags,
         List<CatalogDiagnostic> diagnostics,
-        ArgumentCurationOptions curation)
+        ArgumentCurationOptions curation,
+        bool groupQueryObjects)
     {
         List<Parameter> parameters = [];
         RequestBody? body = null;
@@ -327,8 +329,17 @@ internal static partial class EndpointCatalog
         };
         SchemaMapperOptions responseSchema = ResponseSchemaOf(schema, diagnostics, reportedBefore);
 
+        QueryObjectGrouper.Plan grouped = groupQueryObjects
+            ? QueryObjectGrouper.Build(
+                api, schema, diagnostics, $"{api.HttpMethod} {route}")
+            : QueryObjectGrouper.Empty;
+
         foreach (ApiParameterDescription parameter in api.ParameterDescriptions)
         {
+            if (grouped.Consumed.Contains(parameter))
+            {
+                continue;
+            }
             string? location = Locate(parameter.Source);
             if (location is null)
             {
@@ -367,6 +378,7 @@ internal static partial class EndpointCatalog
                 Description = ParameterDescription(parameter),
             });
         }
+        parameters.AddRange(grouped.Groups);
 
         if (body is not null
             && RequestBodyShape.BodyRootReasonOf(body, parameters.Select(parameter => parameter.Name)) is { } reason)
@@ -504,7 +516,7 @@ internal static partial class EndpointCatalog
         return description;
     }
 
-    private static string? ParameterDescription(ApiParameterDescription parameter) =>
+    internal static string? ParameterDescription(ApiParameterDescription parameter) =>
         parameter.ParameterDescriptor is ControllerParameterDescriptor { ParameterInfo: { } info }
             ? info.GetCustomAttribute<DescriptionAttribute>()?.Description
             : null;
@@ -854,7 +866,42 @@ internal static partial class EndpointCatalog
     private static string FoldKey(EndpointDescriptor descriptor) =>
         string.Join('\u0000', descriptor.Container, descriptor.OperationId, descriptor.Method.ToUpperInvariant());
 
-    private static string? Locate(BindingSource? source)
+    /// <remarks>
+    /// Guard: the nesting rejection has to live here rather than in
+    /// <c>RequestTemplate.Create</c>, because <see cref="Kind"/> collapses an unknown member type
+    /// to <c>String</c> and the binding type then carries no trace of the object it came from.
+    /// The twin is <c>objectBindingFor</c> in packages/core/src/tool.ts.
+    /// </remarks>
+    private static IReadOnlyList<ObjectMember> MembersOf(Parameter parameter)
+    {
+        if (parameter.Schema["properties"] is not JsonObject properties)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedObjectStyle,
+                $"Parameter '{parameter.Name}' declares deepObject but carries no object schema.");
+        }
+        List<ObjectMember> members = [];
+        foreach ((string name, JsonNode? node) in properties)
+        {
+            string? memberType = RequestBodyShape.TypeOf(node?["type"]);
+            bool array = memberType == "array";
+            string? memberScalar = array
+                ? RequestBodyShape.TypeOf(node?["items"]?["type"])
+                : memberType;
+            if (memberScalar is null or "object" or "array"
+                || node?["$ref"] is not null
+                || node?["$defs"] is not null)
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.UnsupportedObjectNesting,
+                    $"Member '{parameter.Name}.{name}' is not a query scalar or an array of them; flatten it out of the object.");
+            }
+            members.Add(new ObjectMember(name, Kind(memberScalar), array));
+        }
+        return members;
+    }
+
+    internal static string? Locate(BindingSource? source)
     {
         if (source == BindingSource.Path)
         {
@@ -926,6 +973,19 @@ internal static partial class EndpointCatalog
                 if (resolved?.Fill is not null && parameter.Required)
                 {
                     requiredFills.Add(parameter.Name);
+                }
+                if (type == "object" || parameter.Style == "deepObject")
+                {
+                    bindings.Add(new ParameterBinding(
+                        parameter.Name,
+                        Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true),
+                        ParameterKind.String,
+                        Argument: resolved?.Argument,
+                        Fill: resolved?.Fill,
+                        Members: MembersOf(parameter),
+                        Notation: RequestTemplate.ObjectNotationFor(
+                            parameter.Style, parameter.Explode, parameter.ObjectNotation, parameter.Name)));
+                    continue;
                 }
                 bindings.Add(new ParameterBinding(
                     parameter.Name,

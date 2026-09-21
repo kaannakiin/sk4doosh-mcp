@@ -1,0 +1,44 @@
+{
+  "kind": "argument-mapping",
+  "description": "grup komsu parametrelerin arasinda kendi bildirim yerinde kalir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "a",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "notation": "dot",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "name": "b",
+          "in": "query",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "a": "1",
+      "filter": {
+        "status": "x"
+      },
+      "b": "2"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?a=1&filter.status=x&b=2"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "uye adi kendi basina kodlanir, yapisal karakter arada ham durur",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "a b",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "a b": "x"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter[a%20b]=x"
+  }
+}

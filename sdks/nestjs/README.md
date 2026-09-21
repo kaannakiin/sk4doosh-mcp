@@ -140,6 +140,10 @@ the endpoint is dropped with `unresolved_query_shape` rather than published as a
 to take no filters. Decorate the type, declare `options.schema.typeShape`, or add the code to
 `options.diagnostics.downgrade` to publish it filterless anyway.
 
+A member whose name is already claimed by a path parameter or a named `@Query('x')`/`@Headers('x')`
+binding is omitted too, with a `query_member_shadowed` warning: the flat argument object has one
+slot per name and the explicit binding owns it. Rename the member, or bind it by name.
+
 ### Routes
 
 Routes are composed by Nest's own route factory, so the descriptor's route is the path Nest

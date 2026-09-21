@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "dizi uyeye skaler gonderilemez",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "tags": "a"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

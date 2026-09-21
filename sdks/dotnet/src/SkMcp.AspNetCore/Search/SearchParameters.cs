@@ -19,7 +19,8 @@ internal static class SearchParameters
     /// particular <see cref="JsonValue.TryGetValue{T}"/> is used rather than
     /// <c>GetValue&lt;string&gt;()</c>, which throws on a numeric description.
     /// </remarks>
-    public static IReadOnlyList<string> From(JsonObject? inputSchema)
+    public static IReadOnlyList<string> From(
+        JsonObject? inputSchema, IReadOnlySet<string>? grouped = null)
     {
         if (inputSchema?["properties"] is not JsonObject properties)
         {
@@ -30,11 +31,23 @@ internal static class SearchParameters
         foreach ((string name, JsonNode? schema) in properties)
         {
             parameters.Add(name);
-            if (schema is JsonObject member
-                && member["description"] is JsonValue value
+            if (schema is not JsonObject member)
+            {
+                continue;
+            }
+            if (member["description"] is JsonValue value
                 && value.TryGetValue(out string? description))
             {
                 parameters.Add(description);
+            }
+            // Guard: a grouped query object contributes one root key, so its members would stop
+            // being searchable and an agent looking for "status" would no longer find the tool
+            // that filters by it. Only a deepObject parameter's members are indexed; a nested
+            // body object's are not, because a body nests arbitrarily and its members are not
+            // addressable filters (nested-and-defs-parameters-not-indexed.json).
+            if (grouped?.Contains(name) == true && member["properties"] is JsonObject members)
+            {
+                parameters.AddRange(members.Select(m => $"{name}.{m.Key}"));
             }
         }
         return parameters;

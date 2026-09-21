@@ -127,6 +127,92 @@ describe("arraySeparatorFor", () => {
     }
   });
 
+  it("rejects an object binding outside query, or one that is filled", () => {
+    const object = {
+      name: "filter",
+      kind: "object",
+      notation: "bracket",
+      members: [{ name: "status", kind: "string" }],
+    } as const;
+    expect(() =>
+      createRequestTemplate({
+        method: "GET",
+        route: "/items",
+        parameters: [{ ...object, location: "header" }],
+      }),
+    ).toThrow("only a query parameter can be");
+    expect(() =>
+      createRequestTemplate({
+        method: "GET",
+        route: "/items",
+        parameters: [
+          {
+            ...object,
+            location: "query",
+            fill: { kind: "constant", value: "x" },
+          },
+        ],
+      }),
+    ).toThrow("cannot be hidden or filled");
+  });
+
+  it("rejects a member name the notation would read as structure", () => {
+    for (const name of ["a.b", "a[b]", "0"]) {
+      expect(() =>
+        createRequestTemplate({
+          method: "GET",
+          route: "/items",
+          parameters: [
+            {
+              name: "filter",
+              location: "query",
+              kind: "object",
+              notation: "bracket",
+              members: [{ name, kind: "string" }],
+            },
+          ],
+        }),
+      ).toThrow("reads as structure");
+    }
+  });
+
+  it("rejects an object binding with no members, or two of one name", () => {
+    const build = (
+      members: readonly { name: string; kind: "string" }[],
+    ): unknown =>
+      createRequestTemplate({
+        method: "GET",
+        route: "/items",
+        parameters: [
+          {
+            name: "filter",
+            location: "query",
+            kind: "object",
+            notation: "bracket",
+            members,
+          },
+        ],
+      });
+    expect(() => build([])).toThrow("declares no members");
+    expect(() =>
+      build([
+        { name: "status", kind: "string" },
+        { name: "status", kind: "string" },
+      ]),
+    ).toThrow("two members named");
+  });
+
+  it("rejects deepObject on an array, whatever explode says", () => {
+    for (const explode of [undefined, true, false]) {
+      expect(() => arraySeparatorFor("deepObject", explode, "tag")).toThrow(
+        SkMcpTemplateError,
+      );
+      expect(() => arraySeparatorFor("deepObject", explode, "tag")).toThrow(
+        "has no array form",
+      );
+    }
+  });
+
   it("defaults explode per style, the way OpenAPI does", () => {
     expect(arraySeparatorFor("spaceDelimited", undefined, "tag")).toBe(" ");
     expect(arraySeparatorFor("pipeDelimited", undefined, "tag")).toBe("|");

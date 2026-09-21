@@ -39,7 +39,7 @@ export function AuthLayout() {
       </section>
 
       <main className="flex flex-col justify-center border-hairline bg-panel px-6 py-10 lg:border-s lg:px-10">
-        <div className="mx-auto flex w-full max-w-[22rem] flex-col">
+        <div className="mx-auto flex w-full max-w-88 flex-col">
           <Outlet />
         </div>
       </main>

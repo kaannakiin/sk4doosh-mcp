@@ -55,8 +55,8 @@ Curation markers:
 argument. At most one of `Value`, `ValueJson` and `ValueFrom` may be set, and none without
 `Hidden = true`.
 
-Option groups are eleven properties on `SkMcpOptions` — `Identity`, `Synthetic`, `Selection`,
-`Schema`, `Naming`, `Visibility`, `Cache`, `Errors`, `ResourceServer`, `Diagnostics`, `Arguments`. Their fields
+Option groups are twelve properties on `SkMcpOptions` — `Identity`, `Synthetic`, `Selection`,
+`Query`, `Schema`, `Naming`, `Visibility`, `Cache`, `Errors`, `ResourceServer`, `Diagnostics`, `Arguments`. Their fields
 and defaults are in
 [`SkMcpOptions.cs`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/src/SkMcp.AspNetCore/SkMcpOptions.cs);
 this page does not copy them.
@@ -99,6 +99,11 @@ function curate<T>(rules: ArgumentRules<T>): ArgumentRules<T>;
 
 `curate<T>()` key-checks the record against a DTO's own keys at compile time; `arguments` accepts a
 plain record without it. `options.arguments` carries `provide`, `curate`, `everywhere` and `seal`.
+
+`options.query.grouping` (`"flatten"` by default, `"group"` to opt in) and its ASP.NET twin
+`options.Query.Grouping` decide whether a whole-object query binding stays one argument or is
+flattened into its members; see
+[curating the arguments an agent sees](/docs/http-catalog/curate-the-arguments-an-agent-sees).
 
 There is no `MapSkMcp` equivalent. You write the MCP route:
 

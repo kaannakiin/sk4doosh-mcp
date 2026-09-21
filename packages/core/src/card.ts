@@ -68,8 +68,9 @@ export function summarizeParameters(inputSchema: JsonSchemaObject): string {
 
 /**
  * Projects a tool's published `inputSchema` into the terms the search index
- * carries under `parameters`: each root property key, and that property's
- * `description` when it is a string.
+ * carries under `parameters`: each root property key, that property's
+ * `description` when it is a string, and — for a property named in `grouped` —
+ * its own member keys, one level down.
  *
  * Guard: `inputSchema` may be a host-supplied verbatim schema that no validator
  * has seen, so `properties`, a member schema and a `description` can each be any
@@ -79,6 +80,7 @@ export function summarizeParameters(inputSchema: JsonSchemaObject): string {
  */
 export function searchParameters(
   inputSchema: JsonSchemaObject,
+  grouped: ReadonlySet<string> = new Set(),
 ): readonly string[] {
   const properties: unknown = inputSchema.properties;
   if (
@@ -96,8 +98,32 @@ export function searchParameters(
     if (typeof description === "string") {
       terms.push(description);
     }
+    if (grouped.has(name)) {
+      terms.push(...memberTerms(name, schema));
+    }
   }
   return terms;
+}
+
+/**
+ * Guard: a grouped query object contributes one root key, so its members would
+ * stop being searchable and an agent looking for `status` would no longer find
+ * the tool that filters by it. Only a `deepObject` parameter's members are
+ * indexed — a nested body object's are not, because a body nests arbitrarily
+ * and its members are not addressable filters
+ * (`nested-and-defs-parameters-not-indexed.json`).
+ */
+function memberTerms(group: string, schema: unknown): readonly string[] {
+  const members: unknown = (schema as { properties?: unknown } | null)
+    ?.properties;
+  if (
+    typeof members !== "object" ||
+    members === null ||
+    Array.isArray(members)
+  ) {
+    return [];
+  }
+  return Object.keys(members).map((member) => `${group}.${member}`);
 }
 
 export function createCard(

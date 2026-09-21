@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "uye degeri tam RFC 3986 gecisinden gecer",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "status": "a b&c"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter[status]=a%20b%26c"
+  }
+}

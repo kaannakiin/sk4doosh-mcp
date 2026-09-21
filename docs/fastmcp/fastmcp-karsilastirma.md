@@ -1,6 +1,6 @@
 # sk-mcp ↔ FastMCP OpenAPI Karşılaştırması
 
-**Durum:** Tasarım notu. §4.1–§4.7 sevk edildi (§7–§13); açık kalan tek madde §4.8 form/multipart body ile §4.9 `deepObject`/cookie. Karar kayıtları: [arguman-kuratorlugu-karari.md](arguman-kuratorlugu-karari.md), [outputschema-karari.md](outputschema-karari.md), [invoke-korumalari-karari.md](invoke-korumalari-karari.md), [search-detail-karari.md](search-detail-karari.md), [selection-rule-karari.md](selection-rule-karari.md)
+**Durum:** Tasarım notu. §4.1–§4.7 ve §4.9'un `deepObject` yarısı sevk edildi (§7–§14); açık kalan tek madde §4.8 form/multipart body. Karar kayıtları: [arguman-kuratorlugu-karari.md](arguman-kuratorlugu-karari.md), [outputschema-karari.md](outputschema-karari.md), [invoke-korumalari-karari.md](invoke-korumalari-karari.md), [search-detail-karari.md](search-detail-karari.md), [selection-rule-karari.md](selection-rule-karari.md), [deepobject-karari.md](deepobject-karari.md)
 **Tarih:** 17 Eylül 2026
 **Odak:** FastMCP'nin OpenAPI/FastAPI entegrasyonu ile sk-mcp HTTP kataloğunun yan yana okunması; alınabilecekler, alınmayacaklar
 **Kapsam:** `packages/spec`, `packages/core`, `sdks/*` — HTTP katalog ürün hattı. `file-core` ve `products/chat` bu notun dışında
@@ -150,7 +150,9 @@ Sevk edilirken iki madde büyüdü: keşif yolu olmadan filtre sessiz boş sonu�
 
 ### 4.9 `deepObject` query style ve cookie parametreleri
 
-`filter[status]=x`. .NET model binder `filter.status` bekler, Nest `qs` `filter[status]` parse eder; wire iki SDK'da farklı olur ve fixture zorlaşır. Cookie parametresi bizde "identity taşıyıcısı argüman olamaz" kuralına çarpar; `Cookie` header'ı taşıyıcı. Her ikisi tartışılır, düşük öncelik.
+**Sevk edildi (deepObject yarısı) — §14.** İlk teşhis "wire iki SDK'da farklı olur ve fixture zorlaşır" idi; doğru ama eksikti. Ölçüldüğünde çıktı ki ASP.NET bracket'i **hiç bind etmiyor** (prefix testini geçip hiçbir leaf'e denk gelmiyor, DTO sessizce boş kalıyor) ve Express bracket'i default'ta parse **etmiyor**. Çözüm wire'ı bölmek değil girdiyi bölmek oldu: notation descriptor'a yazılıyor, composer determinizmi ve tek `expected`'lı fixture'lar duruyor.
+
+**Cookie yarısı buraya ait değildi.** Açık bir tasarım sorusu değil, zaten kapalı: `argument-mapping.md:11` `Cookie`'yi ismen identity carrier sayıyor. Serileştirmeyle ilgisi yok. §5'e taşındı.
 
 ### 4.10 Küçükler
 
@@ -169,6 +171,7 @@ Sevk edilirken iki madde büyüdü: keşif yolu olmadan filtre sessiz boş sonu�
 - **Tam body hata geçişi.** Leak filter kalır; 401 body asla.
 - **Tüm MCP header'larını iletme.** Kapalı carrier listesi kalır.
 - **GET → Resource eşlemesi.** FastMCP bunu istemci uyumluluğu için terk etti; tools-only kararımızı doğruluyor.
+- **`in: cookie` parametreleri.** `argument-mapping.md:11` `Cookie`'yi ismen identity carrier sayıyor — "identity is never an argument". Ajanın kimlik taşıyan header'ın içine yazması demek olurdu. Tersine dönmesi için görünürlük/kimlik modelinin değişmesi gerekir, serileştirmenin değil.
 
 **Tartışma noktaları**
 
@@ -391,3 +394,25 @@ Gerçek bir controller'da handler'ların çoğu `async`, yani tek başına bu ka
 **Ne değişmedi.** §4.8 form/multipart body ve §4.9 `deepObject` ve cookie açık. §5'in kopyalanmayacaklar listesi duruyor; tartışma noktalarından 3 ve 4 §11'de cevaplanmıştı, 1 ve 2 duruyor. Kapsam dışı bırakılanlar: `tags` boyutu (tag'ler seçimden sonra çözülüyor), controller `Type`'ını hedefleyen kural (tipi referans verebilen host onu decore de edebilir), ve route normalizasyonunun conformance korpusu.
 
 **Ne değişmedi.** §4.6 `selection.rule`, §4.8 form/multipart body, §4.9 `deepObject` ve cookie açık. §5'in kopyalanmayacaklar listesi duruyor. Kapsam dışı bırakılanlar: varyant başına tag (varyantlar endpoint'in tag'lerini paylaşıyor, `auth`'u paylaştıkları gibi), karta `tags`, ve mühürleme (bir tag kuralını yenmek slot açmıyor, gruplama değiştiriyor — `naming.prefix`'in de mührü yok).
+
+---
+
+## 14. §4.9 sevkiyatı — `deepObject`, dile göre tel biçimi
+
+Karar kaydı: [deepobject-karari.md](deepobject-karari.md).
+
+**Notun teşhisi eksikti.** "Wire iki SDK'da farklı olur ve fixture zorlaşır" doğruydu ama asıl engeli kaçırıyordu. Ölçüm: ASP.NET'te `filter[status]` binder'ın prefix testini geçer, prefix'siz fallback'i **kapatır**, ama hiçbir leaf anahtarına denk gelmez — DTO sessizce boş bind olur, yani bracket gruplamamaktan **beter**. Ve Express 5 `query parser`'ı default'ta `'simple'`, yani bracket Nest'te de parse edilmiyor. Host `extended` demezse fatal `query_parser_not_extended` çıkıyor — Nest kataloğu lazy olduğu için startup'ta değil ilk meta-tool çağrısında. İki taraf da kendi biçimini istiyor; bu bir tercih değil.
+
+**Değişmez bölünmedi, girdi bölündü.** Fixture'a SDK başına `expected` koymak `argument-mapping.md:5`'i ikiye bölerdi. Onun yerine `objectNotation` descriptor'a yazıldı: iki SDK farklı _girdi_ üretiyor — keşif zaten meşru biçimde farklı — composer aynı girdiye aynı baytı veriyor. Fixture'lar tek `expected` taşımaya devam ediyor. İkinci bir `style` değeri reddedildi; `deepObject` OpenAPI'nin bracket'e verdiği ad ve öyle kalmalı.
+
+**Özelliğin asıl gerekçesi bulunan bir hataydı.** `[FromQuery(Name = "f")] FilterDto` bugün **bozuk**: ApiExplorer leaf'i `Status` diye bildiriyor, binder `f.Status` okuyor, sk-mcp `?Status=` yazıyor, DTO boş geliyor, hiçbir şey söylemiyor. `QueryObjectProbeTests.P4` bunu kurulu runtime'a karşı pinliyor; gruplama kapatıyor.
+
+**Gruplama anahtarı ölçüldü, türetilmedi.** .NET'te ApiExplorer DTO'yu sk-mcp görmeden düzleştiriyor; geri toplamanın anahtarı `ReferenceEquals(a.ParameterDescriptor, b.ParameterDescriptor)`. Dört ayrı davranış varsayımının hepsi `QueryObjectProbeTests` ile pinli, çünkü hiçbiri ASP.NET sözleşmesi değil — kurulu framework'ün davranışı.
+
+**Varsayılan `flatten`.** Açmak her etkilenen tool'un `inputSchema`'sını değiştirir **ve** küratörlük ad uzayını yeniden adlandırır (`curation.Of` artık var olmayan bir leaf'e çözülür). İkinci eksen opt-in'in daha güçlü gerekçesi. "Yalnız düzleştirmenin patladığı yerde grupla" reddedildi: `inputSchema`'yı ilgisiz kodun bir negatif özelliğine bağlardı.
+
+**Yol üstünde kapanan üç sessiz hata.** `duplicate_argument` endpoint düşürüyordu ama iki severity tablosunda da yoktu, `warning`'e düşüyordu; düzleşen bir üye path parametresiyle çakışınca **tanısız** kayboluyordu (`query_member_shadowed` eklendi); ve yukarıdaki `[FromQuery(Name="f")]`. Üçü de `deepObject`'ten bağımsız, ayrı aşamada sevk edildi.
+
+**Arama indeksiyle çarpışma ve çözümü.** Gruplama üye adlarını indeksten çıkarıyordu, ama `nested-and-defs-parameters-not-indexed.json` tam tersini pinliyor. Mevcut karar doğru — gövde keyfi derinlikte. Projeksiyon `grouped` kümesini ayrıca alıyor; yalnız `deepObject` parametrelerinin üyeleri indeksleniyor, varsayılan boş küme, gruplama kapalıyken davranış bayt bayt aynı.
+
+**Ne değişmedi.** §4.8 form/multipart body hâlâ açık ve artık tek açık madde. Kapsam dışı bırakılanlar: ikiden fazla seviye (OpenAPI'nin kendisi tanımsız bırakıyor), nesne parametresinde `fill`, çıplak `@Query()`'nin gruplanması (Nest'te kusur olurdu), ve endpoint başına gruplama override'ı (host seviyesinde tek anahtar, iki SDK'da simetrik).

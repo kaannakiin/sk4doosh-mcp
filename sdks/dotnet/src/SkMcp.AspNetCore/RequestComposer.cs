@@ -39,6 +39,7 @@ internal static class RequestComposer
         }
 
         RejectUnknown(template, args);
+        RejectUnknownMembers(template, args);
         Dictionary<string, JsonElement> wire = Translate(template, args);
         ApplyFills(template, wire, deferred);
 
@@ -67,6 +68,11 @@ internal static class RequestComposer
                 throw new SkMcpArgumentException(
                     SkMcpArgumentException.NullNotAllowed,
                     $"Query argument '{p.Name}' cannot be null; omit it instead.");
+            }
+            if (p.Members is not null)
+            {
+                AppendObject(query, p, element);
+                continue;
             }
             if (p.IsArray)
             {
@@ -211,6 +217,44 @@ internal static class RequestComposer
         }
     }
 
+    /// <summary>Rejects a member the template never declared.</summary>
+    /// <remarks>
+    /// Guard: such a member would otherwise be dropped in silence, which is the failure
+    /// <c>RejectUnknown</c> exists to prevent one level up. It runs in the agent namespace,
+    /// before <c>Translate</c>, for the same reason that one does.
+    /// </remarks>
+    private static void RejectUnknownMembers(
+        RequestTemplate template, Dictionary<string, JsonElement> args)
+    {
+        foreach (ParameterBinding p in template.Parameters)
+        {
+            if (p.Members is not { } members)
+            {
+                continue;
+            }
+            string group = p.Argument ?? p.Name;
+            if (!args.TryGetValue(group, out JsonElement value)
+                || value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+            HashSet<string> declared = new(members.Select(m => m.Name), StringComparer.Ordinal);
+            string[] unknown = [.. value.EnumerateObject()
+                .Select(property => property.Name)
+                .Where(name => !declared.Contains(name))
+                .Select(name => $"{group}.{name}")];
+            if (unknown.Length > 0)
+            {
+                IEnumerable<string> allowed = members
+                    .Select(m => $"{group}.{m.Name}")
+                    .Order(StringComparer.Ordinal);
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.UnknownArgument,
+                    $"Unknown argument(s): {string.Join(", ", unknown)}. Allowed: {string.Join(", ", allowed)}.");
+            }
+        }
+    }
+
     /// <summary>Rewrites agent keys to wire names.</summary>
     /// <remarks>
     /// Its own step on purpose: <c>RejectUnknown</c> runs on the agent namespace and every loop
@@ -326,6 +370,78 @@ internal static class RequestComposer
                 wire[field] = value;
             }
         }
+    }
+
+    private static void AppendObject(
+        StringBuilder query, ParameterBinding p, JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.InvalidType,
+                $"Query argument '{p.Name}' must be an object.");
+        }
+        foreach (ObjectMember member in p.Members!)
+        {
+            if (!element.TryGetProperty(member.Name, out JsonElement value))
+            {
+                continue;
+            }
+            ParameterBinding slot = p with
+            {
+                Name = $"{p.Name}.{member.Name}",
+                Kind = member.Kind,
+                IsArray = member.IsArray,
+                Members = null,
+            };
+            if (value.ValueKind == JsonValueKind.Null)
+            {
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.NullNotAllowed,
+                    $"Query argument '{slot.Name}' cannot be null; omit it instead.");
+            }
+            string key = MemberKey(p, member);
+            if (!member.IsArray)
+            {
+                AppendMember(query, key, Uri.EscapeDataString(
+                    FormatScalar(value, slot, SkMcpArgumentException.InvalidType)));
+                continue;
+            }
+            if (value.ValueKind != JsonValueKind.Array)
+            {
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.InvalidType,
+                    $"Query argument '{slot.Name}' must be an array.");
+            }
+            foreach (JsonElement item in value.EnumerateArray())
+            {
+                AppendMember(query, key, Uri.EscapeDataString(
+                    FormatScalar(item, slot, SkMcpArgumentException.InvalidType)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Renders one member's full query key. The parameter name and the member name are each
+    /// percent-encoded; the notation's structural character is written RAW, never through
+    /// <see cref="Uri.EscapeDataString"/>, for the same reason the array delimiter is
+    /// (<see cref="SeparatorFor"/>): both languages' encoders escape <c>[</c> and <c>]</c>, so
+    /// encoding it would change what the backend's parser reads. <see cref="AppendEncoded"/>
+    /// cannot be reused because it escapes the whole name.
+    /// </summary>
+    private static string MemberKey(ParameterBinding p, ObjectMember member) =>
+        p.Notation == ObjectNotation.Dot
+            ? $"{Uri.EscapeDataString(p.Name)}.{Uri.EscapeDataString(member.Name)}"
+            : $"{Uri.EscapeDataString(p.Name)}[{Uri.EscapeDataString(member.Name)}]";
+
+    private static void AppendMember(
+        StringBuilder query, string encodedKey, string encodedValue)
+    {
+        if (query.Length > 0)
+        {
+            query.Append('&');
+        }
+        query.Append(encodedKey).Append('=').Append(encodedValue);
     }
 
     private static void AppendQuery(StringBuilder query, string name, string value) =>

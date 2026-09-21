@@ -86,6 +86,11 @@ class QueryController {
   headers(@Headers() _headers: Record<string, string>): string {
     return "ok";
   }
+
+  @Get("shadowed/:customerId")
+  shadowed(@Query() _query: ListOrdersQuery): string {
+    return "ok";
+  }
 }
 
 function discover(
@@ -183,6 +188,31 @@ describe("whole-object query binding", () => {
   it("Q7: an unnamed @Headers() binding is reported, not silently dropped", () => {
     expect(routes.get("headers")?.descriptor.parameters).toBeUndefined();
     expect(codesFor(diagnostics, "headers")).toEqual(["unbound_header_object"]);
+  });
+
+  it("Q9: a member a path parameter already claims is reported, not dropped in silence", () => {
+    expect(routes.get("shadowed")?.descriptor.parameters).toEqual([
+      {
+        name: "customerId",
+        in: "path",
+        required: true,
+        schema: { type: "string" },
+      },
+      {
+        name: "status",
+        in: "query",
+        required: false,
+        schema: expect.anything(),
+      },
+      { name: "page", in: "query", required: false, schema: expect.anything() },
+    ]);
+    expect(codesFor(diagnostics, "shadowed")).toEqual([
+      "query_member_shadowed",
+    ]);
+  });
+
+  it("Q10: the member an explicit @Query('name') displaces is reported too", () => {
+    expect(codesFor(diagnostics, "mixed")).toEqual(["query_member_shadowed"]);
   });
 
   it("Q8: a downgraded severity publishes the endpoint without filters", () => {

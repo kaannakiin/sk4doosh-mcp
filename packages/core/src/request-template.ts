@@ -9,17 +9,23 @@ export type ParameterKind = "string" | "integer" | "number" | "boolean";
 
 export type ParameterStyle = NonNullable<Parameter["style"]>;
 
-export interface ParameterBinding {
+export type ObjectNotation = NonNullable<Parameter["objectNotation"]>;
+
+/**
+ * One member of an object-valued query parameter.
+ *
+ * `kind` excludes `object`, which is how one level of nesting is a property of
+ * the type rather than a rule a reader has to remember.
+ */
+export interface ObjectMemberBinding {
   readonly name: string;
-  readonly location: ParameterLocation;
   readonly kind: ParameterKind;
   readonly isArray?: boolean;
-  /**
-   * The delimiter that joins array items into one value; `undefined` repeats
-   * the key instead. Normalised from `style`/`explode` by
-   * {@link arraySeparatorFor} so the invalid pairings cannot be represented.
-   */
-  readonly arraySeparator?: string;
+}
+
+interface BindingCommon {
+  readonly name: string;
+  readonly location: ParameterLocation;
   /**
    * The key the agent sends, when it differs from the wire name. Omitted when
    * they are equal, so two templates describing the same binding stay deeply
@@ -30,7 +36,33 @@ export interface ParameterBinding {
   readonly fill?: ArgumentFill;
 }
 
-const delimiters: Readonly<Record<ParameterStyle, string>> = {
+export interface ScalarParameterBinding extends BindingCommon {
+  readonly kind: ParameterKind;
+  readonly isArray?: boolean;
+  /**
+   * The delimiter that joins array items into one value; `undefined` repeats
+   * the key instead. Normalised from `style`/`explode` by
+   * {@link arraySeparatorFor} so the invalid pairings cannot be represented.
+   */
+  readonly arraySeparator?: string;
+}
+
+export interface ObjectParameterBinding extends BindingCommon {
+  readonly kind: "object";
+  readonly notation: ObjectNotation;
+  /**
+   * Written in this order. The builder freezes the descriptor's property order
+   * here so the composer never reads a schema and the agent's own key order
+   * cannot change the composed string.
+   */
+  readonly members: readonly ObjectMemberBinding[];
+}
+
+export type ParameterBinding = ScalarParameterBinding | ObjectParameterBinding;
+
+type ArrayStyle = Exclude<ParameterStyle, "deepObject">;
+
+const delimiters: Readonly<Record<ArrayStyle, string>> = {
   form: ",",
   spaceDelimited: " ",
   pipeDelimited: "|",
@@ -49,6 +81,12 @@ export function arraySeparatorFor(
   parameterName: string,
 ): string | undefined {
   const resolved = style ?? "form";
+  if (resolved === "deepObject") {
+    throw new SkMcpTemplateError(
+      "unsupported_array_style",
+      `Parameter '${parameterName}' is an array and declares style 'deepObject', which addresses object members and has no array form.`,
+    );
+  }
   if (explode ?? resolved === "form") {
     if (resolved !== "form") {
       throw new SkMcpTemplateError(
@@ -116,7 +154,7 @@ function fitsKind(value: unknown, kind: ParameterKind): boolean {
  * with an error nobody in the request path can act on: the agent did not send
  * it and cannot remove it.
  */
-function assertConstantFits(binding: ParameterBinding): void {
+function assertConstantFits(binding: ScalarParameterBinding): void {
   const fill = binding.fill;
   if (fill === undefined || fill.kind !== "constant") {
     return;
@@ -132,6 +170,51 @@ function assertConstantFits(binding: ParameterBinding): void {
       "invalid_fill_constant",
       `The constant filling '${binding.name}' does not fit a ${binding.isArray === true ? "array of " : ""}${binding.kind} ${binding.location} parameter.`,
     );
+  }
+}
+
+const structuralMemberName = /[[\].]|^\d+$/;
+
+/**
+ * Guard: a member name the notation would re-read as structure is rejected
+ * here rather than escaped. `filter[a.b]` and `filter.a.b` are both ambiguous,
+ * and `qs` reads `filter[0]` as array index 0 rather than a member named `0`,
+ * so such a name does not address the member the host declared.
+ */
+function assertObjectBinding(binding: ObjectParameterBinding): void {
+  if (binding.location !== "query") {
+    throw new SkMcpTemplateError(
+      "unsupported_object_style",
+      `Parameter '${binding.name}' is an object, which only a query parameter can be.`,
+    );
+  }
+  if (binding.fill !== undefined) {
+    throw new SkMcpTemplateError(
+      "unsupported_object_style",
+      `Parameter '${binding.name}' is an object and cannot be hidden or filled.`,
+    );
+  }
+  if (binding.members.length === 0) {
+    throw new SkMcpTemplateError(
+      "unsupported_object_style",
+      `Parameter '${binding.name}' is an object but declares no members.`,
+    );
+  }
+  const seen = new Set<string>();
+  for (const member of binding.members) {
+    if (structuralMemberName.test(member.name)) {
+      throw new SkMcpTemplateError(
+        "unsupported_object_nesting",
+        `Member '${binding.name}.${member.name}' carries a name the notation reads as structure; rename it.`,
+      );
+    }
+    if (seen.has(member.name)) {
+      throw new SkMcpTemplateError(
+        "unsupported_object_style",
+        `Parameter '${binding.name}' declares two members named '${member.name}'.`,
+      );
+    }
+    seen.add(member.name);
   }
 }
 
@@ -245,7 +328,6 @@ export function createRequestTemplate(
 
   const agentNames = new Set<string>();
   for (const parameter of parameters) {
-    assertConstantFits(parameter);
     if (parameter.fill === undefined) {
       const agentName = parameter.argument ?? parameter.name;
       if (agentNames.has(agentName)) {
@@ -256,6 +338,11 @@ export function createRequestTemplate(
       }
       agentNames.add(agentName);
     }
+    if (parameter.kind === "object") {
+      assertObjectBinding(parameter);
+      continue;
+    }
+    assertConstantFits(parameter);
     if (
       parameter.location === "header" &&
       reservedHeaderNames.has(parameter.name.toLowerCase())

@@ -230,19 +230,109 @@ public class ArgumentMappingTests
             HttpMethod.Get, "/orders/{id}", []));
     }
 
+    /// <remarks>
+    /// The twin of "rejects an object binding outside query, or one that is filled" and its
+    /// siblings in packages/core/test/request-template.spec.ts. These rejections happen before
+    /// <c>Compose</c>, so the conformance corpus cannot express them the way it expresses an
+    /// argument error.
+    /// </remarks>
     [Fact]
-    public void A11_ConformanceFixtures_AllPass()
+    public void A13_ObjectBindingGuards()
+    {
+        static RequestTemplate Build(ParameterBinding parameter) =>
+            RequestTemplate.Create(HttpMethod.Get, "/items", [parameter]);
+
+        ObjectMember[] one = [new ObjectMember("status", ParameterKind.String)];
+
+        Assert.Contains("only a non-array query parameter", Assert.Throws<SkMcpTemplateException>(
+            () => Build(new ParameterBinding(
+                "filter", ParameterLocation.Header, ParameterKind.String, Members: one))).Message,
+            StringComparison.Ordinal);
+
+        Assert.Contains("cannot be hidden or filled", Assert.Throws<SkMcpTemplateException>(
+            () => Build(new ParameterBinding(
+                "filter", ParameterLocation.Query, ParameterKind.String, Members: one,
+                Fill: new ArgumentFill { Kind = ArgumentFillKind.Constant, Value = "x" }))).Message,
+            StringComparison.Ordinal);
+
+        Assert.Contains("declares no members", Assert.Throws<SkMcpTemplateException>(
+            () => Build(new ParameterBinding(
+                "filter", ParameterLocation.Query, ParameterKind.String, Members: []))).Message,
+            StringComparison.Ordinal);
+
+        Assert.Contains("two members named", Assert.Throws<SkMcpTemplateException>(
+            () => Build(new ParameterBinding(
+                "filter", ParameterLocation.Query, ParameterKind.String,
+                Members: [.. one, new ObjectMember("status", ParameterKind.Integer)]))).Message,
+            StringComparison.Ordinal);
+
+        foreach (string name in new[] { "a.b", "a[b]", "0" })
+        {
+            SkMcpTemplateException structural = Assert.Throws<SkMcpTemplateException>(
+                () => Build(new ParameterBinding(
+                    "filter", ParameterLocation.Query, ParameterKind.String,
+                    Members: [new ObjectMember(name, ParameterKind.String)])));
+            Assert.Equal(SkMcpTemplateException.UnsupportedObjectNesting, structural.Code);
+            Assert.Contains("reads as structure", structural.Message, StringComparison.Ordinal);
+        }
+    }
+
+    /// <remarks>
+    /// The twin of "maps each style to its delimiter" and its siblings in
+    /// packages/core/test/request-template.spec.ts. Only the fixture runner reached
+    /// <see cref="RequestTemplate.ArraySeparatorFor"/> on this side, so the style guard's own
+    /// wording was pinned in one language and not the other.
+    /// </remarks>
+    [Fact]
+    public void A11_ArraySeparatorGuards()
+    {
+        Assert.Equal(",", RequestTemplate.ArraySeparatorFor("form", false, "tag"));
+        Assert.Equal(" ", RequestTemplate.ArraySeparatorFor("spaceDelimited", false, "tag"));
+        Assert.Equal("|", RequestTemplate.ArraySeparatorFor("pipeDelimited", false, "tag"));
+
+        Assert.Null(RequestTemplate.ArraySeparatorFor("form", null, "tag"));
+        Assert.Null(RequestTemplate.ArraySeparatorFor(null, null, "tag"));
+        Assert.Equal(" ", RequestTemplate.ArraySeparatorFor("spaceDelimited", null, "tag"));
+
+        foreach (string style in new[] { "spaceDelimited", "pipeDelimited" })
+        {
+            SkMcpTemplateException exploded = Assert.Throws<SkMcpTemplateException>(
+                () => RequestTemplate.ArraySeparatorFor(style, true, "tag"));
+            Assert.Equal(SkMcpTemplateException.UnsupportedArrayStyle, exploded.Code);
+            Assert.Contains("has no wire form", exploded.Message, StringComparison.Ordinal);
+        }
+
+        foreach (bool? explode in new bool?[] { null, true, false })
+        {
+            SkMcpTemplateException deep = Assert.Throws<SkMcpTemplateException>(
+                () => RequestTemplate.ArraySeparatorFor("deepObject", explode, "tag"));
+            Assert.Equal(SkMcpTemplateException.UnsupportedArrayStyle, deep.Code);
+            Assert.Contains("has no array form", deep.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void A12_ConformanceFixtures_AllPass()
     {
         string dir = Path.Combine(AppContext.BaseDirectory, "Fixtures", "argument-mapping");
         string[] files = Directory.GetFiles(dir, "*.json");
         Assert.NotEmpty(files);
+
+        // Guard: this runner reads fixtures as raw JSON rather than through the generated types,
+        // so a reader that stopped projecting an object parameter's members would compose every
+        // grouped fixture as a bare scalar, and one that defaulted every notation to bracket
+        // would still pass all the bracket fixtures while emitting the wrong bytes for the dot
+        // ones. Two flags, because a single one is satisfied by the bracket family alone.
+        bool grouped = false;
+        bool dotted = false;
 
         foreach (string file in files)
         {
             using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(file));
             JsonElement root = doc.RootElement;
             Assert.Equal("argument-mapping", root.GetProperty("kind").GetString());
-            RequestTemplate template = BuildTemplate(root.GetProperty("input").GetProperty("template"));
+            RequestTemplate template = BuildTemplate(
+                root.GetProperty("input").GetProperty("template"), ref grouped, ref dotted);
             JsonElement arguments = root.GetProperty("input").GetProperty("arguments");
             Dictionary<string, JsonElement>? deferred = null;
             if (root.GetProperty("input").TryGetProperty("deferred", out JsonElement deferredSpec))
@@ -285,15 +375,42 @@ public class ArgumentMappingTests
                 }
             }
         }
+
+        Assert.True(grouped, "no argument-mapping fixture carried an object parameter");
+        Assert.True(dotted, "no argument-mapping fixture carried dot notation");
     }
 
-    private static RequestTemplate BuildTemplate(JsonElement spec)
+    private static RequestTemplate BuildTemplate(
+        JsonElement spec, ref bool grouped, ref bool dotted)
     {
         List<ParameterBinding> parameters = [];
         if (spec.TryGetProperty("parameters", out JsonElement parameterSpecs))
         {
             foreach (JsonElement p in parameterSpecs.EnumerateArray())
             {
+                if (p.GetProperty("type").GetString() == "object")
+                {
+                    grouped = true;
+                    string? notation = p.TryGetProperty("notation", out JsonElement n)
+                        ? n.GetString()
+                        : null;
+                    dotted |= notation == "dot";
+                    parameters.Add(new ParameterBinding(
+                        p.GetProperty("name").GetString()!,
+                        ParameterLocation.Query,
+                        ParameterKind.String,
+                        Argument: p.TryGetProperty("as", out JsonElement groupName)
+                            ? groupName.GetString()
+                            : null,
+                        Members: [.. p.GetProperty("members").EnumerateArray().Select(m =>
+                            new ObjectMember(
+                                m.GetProperty("name").GetString()!,
+                                KindOf(m.GetProperty("type").GetString()),
+                                m.TryGetProperty("array", out JsonElement memberArray)
+                                    && memberArray.GetBoolean()))],
+                        Notation: notation == "dot" ? ObjectNotation.Dot : ObjectNotation.Bracket));
+                    continue;
+                }
                 parameters.Add(new ParameterBinding(
                     p.GetProperty("name").GetString()!,
                     p.GetProperty("in").GetString() switch
@@ -302,13 +419,7 @@ public class ArgumentMappingTests
                         "query" => ParameterLocation.Query,
                         _ => ParameterLocation.Header,
                     },
-                    p.GetProperty("type").GetString() switch
-                    {
-                        "integer" => ParameterKind.Integer,
-                        "number" => ParameterKind.Number,
-                        "boolean" => ParameterKind.Boolean,
-                        _ => ParameterKind.String,
-                    },
+                    KindOf(p.GetProperty("type").GetString()),
                     p.TryGetProperty("array", out JsonElement array) && array.GetBoolean(),
                     p.TryGetProperty("array", out JsonElement isArr) && isArr.GetBoolean()
                         ? RequestTemplate.ArraySeparatorFor(
@@ -365,6 +476,14 @@ public class ArgumentMappingTests
                 ? rootFill.Deserialize<ArgumentFill>(FixtureJson)
                 : null);
     }
+
+    private static ParameterKind KindOf(string? type) => type switch
+    {
+        "integer" => ParameterKind.Integer,
+        "number" => ParameterKind.Number,
+        "boolean" => ParameterKind.Boolean,
+        _ => ParameterKind.String,
+    };
 
     private static readonly JsonSerializerOptions FixtureJson = new()
     {

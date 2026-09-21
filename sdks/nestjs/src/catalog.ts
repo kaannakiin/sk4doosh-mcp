@@ -1,7 +1,8 @@
-import { Inject, Injectable, RequestMethod } from "@nestjs/common";
+import { Inject, Injectable, Optional, RequestMethod } from "@nestjs/common";
 import {
   ApplicationConfig,
   DiscoveryService,
+  HttpAdapterHost,
   ModulesContainer,
 } from "@nestjs/core";
 import {
@@ -72,6 +73,15 @@ export interface CatalogSnapshot {
   readonly selected: number;
 }
 
+const groupedParametersOf = (
+  descriptor: EndpointDescriptor,
+): ReadonlySet<string> =>
+  new Set(
+    (descriptor.parameters ?? [])
+      .filter((parameter) => parameter.style === "deepObject")
+      .map((parameter) => parameter.name),
+  );
+
 @Injectable()
 export class SkMcpCatalog {
   private snapshot: CatalogSnapshot | undefined;
@@ -83,6 +93,7 @@ export class SkMcpCatalog {
     private readonly modules: ModulesContainer,
     private readonly applicationConfig: ApplicationConfig,
     @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
+    @Optional() private readonly adapterHost?: HttpAdapterHost,
   ) {}
 
   get generation(): number {
@@ -126,6 +137,44 @@ export class SkMcpCatalog {
     );
   }
 
+  /**
+   * Guard: Express 5 defaults `query parser` to `simple`, which does not parse
+   * brackets — `?filter[status]=x` then arrives as one literal key and the DTO
+   * binds nothing. A tool that composes a filter the backend silently ignores
+   * returns an unfiltered result set, which is the failure
+   * `unresolved_query_shape` exists to prevent, so this is fatal rather than a
+   * warning. Only Express is checked: `getInstance().get` is a route
+   * registrar on Fastify, not a settings reader.
+   */
+  private reportUnparsedBrackets(
+    entries: readonly CatalogEntry[],
+    report: (diagnostic: CatalogDiagnostic) => void,
+  ): void {
+    const bracketed = entries.filter((entry) =>
+      (entry.descriptor.parameters ?? []).some(
+        (parameter) =>
+          parameter.style === "deepObject" &&
+          (parameter.objectNotation ?? "bracket") === "bracket",
+      ),
+    );
+    if (bracketed.length === 0) {
+      return;
+    }
+    const adapter = this.adapterHost?.httpAdapter;
+    if (adapter === undefined || adapter.getType() !== "express") {
+      return;
+    }
+    const instance = adapter.getInstance<{ get(name: string): unknown }>();
+    const parser: unknown = instance.get("query parser");
+    if (parser === "extended" || typeof parser === "function") {
+      return;
+    }
+    report({
+      code: "query_parser_not_extended",
+      message: `Tool '${bracketed[0]?.tool.name}' composes a bracketed query object, but this application's Express 'query parser' is '${String(parser)}', which delivers one literal key instead of an object. Call app.set('query parser', 'extended'), or declare objectNotation on the parameter.`,
+    });
+  }
+
   private build(): CatalogSnapshot {
     const diagnostics: CatalogDiagnostic[] = [];
     const report = (diagnostic: CatalogDiagnostic): void => {
@@ -158,6 +207,7 @@ export class SkMcpCatalog {
       globalPrefix,
       routePaths,
       severity: (code) => severityOf(code, this.options.diagnostics),
+      queryGrouping: this.options.query.grouping,
       report,
     });
 
@@ -333,6 +383,8 @@ export class SkMcpCatalog {
       byName.set(name, entry);
     }
 
+    this.reportUnparsedBrackets(entries, report);
+
     const policyNames = new Set<string>();
     for (const entry of entries) {
       for (const policy of entry.descriptor.auth.policies) {
@@ -363,7 +415,10 @@ export class SkMcpCatalog {
           ...(entry.alternateRoutes === undefined
             ? {}
             : { alternateRoutes: entry.alternateRoutes }),
-          parameters: searchParameters(entry.tool.inputSchema),
+          parameters: searchParameters(
+            entry.tool.inputSchema,
+            groupedParametersOf(entry.descriptor),
+          ),
         })),
       ),
       diagnostics,

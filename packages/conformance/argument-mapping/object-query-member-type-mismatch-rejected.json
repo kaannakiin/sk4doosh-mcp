@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "uye tip kapisi: integer uyeye string gonderilemez",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "object",
+          "members": [
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "min",
+              "type": "integer"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "min": "3"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}
