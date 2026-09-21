@@ -1,0 +1,12 @@
+{
+  "kind": "selection",
+  "description": "container isareti kurali ezer; attribute config'in ustundedir",
+  "input": {
+    "default": "exclude",
+    "operations": [
+      { "id": "get_admin_a", "route": "/admin/a", "method": "GET", "container": "include" }
+    ],
+    "rules": [{ "route": "/admin/**", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_admin_a"] }
+}

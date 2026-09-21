@@ -71,7 +71,8 @@ public sealed class ResponseBudgetTests
             app.Services.GetRequiredService<CallerVisibilityProvider>(),
             app.Services.GetRequiredService<ICallerScopeResolver>(),
             app.Services.GetRequiredService<IOptions<SkMcpOptions>>(),
-            new FixedContext(new DefaultHttpContext()));
+            new FixedContext(new DefaultHttpContext()),
+            app.Services.GetRequiredService<ILogger<SkMcpMetaTools>>());
         return new BudgetHarness(app, tools, app.Services.GetRequiredService<IOptions<SkMcpOptions>>().Value);
     }
 

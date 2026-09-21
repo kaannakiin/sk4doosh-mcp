@@ -43,7 +43,7 @@ A client that caches tool definitions can compare the stamp instead of diffing t
       "default": 20
     },
     "detail": {
-      "description": "Shape of each result: \"card\" for the compact card, \"schema\" for the same shape load_tool returns. Any other value is card. A schema page is much larger; pair it with a small limit.",
+      "description": "Shape of each result: \"card\" for the compact card, \"schema\" for the full definition load_tool would return. Any other value is card. A schema page is much larger; pair it with a small limit.",
       "type": "string",
       "enum": ["card", "schema"],
       "default": "card"
@@ -105,10 +105,13 @@ rendering of the input schema's top level, not the schema — an agent that inte
 A card gains `authUncertain: true` when visibility could not be resolved for that caller. The card
 never carries policy names; see [visibility decision](/docs/http-catalog/visibility-decision).
 
-### Skipping the `load_tool` turn
+### Schemas for the results you searched
 
 With `detail: "schema"` each entry of `results` is exactly what `load_tool` would return for that
-tool, so an agent that already knows which operation it wants calls `invoke_tool` next:
+tool, so an agent that expects to invoke one of these results calls `invoke_tool` next. The two are
+not interchangeable in intent: `detail: "schema"` answers _which of these matches do I want_, while
+`load_tool` answers _what does this operation, whose name I already have, take_. Reach for
+`load_tool` when you hold a name and have nothing to search for:
 
 ```json
 {
@@ -194,6 +197,13 @@ so a hidden tool and a nonexistent one are indistinguishable. `auth` is never in
 
 Takes `name` and `arguments`, an object whose keys are the input schema's properties. The call runs
 through the backend's own pipeline with the caller's identity.
+
+`arguments` is published with a description and no `type`, so a value that is not an object reaches
+the SDK and comes back as an sk-mcp envelope instead of a protocol error. Two shapes are accepted
+anyway: `null` composes as `{}`, and a string that parses to a JSON object is unwrapped and composed
+as that object, with the rewrite written to the server's log. Anything else — a string that is not
+JSON, an array, a scalar — is `invalid_type`, and the message names the kind that arrived. The flag
+stays `retryable: false`: it describes replaying the same call, not repairing it.
 
 Success returns the HTTP result:
 

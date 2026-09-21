@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "method eslesmesi buyuk kucuk harf affeder; route eslesmesinin aksine",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_report", "route": "/reports/x", "method": "GET" },
+      { "id": "create_report", "route": "/reports/x", "method": "POST" }
+    ],
+    "rules": [{ "method": "post", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_report"] }
+}

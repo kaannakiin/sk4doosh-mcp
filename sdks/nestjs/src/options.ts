@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
 import { invokeLimits } from "@sk-mcp/core";
-import type { Recognizer, SelectionDefault } from "@sk-mcp/core";
+import type { Recognizer, SelectionDefault, SelectionRule } from "@sk-mcp/core";
 import type { ArgumentRule, JsonValue } from "./decorators.js";
 import type { CatalogSeverity } from "./discovery/diagnostics.js";
 import type { TypeShapeBinderOptions } from "./discovery/type-shape.js";
@@ -236,8 +236,15 @@ export interface SkMcpResourceServerOptions {
   mcpPath?: string;
 }
 
+/**
+ * Config-level selection, for routes the host cannot or will not decorate.
+ *
+ * `rules` sits below both attribute levels and above `default`; order carries no meaning, and
+ * equally specific rules that disagree are a build error rather than a silent first-match win.
+ */
 export interface SkMcpSelectionOptions {
   default: SelectionDefault;
+  rules?: readonly SelectionRule[];
 }
 
 export interface SkMcpNamingOptions {

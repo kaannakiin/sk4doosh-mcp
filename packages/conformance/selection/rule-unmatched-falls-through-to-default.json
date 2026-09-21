@@ -1,0 +1,10 @@
+{
+  "kind": "selection",
+  "description": "hicbir kural tutmazsa global default karar verir",
+  "input": {
+    "default": "exclude",
+    "operations": [{ "id": "list_orders", "route": "/orders", "method": "GET" }],
+    "rules": [{ "route": "/admin/**", "decision": "include" }]
+  },
+  "expected": { "selected": [] }
+}

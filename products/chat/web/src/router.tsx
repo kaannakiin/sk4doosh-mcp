@@ -4,6 +4,8 @@ import { createChatQueryClient } from "@chat/queries/query-client";
 import { createRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
+import { NotFoundPage } from "~/components/app/NotFound";
+
 import { setSessionLostHandler } from "./lib/auth-refresh";
 import { internalHref } from "./lib/redirect-target";
 import { routeTree } from "./routeTree.gen";
@@ -15,10 +17,19 @@ import { routeTree } from "./routeTree.gen";
  */
 export function getRouter() {
   const queryClient = createChatQueryClient();
+  /**
+   * Guard: `notFoundMode` is pinned to `"root"`. Under the `"fuzzy"` default the
+   * router walks a missed url up to the deepest matched route that has children
+   * and hands the not-found to that route instead of the root — and
+   * `_authenticated.connections.tsx` renders no `<Outlet/>`, so `/connections/x`
+   * rendered the full Connections page with nothing announcing the miss.
+   */
   const router = createRouter({
     routeTree,
     scrollRestoration: true,
     defaultPreload: "intent",
+    notFoundMode: "root",
+    defaultNotFoundComponent: NotFoundPage,
     context: { queryClient },
   });
 

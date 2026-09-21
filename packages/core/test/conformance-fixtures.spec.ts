@@ -14,6 +14,7 @@ import {
   routePlaceholderNames,
   evaluateVisibility,
   isSelected,
+  resolveRules,
   describePayload,
   mapInvokeResult,
   refuseOversizeResponse,
@@ -191,7 +192,18 @@ describe("conformance: selection", () => {
       const select = (): string[] =>
         fixture.input.operations
           .filter((o) =>
-            isSelected(fixture.input.default, o.container, o.operation, o.id),
+            isSelected(
+              fixture.input.default,
+              o.container,
+              o.operation,
+              o.id,
+              resolveRules(
+                fixture.input.rules,
+                o.route ?? "",
+                o.method ?? "",
+                o.id,
+              ),
+            ),
           )
           .map((o) => o.id);
       if ("error" in fixture.expected) {

@@ -17,6 +17,8 @@ import {
   expandToolProductions,
   foldToken,
   isSelected,
+  matchesRoute,
+  resolveRules,
   routePlaceholderNames,
   searchParameters,
   SkMcpCatalogError,
@@ -177,13 +179,20 @@ export class SkMcpCatalog {
         endpoint.operationMarkers.includes(true),
         endpoint.operationMarkers.includes(false),
       );
+      const describedAs = `${endpoint.descriptor.method} ${endpoint.descriptor.route}`;
       try {
         if (
           isSelected(
             this.options.selection.default,
             container,
             operation,
-            `${endpoint.descriptor.method} ${endpoint.descriptor.route}`,
+            describedAs,
+            resolveRules(
+              this.options.selection.rules,
+              endpoint.descriptor.route,
+              endpoint.descriptor.method,
+              describedAs,
+            ),
           )
         ) {
           chosen.push(endpoint);
@@ -763,25 +772,6 @@ function matchesTarget(
     return false;
   }
   return true;
-}
-
-/**
- * A `*` matches within one segment, `**` across segments.
- *
- * The pattern is built from the host's own string, so every regex metacharacter outside the two
- * wildcards is escaped before it can turn a target into a catastrophic backtracker.
- */
-function matchesRoute(pattern: string, route: string): boolean {
-  const source = pattern
-    .split("**")
-    .map((part) =>
-      part
-        .split("*")
-        .map((literal) => literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-        .join("[^/]*"),
-    )
-    .join(".*");
-  return new RegExp(`^${source}$`).test(route);
 }
 
 function reportBodyRoot(

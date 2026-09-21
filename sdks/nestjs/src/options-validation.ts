@@ -35,6 +35,20 @@ export function collectConfigurationFailures(
   if (options.invoke.timeoutMs < 0) {
     failures.push("invoke.timeoutMs must be zero or positive.");
   }
+  /**
+   * A blank field is not the catch-all: the catch-all omits the field, while `route: ""` matches
+   * only the empty string and no composed route is empty, so the rule would decide nothing.
+   */
+  (options.selection.rules ?? []).forEach((rule, position) => {
+    for (const field of ["route", "method"] as const) {
+      const value = rule[field];
+      if (value !== undefined && value.trim() === "") {
+        failures.push(
+          `selection.rules[${position}].${field} must not be blank; omit it to match every ${field}.`,
+        );
+      }
+    }
+  });
   return failures;
 }
 

@@ -1,0 +1,10 @@
+{
+  "kind": "selection",
+  "description": "route eslesmesi buyuk kucuk harfe duyarlidir; /Admin/** route /admin/x'i tutmaz",
+  "input": {
+    "default": "include",
+    "operations": [{ "id": "get_admin_x", "route": "/admin/x", "method": "GET" }],
+    "rules": [{ "route": "/Admin/**", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_admin_x"] }
+}

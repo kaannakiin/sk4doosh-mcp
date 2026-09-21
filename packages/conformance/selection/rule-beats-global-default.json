@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "kural global default'u ezer; isaretsiz endpoint kuralin dedigini yapar",
+  "input": {
+    "default": "exclude",
+    "operations": [
+      { "id": "get_public_docs", "route": "/public/docs", "method": "GET" },
+      { "id": "get_internal_x", "route": "/internal/x", "method": "GET" }
+    ],
+    "rules": [{ "route": "/public/**", "decision": "include" }]
+  },
+  "expected": { "selected": ["get_public_docs"] }
+}

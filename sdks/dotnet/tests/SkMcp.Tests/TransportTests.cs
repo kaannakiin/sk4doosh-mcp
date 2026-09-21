@@ -547,6 +547,36 @@ public sealed class TransportTests
     }
 
     /// <remarks>
+    /// Guard: a misnamed meta-tool argument is rejected by the framework's binder before the handler
+    /// runs, so only <c>SkMcpBudgetTool</c> can turn it into an envelope. Measured: a model called
+    /// <c>load_tool</c> with <c>operation</c> instead of <c>name</c> and the turn died on a bare
+    /// "An error occurred invoking 'load_tool'".
+    /// </remarks>
+    [Fact]
+    public async Task T19_MisnamedArgument_BecomesEnvelopeNamingTheRealOne()
+    {
+        await using TransportApp app = await HostAsync();
+        string token = app.AuthServer.IssueAccessToken("alice", new Uri("http://localhost/mcp"), scope: null);
+
+        McpClient client = await ConnectAsync(app, token);
+        await using (client)
+        {
+            CallToolResult result = await client.CallToolAsync(
+                "load_tool",
+                new Dictionary<string, object?> { ["operation"] = "get_order" },
+                cancellationToken: CancellationToken.None);
+
+            Assert.True(result.IsError);
+            string text = ((TextContentBlock)result.Content.Single()).Text;
+            using JsonDocument document = JsonDocument.Parse(text);
+            Assert.Equal("unknown_argument", document.RootElement.GetProperty("error").GetString());
+            string message = document.RootElement.GetProperty("message").GetString()!;
+            Assert.Contains("'operation'", message);
+            Assert.Contains("'name'", message);
+        }
+    }
+
+    /// <remarks>
     /// The twin of "invoke_tool publishes name and arguments as required" in
     /// sdks/nestjs/test/meta-tools.spec.ts. <c>arguments</c> publishes a description and no
     /// <c>type</c> on purpose: the parameter binds as raw JSON so a non-object value reaches the
@@ -569,7 +599,7 @@ public sealed class TransportTests
             Assert.Equal("Operation name exactly as returned by search_tools.", properties.GetProperty("name").GetProperty("description").GetString());
 
             JsonElement arguments = properties.GetProperty("arguments");
-            Assert.Equal("Arguments as a JSON object whose keys are the input schema's properties.", arguments.GetProperty("description").GetString());
+            Assert.Equal("Arguments as a JSON object whose keys are the input schema's properties. Send the object itself, not a string containing JSON.", arguments.GetProperty("description").GetString());
             Assert.False(arguments.TryGetProperty("type", out _));
 
             Assert.Equal(

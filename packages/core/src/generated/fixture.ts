@@ -339,6 +339,7 @@ export interface SelectionFixture {
   input: {
     default: "include" | "exclude";
     operations: [SelectionOperation, ...SelectionOperation[]];
+    rules?: SelectionRule[];
   };
   expected: SelectionExpectedIds | SelectionExpectedError;
 }
@@ -346,6 +347,13 @@ export interface SelectionOperation {
   id: string;
   container?: "include" | "exclude" | "both";
   operation?: "include" | "exclude" | "both";
+  route?: string;
+  method?: string;
+}
+export interface SelectionRule {
+  decision: "include" | "exclude";
+  route?: string;
+  method?: string;
 }
 export interface SelectionExpectedIds {
   selected: string[];

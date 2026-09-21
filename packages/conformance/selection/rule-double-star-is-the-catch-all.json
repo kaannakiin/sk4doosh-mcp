@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "taban kural cift yildizdir; ** her route'u tutar",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_shallow", "route": "/orders", "method": "GET" },
+      { "id": "get_deep", "route": "/a/b/c", "method": "GET" }
+    ],
+    "rules": [{ "route": "**", "decision": "exclude" }]
+  },
+  "expected": { "selected": [] }
+}

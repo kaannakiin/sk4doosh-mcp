@@ -156,7 +156,8 @@ internal sealed class SkMcpCatalogProvider(
             containerPrefix: options.Value.Naming.Prefix,
             containerTags: options.Value.Tags,
             severityOf: options.Value.Diagnostics.SeverityOf,
-            curation: options.Value.Arguments);
+            curation: options.Value.Arguments,
+            selectionRules: options.Value.Selection.Rules);
         if (schemaNotes.Count > 0)
         {
             result = result with { Diagnostics = [.. schemaNotes, .. result.Diagnostics] };

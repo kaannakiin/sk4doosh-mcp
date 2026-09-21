@@ -549,6 +549,12 @@
               "items": {
                 "$ref": "#/$defs/SelectionOperation"
               }
+            },
+            "rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SelectionRule"
+              }
             }
           }
         },
@@ -599,6 +605,33 @@
         },
         "operation": {
           "$ref": "#/$defs/SelectionMarker"
+        },
+        "route": {
+          "type": "string",
+          "minLength": 1
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "SelectionRule": {
+      "title": "SelectionRule",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision"],
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/SelectionDefault"
+        },
+        "route": {
+          "type": "string",
+          "minLength": 1
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

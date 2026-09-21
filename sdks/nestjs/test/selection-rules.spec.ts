@@ -1,0 +1,118 @@
+import "reflect-metadata";
+import { Controller, Get, Post } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+import { beforeAll, describe, expect, it } from "vitest";
+import { SkMcpCatalog } from "../src/catalog.js";
+import { McpTool } from "../src/decorators.js";
+import { SkMcpModule } from "../src/sk-mcp.module.js";
+
+@Controller("admin")
+class AdminController {
+  @Get("users")
+  users(): void {}
+
+  @Get("health")
+  @McpTool({ name: "admin_health", description: "Reports health." })
+  health(): void {}
+}
+
+@Controller("orders")
+class OrdersController {
+  @Get()
+  list(): void {}
+
+  @Post()
+  create(): void {}
+}
+
+const targetsOf = (catalog: SkMcpCatalog): string[] =>
+  catalog.current.entries
+    .map((entry) => `${entry.descriptor.method} ${entry.descriptor.route}`)
+    .sort();
+
+describe("selection rules", () => {
+  let catalog: SkMcpCatalog;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        SkMcpModule.forRoot((options) => {
+          options.selection.default = "include";
+          options.selection.rules = [
+            { route: "/admin/**", decision: "exclude" },
+            { method: "POST", decision: "exclude" },
+          ];
+        }),
+      ],
+      controllers: [AdminController, OrdersController],
+    }).compile();
+    const app = moduleRef.createNestApplication({ logger: false });
+    await app.init();
+    catalog = app.get(SkMcpCatalog);
+  });
+
+  it("carves a route subtree out of a global include without an attribute", () => {
+    expect(targetsOf(catalog)).not.toContain("GET /admin/users");
+  });
+
+  /**
+   * Guard: the twin of S2 in sdks/dotnet/tests/SkMcp.Tests/SelectionRuleHostTests.cs. An operation
+   * marker is the only place a carve-out can be written, because equally specific rules that
+   * disagree are a build error rather than a silent winner.
+   */
+  it("loses to an operation marker inside the excluded subtree", () => {
+    expect(targetsOf(catalog)).toContain("GET /admin/health");
+  });
+
+  it("narrows by method alone", () => {
+    expect(targetsOf(catalog)).toEqual(["GET /admin/health", "GET /orders"]);
+  });
+});
+
+describe("selection rules that disagree", () => {
+  let conflicted: SkMcpCatalog;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        SkMcpModule.forRoot((options) => {
+          options.selection.default = "include";
+          options.selection.rules = [
+            { route: "/admin/**", decision: "exclude" },
+            { route: "/admin/users", decision: "include" },
+          ];
+        }),
+      ],
+      controllers: [AdminController, OrdersController],
+    }).compile();
+    const app = moduleRef.createNestApplication({ logger: false });
+    await app.init();
+    conflicted = app.get(SkMcpCatalog);
+  });
+
+  it("reports ambiguous_selection rather than picking one", () => {
+    const codes = conflicted.diagnostics.map((diagnostic) => diagnostic.code);
+    expect(codes).toContain("ambiguous_selection");
+  });
+
+  it("is fatal, so the catalog refuses to validate", () => {
+    expect(() => {
+      conflicted.ensureValid();
+    }).toThrow(/equal specificity disagree/);
+  });
+});
+
+describe("a blank rule field", () => {
+  /**
+   * Guard: the twin of S6 in sdks/dotnet/tests/SkMcp.Tests/SelectionRuleHostTests.cs. Omitting a
+   * field is the catch-all; a blank one matches nothing, so it would decide nothing and say so
+   * nowhere.
+   */
+  it("is a configuration failure, not a catch-all", () => {
+    expect(() =>
+      SkMcpModule.forRoot((options) => {
+        options.selection.rules = [{ route: "  ", decision: "exclude" }];
+      }),
+    ).toThrow(/must not be blank/);
+  });
+});

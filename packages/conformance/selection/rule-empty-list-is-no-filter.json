@@ -1,0 +1,10 @@
+{
+  "kind": "selection",
+  "description": "bos kural listesi filtre degildir; global default karar verir",
+  "input": {
+    "default": "include",
+    "operations": [{ "id": "get_admin_x", "route": "/admin/x", "method": "GET" }],
+    "rules": []
+  },
+  "expected": { "selected": ["get_admin_x"] }
+}

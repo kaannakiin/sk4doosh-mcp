@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "yalniz route ile yalniz method adlandiran iki kural esit ozgulluktedir; celiskileri hatadir",
+  "input": {
+    "default": "include",
+    "operations": [{ "id": "create_admin_user", "route": "/admin/users", "method": "POST" }],
+    "rules": [
+      { "route": "/admin/**", "decision": "exclude" },
+      { "method": "POST", "decision": "include" }
+    ]
+  },
+  "expected": { "error": "ambiguous_selection" }
+}

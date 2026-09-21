@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "ayni ozgullukteki iki kural farkli karar verirse hatadir; config icinde carve-out yazilamaz",
+  "input": {
+    "default": "include",
+    "operations": [{ "id": "get_admin_health", "route": "/admin/health", "method": "GET" }],
+    "rules": [
+      { "route": "/admin/**", "decision": "exclude" },
+      { "route": "/admin/health", "decision": "include" }
+    ]
+  },
+  "expected": { "error": "ambiguous_selection" }
+}

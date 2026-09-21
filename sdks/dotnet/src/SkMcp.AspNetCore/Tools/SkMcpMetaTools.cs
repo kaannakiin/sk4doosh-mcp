@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -26,7 +27,8 @@ internal sealed class SkMcpMetaTools(
     CallerVisibilityProvider visibility,
     ICallerScopeResolver scopeResolver,
     IOptions<SkMcpOptions> options,
-    IHttpContextAccessor httpContextAccessor)
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<SkMcpMetaTools> logger)
 {
     public const int DefaultLimit = 20;
     public const int MaxLimit = 50;
@@ -53,13 +55,13 @@ internal sealed class SkMcpMetaTools(
     /// is what keeps the clamp reachable in both SDKs. T16 pins the published shape.
     /// </remarks>
     [McpServerTool(Name = "search_tools", ReadOnly = true, Idempotent = true)]
-    [Description("Search the backend's API operations by keyword. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Results are compact cards — name, short description and a parameter summary — and load_tool gives the full input schema of the one you pick. When you already know which operation you want, pass detail=\"schema\" with a small limit to get that schema here and skip the load_tool call.")]
+    [Description("Find operations when you do not know their exact names. Keywords rank matches; an empty query lists everything by name. Keep queries short: a term matches operation text by prefix. Results are compact cards — name, short description and a parameter summary. Set detail=\"schema\" to get the full definition of every result in the same answer, which pays off only when you expect to invoke one of them immediately; pair it with a small limit because a schema page is much larger. When you already hold an exact operation name, call load_tool instead of searching for it.")]
     public async Task<CallToolResult> SearchTools(
         [Description("Keywords matched by prefix against operation names, descriptions, routes, argument names and tag text; keywords rank results, they do not filter them. Empty lists everything. To require a whole tag, use tags.")]
         string query = "",
         [Description("Maximum number of results, 1-50.")]
         int limit = DefaultLimit,
-        [Description("Shape of each result: \"card\" for the compact card, \"schema\" for the same shape load_tool returns. Any other value is card. A schema page is much larger; pair it with a small limit.")]
+        [Description("Shape of each result: \"card\" for the compact card, \"schema\" for the full definition load_tool would return. Any other value is card. A schema page is much larger; pair it with a small limit.")]
         [AllowedValues("card", "schema")]
         string detail = "card",
         [Description("Tags every result must carry, matched against the whole tag and insensitive to case and accents. Empty applies no filter; the answer\u0027s tags field lists what is available.")]
@@ -150,7 +152,7 @@ internal sealed class SkMcpMetaTools(
     }
 
     [McpServerTool(Name = "load_tool", ReadOnly = true, Idempotent = true)]
-    [Description("Load the full definition of one operation: description, JSON input schema and behavior hints. Use the exact name returned by search_tools.")]
+    [Description("Read the full definition of one operation: description, JSON input schema and behavior hints. Put the operation's exact name in the name argument. This is a direct lookup, not a search — it takes a name, never keywords. Use it after search_tools names an operation, or to re-read a schema whose name you already hold.")]
     public async Task<CallToolResult> LoadTool(
         [Description("Operation name exactly as returned by search_tools.")]
         string name,
@@ -183,7 +185,7 @@ internal sealed class SkMcpMetaTools(
     public async Task<CallToolResult> InvokeTool(
         [Description("Operation name exactly as returned by search_tools.")]
         string name,
-        [Description("Arguments as a JSON object whose keys are the input schema's properties.")]
+        [Description("Arguments as a JSON object whose keys are the input schema's properties. Send the object itself, not a string containing JSON.")]
         JsonElement arguments,
         CancellationToken cancellationToken)
     {
@@ -196,6 +198,14 @@ internal sealed class SkMcpMetaTools(
         if (entry.Template is not { } template)
         {
             return ErrorResult(SdkErrorCode.NotInvocable, $"Operation '{name}' cannot be invoked through sk-mcp; see the catalog diagnostics.");
+        }
+
+        NormalizedInvokeArguments normalized = InvokeArguments.Normalize(arguments);
+        if (normalized.Unwrapped)
+        {
+            logger.LogWarning(
+                "invoke_tool received the arguments for '{Tool}' as JSON text instead of a JSON object; the text was parsed. A client that double-encodes this argument is defective.",
+                name);
         }
 
         try
@@ -211,7 +221,7 @@ internal sealed class SkMcpMetaTools(
             try
             {
                 result = await dispatcher.DispatchAsync(
-                    template, arguments, httpContextAccessor.HttpContext?.Request, cancellationToken,
+                    template, normalized.Value, httpContextAccessor.HttpContext?.Request, cancellationToken,
                     deferred, deadline);
             }
             catch (SkMcpDispatchTimeout)

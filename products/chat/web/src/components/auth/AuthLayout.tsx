@@ -2,6 +2,7 @@ import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import { Outlet, getRouteApi } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 
+import { BrandRule } from "~/components/BrandRule";
 import { LocaleSwitcher } from "~/components/LocaleSwitcher";
 import { ThemeSwitcher } from "~/components/ThemeSwitcher";
 import { useSessionRecovery } from "~/core/hooks/use-session-recovery";
@@ -28,11 +29,7 @@ export function AuthLayout() {
           <p className="mt-5 max-w-[26ch] font-serif text-[1.125rem] leading-relaxed text-ink-dim italic">
             {t("auth.brand.tagline")}
           </p>
-          <div className="mt-8 flex items-center gap-2" aria-hidden>
-            <span className="h-0.5 w-10 rounded-sm bg-accent" />
-            <span className="h-px w-16 bg-hairline-strong" />
-            <span className="h-px w-24 bg-hairline" />
-          </div>
+          <BrandRule className="mt-8" />
         </div>
 
         <div className="flex items-center gap-3">

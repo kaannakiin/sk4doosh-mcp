@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using SkMcp.AspNetCore.Discovery;
 
 namespace SkMcp.AspNetCore;
 
@@ -47,6 +48,24 @@ internal sealed class SkMcpOptionsValidator : IValidateOptions<SkMcpOptions>
             if (metadata.AuthorizationServers is not { Count: > 0 })
             {
                 failures.Add("ResourceServer.Metadata.AuthorizationServers must be non-empty.");
+            }
+        }
+
+        // Guard: a blank field is not the catch-all. The catch-all leaves the field null, while an
+        // empty Route matches only the empty string and no composed route is empty, so the rule
+        // would decide nothing.
+        for (int position = 0; position < options.Selection.Rules.Count; position += 1)
+        {
+            SelectionRule rule = options.Selection.Rules[position];
+            if (rule.Route is not null && string.IsNullOrWhiteSpace(rule.Route))
+            {
+                failures.Add(
+                    $"Selection.Rules[{position}].Route must not be blank; leave it null to match every route.");
+            }
+            if (rule.Method is not null && string.IsNullOrWhiteSpace(rule.Method))
+            {
+                failures.Add(
+                    $"Selection.Rules[{position}].Method must not be blank; leave it null to match every method.");
             }
         }
 

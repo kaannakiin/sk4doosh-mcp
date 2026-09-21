@@ -26,6 +26,13 @@ export interface StickToBottom<T extends HTMLElement> {
  * Guard: the listener is passive. A scroll handler that the browser must wait on
  * before compositing turns a stream into visible jank on a phone.
  *
+ * Guard: the follow write is deferred to an animation frame. React flushes this
+ * effect while the appended turn has left layout dirty, so reading `scrollHeight`
+ * there forces a synchronous layout on every one of the stream's dozens of
+ * appends per second, and that layout grows with the conversation. In a frame
+ * callback a burst collapses to one write, and the read rides the layout the
+ * browser was going to do anyway.
+ *
  * @param signal the value that changes whenever new content is appended
  */
 export function useStickToBottom<T extends HTMLElement = HTMLDivElement>(
@@ -58,10 +65,16 @@ export function useStickToBottom<T extends HTMLElement = HTMLDivElement>(
   }, []);
 
   useEffect(() => {
-    const node = ref.current;
-    if (node !== null && stuck.current) {
-      node.scrollTop = node.scrollHeight;
-    }
+    const frame = requestAnimationFrame(() => {
+      const node = ref.current;
+      if (node !== null && stuck.current) {
+        node.scrollTop = node.scrollHeight;
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [signal]);
 
   const scrollToBottom = useCallback(() => {

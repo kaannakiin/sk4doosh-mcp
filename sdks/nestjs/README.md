@@ -170,6 +170,26 @@ SkMcpModule.forRoot((options) => {
 
 Then `@McpIgnore()` on the endpoints or controllers you withhold.
 
+For a subtree that is categorically off limits — or one you cannot decorate, such as a generated
+or third-party controller — put the decision in configuration instead:
+
+```ts
+SkMcpModule.forRoot((options) => {
+  options.selection.default = "include";
+  options.selection.rules = [
+    { route: "/admin/**", decision: "exclude" },
+    { method: "POST", decision: "exclude" },
+  ];
+});
+```
+
+`*` stays inside one path segment and `**` crosses them, so `**` is the catch-all and `*` is not.
+Route matching is case-sensitive and a path parameter is matched as the literal `{id}` the template
+carries; `method` ignores case. Rules rank by how many fields they name, never by declaration
+order, and two equally specific rules that disagree fail the catalog with `ambiguous_selection`
+rather than one quietly winning. An attribute always outranks a rule, so a carve-out inside an
+excluded subtree goes on the endpoint.
+
 Visibility is **not** a security mechanism. A tool hidden from the catalog still runs only if your
 backend permits it; enforcement is always in your pipeline at invoke time.
 

@@ -278,12 +278,54 @@ describe("nest meta-tools", () => {
       "Operation name exactly as returned by search_tools.",
     );
     expect(properties["arguments"]?.["description"]).toBe(
-      "Arguments as a JSON object whose keys are the input schema's properties.",
+      "Arguments as a JSON object whose keys are the input schema's properties. Send the object itself, not a string containing JSON.",
     );
     expect(properties["arguments"]).not.toHaveProperty("type");
     expect(
       [...((invoke?.inputSchema["required"] as string[]) ?? [])].sort(),
     ).toEqual(["arguments", "name"]);
+  });
+
+  /**
+   * The twin of T19 in sdks/dotnet/tests/SkMcp.Tests/TransportTests.cs. The permissive runtime type
+   * must not show up in what the agent reads.
+   */
+  it("load_tool still publishes name as a required string", async () => {
+    const listed = await (await clientFor("alice")).listTools();
+    const load = listed.tools.find((tool) => tool.name === "load_tool");
+    const properties = load?.inputSchema.properties as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(properties["name"]?.["type"]).toBe("string");
+    expect(properties["name"]?.["description"]).toBe(
+      "Operation name exactly as returned by search_tools.",
+    );
+    expect(load?.inputSchema["required"]).toEqual(["name"]);
+    expect(load?.inputSchema).not.toHaveProperty("additionalProperties");
+  });
+
+  it("load_tool answers a misnamed argument with an envelope", async () => {
+    const { parsed, isError } = await call<{
+      error: string;
+      message: string;
+      retryable: boolean;
+    }>("load_tool", { operation: "get_order" }, "alice");
+    expect(isError).toBe(true);
+    expect(parsed.error).toBe("unknown_argument");
+    expect(parsed.message).toContain("'name'");
+    expect(parsed.retryable).toBe(false);
+  });
+
+  it("invoke_tool answers a non-string name with an envelope", async () => {
+    const { parsed, isError } = await call<{ error: string; message: string }>(
+      "invoke_tool",
+      { name: 5, arguments: {} },
+      "alice",
+    );
+    expect(isError).toBe(true);
+    expect(parsed.error).toBe("unknown_argument");
+    expect(parsed.message).toContain("number");
   });
 
   it("search_tools with detail schema answers what load_tool would", async () => {
@@ -384,6 +426,46 @@ describe("nest meta-tools", () => {
     expect(isError).toBe(false);
     expect(parsed.status).toBe(201);
     expect(parsed.body.text).toBe("not");
+  });
+
+  it("invoke_tool unwraps arguments that arrived as JSON text", async () => {
+    const name = [...catalog.current.byName.keys()].find((candidate) =>
+      candidate.endsWith("add_order_note"),
+    ) as string;
+    const { parsed, isError } = await call<{
+      status: number;
+      body: { text: string };
+    }>("invoke_tool", { name, arguments: '{"id": 7, "text": "not"}' }, "alice");
+    expect(isError).toBe(false);
+    expect(parsed.status).toBe(201);
+    expect(parsed.body.text).toBe("not");
+  });
+
+  it("invoke_tool reads null arguments as none", async () => {
+    const name = [...catalog.current.byName.keys()].find((candidate) =>
+      candidate.endsWith("ping"),
+    ) as string;
+    const { isError } = await call<{ status: number }>(
+      "invoke_tool",
+      { name, arguments: null },
+      "alice",
+    );
+    expect(isError).toBe(false);
+  });
+
+  it("invoke_tool names the kind that arrived when it is not an object", async () => {
+    const name = [...catalog.current.byName.keys()].find((candidate) =>
+      candidate.endsWith("get_order"),
+    ) as string;
+    const { parsed, isError } = await call<{
+      error: string;
+      message: string;
+      retryable: boolean;
+    }>("invoke_tool", { name, arguments: "id=5" }, "alice");
+    expect(isError).toBe(true);
+    expect(parsed.error).toBe("invalid_type");
+    expect(parsed.message).toContain("received a string");
+    expect(parsed.retryable).toBe(false);
   });
 
   it("invoke_tool rejects an unknown argument before dispatch", async () => {

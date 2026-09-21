@@ -99,6 +99,13 @@ public sealed class VisibilityOptions
 public sealed class SelectionOptions
 {
     public SelectionDefault Default { get; set; } = SelectionDefault.Exclude;
+
+    /// <summary>
+    /// Config-level rules, for routes the host cannot or will not decorate. They sit below both
+    /// attribute levels and above <see cref="Default"/>; order carries no meaning, and equally
+    /// specific rules that disagree are a build error rather than a silent first-match win.
+    /// </summary>
+    public List<SelectionRule> Rules { get; } = [];
 }
 
 public sealed class NamingOptions

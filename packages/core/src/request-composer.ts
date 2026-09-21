@@ -292,6 +292,25 @@ function applyFills(
   }
 }
 
+function describeArgumentKind(args: unknown): string {
+  if (args === null) {
+    return "null";
+  }
+  if (Array.isArray(args)) {
+    return "an array";
+  }
+  switch (typeof args) {
+    case "string":
+      return "a string";
+    case "number":
+      return "a number";
+    case "boolean":
+      return "a boolean";
+    default:
+      return "a value that is not an object";
+  }
+}
+
 function toArgumentMap(args: unknown): Map<string, unknown> {
   const map = new Map<string, unknown>();
   if (args === undefined) {
@@ -300,7 +319,7 @@ function toArgumentMap(args: unknown): Map<string, unknown> {
   if (typeof args !== "object" || args === null || Array.isArray(args)) {
     throw new SkMcpArgumentError(
       "invalid_type",
-      "Arguments must be a JSON object.",
+      `Arguments must be a JSON object; received ${describeArgumentKind(args)}. Send each argument as a property of that object and call the operation again.`,
     );
   }
   for (const [name, value] of Object.entries(args)) {

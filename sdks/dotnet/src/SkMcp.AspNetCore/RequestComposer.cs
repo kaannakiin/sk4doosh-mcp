@@ -34,7 +34,8 @@ internal static class RequestComposer
         else if (arguments.ValueKind != JsonValueKind.Undefined)
         {
             throw new SkMcpArgumentException(
-                SkMcpArgumentException.InvalidType, "Arguments must be a JSON object.");
+                SkMcpArgumentException.InvalidType,
+                $"Arguments must be a JSON object; received {DescribeKind(arguments.ValueKind)}. Send each argument as a property of that object and call the operation again.");
         }
 
         RejectUnknown(template, args);
@@ -347,6 +348,16 @@ internal static class RequestComposer
     /// input. A literal space is illegal in a URL, hence <c>%20</c>.
     /// </summary>
     private static string SeparatorFor(string delimiter) => delimiter == " " ? "%20" : delimiter;
+
+    private static string DescribeKind(JsonValueKind kind) => kind switch
+    {
+        JsonValueKind.Null => "null",
+        JsonValueKind.Array => "an array",
+        JsonValueKind.String => "a string",
+        JsonValueKind.Number => "a number",
+        JsonValueKind.True or JsonValueKind.False => "a boolean",
+        _ => "a value that is not an object",
+    };
 
     private static string FormatScalar(JsonElement element, ParameterBinding parameter, string errorCode)
     {

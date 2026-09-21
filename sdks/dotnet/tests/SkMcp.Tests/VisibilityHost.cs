@@ -164,7 +164,8 @@ internal sealed record Harness(WebApplication App, SkMcpDispatcher Dispatcher, P
             App.Services.GetRequiredService<CallerVisibilityProvider>(),
             App.Services.GetRequiredService<ICallerScopeResolver>(),
             App.Services.GetRequiredService<IOptions<SkMcpOptions>>(),
-            new FixedContext(outer));
+            new FixedContext(outer),
+            App.Services.GetRequiredService<ILogger<SkMcpMetaTools>>());
     }
 
     public async ValueTask DisposeAsync()

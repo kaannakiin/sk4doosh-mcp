@@ -95,6 +95,17 @@
     "network": "The API could not be reached",
     "dismiss": "Dismiss"
   },
+  "notFound": {
+    "code": "404",
+    "address": "Requested address",
+    "title": "Nothing at this address",
+    "body": "The app has no page here. Check the link, or start a new conversation.",
+    "session": {
+      "title": "That isn't a conversation id",
+      "body": "The address after /c/ has to be a conversation id. Check the link, or start a new conversation."
+    },
+    "start": "Start a new conversation"
+  },
   "locale": {
     "label": "Language",
     "en": "English",

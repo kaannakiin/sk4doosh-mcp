@@ -1,0 +1,10 @@
+{
+  "kind": "selection",
+  "description": "tek yildiz taban kural degildir; * bir bolu tasiyan route'u tutmaz",
+  "input": {
+    "default": "include",
+    "operations": [{ "id": "get_deep", "route": "/a/b/c", "method": "GET" }],
+    "rules": [{ "route": "*", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_deep"] }
+}

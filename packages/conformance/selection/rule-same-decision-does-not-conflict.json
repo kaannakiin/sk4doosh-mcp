@@ -1,0 +1,16 @@
+{
+  "kind": "selection",
+  "description": "ayni karari veren iki kural serbestce ortusur; tekrar celiski degildir",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_admin_internal", "route": "/admin/internal/x", "method": "GET" },
+      { "id": "list_orders", "route": "/orders", "method": "GET" }
+    ],
+    "rules": [
+      { "route": "/admin/**", "decision": "exclude" },
+      { "route": "/**/internal/**", "decision": "exclude" }
+    ]
+  },
+  "expected": { "selected": ["list_orders"] }
+}

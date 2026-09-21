@@ -370,6 +370,46 @@ public sealed class ErrorMappingTests
     }
 
     [Fact]
+    public async Task E12a_ArgumentsAsJsonText_AreUnwrapped()
+    {
+        await using Harness host = await HostAsync();
+        SkMcpMetaTools alice = host.ToolsFor(Mint("alice"));
+
+        CallToolResult result = await alice.InvokeTool(
+            "vis_mine", JsonSerializer.SerializeToElement("""{"id": 1}"""), CancellationToken.None);
+
+        Assert.False(result.IsError);
+    }
+
+    [Fact]
+    public async Task E12b_NullArguments_ReadAsNone()
+    {
+        await using Harness host = await HostAsync();
+        SkMcpMetaTools alice = host.ToolsFor(Mint("alice"));
+
+        CallToolResult result = await alice.InvokeTool(
+            "vis_anon", JsonSerializer.SerializeToElement((object?)null), CancellationToken.None);
+
+        Assert.False(result.IsError);
+    }
+
+    [Fact]
+    public async Task E12c_NonObjectArguments_NameTheKindThatArrived()
+    {
+        await using Harness host = await HostAsync();
+        SkMcpMetaTools alice = host.ToolsFor(Mint("alice"));
+
+        CallToolResult result = await alice.InvokeTool(
+            "vis_mine", JsonSerializer.SerializeToElement("id=1"), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        using JsonDocument document = JsonDocument.Parse(TextOf(result));
+        Assert.Equal("invalid_type", document.RootElement.GetProperty("error").GetString());
+        Assert.Contains("received a string", document.RootElement.GetProperty("message").GetString());
+        Assert.False(document.RootElement.GetProperty("retryable").GetBoolean());
+    }
+
+    [Fact]
     public async Task E13_LoadTool_Unknown_UsesEnvelopeWithIsError()
     {
         await using Harness host = await HostAsync();

@@ -89,6 +89,25 @@ builder.Services.AddSkMcp(options =>
 });
 ```
 
+For a subtree that is categorically off limits — or one you cannot decorate, such as a generated
+or third-party controller — put the decision in configuration instead:
+
+```csharp
+builder.Services.AddSkMcp(options =>
+{
+    options.Selection.Default = SelectionDefault.Include;
+    options.Selection.Rules.Add(new SelectionRule(SelectionDefault.Exclude, Route: "/admin/**"));
+    options.Selection.Rules.Add(new SelectionRule(SelectionDefault.Exclude, Method: "POST"));
+});
+```
+
+`*` stays inside one path segment and `**` crosses them, so `**` is the catch-all and `*` is not.
+Route matching is case-sensitive and a path parameter is matched as the literal `{id}` the template
+carries; `Method` ignores case. Rules rank by how many fields they name, never by declaration
+order, and two equally specific rules that disagree fail the catalog with `ambiguous_selection`
+rather than one quietly winning. An attribute always outranks a rule, so a carve-out inside an
+excluded subtree goes on the endpoint.
+
 Visibility is **not** a security mechanism. A tool hidden from the catalog still runs only if your
 backend permits it; enforcement is always in your pipeline at invoke time.
 

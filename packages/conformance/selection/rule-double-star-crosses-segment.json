@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "cift yildiz segment asar; /admin/** butun alt agaci tutar",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "list_admin_users", "route": "/admin/users", "method": "GET" },
+      { "id": "get_admin_user", "route": "/admin/users/5", "method": "GET" }
+    ],
+    "rules": [{ "route": "/admin/**", "decision": "exclude" }]
+  },
+  "expected": { "selected": [] }
+}

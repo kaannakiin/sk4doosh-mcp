@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "route sablonundaki suslu parantez literal eslesir; pattern {id} yazar",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_order", "route": "/orders/{id}", "method": "GET" },
+      { "id": "list_orders", "route": "/orders", "method": "GET" }
+    ],
+    "rules": [{ "route": "/orders/{id}", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["list_orders"] }
+}

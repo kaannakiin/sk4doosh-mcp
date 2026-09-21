@@ -1,0 +1,17 @@
+{
+  "kind": "selection",
+  "description": "method adlandiran kural route'u adlandirandan daha ozeldir; GET acik, kalani kapali idiomu",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_report", "route": "/reports/x", "method": "GET" },
+      { "id": "create_report", "route": "/reports/x", "method": "POST" },
+      { "id": "delete_report", "route": "/reports/x", "method": "DELETE" }
+    ],
+    "rules": [
+      { "route": "/reports/**", "decision": "exclude" },
+      { "route": "/reports/**", "method": "GET", "decision": "include" }
+    ]
+  },
+  "expected": { "selected": ["get_report"] }
+}

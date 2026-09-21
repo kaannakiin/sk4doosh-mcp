@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "tek yildiz segment asmaz; /admin/* derin route'u tutmaz",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "list_admin_users", "route": "/admin/users", "method": "GET" },
+      { "id": "get_admin_user", "route": "/admin/users/5", "method": "GET" }
+    ],
+    "rules": [{ "route": "/admin/*", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_admin_user"] }
+}

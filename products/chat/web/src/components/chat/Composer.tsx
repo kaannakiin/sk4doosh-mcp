@@ -38,25 +38,38 @@ export function Composer({
   children,
 }: ComposerProps) {
   const { t } = useTranslation();
-  const [draft, setDraft] = useState("");
+  const [empty, setEmpty] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const openPicker = useRef<() => void>(null);
   const {
     ref: input,
     multiline,
     overflowing,
-  } = useTextareaAutosize(draft, expanded);
-  const empty = draft.trim().length === 0;
+    measure,
+    clear,
+  } = useTextareaAutosize(expanded);
 
+  /**
+   * Guard: the textarea is uncontrolled and only `empty` reaches state, so
+   * holding a key down re-renders this subtree once — when the send button
+   * flips — instead of once per character against Mantine's dropzone, tooltip
+   * and icon buttons. Submitting therefore empties the node through the hook and
+   * re-measures by hand, because no state change will do it.
+   */
   const submit = useCallback(() => {
-    const text = draft.trim();
-    if (text.length === 0 || busy) {
+    const node = input.current;
+    if (node === null || busy) {
+      return;
+    }
+    const text = node.value.trim();
+    if (text.length === 0) {
       return;
     }
     onSend(text);
-    setDraft("");
+    clear();
+    setEmpty(true);
     setExpanded(false);
-  }, [draft, busy, onSend]);
+  }, [busy, onSend, input, clear]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -70,6 +83,11 @@ export function Composer({
    * pill radius is only correct while the box is one row tall. Keyed on the
    * textarea alone, a chip left a 92px box carrying a 999px radius — a stadium
    * whose curve swallowed the buttons at both ends.
+   *
+   * Guard: that radius is switched, never transitioned. The height is written in
+   * pixels by the autosize hook and lands in a single frame, so an eased radius
+   * spends its whole duration describing a box that no longer exists — the same
+   * stadium, for 150ms, on every long paste.
    */
   const grown = multiline || attached;
   const showExpand = overflowing || expanded;
@@ -85,8 +103,8 @@ export function Composer({
         activateOnClick={false}
         accept={[...SUPPORTED_MEDIA_TYPES]}
         classNames={{
-          root: "relative rounded-full border border-hairline bg-panel px-2 py-1.5 transition-[border-radius,border-color] duration-150 focus-within:border-hairline-strong group-data-grown/composer:rounded-[20px] group-data-grown/composer:px-2 group-data-grown/composer:pt-2.5 group-data-grown/composer:pb-2",
-          inner: "pointer-events-auto flex w-full flex-col gap-2",
+          root: "relative rounded-full border border-hairline bg-panel px-2 py-1.5 transition-[border-color] duration-150 focus-within:border-hairline-strong group-data-grown/composer:rounded-[20px] group-data-grown/composer:px-2 group-data-grown/composer:pt-2.5 group-data-grown/composer:pb-2",
+          inner: "pointer-events-auto flex w-full flex-col",
         }}
       >
         {children}
@@ -110,11 +128,11 @@ export function Composer({
             ref={input}
             className="min-h-6 resize-none overflow-y-auto border-0 bg-transparent px-1 py-1.5 font-sans text-[0.9375rem] leading-normal text-inherit [grid-area:input] scrollbar-thin placeholder:text-ink-dim focus:outline-none group-data-grown/composer:pe-7"
             rows={1}
-            value={draft}
             placeholder={t("composer.placeholder")}
             aria-label={t("composer.placeholder")}
             onChange={(event) => {
-              setDraft(event.currentTarget.value);
+              measure();
+              setEmpty(event.currentTarget.value.trim().length === 0);
             }}
             onKeyDown={onKeyDown}
           />

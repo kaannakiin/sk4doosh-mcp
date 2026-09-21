@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "operation isareti kurali ezer; carve-out'un yazildigi yer burasidir",
+  "input": {
+    "default": "exclude",
+    "operations": [
+      { "id": "get_admin_health", "route": "/admin/health", "method": "GET", "operation": "include" },
+      { "id": "get_admin_users", "route": "/admin/users", "method": "GET" }
+    ],
+    "rules": [{ "route": "/admin/**", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_admin_health"] }
+}

@@ -14,6 +14,7 @@ import {
   maxSearchLimit,
   maxSearchTagVocabulary,
   narrowingArguments,
+  normalizeInvokeArguments,
   refuseOversizeResponse,
   refuseTimedOutInvoke,
   sdkError,
@@ -24,6 +25,7 @@ import {
   type SdkErrorCode,
   type VisibilityDecision,
 } from "@sk-mcp/core";
+import { Logger } from "@nestjs/common";
 import { z } from "zod";
 import type { CatalogEntry, SkMcpCatalog } from "./catalog.js";
 import type { CallerScopeResolver } from "./cache.js";
@@ -57,6 +59,8 @@ interface ToolExtra {
 
 export const catalogGenerationMetaKey = "sk-mcp/catalogGeneration";
 
+const logger = new Logger("SkMcp");
+
 const searchNarrowing: readonly FieldError[] = [
   { name: "query", message: "Keywords that select fewer operations." },
   { name: "limit", message: "Maximum number of results, 1-50." },
@@ -65,7 +69,7 @@ const searchNarrowing: readonly FieldError[] = [
 ];
 
 const searchDescription =
-  'Search the backend\'s API operations by keyword. An empty query lists operations by name. Keep queries short: a query term matches operation text by prefix. Results are compact cards — name, short description and a parameter summary — and load_tool gives the full input schema of the one you pick. When you already know which operation you want, pass detail="schema" with a small limit to get that schema here and skip the load_tool call.';
+  'Find operations when you do not know their exact names. Keywords rank matches; an empty query lists everything by name. Keep queries short: a term matches operation text by prefix. Results are compact cards — name, short description and a parameter summary. Set detail="schema" to get the full definition of every result in the same answer, which pays off only when you expect to invoke one of them immediately; pair it with a small limit because a schema page is much larger. When you already hold an exact operation name, call load_tool instead of searching for it.';
 
 /**
  * Guard: `.catch` is what makes an unrecognised `detail` fall back to `card`
@@ -75,10 +79,43 @@ const searchDescription =
  * schema, which still carries `enum` and `default`.
  */
 const detailDescription =
-  'Shape of each result: "card" for the compact card, "schema" for the same shape load_tool returns. Any other value is card. A schema page is much larger; pair it with a small limit.';
+  'Shape of each result: "card" for the compact card, "schema" for the full definition load_tool would return. Any other value is card. A schema page is much larger; pair it with a small limit.';
 
 const loadDescription =
-  "Load the full definition of one operation: description, JSON input schema and behavior hints. Use the exact name returned by search_tools.";
+  "Read the full definition of one operation: description, JSON input schema and behavior hints. Put the operation's exact name in the name argument. This is a direct lookup, not a search — it takes a name, never keywords. Use it after search_tools names an operation, or to re-read a schema whose name you already hold.";
+
+/**
+ * Guard: `name` binds as `unknown` and the object publishes its own `required`, so a call that
+ * misspells the argument reaches the handler instead of the framework's validator. The published
+ * schema is byte-identical to a plain `z.string()` one — `.meta` supplies the `type` the runtime
+ * no longer implies. Without this the MCP SDK answers with a bare text error that is not JSON, so
+ * the agent cannot parse it, the leak filter never runs, and the turn dies with nothing to repair
+ * from. Measured: a model called `load_tool` with `operation` instead of `name`. Pinned by
+ * test/meta-tools.spec.ts and by T19.
+ */
+function namedArgument(description: string) {
+  return z.unknown().optional().meta({ type: "string", description });
+}
+
+const operationName = "Operation name exactly as returned by search_tools.";
+
+function missingArgument(tool: string, argument: string): MetaResponse {
+  return errorResult(
+    "unknown_argument",
+    `Tool '${tool}' was called without '${argument}', which is required. Call it again naming '${argument}' exactly.`,
+  );
+}
+
+function wrongArgumentType(
+  tool: string,
+  argument: string,
+  value: unknown,
+): MetaResponse {
+  return errorResult(
+    "unknown_argument",
+    `Tool '${tool}' takes '${argument}' as a string; ${typeof value} arrived. Call it again with '${argument}' set to an operation name from search_tools.`,
+  );
+}
 
 const invokeDescription =
   "Invoke one backend operation with a JSON object of arguments.";
@@ -419,14 +456,18 @@ export function registerSkMcpTools(
     {
       description: loadDescription,
       _meta: generationMeta(),
-      inputSchema: {
-        name: z
-          .string()
-          .describe("Operation name exactly as returned by search_tools."),
-      },
+      inputSchema: z
+        .object({ name: namedArgument(operationName) })
+        .meta({ required: ["name"] }),
     },
     async ({ name }, extra) =>
       emitGuarded(deps, async () => {
+        if (name === undefined) {
+          return missingArgument("load_tool", "name");
+        }
+        if (typeof name !== "string") {
+          return wrongArgumentType("load_tool", "name", name);
+        }
         deps.catalog.ensureValid();
         const entry = deps.catalog.find(name);
         if (entry === undefined) {
@@ -459,28 +500,30 @@ export function registerSkMcpTools(
     {
       description: invokeDescription,
       _meta: generationMeta(),
-      inputSchema: {
-        name: z
-          .string()
-          .describe("Operation name exactly as returned by search_tools."),
-        /**
-         * Guard: `unknown` rather than a record, so a non-object value reaches the handler and
-         * leaves as an sk-mcp envelope. `z.record` rejected it during argument binding, which the
-         * MCP SDK reports as a raw `-32602` with no envelope and no leak filter — the failure §9
-         * closed for handler throws, reintroduced through the schema. `nonoptional` keeps the
-         * argument required, which is what the ASP.NET SDK publishes. Pinned by
-         * test/meta-tools.spec.ts and by T18.
-         */
-        arguments: z
-          .unknown()
-          .describe(
-            "Arguments as a JSON object whose keys are the input schema's properties.",
-          )
-          .nonoptional(),
-      },
+      /**
+       * Guard: `arguments` publishes a description and no `type`, so a value that is not an object
+       * reaches the handler and leaves as an sk-mcp envelope. A schema that constrained it was
+       * rejected during the framework's own argument binding, and the caller got an answer carrying
+       * neither the envelope nor the leak filter. Pinned by test/meta-tools.spec.ts and by T18.
+       */
+      inputSchema: z
+        .object({
+          name: namedArgument(operationName),
+          arguments: z.unknown().optional().meta({
+            description:
+              "Arguments as a JSON object whose keys are the input schema's properties. Send the object itself, not a string containing JSON.",
+          }),
+        })
+        .meta({ required: ["name", "arguments"] }),
     },
     async ({ name, arguments: args }, extra) =>
       emitGuarded(deps, async () => {
+        if (name === undefined) {
+          return missingArgument("invoke_tool", "name");
+        }
+        if (typeof name !== "string") {
+          return wrongArgumentType("invoke_tool", "name", name);
+        }
         deps.catalog.ensureValid();
         const entry = deps.catalog.find(name);
         if (entry === undefined) {
@@ -493,6 +536,12 @@ export function registerSkMcpTools(
           );
         }
         const outer = outerFrom(extra);
+        const normalized = normalizeInvokeArguments(args);
+        if (normalized.unwrapped) {
+          logger.warn(
+            `invoke_tool received the arguments for '${name}' as JSON text instead of a JSON object; the text was parsed. A client that double-encodes this argument is defective.`,
+          );
+        }
         /**
          * Sources are resolved once per invocation and the same map feeds every composition, so a
          * source that is not constant cannot make validation and dispatch disagree.
@@ -500,7 +549,7 @@ export function registerSkMcpTools(
         let deferred: Readonly<Record<string, unknown>> | undefined;
         try {
           deferred = await resolveDeferred(deps, entry, outer);
-          compose(entry.template, args ?? {}, deferred);
+          compose(entry.template, normalized.value, deferred);
         } catch (error) {
           if (error instanceof SkMcpArgumentError) {
             return errorResult(error.code, error.message);
@@ -517,7 +566,7 @@ export function registerSkMcpTools(
         try {
           result = await deps.dispatcher.dispatch(
             entry.template,
-            args ?? {},
+            normalized.value,
             outer,
             deferred,
             { ...deadlineFrom(extra), timeoutMs },

@@ -39,8 +39,14 @@ export {
   snakeCase,
 } from "./naming.js";
 export type { FoldedOperation, NamingOptions, PrefixMode } from "./naming.js";
-export { combineMarkers, isSelected } from "./selection.js";
-export type { SelectionDefault, SelectionMarker } from "./selection.js";
+export { combineMarkers, isSelected, resolveRules } from "./selection.js";
+export type {
+  SelectionDecision,
+  SelectionDefault,
+  SelectionMarker,
+  SelectionRule,
+} from "./selection.js";
+export { matchesRoute } from "./route-glob.js";
 export {
   bodyRootArgument,
   bodyRootOf,
@@ -166,6 +172,8 @@ export {
   sdkError,
 } from "./invoke-guard.js";
 export type { OversizeResponse } from "./invoke-guard.js";
+export { normalizeInvokeArguments } from "./invoke-arguments.js";
+export type { NormalizedInvokeArguments } from "./invoke-arguments.js";
 export { forwardable, inspect } from "./leak-filter.js";
 export type { LeakRule, LeakVerdict } from "./leak-filter.js";
 export type {

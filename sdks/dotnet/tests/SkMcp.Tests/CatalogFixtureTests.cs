@@ -105,6 +105,11 @@ public sealed class CatalogFixtureTests
     [Fact]
     public void C2_SelectionFixtures_AllPass()
     {
+        // Guard: this runner reads fixtures as raw JSON rather than through the generated types,
+        // so a reader that stopped projecting input.rules would silently score every rule fixture
+        // against an empty rule list and most of them would still pass.
+        bool ruled = false;
+
         foreach (JsonElement root in Fixtures("selection"))
         {
             Assert.Equal("selection", root.GetProperty("kind").GetString());
@@ -113,20 +118,24 @@ public sealed class CatalogFixtureTests
                 input.GetProperty("default").GetString()!, ignoreCase: true);
             JsonElement operations = input.GetProperty("operations");
             JsonElement expected = root.GetProperty("expected");
+            IReadOnlyList<SelectionRule>? rules = Rules(input);
+            ruled |= rules is not null;
 
             if (expected.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpCatalogException ex = Assert.Throws<SkMcpCatalogException>(
-                    () => Select(defaultDecision, operations));
+                    () => Select(defaultDecision, operations, rules));
                 Assert.Equal(error.GetString(), ex.Code);
             }
             else
             {
                 string[] selected = expected.GetProperty("selected")
                     .EnumerateArray().Select(n => n.GetString()!).ToArray();
-                Assert.Equal(selected, Select(defaultDecision, operations));
+                Assert.Equal(selected, Select(defaultDecision, operations, rules));
             }
         }
+
+        Assert.True(ruled, "no selection fixture carried rules");
     }
 
     [Fact]
@@ -359,14 +368,20 @@ public sealed class CatalogFixtureTests
         }
     }
 
-    private static string[] Select(SelectionDefault defaultDecision, JsonElement operations)
+    private static string[] Select(
+        SelectionDefault defaultDecision,
+        JsonElement operations,
+        IReadOnlyList<SelectionRule>? rules)
     {
         List<string> selected = [];
         foreach (JsonElement operation in operations.EnumerateArray())
         {
             string id = operation.GetProperty("id").GetString()!;
+            SelectionMarker? rule = SelectionResolver.ResolveRules(
+                rules, Text(operation, "route") ?? string.Empty,
+                Text(operation, "method") ?? string.Empty, id);
             if (SelectionResolver.IsSelected(
-                    defaultDecision, Marker(operation, "container"), Marker(operation, "operation"), id))
+                    defaultDecision, Marker(operation, "container"), Marker(operation, "operation"), id, rule))
             {
                 selected.Add(id);
             }
@@ -377,5 +392,16 @@ public sealed class CatalogFixtureTests
     private static SelectionMarker? Marker(JsonElement operation, string level) =>
         operation.TryGetProperty(level, out JsonElement marker)
             ? Enum.Parse<SelectionMarker>(marker.GetString()!, ignoreCase: true)
+            : null;
+
+    private static string? Text(JsonElement element, string name) =>
+        element.TryGetProperty(name, out JsonElement value) ? value.GetString() : null;
+
+    private static IReadOnlyList<SelectionRule>? Rules(JsonElement input) =>
+        input.TryGetProperty("rules", out JsonElement rules)
+            ? [.. rules.EnumerateArray().Select(rule => new SelectionRule(
+                Enum.Parse<SelectionDefault>(rule.GetProperty("decision").GetString()!, ignoreCase: true),
+                Text(rule, "route"),
+                Text(rule, "method")))]
             : null;
 }

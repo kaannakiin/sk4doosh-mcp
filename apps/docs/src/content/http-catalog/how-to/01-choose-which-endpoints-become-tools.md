@@ -77,6 +77,59 @@ Opt-out is the realistic mode above a few dozen endpoints, and it changes what y
 about: with opt-in you decide what to publish, with opt-out you decide what to withhold, and
 anything new is published by default.
 
+## Withhold a whole route subtree without touching it
+
+`[McpIgnore]` needs a class or a method you can edit, and it needs you to remember the next one
+somebody adds. For a subtree that is categorically off limits, put the decision in configuration
+instead:
+
+```csharp
+builder.Services.AddSkMcp(options =>
+{
+    options.Selection.Default = SelectionDefault.Include;
+    options.Selection.Rules.Add(new SelectionRule(SelectionDefault.Exclude, Route: "/admin/**"));
+    options.Selection.Rules.Add(new SelectionRule(SelectionDefault.Exclude, Method: "POST"));
+});
+```
+
+```ts
+SkMcpModule.forRoot((options) => {
+  options.selection.default = "include";
+  options.selection.rules = [
+    { route: "/admin/**", decision: "exclude" },
+    { method: "POST", decision: "exclude" },
+  ];
+});
+```
+
+A rule matches the route template, so `*` stays inside one path segment and `**` crosses them:
+`/admin/*` catches `/admin/users` but not `/admin/users/5`, and `**` on its own is the catch-all.
+Matching is case-sensitive, and a path parameter is matched as the literal `{id}` that the template
+carries, not as a filled value. `method` is the one field that ignores case. Leave a field out to
+match everything — a blank string is rejected at startup, because it would match nothing and
+quietly decide nothing.
+
+A rule reaches further than an attribute but yields to one, so the carve-out still goes on the
+endpoint:
+
+```csharp
+[HttpGet("/admin/health")]
+[McpTool]
+public IActionResult Health() => Ok();
+```
+
+```ts
+@Get("admin/health")
+@McpTool({ name: "admin_health", description: "Reports health." })
+health(): void {}
+```
+
+Order is not part of the meaning. Rules are ranked by how many fields they name — naming a route
+and a method beats naming only one — and two equally specific rules that disagree fail the catalog
+with `ambiguous_selection` instead of one quietly winning. That is why `/admin/**` excluded
+alongside `/admin/health` included is an error rather than a refinement: both name one field, so
+neither is sharper.
+
 ## Opt in a minimal API
 
 Minimal-API endpoints have no class to decorate, so the marker goes on as metadata:
@@ -94,10 +147,14 @@ has its own convention can implement that interface on its own type and sk-mcp w
 
 ## Precedence
 
-Markers apply at three levels — a global default, the container (controller), and the operation
-(method) — and the **most specific one wins**. A method marker beats a controller marker, which
-beats the global default. So `Selection.Default = Include` plus `[McpIgnore]` on a controller plus
-`[McpTool]` on one of its methods publishes exactly that one method.
+Decisions apply at four levels — a global default, the configured rules, the container
+(controller), and the operation (method) — and the **most specific one wins**. A method marker
+beats a controller marker, which beats a rule, which beats the global default. So
+`Selection.Default = Include` plus `[McpIgnore]` on a controller plus `[McpTool]` on one of its
+methods publishes exactly that one method.
+
+Attributes outrank rules because an attribute sits on the endpoint and a rule sits in your
+startup file; the more local declaration is the more specific one.
 
 Two conflicting markers at the _same_ level are an error, not a resolution: the catalog fails with
 `ambiguous_selection` rather than picking one. The normative rules are in

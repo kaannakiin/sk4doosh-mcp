@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "global include; kural /admin altini disari alir, attribute'a dokunulmadan",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "list_orders", "route": "/orders", "method": "GET" },
+      { "id": "list_admin_users", "route": "/admin/users", "method": "GET" }
+    ],
+    "rules": [{ "route": "/admin/**", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["list_orders"] }
+}

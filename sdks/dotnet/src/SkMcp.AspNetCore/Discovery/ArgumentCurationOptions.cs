@@ -66,20 +66,6 @@ internal sealed record CurationRule(
     }
 }
 
-internal static class RouteGlob
-{
-    /// <summary>A <c>*</c> matches within one segment, <c>**</c> across segments.</summary>
-    public static bool Matches(string pattern, string route)
-    {
-        string source = string.Join(".*", pattern.Split("**")
-            .Select(part => string.Join("[^/]*", part.Split('*')
-                .Select(System.Text.RegularExpressions.Regex.Escape))));
-        return System.Text.RegularExpressions.Regex.IsMatch(
-            route, $"^{source}$", System.Text.RegularExpressions.RegexOptions.None,
-            TimeSpan.FromSeconds(1));
-    }
-}
-
 /// <summary>Central curation, for controllers the host cannot decorate and rules that repeat.</summary>
 /// <remarks>
 /// <c>Seal</c> exists because plain "most specific wins" lets a method attribute defeat a tenancy

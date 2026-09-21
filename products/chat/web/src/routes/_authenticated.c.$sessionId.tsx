@@ -4,6 +4,7 @@ import { useSessionDetail } from "@chat/queries/sessions/detail";
 import { Loader } from "@mantine/core";
 import { ClientOnly, createFileRoute, notFound } from "@tanstack/react-router";
 
+import { NotFoundPane } from "~/components/app/NotFound";
 import { ChatSurface } from "~/components/chat/ChatSurface";
 import { useLocale } from "~/core/hooks/use-locale";
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/c/$sessionId")({
     }
   },
   component: ChatRoute,
+  notFoundComponent: NotFoundPane,
 });
 
 /**

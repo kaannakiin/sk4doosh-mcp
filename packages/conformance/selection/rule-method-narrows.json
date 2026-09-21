@@ -1,0 +1,13 @@
+{
+  "kind": "selection",
+  "description": "method boyutu daraltir; yalniz POST disari alinir, ayni route'un GET'i kalir",
+  "input": {
+    "default": "include",
+    "operations": [
+      { "id": "get_report", "route": "/reports/x", "method": "GET" },
+      { "id": "create_report", "route": "/reports/x", "method": "POST" }
+    ],
+    "rules": [{ "route": "/reports/**", "method": "POST", "decision": "exclude" }]
+  },
+  "expected": { "selected": ["get_report"] }
+}

@@ -54,7 +54,8 @@ internal static partial class EndpointCatalog
         Func<string, string?>? containerPrefix = null,
         Func<string, IReadOnlyList<string>?>? containerTags = null,
         Func<string, CatalogSeverity>? severityOf = null,
-        ArgumentCurationOptions? curation = null)
+        ArgumentCurationOptions? curation = null,
+        IReadOnlyList<SelectionRule>? selectionRules = null)
     {
         ArgumentNullException.ThrowIfNull(apiDescriptions);
         severityOf ??= DiagnosticCodes.SeverityOf;
@@ -97,7 +98,9 @@ internal static partial class EndpointCatalog
                 try
                 {
                     include = SelectionResolver.IsSelected(
-                        selectionDefault, ContainerMarker(action), OperationMarker(action, metadata), target);
+                        selectionDefault, ContainerMarker(action), OperationMarker(action, metadata), target,
+                        SelectionResolver.ResolveRules(
+                            selectionRules, route, api.HttpMethod ?? string.Empty, target));
                 }
                 catch (SkMcpCatalogException ex)
                 {
@@ -868,9 +871,15 @@ internal static partial class EndpointCatalog
         return null;
     }
 
-    private static string NormalizeRoute(string? relativePath)
+    // Guard: empty and whitespace-only segments are dropped so that a trailing slash or a doubled
+    // separator cannot reach the route. The TS SDK's normalizeRoute folds them the same way, and a
+    // host's selection rule is matched against this string in both SDKs.
+    internal static string NormalizeRoute(string? relativePath)
     {
-        string route = "/" + (relativePath ?? string.Empty).TrimStart('/');
+        string route = "/" + string.Join("/", (relativePath ?? string.Empty)
+            .Split('/')
+            .Select(segment => segment.Trim())
+            .Where(segment => segment.Length > 0));
         return RoutePlaceholder().Replace(route, m => "{" + m.Groups[1].Value.TrimStart('*') + "}");
     }
 

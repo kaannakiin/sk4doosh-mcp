@@ -95,6 +95,17 @@
     "network": "API'ye ulaşılamadı",
     "dismiss": "Kapat"
   },
+  "notFound": {
+    "code": "404",
+    "address": "İstenen adres",
+    "title": "Bu adreste bir şey yok",
+    "body": "Uygulamada burası yok. Bağlantıyı kontrol et ya da yeni bir sohbet başlat.",
+    "session": {
+      "title": "Bu bir sohbet kimliği değil",
+      "body": "/c/ sonrasındaki adres bir sohbet kimliği olmalı. Bağlantıyı kontrol et ya da yeni bir sohbet başlat."
+    },
+    "start": "Yeni sohbet başlat"
+  },
   "locale": {
     "label": "Dil",
     "en": "English",
