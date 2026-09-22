@@ -1,0 +1,53 @@
+{
+  "name": "@sk-mcp/pdf-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for PDF documents.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "sk-mcp-pdf": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc -p tsconfig.test.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@firecrawl/pdf-inspector": "1.23.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@sk-mcp/file-core": "workspace:^",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/ocr-ollama": "workspace:^",
+    "@sk-mcp/pdf-raster-pdfjs": "workspace:^",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "@vitest/coverage-v8": "3.2.7",
+    "eslint": "10.9.1",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}
