@@ -1,6 +1,6 @@
 # @sk-mcp/file-core
 
-Dosya okuyan, salt-okunur, sandbox'lanmış MCP sunucularının paylaşılan makinesi. `@sk-mcp/excel-mcp` ve `@sk-mcp/xml-mcp` bunun üzerine kuruludur.
+Dosya okuyan, salt-okunur, sandbox'lanmış MCP sunucularının paylaşılan makinesi. `@sk-mcp/excel-mcp`, `@sk-mcp/xml-mcp` ve `@sk-mcp/pdf-mcp` bunun üzerine kuruludur.
 
 Kaynak-agnostik makine (`guard`, yanıt bütçesi, hata zarfı, cursor codec, stdio sunucusu) **`@sk-mcp/mcp-core`'a taşındı**; bu paket onu tüketir, dosyaya özgü katmanı ekler ve tam yüzeyi yeniden ihraç eder.
 

@@ -34,6 +34,7 @@ so parity is a test result rather than a claim.
 | [packages/cores/ooxml-core](packages/cores/ooxml-core)               | Published shared reader for OOXML containers: zip, OPC, relationships, content types                             |
 | [packages/servers/excel-mcp](packages/servers/excel-mcp)             | Standalone published product: an MCP server that reads local Excel workbooks                                     |
 | [packages/servers/xml-mcp](packages/servers/xml-mcp)                 | Standalone published product: an MCP server that reads local XML documents                                       |
+| [packages/servers/pdf-mcp](packages/servers/pdf-mcp)                 | Standalone published product: an MCP server that reads local PDF documents                                       |
 | [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                   |
 | [products/chat/contracts](products/chat/contracts)                   | Shared zod schemas of the chat product, consumed by both its api and its web app                                 |
 | [products/chat/api](products/chat/api)                               | NestJS 12 chat backend, localized (`en`, `tr`)                                                                   |
@@ -43,7 +44,7 @@ so parity is a test result rather than a claim.
 `packages/lab/xml-lab` is an evidence harness with no shipping surface.
 
 The HTTP catalog (`packages/http/core`, both SDKs) and the local-source servers (`packages/cores/mcp-core`,
-`packages/cores/file-core`, `packages/cores/ooxml-core`, `excel-mcp`, `xml-mcp`) are two separate product shapes that share no runtime code path. One is a
+`packages/cores/file-core`, `packages/cores/ooxml-core`, `excel-mcp`, `xml-mcp`, `pdf-mcp`) are two separate product shapes that share no runtime code path. One is a
 library you embed in your backend; the others are servers you run against local files.
 
 `products/chat` is a third line, and it shares only the toolchain: no `packages/*` or `sdks/*`

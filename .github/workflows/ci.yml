@@ -29,12 +29,16 @@ jobs:
         # a dispatched round — which is what a native release is — or when a
         # commit asks for them with [node22].
         node: ${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[node22]')) && fromJSON('[22, 24]') || fromJSON('[24]') }}
+        # pdf: whether the PDF engine publishes a prebuilt binary for this
+        # target. @firecrawl/pdf-inspector ships no darwin-x64 build and its
+        # wasm fallback is unpublished, so @sk-mcp/pdf-mcp is left out of that
+        # leg rather than failing it (docs/pdf-motoru-karari.md).
         target:
-          - { id: linux-x64, os: ubuntu-24.04 }
-          - { id: linux-arm64, os: ubuntu-24.04-arm }
-          - { id: darwin-x64, os: macos-15-intel }
-          - { id: darwin-arm64, os: macos-15 }
-          - { id: win32-x64, os: windows-2022 }
+          - { id: linux-x64, os: ubuntu-24.04, pdf: true }
+          - { id: linux-arm64, os: ubuntu-24.04-arm, pdf: true }
+          - { id: darwin-x64, os: macos-15-intel, pdf: false }
+          - { id: darwin-arm64, os: macos-15, pdf: true }
+          - { id: win32-x64, os: windows-2022, pdf: true }
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -49,8 +53,8 @@ jobs:
           python-version: "3.12"
       - run: pnpm install --frozen-lockfile
       - run: node .github/scripts/prepare-native.mjs
-      - run: pnpm turbo run test check-types --filter=@sk-mcp/file-core-native --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp
-      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp --pack-destination ./local/native-tarballs
+      - run: pnpm turbo run test check-types --filter=@sk-mcp/file-core-native --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp ${{ matrix.target.pdf && '--filter=@sk-mcp/pdf-mcp --filter=@sk-mcp/pdf-raster-pdfjs --filter=@sk-mcp/ocr-ollama' || '' }}
+      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp ${{ matrix.target.pdf && '--filter=@sk-mcp/pdf-mcp --filter=@sk-mcp/pdf-raster-pdfjs --filter=@sk-mcp/ocr-ollama' || '' }} --pack-destination ./local/native-tarballs
       - run: python3 .github/scripts/check-npm-tarballs.py local/native-tarballs
       - run: node .github/scripts/smoke-file-packages.mjs local/native-tarballs
       - uses: actions/upload-artifact@v4
@@ -138,13 +142,13 @@ jobs:
         with:
           name: SkMcp.AspNetCore-nupkg
           path: sdks/dotnet/local/nupkg-feed/*
-      - run: pnpm turbo run build --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp
+      - run: pnpm turbo run build --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp --filter=@sk-mcp/pdf-mcp --filter=@sk-mcp/pdf-raster-pdfjs --filter=@sk-mcp/ocr-ollama
       - uses: actions/download-artifact@v4
         with:
           pattern: native-*
           path: packages/cores/file-core-native/prebuilds/
           merge-multiple: true
-      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp --pack-destination ./local/npm-tarballs
+      - run: pnpm pack --filter=@sk-mcp/file-core-native --filter=@sk-mcp/mcp-core --filter=@sk-mcp/db-core --filter=@sk-mcp/mssql-mcp --filter=@sk-mcp/file-core --filter=@sk-mcp/ooxml-core --filter=@sk-mcp/excel-mcp --filter=@sk-mcp/xml-mcp --filter=@sk-mcp/pdf-mcp --pack-destination ./local/npm-tarballs
       - run: python3 .github/scripts/check-npm-tarballs.py local/npm-tarballs
         env:
           SKMCP_REQUIRE_ALL_PREBUILDS: "1"
