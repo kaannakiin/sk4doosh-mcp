@@ -2,10 +2,11 @@ import type { ErrorFactory } from "@sk-mcp/mcp-core";
 import type { DbErrorCode } from "../errors.js";
 import type { SecretPattern } from "../primitives/redact.js";
 import type {
-  IntrospectionScope,
+  CatalogColumn,
+  CatalogObject,
+  CatalogScope,
   KeyEntry,
   ServerFacts,
-  TableEntry,
   TableRef,
 } from "./catalog.js";
 import type { QuerySpec, QuotedIdentifier } from "./sql.js";
@@ -39,7 +40,14 @@ export interface IntrospectionQuery<T> {
 }
 
 export interface Introspection {
-  tables(scope: IntrospectionScope): IntrospectionQuery<TableEntry>;
+  /**
+   * Guard: both catalogue questions answer in the same object order, because the
+   * snapshot pairs them positionally to find where a cut read stopped. Two
+   * different orders make that boundary unknowable and the index silently
+   * partial in a way no field reports.
+   */
+  catalogObjects(scope: CatalogScope): IntrospectionQuery<CatalogObject>;
+  catalogColumns(scope: CatalogScope): IntrospectionQuery<CatalogColumn>;
   columns(ref: TableRef): IntrospectionQuery<ColumnDescriptor>;
   keys(ref: TableRef): IntrospectionQuery<KeyEntry>;
   server(): IntrospectionQuery<ServerFacts>;

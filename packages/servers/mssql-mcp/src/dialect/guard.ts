@@ -180,7 +180,7 @@ export function readOnlyGuard(sql: string): GuardOutcome {
   if (procedurePrefix.test(masked)) {
     return refuse(
       "The statement names a system procedure.",
-      "Use list_tables and describe_table for catalogue questions.",
+      "Use search_catalog and describe_table for catalogue questions.",
     );
   }
   return { verdict: "allow", statement: sqlText(sql) };

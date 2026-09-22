@@ -73,7 +73,9 @@ export {
   type ValuePolicy,
 } from "./model/value.js";
 export type {
-  IntrospectionScope,
+  CatalogColumn,
+  CatalogObject,
+  CatalogScope,
   KeyEntry,
   KeyKind,
   ObjectKind,
@@ -111,6 +113,38 @@ export {
   type QueryRunnerSpec,
 } from "./query/execute.js";
 export { introspect, introspectOne } from "./catalog/introspect.js";
+export {
+  buildSnapshot,
+  createCatalogCache,
+  type CatalogCache,
+  type CatalogCacheSpec,
+  type CatalogSnapshot,
+  type SnapshotObject,
+} from "./catalog/snapshot.js";
+export { tokenize } from "./search/tokenize.js";
+export { likeMatches } from "./search/pattern.js";
+export {
+  buildIndex,
+  type Expansion,
+  type IndexedColumn,
+  type IndexedDocument,
+  type InvertedIndex,
+  type Posting,
+  type SearchField,
+} from "./search/inverted.js";
+export {
+  rank,
+  type Candidate,
+  type MatchReason,
+  type RankSpec,
+} from "./search/rank.js";
+export {
+  catalogFingerprint,
+  decodeCatalogCursor,
+  encodeCatalogCursor,
+  type CatalogCursor,
+  type CatalogPosition,
+} from "./search/cursor.js";
 export { createDbSource, type DbEnvironment, type DbSource } from "./source.js";
 export {
   toolDefinitions,

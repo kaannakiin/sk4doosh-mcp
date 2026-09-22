@@ -3,7 +3,7 @@ import type { DbVocabulary } from "@sk-mcp/db-core";
 export const vocabulary = {
   serverName: "mssql-mcp",
   subject: "database",
-  listTool: "list_tables",
+  listTool: "search_catalog",
   describeTool: "describe_table",
   queryTool: "run_query",
   engineLabel: "SQL Server",

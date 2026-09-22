@@ -1,16 +1,17 @@
 import {
   columnDescriptor,
   sqlText,
+  type CatalogColumn,
+  type CatalogObject,
+  type CatalogScope,
   type ColumnDescriptor,
   type Introspection,
   type IntrospectionQuery,
-  type IntrospectionScope,
   type KeyEntry,
   type QueryParameter,
   type QuerySpec,
   type RowRecord,
   type ServerFacts,
-  type TableEntry,
   type TableRef,
 } from "@sk-mcp/db-core";
 import { describeType } from "./types.js";
@@ -35,6 +36,11 @@ const text = (row: RowRecord, key: string): string =>
 const list = (row: RowRecord, key: string): readonly string[] => {
   const raw = row[key];
   return typeof raw === "string" && raw.length > 0 ? raw.split("\u001f") : [];
+};
+
+const optional = (row: RowRecord, key: string): string | undefined => {
+  const raw = row[key];
+  return typeof raw === "string" && raw.trim().length > 0 ? raw : undefined;
 };
 
 const number = (row: RowRecord, key: string): number | undefined => {
@@ -75,44 +81,91 @@ export function createIntrospection(
       }),
     }),
 
-    tables: (scope: IntrospectionScope): IntrospectionQuery<TableEntry> => ({
+    catalogObjects: (
+      scope: CatalogScope,
+    ): IntrospectionQuery<CatalogObject> => ({
       spec: spec(
-        `select top (@maxResults)
+        `select top (@maxObjects)
            s.name as [schema],
            o.name as [name],
-           case o.kind when 'V' then 'view' else 'table' end as [kind]
+           case o.kind when 'V' then 'view' else 'table' end as [kind],
+           cast(p.value as nvarchar(4000)) as [description]
          from (
-           select name, schema_id, 'U' as kind from sys.tables
+           select name, schema_id, object_id, 'U' as kind from sys.tables
            union all
-           select name, schema_id, 'V' as kind from sys.views
+           select name, schema_id, object_id, 'V' as kind from sys.views
          ) o
          join sys.schemas s on s.schema_id = o.schema_id
-         where (@schema is null or s.name = @schema)
-           and (@namePattern is null or o.name like @namePattern)
-           and (@includeViews = 1 or o.kind = 'U')
+         left join sys.extended_properties p
+           on p.major_id = o.object_id
+          and p.minor_id = 0
+          and p.class = 1
+          and p.name = 'MS_Description'
          order by s.name, o.name`,
         [
-          { name: "maxResults", value: scope.maxResults, kind: "integer" },
-          { name: "schema", value: scope.schema ?? null, kind: "text" },
           {
-            name: "namePattern",
-            value: scope.namePattern ?? null,
-            kind: "text",
-          },
-          {
-            name: "includeViews",
-            value: scope.includeViews ? 1 : 0,
+            name: "maxObjects",
+            value: scope.maxObjects + 1,
             kind: "integer",
           },
         ],
         timeoutMs,
-        scope.maxResults,
+        scope.maxObjects + 1,
       ),
-      project: (row) => ({
-        schema: text(row, "schema"),
-        name: text(row, "name"),
-        kind: text(row, "kind") === "view" ? "view" : "table",
-      }),
+      project: (row) => {
+        const description = optional(row, "description");
+        return {
+          schema: text(row, "schema"),
+          name: text(row, "name"),
+          kind: text(row, "kind") === "view" ? "view" : "table",
+          ...(description === undefined ? {} : { description }),
+        };
+      },
+    }),
+
+    /**
+     * Guard: the same object order as `catalogObjects`, because the snapshot
+     * pairs the two reads positionally to find where a cut stopped. A different
+     * order makes that boundary unknowable and leaves the index partial in a way
+     * no field can report.
+     */
+    catalogColumns: (
+      scope: CatalogScope,
+    ): IntrospectionQuery<CatalogColumn> => ({
+      spec: spec(
+        `select top (@maxRows)
+           s.name as [schema],
+           o.name as [name],
+           c.name as [column],
+           cast(c.column_id as int) as [ordinal],
+           cast(p.value as nvarchar(4000)) as [description]
+         from (
+           select name, schema_id, object_id from sys.tables
+           union all
+           select name, schema_id, object_id from sys.views
+         ) o
+         join sys.schemas s on s.schema_id = o.schema_id
+         join sys.columns c on c.object_id = o.object_id
+         left join sys.extended_properties p
+           on p.major_id = c.object_id
+          and p.minor_id = c.column_id
+          and p.class = 1
+          and p.name = 'MS_Description'
+         order by s.name, o.name, c.column_id`,
+        [{ name: "maxRows", value: scope.maxRows + 1, kind: "integer" }],
+        timeoutMs,
+        scope.maxRows + 1,
+      ),
+      project: (row) => {
+        const description = optional(row, "description");
+        return {
+          schema: text(row, "schema"),
+          name: text(row, "name"),
+          column: text(row, "column"),
+          ordinal: number(row, "ordinal") ?? 0,
+          ...(description === undefined ? {} : { description }),
+        };
+      },
     }),
 
     columns: (ref: TableRef): IntrospectionQuery<ColumnDescriptor> => ({

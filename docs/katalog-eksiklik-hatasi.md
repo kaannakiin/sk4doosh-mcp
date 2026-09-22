@@ -76,4 +76,4 @@ Son satır kontrol vakası: 52 nesnenin tamamı 200 kapağının altında kaldı
 
 **Cursor / sayfa 2.** İnceleme `nextCursor` önerdi ve gerekçesi doğru — cursor son **gönderilen** nesneden devam etmeli, son okunandan değil, çünkü byte bütçesi 200 yerine 120'de kesebilir. Katalog sorgusunun `order by s.name, o.name`'i deterministik olduğu için keyset cursor burada meşru (planın "cursor yok" kararı `run_query` için doğruydu, katalogu onunla aynı kefeye koymuştu).
 
-Bu faza alınmadı: acil olan, eksik listenin **kendini eksik ilan etmesiydi**. Sayfalama `list_tables`'ın yerini alacak `search_catalog` ile birlikte tasarlanacak, yoksa iki kez yazılır.
+Bu faza alınmadı: acil olan, eksik listenin **kendini eksik ilan etmesiydi**. Sayfalama `list_tables`'ın yerini alacak `search_catalog` ile birlikte tasarlandı — [katalog-arama-tasarimi.md](katalog-arama-tasarimi.md).

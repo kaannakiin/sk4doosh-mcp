@@ -78,45 +78,105 @@ describe.skipIf(!live || config === undefined)(
       expect(JSON.stringify(envelope)).not.toContain(config?.password ?? "");
     });
 
-    it("lists real tables, schema-qualified", async () => {
+    it("pages the real catalogue, schema-qualified", async () => {
       const envelope = body(
         (await client.callTool({
-          name: "list_tables",
+          name: "search_catalog",
           arguments: { maxResults: 5 },
         })) as TextResult,
       );
-      const tables = envelope["tables"] as {
+      const found = envelope["results"] as {
         schema: string;
         name: string;
         kind: string;
       }[];
-      expect(tables.length).toBeGreaterThan(0);
-      expect(tables.length).toBeLessThanOrEqual(5);
-      for (const table of tables) {
-        expect(table.schema.length).toBeGreaterThan(0);
-        expect(["table", "view"]).toContain(table.kind);
+      expect(found.length).toBeGreaterThan(0);
+      expect(found.length).toBeLessThanOrEqual(5);
+      for (const entry of found) {
+        expect(entry.schema.length).toBeGreaterThan(0);
+        expect(["table", "view"]).toContain(entry.kind);
       }
+      const facts = envelope["catalog"] as Record<string, unknown>;
+      expect(typeof facts["indexedObjects"]).toBe("number");
+      expect(typeof facts["indexedAt"]).toBe("string");
+      expect(typeof facts["complete"]).toBe("boolean");
     });
 
     it("filters by schema and by name pattern", async () => {
       const envelope = body(
         (await client.callTool({
-          name: "list_tables",
+          name: "search_catalog",
           arguments: { schema: "dbo", namePattern: "%", maxResults: 3 },
         })) as TextResult,
       );
-      const tables = envelope["tables"] as { schema: string }[];
-      expect(tables.every((table) => table.schema === "dbo")).toBe(true);
+      const found = envelope["results"] as { schema: string }[];
+      expect(found.every((entry) => entry.schema === "dbo")).toBe(true);
+    });
+
+    /**
+     * Guard: the cursor has to resume after the last object actually sent. Two
+     * pages of one must cover two distinct objects, never the same one twice.
+     */
+    it("walks the catalogue a page at a time without repeating an object", async () => {
+      const first = body(
+        (await client.callTool({
+          name: "search_catalog",
+          arguments: { maxResults: 1 },
+        })) as TextResult,
+      );
+      expect(first["truncated"]).toBe(true);
+      const cursor = first["nextCursor"] as string;
+      expect(typeof cursor).toBe("string");
+
+      const second = body(
+        (await client.callTool({
+          name: "search_catalog",
+          arguments: { maxResults: 1, cursor },
+        })) as TextResult,
+      );
+      const name = (page: Record<string, unknown>) =>
+        (page["results"] as { schema: string; name: string }[])
+          .map((entry) => `${entry.schema}.${entry.name}`)
+          .join();
+      expect(name(second)).not.toBe(name(first));
+    });
+
+    it("finds an object by a term its own catalogue carries", async () => {
+      const browsed = body(
+        (await client.callTool({
+          name: "search_catalog",
+          arguments: { maxResults: 1 },
+        })) as TextResult,
+      );
+      const first = (
+        browsed["results"] as { schema: string; name: string }[]
+      )[0];
+      expect(first).toBeDefined();
+      const envelope = body(
+        (await client.callTool({
+          name: "search_catalog",
+          arguments: { query: first?.name ?? "", maxResults: 20 },
+        })) as TextResult,
+      );
+      const found = envelope["results"] as {
+        name: string;
+        score: number;
+        matched: { field: string; term: string; value: string }[];
+      }[];
+      expect(found.length).toBeGreaterThan(0);
+      expect(found[0]?.score).toBeGreaterThan(0);
+      expect(found[0]?.matched.length).toBeGreaterThan(0);
+      expect(found.some((entry) => entry.name === first?.name)).toBe(true);
     });
 
     it("describes a real table's columns and keys", async () => {
       const listed = body(
         (await client.callTool({
-          name: "list_tables",
+          name: "search_catalog",
           arguments: { includeViews: false, maxResults: 50 },
         })) as TextResult,
       );
-      const tables = listed["tables"] as { schema: string; name: string }[];
+      const tables = listed["results"] as { schema: string; name: string }[];
       expect(tables.length).toBeGreaterThan(0);
 
       let described: Record<string, unknown> | undefined;

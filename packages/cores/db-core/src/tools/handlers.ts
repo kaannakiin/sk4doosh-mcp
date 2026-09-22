@@ -1,12 +1,22 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import {
   createPageBudget,
+  fold,
   guard,
   json,
   measureJson,
   type ErrorNormalizer,
 } from "@sk-mcp/mcp-core";
 import { introspect, introspectOne } from "../catalog/introspect.js";
+import type { SnapshotObject } from "../catalog/snapshot.js";
+import { stableHash } from "../primitives/hash.js";
+import {
+  catalogFingerprint,
+  decodeCatalogCursor,
+  encodeCatalogCursor,
+} from "../search/cursor.js";
+import { likeMatches } from "../search/pattern.js";
+import { rank, type MatchReason } from "../search/rank.js";
 import type { KeyEntry } from "../model/catalog.js";
 import type { ColumnDescriptor, JsonScalar } from "../model/value.js";
 import type { QueryResult } from "../model/sql.js";
@@ -159,67 +169,142 @@ export function createHandlers<TConfig>(
       },
     ),
 
-    list_tables: guarded("list_tables", async (args, signal) => {
+    search_catalog: guarded("search_catalog", async (args, signal) => {
+      const snapshot = await source.catalog.read(args.refresh ?? false, signal);
       const maxResults = args.maxResults ?? limits.defaultListResults;
-      const scope = {
-        ...(args.schema === undefined ? {} : { schema: args.schema }),
-        ...(args.namePattern === undefined
-          ? {}
-          : { namePattern: args.namePattern }),
-        includeViews: args.includeViews ?? true,
-        /**
-         * Guard: one row past the page. Asking for exactly `maxResults` makes
-         * the "is there more" test unreachable — the engine returns the cap, the
-         * driver never sees a further row, and a cut listing reports itself
-         * complete. Measured against a 614-object catalogue.
-         */
-        maxResults: maxResults + 1,
-      };
-      const found = await introspect(
-        runner,
-        dialect.introspection.tables(scope),
-        signal,
+      const includeViews = args.includeViews ?? true;
+      const query = args.query?.trim() ?? "";
+      const name = source.profile.display.catalog ?? null;
+
+      const scored: readonly {
+        readonly document: number;
+        readonly score?: number;
+        readonly matched?: readonly MatchReason[];
+      }[] =
+        query.length === 0
+          ? snapshot.objects.map((_, document) => ({ document }))
+          : rank(snapshot.index, query, {
+              maxTerms: limits.maxQueryTerms,
+              maxExpansions: limits.maxExpansions,
+              maxReasons: limits.maxMatchReasons,
+            });
+
+      const keeps = (entry: SnapshotObject): boolean =>
+        (includeViews || entry.kind !== "view") &&
+        (args.schema === undefined ||
+          fold(entry.schema) === fold(args.schema)) &&
+        (args.namePattern === undefined ||
+          likeMatches(args.namePattern, entry.name));
+
+      const matches = scored.filter((candidate) =>
+        keeps(snapshot.objects[candidate.document] as SnapshotObject),
       );
-      const overflowed = found.more || found.rows.length > maxResults;
+
+      const fingerprint = catalogFingerprint(
+        name ?? "",
+        snapshot.digest,
+        stableHash([
+          query,
+          args.schema ?? null,
+          args.namePattern ?? null,
+          includeViews,
+        ]),
+      );
+      const start =
+        args.cursor === undefined
+          ? 0
+          : decodeCatalogCursor(
+              args.cursor,
+              fingerprint,
+              fail,
+              vocabulary.listTool,
+            );
+
+      const facts = {
+        name,
+        indexedObjects: snapshot.objects.length,
+        complete: snapshot.complete,
+        ...(snapshot.coverageEndsAt === undefined
+          ? {}
+          : { coverageEndsAt: snapshot.coverageEndsAt }),
+        indexedAt: new Date(snapshot.indexedAt).toISOString(),
+        ageMs: Math.max(0, Date.now() - snapshot.indexedAt),
+      };
+
+      const coverage = snapshot.complete
+        ? undefined
+        : `The index covers ${snapshot.objects.length} ${vocabulary.objectLabel} names in catalogue order and stops at ${snapshot.coverageEndsAt}; a name after that point is not searchable. Narrow with ${vocabulary.schemaLabel} and search again, or call ${vocabulary.describeTool} directly if you already know the name.`;
+
       const reserveBytes = measureJson({
-        catalog: source.profile.display.catalog ?? null,
-        tables: [],
+        catalog: facts,
+        results: [],
         returnedCount: 0,
         complete: false,
         truncated: true,
         truncationReason: "maxPayloadBytes",
-        hint: vocabulary.tooManyRowsRecovery,
+        nextCursor: encodeCatalogCursor(fingerprint, matches.length),
+        hint: `${coverage ?? ""} Read the next page with nextCursor.`,
       });
       const budget = createPageBudget({
         maxBytes: limits.maxPayloadBytes,
         reserveBytes,
       });
-      const tables = [];
+
+      const results = [];
       let refused = false;
-      for (const entry of found.rows.slice(0, maxResults)) {
-        if (!budget.admit(entry)) {
+      for (const candidate of matches.slice(start, start + maxResults)) {
+        const entry = snapshot.objects[candidate.document] as SnapshotObject;
+        const wire = {
+          schema: entry.schema,
+          name: entry.name,
+          kind: entry.kind,
+          ...(candidate.score === undefined
+            ? {}
+            : { score: Math.round(candidate.score * 1_000) / 1_000 }),
+          ...(entry.description === undefined
+            ? {}
+            : { description: entry.description }),
+          ...(candidate.matched === undefined
+            ? {}
+            : { matched: candidate.matched }),
+        };
+        if (!budget.admit(wire)) {
           refused = true;
           break;
         }
-        tables.push(entry);
+        results.push(wire);
       }
+
+      /**
+       * Guard: the next position counts what was sent, not what was asked for.
+       * The byte budget can stop at 31 of the 50 requested, and a cursor that
+       * resumes at 50 drops the 19 in between with nothing anywhere to say so.
+       */
+      const next = start + results.length;
+      const overflowed = next < matches.length;
       const truncated = refused || overflowed;
+      const hint = [
+        coverage,
+        overflowed ? "Read the next page with nextCursor." : undefined,
+      ]
+        .filter((line) => line !== undefined)
+        .join(" ");
+
       return json({
-        catalog: source.profile.display.catalog ?? null,
-        tables,
-        returnedCount: tables.length,
+        catalog: facts,
+        results,
+        returnedCount: results.length,
         complete: !truncated,
         truncated,
         ...(refused
           ? { truncationReason: "maxPayloadBytes" as const }
-          : truncated
+          : overflowed
             ? { truncationReason: "maxResults" as const }
             : {}),
-        ...(truncated
-          ? {
-              hint: `Narrow the listing with ${vocabulary.schemaLabel} or namePattern.`,
-            }
+        ...(overflowed
+          ? { nextCursor: encodeCatalogCursor(fingerprint, next) }
           : {}),
+        ...(hint.length === 0 ? {} : { hint }),
       });
     }),
 

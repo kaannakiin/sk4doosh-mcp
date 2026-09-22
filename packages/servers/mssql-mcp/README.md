@@ -2,7 +2,7 @@
 
 Microsoft SQL Server okuyan salt-okunur MCP sunucusu. `@sk-mcp/db-core` üzerine kuruludur ve ondan başka hiçbir `@sk-mcp/*` paketi adlandırmaz.
 
-Dört tool: `describe_connection`, `list_tables`, `describe_table`, `run_query`.
+Dört tool: `describe_connection`, `search_catalog`, `describe_table`, `run_query`.
 
 ## Çalıştırma
 

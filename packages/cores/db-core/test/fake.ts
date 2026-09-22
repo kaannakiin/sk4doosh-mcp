@@ -179,12 +179,33 @@ export function createFakeDialect(): Dialect<FakeConfig> {
           principal: String(row["principal"] ?? ""),
         }),
       }),
-      tables: (scope) => ({
-        spec: spec("tables", scope.maxResults),
+      /**
+       * Guard: one past the cap, exactly as a real dialect must. A fake that
+       * asks for the cap itself can never see the row that proves the read was
+       * cut, and the partial-index contract would pass here while failing in
+       * production.
+       */
+      catalogObjects: (scope) => ({
+        spec: spec("catalogObjects", scope.maxObjects + 1),
         project: (row) => ({
           schema: String(row["schema"] ?? ""),
           name: String(row["name"] ?? ""),
           kind: row["kind"] === "view" ? "view" : "table",
+          ...(typeof row["description"] === "string"
+            ? { description: row["description"] }
+            : {}),
+        }),
+      }),
+      catalogColumns: (scope) => ({
+        spec: spec("catalogColumns", scope.maxRows + 1),
+        project: (row) => ({
+          schema: String(row["schema"] ?? ""),
+          name: String(row["name"] ?? ""),
+          column: String(row["column"] ?? ""),
+          ordinal: Number(row["ordinal"] ?? 0),
+          ...(typeof row["description"] === "string"
+            ? { description: row["description"] }
+            : {}),
         }),
       }),
       columns: () => ({

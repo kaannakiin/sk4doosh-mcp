@@ -1,4 +1,5 @@
 import type { ErrorFactory } from "@sk-mcp/mcp-core";
+import { createCatalogCache, type CatalogCache } from "./catalog/snapshot.js";
 import type { DbErrorCode } from "./errors.js";
 import { dbCoreLimits, type DbLimits } from "./limits.js";
 import type {
@@ -29,6 +30,8 @@ export interface DbSource<TConfig> {
   readonly sessionIntent: "read_only" | "none";
   readonly pool: ConnectionPool;
   readonly runner: QueryRunner;
+  /** The catalogue snapshot every search is answered from. */
+  readonly catalog: CatalogCache;
   /** Strips connection secrets from any string bound for a tool response. */
   readonly redact: (detail: string) => string;
   close(): Promise<void>;
@@ -61,6 +64,13 @@ export function createDbSource<TConfig>(
   });
 
   const runner = createQueryRunner({ pool, dialect, driver, limits, fail });
+  const catalog = createCatalogCache({
+    runner,
+    dialect,
+    limits,
+    fail,
+    vocabulary,
+  });
 
   return {
     dialect,
@@ -71,7 +81,11 @@ export function createDbSource<TConfig>(
     sessionIntent: dialect.sessionIntent(config),
     pool,
     runner,
+    catalog,
     redact: (detail) => redactSecrets(detail, patterns),
-    close: () => pool.close(),
+    close: async () => {
+      catalog.clear();
+      await pool.close();
+    },
   };
 }

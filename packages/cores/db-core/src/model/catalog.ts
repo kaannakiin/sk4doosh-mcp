@@ -28,11 +28,19 @@ export interface ServerFacts {
   readonly principal: string;
 }
 
-export interface IntrospectionScope {
-  readonly schema?: string;
-  readonly namePattern?: string;
-  readonly includeViews: boolean;
-  readonly maxResults: number;
+export interface CatalogScope {
+  readonly maxObjects: number;
+  readonly maxRows: number;
+}
+
+export interface CatalogObject extends TableEntry {
+  readonly description?: string;
+}
+
+export interface CatalogColumn extends TableRef {
+  readonly column: string;
+  readonly ordinal: number;
+  readonly description?: string;
 }
 
 export interface TableDescription extends TableRef {

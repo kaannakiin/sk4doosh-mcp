@@ -18,10 +18,11 @@ export const toolDefinitions = {
     inputSchema: z.object({}),
     annotations: readOnly,
   },
-  list_tables: {
+  search_catalog: {
     description:
-      "List the tables and views the connected principal can read, schema-qualified. Start here: the names it returns are the ones describe_table and run_query accept.",
+      "Find the tables and views this connection can read by concept rather than by exact name: the query is matched against schema, object and column names and against whatever descriptions the catalogue carries, and each result says which of them matched. Leave query empty to page through the catalogue instead. Start here \u2014 the names it returns are the ones describe_table and run_query accept.",
     inputSchema: z.object({
+      query: z.string().max(256).optional(),
       schema: identifier.optional(),
       namePattern: z.string().min(1).max(256).optional(),
       includeViews: z.boolean().optional(),
@@ -31,6 +32,8 @@ export const toolDefinitions = {
         .min(1)
         .max(dbCoreLimits.maxListResults)
         .optional(),
+      cursor: z.string().min(1).max(16_384).optional(),
+      refresh: z.boolean().optional(),
     }),
     annotations: readOnly,
   },

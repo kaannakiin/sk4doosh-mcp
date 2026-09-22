@@ -7,6 +7,7 @@ import {
   createDbSource,
   dbCoreLimits,
   toolNames,
+  type DbLimits,
   type DbVocabulary,
   type QuerySpec,
 } from "../src/index.js";
@@ -23,7 +24,7 @@ import {
 const vocabulary: DbVocabulary<string> = {
   serverName: "probe-db",
   subject: "database",
-  listTool: "list_tables",
+  listTool: "search_catalog",
   describeTool: "describe_table",
   queryTool: "run_query",
   engineLabel: "Probe SQL",
@@ -56,11 +57,30 @@ const catalogRows: Record<string, Script> = {
     [column("engineVersion", 0), column("catalog", 1), column("principal", 2)],
     [["Probe 1.0", "Sales", "mcp_reader"]],
   ),
-  tables: rows(
-    [column("schema", 0), column("name", 1), column("kind", 2)],
+  catalogObjects: rows(
     [
-      ["dbo", "Orders", "table"],
-      ["dbo", "OrderView", "view"],
+      column("schema", 0),
+      column("name", 1),
+      column("kind", 2),
+      column("description", 3),
+    ],
+    [
+      ["dbo", "Orders", "table", "Sipariş başlıkları"],
+      ["dbo", "OrderView", "view", null],
+    ],
+  ),
+  catalogColumns: rows(
+    [
+      column("schema", 0),
+      column("name", 1),
+      column("column", 2),
+      column("ordinal", 3),
+      column("description", 4),
+    ],
+    [
+      ["dbo", "Orders", "Id", 0, null],
+      ["dbo", "Orders", "CustomerNote", 1, null],
+      ["dbo", "OrderView", "Id", 0, null],
     ],
   ),
   columns: rows(
@@ -81,10 +101,15 @@ const catalogRows: Record<string, Script> = {
   ),
 };
 
-function build(respond: (spec: QuerySpec) => Script) {
+function build(respond: (spec: QuerySpec) => Script, limits?: DbLimits) {
   const driver = createFakeDriver({ respond });
   const source = createDbSource(
-    { dialect: createFakeDialect(), vocabulary, fail },
+    {
+      dialect: createFakeDialect(),
+      vocabulary,
+      fail,
+      ...(limits === undefined ? {} : { limits }),
+    },
     {
       alias: "sales",
       secret: connectionSecret(config),
@@ -97,8 +122,11 @@ function build(respond: (spec: QuerySpec) => Script) {
 
 let client: Client;
 
-async function connect(respond: (spec: QuerySpec) => Script): Promise<void> {
-  const { source } = build(respond);
+async function connect(
+  respond: (spec: QuerySpec) => Script,
+  limits?: DbLimits,
+): Promise<void> {
+  const { source } = build(respond, limits);
   const server = createDbMcpServer(
     { name: "probe-db", version: "9.9.9" },
     source,
@@ -113,8 +141,22 @@ async function connect(respond: (spec: QuerySpec) => Script): Promise<void> {
   ]);
 }
 
-const catalogOnly = (spec: QuerySpec): Script =>
-  catalogRows[spec.sql] ?? rows([column("a", 0)], [["x"]]);
+let moved = false;
+
+const catalogOnly = (spec: QuerySpec): Script => {
+  if (moved && spec.sql === "catalogObjects") {
+    return rows(
+      [
+        column("schema", 0),
+        column("name", 1),
+        column("kind", 2),
+        column("description", 3),
+      ],
+      [["dbo", "Invoices", "table", null]],
+    );
+  }
+  return catalogRows[spec.sql] ?? rows([column("a", 0)], [["x"]]);
+};
 
 describe("the tool catalogue", () => {
   beforeEach(async () => {
@@ -127,6 +169,17 @@ describe("the tool catalogue", () => {
       [...toolNames].sort(),
     );
     expect(listed).toHaveLength(4);
+  });
+
+  /**
+   * Guard: named, not derived. Comparing the catalogue against `toolNames` is
+   * true whatever the names are, so a rename would pass it in silence — and the
+   * whole point of this change is that one tool went away and another arrived.
+   */
+  it("serves search_catalog and no longer serves the listing it replaced", async () => {
+    const names = (await client.listTools()).tools.map((tool) => tool.name);
+    expect(names).toContain("search_catalog");
+    expect(names).not.toContain("list_tables");
   });
 
   it("carries the read-only annotations over the wire", async () => {
@@ -172,51 +225,219 @@ describe("describe_connection", () => {
   });
 });
 
-describe("list_tables and describe_table", () => {
+describe("search_catalog and describe_table", () => {
   beforeEach(async () => {
+    moved = false;
     await connect(catalogOnly);
   });
 
-  it("returns schema-qualified entries", async () => {
-    const result = (await client.callTool({
-      name: "list_tables",
-      arguments: {},
-    })) as TextResult;
-    expect(body(result)["tables"]).toEqual([
-      { schema: "dbo", name: "Orders", kind: "table" },
+  const search = async (args: Record<string, unknown>) =>
+    body(
+      (await client.callTool({
+        name: "search_catalog",
+        arguments: args,
+      })) as TextResult,
+    );
+
+  it("pages the whole catalogue when the query is empty", async () => {
+    const envelope = await search({});
+    expect(envelope["results"]).toEqual([
+      {
+        schema: "dbo",
+        name: "Orders",
+        kind: "table",
+        description: "Sipariş başlıkları",
+      },
       { schema: "dbo", name: "OrderView", kind: "view" },
     ]);
-    expect(body(result)["complete"]).toBe(true);
+    expect(envelope["complete"]).toBe(true);
+    expect(envelope["nextCursor"]).toBeUndefined();
+  });
+
+  it("reports a whole index as complete, with no coverage hint", async () => {
+    const facts = (await search({}))["catalog"] as Record<string, unknown>;
+    expect(facts["complete"]).toBe(true);
+    expect(facts["indexedObjects"]).toBe(2);
+    expect(facts["coverageEndsAt"]).toBeUndefined();
+    expect(typeof facts["indexedAt"]).toBe("string");
+  });
+
+  it("keeps the filters the listing it replaces carried", async () => {
+    expect((await search({ includeViews: false }))["returnedCount"]).toBe(1);
+    expect((await search({ namePattern: "Order_View" }))["returnedCount"]).toBe(
+      0,
+    );
+    expect((await search({ namePattern: "Order____" }))["returnedCount"]).toBe(
+      1,
+    );
+    expect((await search({ namePattern: "Order%" }))["returnedCount"]).toBe(2);
+    expect((await search({ schema: "nosuch" }))["returnedCount"]).toBe(0);
+  });
+
+  it("finds an object through a column name it never showed before", async () => {
+    const envelope = await search({ query: "customer note" });
+    const first = (envelope["results"] as Record<string, unknown>[])[0];
+    expect(first?.["name"]).toBe("Orders");
+    expect(first?.["matched"]).toContainEqual({
+      field: "column",
+      term: "customernote",
+      value: "CustomerNote",
+    });
+  });
+
+  it("finds an object through its description, folded", async () => {
+    const envelope = await search({ query: "SIPARIS" });
+    expect((envelope["results"] as unknown[]).length).toBe(1);
   });
 
   /**
-   * Guard: the engine cuts the listing before db-core ever counts it, so this
-   * has to be driven through a dialect that honours `scope.maxResults` and a
-   * driver that honours `spec.maxRows`. A fake that returns every scripted row
-   * passes this test while production answers `complete: true` for a catalogue
-   * it showed one row of.
+   * Guard: the cursor resumes after the last object actually sent. A cursor
+   * built from the requested page size drops whatever the byte budget refused,
+   * and nothing in the envelope would say a row went missing.
    */
-  it("marks the page truncated when the engine cut the listing at maxResults", async () => {
-    const result = (await client.callTool({
-      name: "list_tables",
-      arguments: { maxResults: 1 },
-    })) as TextResult;
-    const envelope = body(result);
-    expect(envelope["returnedCount"]).toBe(1);
-    expect(envelope["complete"]).toBe(false);
-    expect(envelope["truncated"]).toBe(true);
-    expect(envelope["truncationReason"]).toBe("maxResults");
+  it("walks the pages without repeating or skipping an object", async () => {
+    const first = await search({ maxResults: 1 });
+    expect(first["returnedCount"]).toBe(1);
+    expect(first["truncated"]).toBe(true);
+    expect(first["truncationReason"]).toBe("maxResults");
+
+    const second = await search({
+      maxResults: 1,
+      cursor: first["nextCursor"] as string,
+    });
+    expect(second["complete"]).toBe(true);
+    expect(second["nextCursor"]).toBeUndefined();
+
+    const names = [
+      ...(first["results"] as Record<string, unknown>[]),
+      ...(second["results"] as Record<string, unknown>[]),
+    ].map((entry) => entry["name"]);
+    expect(names).toEqual(["Orders", "OrderView"]);
   });
 
-  it("reads one past the page, so a listing that exactly fills it is complete", async () => {
-    const result = (await client.callTool({
-      name: "list_tables",
-      arguments: { maxResults: 2 },
-    })) as TextResult;
-    const envelope = body(result);
-    expect(envelope["returnedCount"]).toBe(2);
-    expect(envelope["complete"]).toBe(true);
-    expect(envelope["truncated"]).toBe(false);
+  it("refuses a cursor that is not one it issued", async () => {
+    const envelope = await search({ cursor: "not-a-cursor" });
+    expect(envelope["error"]).toBe("invalid_cursor");
+  });
+
+  it("refuses a cursor issued against a different question", async () => {
+    const first = await search({ maxResults: 1 });
+    const envelope = await search({
+      maxResults: 1,
+      query: "orders",
+      cursor: first["nextCursor"] as string,
+    });
+    expect(envelope["error"]).toBe("stale_cursor");
+  });
+
+  /**
+   * Guard: a cursor points into a list that no longer exists once the catalogue
+   * was read again. Resuming at position 1 of a different catalogue returns a
+   * neighbouring object as though it were the next page.
+   */
+  it("refuses a cursor issued before the catalogue was read again", async () => {
+    const first = await search({ maxResults: 1 });
+    moved = true;
+    const envelope = await search({
+      maxResults: 1,
+      refresh: true,
+      cursor: first["nextCursor"] as string,
+    });
+    expect(envelope["error"]).toBe("stale_cursor");
+  });
+
+  it("says nothing was found without claiming the catalogue is empty", async () => {
+    const envelope = await search({ query: "zzzznosuchterm" });
+    expect(envelope["results"]).toEqual([]);
+    expect((envelope["catalog"] as Record<string, unknown>)["complete"]).toBe(
+      true,
+    );
+    expect(envelope["hint"]).toBeUndefined();
+  });
+});
+
+/**
+ * Guard: a partial index is the dangerous shape, not the truncated page. A cut
+ * listing still looks partial; an empty search result reads as "it does not
+ * exist". These tests pin the difference.
+ */
+describe("a catalogue the index could not read whole", () => {
+  const partial: Record<string, Script> = {
+    server: catalogRows["server"] as Script,
+    catalogObjects: rows(
+      [column("schema", 0), column("name", 1), column("kind", 2)],
+      [
+        ["dbo", "AInvoices", "table"],
+        ["dbo", "BLedger", "table"],
+        ["dbo", "CVendors", "table"],
+      ],
+    ),
+    catalogColumns: rows(
+      [
+        column("schema", 0),
+        column("name", 1),
+        column("column", 2),
+        column("ordinal", 3),
+      ],
+      [
+        ["dbo", "AInvoices", "InvoiceNo", 0],
+        ["dbo", "BLedger", "LedgerNo", 0],
+        ["dbo", "BLedger", "Amount", 1],
+        ["dbo", "CVendors", "VendorName", 0],
+      ],
+    ),
+  };
+
+  beforeEach(async () => {
+    await connect(
+      (spec) => partial[spec.sql] ?? rows([column("a", 0)], [["x"]]),
+      { ...dbCoreLimits, maxIndexRows: 3 },
+    );
+  });
+
+  const search = async (args: Record<string, unknown>) =>
+    body(
+      (await client.callTool({
+        name: "search_catalog",
+        arguments: args,
+      })) as TextResult,
+    );
+
+  it("drops the object whose columns the read cut, rather than half-indexing it", async () => {
+    const facts = (await search({}))["catalog"] as Record<string, unknown>;
+    expect(facts["complete"]).toBe(false);
+    expect(facts["indexedObjects"]).toBe(1);
+    expect(facts["coverageEndsAt"]).toBe("dbo.AInvoices");
+  });
+
+  it("keeps the object it did read whole", async () => {
+    const envelope = await search({ query: "invoiceno" });
+    expect((envelope["results"] as unknown[]).length).toBe(1);
+  });
+
+  it("does not let an unread name read as a name that does not exist", async () => {
+    const envelope = await search({ query: "vendorname" });
+    expect(envelope["results"]).toEqual([]);
+    expect((envelope["catalog"] as Record<string, unknown>)["complete"]).toBe(
+      false,
+    );
+    expect(String(envelope["hint"])).toContain("dbo.AInvoices");
+  });
+
+  /**
+   * Guard: a column of an object inside the boundary but read past the cut must
+   * not be searchable either. Half an object is what makes the agent see one
+   * world in one query and a different one in the next.
+   */
+  it("indexes no column of the object it dropped", async () => {
+    expect((await search({ query: "amount" }))["results"]).toEqual([]);
+    expect((await search({ query: "ledgerno" }))["results"]).toEqual([]);
+  });
+});
+
+describe("describe_table", () => {
+  beforeEach(async () => {
+    await connect(catalogOnly);
   });
 
   it("returns columns and the primary key", async () => {
@@ -316,7 +537,7 @@ describe("list_tables and describe_table", () => {
     expect(result.isError).toBe(true);
     const envelope = body(result);
     expect(envelope["error"]).toBe("object_not_found");
-    expect(String(envelope["recovery"])).toContain("list_tables");
+    expect(String(envelope["recovery"])).toContain("search_catalog");
   });
 });
 

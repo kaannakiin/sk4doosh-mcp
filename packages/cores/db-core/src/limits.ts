@@ -9,6 +9,13 @@ export const dbCoreLimits = {
   maxTextChars: 4_096,
   maxBinaryBytes: 4_096,
   maxListResults: 200,
+  maxIndexObjects: 5_000,
+  maxIndexRows: 50_000,
+  maxDescriptionChars: 160,
+  catalogIndexTtlMs: 15 * 60_000,
+  maxQueryTerms: 16,
+  maxExpansions: 32,
+  maxMatchReasons: 8,
   defaultListResults: 50,
   queryTimeoutMs: 30_000,
   maxConnections: 4,
@@ -23,4 +30,10 @@ export const dbCoreLimits = {
   cancelSettleMs: 5_000,
 } as const;
 
-export type DbLimits = typeof dbCoreLimits;
+/**
+ * Guard: widened to `number`, not `typeof dbCoreLimits`. The literal type made
+ * every field assignable only to the value it already had, so a product could
+ * name an override but never actually change one — and a test could not narrow
+ * a limit to reach the path that limit guards.
+ */
+export type DbLimits = Readonly<Record<keyof typeof dbCoreLimits, number>>;

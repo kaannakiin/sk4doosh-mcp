@@ -41,9 +41,10 @@ const byCode: Readonly<Record<string, DbErrorCode>> = {
 };
 
 const recoveries: Partial<Record<DbErrorCode, string>> = {
-  object_not_found: "Call list_tables for the names this connection can read.",
+  object_not_found:
+    "Call search_catalog for the names this connection can read.",
   permission_denied:
-    "The connected principal cannot read that object; ask for one list_tables returns.",
+    "The connected principal cannot read that object; ask for one search_catalog returns.",
   deadlock: "The call was chosen as a deadlock victim; retrying may succeed.",
   invalid_argument: "Correct the statement and call again.",
   authentication_failed:
