@@ -28,4 +28,5 @@ export const limits = {
   maxOcrMs: 120_000,
   maxConcurrentOcr: 1,
   ocrCacheEntries: 256,
+  settleQuarantineMs: 5 * 60 * 1000,
 } as const;

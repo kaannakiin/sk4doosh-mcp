@@ -54,8 +54,10 @@ export function createPdfMcpServer(
   root: DocumentRoot,
   options: PdfMcpServerOptions = {},
 ): McpServer {
-  requireCacheSize(options.documentCacheSize);
-  const store = createPdfDocumentStore(root.real);
+  const store = createPdfDocumentStore(
+    root.real,
+    requireCacheSize(options.documentCacheSize),
+  );
   const server = createFileSourceServer(
     { name: "sk-mcp-pdf", version: manifest.version },
     toolDefinitions,

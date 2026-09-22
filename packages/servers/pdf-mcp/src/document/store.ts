@@ -10,6 +10,7 @@ import {
 } from "@sk-mcp/file-core";
 import type { DocumentRoot } from "../platform/paths.js";
 import { classify, extractAll } from "../engine/inspector.js";
+import { assertWithinPageBudget } from "../engine/pages.js";
 import { SkMcpPdfError, fail } from "../platform/errors.js";
 import { limits, modePolicy } from "../platform/limits.js";
 import { vocabulary } from "../platform/vocabulary.js";
@@ -21,36 +22,6 @@ export interface PdfDocumentStore {
   load(path: SandboxedPath): Promise<LoadedPdf>;
   clear(): void;
   readonly size: number;
-}
-
-/**
- * Guard: the native extraction runs on the libuv pool and cannot be interrupted
- * once it has started, so this deadline refuses the request while the work keeps
- * running to completion. It bounds what an agent waits for, not what the process
- * spends — the concurrency gate is what bounds the latter.
- */
-async function withDeadline<T>(
-  run: () => Promise<T>,
-  subject: string,
-): Promise<T> {
-  let timer: NodeJS.Timeout | undefined;
-  const expiry = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      reject(
-        new SkMcpPdfError(
-          "resource_limit",
-          `Reading '${subject}' exceeded the ${String(limits.maxExtractMs)} ms extraction budget.`,
-          "Read a smaller document; the work already started is not cancelled.",
-        ),
-      );
-    }, limits.maxExtractMs);
-    timer.unref();
-  });
-  try {
-    return await Promise.race([run(), expiry]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
 }
 
 async function bytesOf(context: ParseContext): Promise<Buffer> {
@@ -87,12 +58,15 @@ export async function readDocumentBytes(
   return snapshot.bytes;
 }
 
-export function createPdfDocumentStore(root?: string): PdfDocumentStore {
+export function createPdfDocumentStore(
+  root?: string,
+  maxEntries: number = limits.documentCacheSize,
+): PdfDocumentStore {
   const store: DocumentStore<PdfBody, undefined> = createDocumentStore<
     PdfBody,
     undefined
   >({
-    maxEntries: limits.documentCacheSize,
+    maxEntries,
     maxBytes: limits.maxPdfBytes,
     mode: modePolicy,
     ...(root === undefined ? {} : { root }),
@@ -104,14 +78,18 @@ export function createPdfDocumentStore(root?: string): PdfDocumentStore {
      * the same bytes and a second cache entry for no gain.
      */
     variantKey: () => "",
+    /**
+     * Guard: no deadline here. The caller owns it, because only the caller can
+     * hold the concurrency slot until this promise settles — a race inside the
+     * store would hide the still-running work behind an early rejection.
+     */
     parse: async (context) => {
       const bytes = await bytesOf(context);
       const subject = context.displayPath;
-      return withDeadline(async () => {
-        const classification = await classify(bytes, subject);
-        const extraction = await extractAll(bytes, subject);
-        return bodyOf(classification, extraction);
-      }, subject);
+      const classification = await classify(bytes, subject);
+      assertWithinPageBudget(classification.pageCount, subject);
+      const extraction = await extractAll(bytes, subject);
+      return bodyOf(classification, extraction);
     },
   });
   return {
