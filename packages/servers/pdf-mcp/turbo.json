@@ -1,14 +1,8 @@
 {
-  "extends": [
-    "//"
-  ],
+  "extends": ["//"],
   "tasks": {
     "build": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "!test/**",
-        "!vitest.config.ts"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
       "passThroughEnv": [
         "SKMCP_PDF_OCR_URL",
         "SKMCP_PDF_OCR_MODEL",
@@ -17,9 +11,7 @@
       ]
     },
     "test": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "passThroughEnv": [
         "SKMCP_PDF_OCR_URL",
         "SKMCP_PDF_OCR_MODEL",
@@ -28,12 +20,8 @@
       ]
     },
     "test:coverage": {
-      "dependsOn": [
-        "build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"]
     }
   }
 }

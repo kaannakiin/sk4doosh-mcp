@@ -3,8 +3,7 @@ import {
   extractPagesMarkdownAsync,
 } from "@firecrawl/pdf-inspector";
 import { SkMcpPdfError } from "../platform/errors.js";
-import { limits } from "../platform/limits.js";
-import { toOneBased } from "./pages.js";
+import { assertWithinPageBudget, toOneBased } from "./pages.js";
 
 export type DocumentType = "text_based" | "scanned" | "image_based" | "mixed";
 
@@ -101,12 +100,12 @@ export async function extractAll(
     needsOcr: page.needsOcr,
     ...(page.ocrReason === undefined ? {} : { ocrReason: page.ocrReason }),
   }));
-  if (pages.length > limits.maxPages) {
-    throw new SkMcpPdfError(
-      "resource_limit",
-      `'${subject}' has ${String(pages.length)} pages; this server reads at most ${String(limits.maxPages)}.`,
-    );
-  }
+  /**
+   * Guard: the budget is enforced on the classifier's count before this call
+   * runs. Repeating it here catches the two APIs disagreeing about how many
+   * pages the document has, which no caller could otherwise detect.
+   */
+  assertWithinPageBudget(pages.length, subject);
   return {
     pageCount: pages.length,
     pages,

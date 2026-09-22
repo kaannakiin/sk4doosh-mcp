@@ -56,3 +56,25 @@ export function assertSelectablePages(
     }
   }
 }
+
+/**
+ * Refuses a document with more pages than this server reads.
+ *
+ * Guard: called on the classifier's page count, which costs about a millisecond,
+ * so a document that cannot be answered is refused before the extraction that
+ * would produce every page of it. The same ceiling is re-checked against the
+ * extracted pages, where it becomes a consistency check between the two APIs
+ * rather than a budget.
+ */
+export function assertWithinPageBudget(
+  pageCount: number,
+  subject: string,
+): void {
+  if (pageCount > limits.maxPages) {
+    throw new SkMcpPdfError(
+      "resource_limit",
+      `'${subject}' has ${String(pageCount)} pages; this server reads at most ${String(limits.maxPages)}.`,
+      "Split the document, or read a smaller one.",
+    );
+  }
+}

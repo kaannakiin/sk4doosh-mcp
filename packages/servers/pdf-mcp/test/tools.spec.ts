@@ -3,6 +3,11 @@ import { limits } from "../src/platform/limits.js";
 import { toolNames } from "../src/tools/definitions.js";
 import type { ToolHandlers } from "../src/tools/definitions.js";
 import { bodyOf, bytesOf, codeOf, createHarness } from "./fixtures/harness.js";
+import { createPdfDocumentStore } from "../src/document/store.js";
+import {
+  createDocumentRoot,
+  resolveDocumentPath,
+} from "../src/platform/paths.js";
 
 let handlers: ToolHandlers;
 
@@ -189,5 +194,29 @@ describe("payload budget", () => {
     for (const result of results) {
       expect(bytesOf(result)).toBeLessThanOrEqual(limits.maxPayloadBytes);
     }
+  });
+});
+
+describe("document cache capacity", () => {
+  /**
+   * The failure this guards: the server validated documentCacheSize and then
+   * dropped the result on the floor, so a configured capacity never reached the
+   * store and every deployment ran on the default.
+   */
+  it("honours the configured capacity instead of the default", async () => {
+    const root = await createDocumentRoot(inject("fixtures").root);
+    const store = createPdfDocumentStore(root.real, 1);
+    await store.load(await resolveDocumentPath(root, "text.pdf"));
+    expect(store.size).toBe(1);
+    await store.load(await resolveDocumentPath(root, "mixed.pdf"));
+    expect(store.size).toBe(1);
+  });
+
+  it("keeps both documents when the capacity allows it", async () => {
+    const root = await createDocumentRoot(inject("fixtures").root);
+    const store = createPdfDocumentStore(root.real, 4);
+    await store.load(await resolveDocumentPath(root, "text.pdf"));
+    await store.load(await resolveDocumentPath(root, "mixed.pdf"));
+    expect(store.size).toBe(2);
   });
 });

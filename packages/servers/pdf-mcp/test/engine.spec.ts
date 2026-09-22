@@ -2,7 +2,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, inject, it } from "vitest";
 import { classify, extractAll } from "../src/engine/inspector.js";
-import { assertSelectablePages } from "../src/engine/pages.js";
+import {
+  assertSelectablePages,
+  assertWithinPageBudget,
+} from "../src/engine/pages.js";
+import { limits } from "../src/platform/limits.js";
 import { SkMcpPdfError } from "../src/platform/errors.js";
 import { pdfWithPages, textPdf } from "./fixtures/pdf.js";
 
@@ -131,5 +135,30 @@ describe("document shape", () => {
     expect(extracted.pages).toHaveLength(1);
     expect(extracted.pages[0]?.needsOcr).toBe(true);
     expect(extracted.pages[0]?.page).toBe(1);
+  });
+});
+
+describe("page budget", () => {
+  /**
+   * Enforced on the classifier's count, which is roughly a millisecond, so a
+   * document that cannot be answered is refused before the extraction that
+   * would materialise every page of it.
+   */
+  it("refuses a document with more pages than the server reads", () => {
+    expect(() => {
+      assertWithinPageBudget(limits.maxPages + 1, "huge.pdf");
+    }).toThrow(SkMcpPdfError);
+  });
+
+  it("admits a document at the ceiling", () => {
+    expect(() => {
+      assertWithinPageBudget(limits.maxPages, "big.pdf");
+    }).not.toThrow();
+  });
+
+  it("names the count and the ceiling so the caller can act", () => {
+    expect(() => {
+      assertWithinPageBudget(5000, "huge.pdf");
+    }).toThrow(/5000 pages.*at most 2000/);
   });
 });

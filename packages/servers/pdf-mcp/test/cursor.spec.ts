@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import type { ToolHandlers } from "../src/tools/definitions.js";
 import { bodyOf, codeOf, createHarness } from "./fixtures/harness.js";
+import { createDocumentRoot } from "../src/platform/paths.js";
+import { createHandlers } from "../src/tools/handlers.js";
 import { textPdf } from "./fixtures/pdf.js";
 
 let handlers: ToolHandlers;
@@ -80,5 +82,47 @@ describe("oversized content", () => {
       expect(body["truncated"]).toBe(true);
       expect(body["truncationReason"]).toBe("maxPayloadBytes");
     }
+  });
+});
+
+describe("a page larger than one response", () => {
+  /**
+   * The failure this guards: a page that does not fit was clamped and the cursor
+   * then advanced to the *next* page, so the clipped tail was unreachable by any
+   * call. Re-requesting the page returned the same prefix forever.
+   */
+  it("hands back every part of the page across continuations", async () => {
+    const root = await createDocumentRoot(inject("fixtures").root);
+    const whole = (
+      bodyOf(
+        await createHandlers(root).read_pages({
+          filePath: "long.pdf",
+          pages: [1],
+        }),
+      )["pages"] as { markdown: string }[]
+    )[0]?.markdown;
+    expect(whole?.length).toBeGreaterThan(400);
+
+    const handlers = createHandlers(root, { maxPayloadBytes: 800 });
+    const parts: string[] = [];
+    let cursor: string | undefined;
+    for (let round = 0; round < 40; round += 1) {
+      const body = bodyOf(
+        await handlers.read_pages({
+          filePath: "long.pdf",
+          maxPages: 1,
+          ...(cursor === undefined ? {} : { cursor }),
+        }),
+      );
+      const pages = body["pages"] as { page: number; markdown: string }[];
+      const first = pages[0];
+      if (first === undefined || first.page !== 1) break;
+      parts.push(first.markdown);
+      const next = body["nextCursor"];
+      if (next === undefined) break;
+      cursor = String(next);
+    }
+    expect(parts.length).toBeGreaterThan(1);
+    expect(parts.join("")).toBe(whole);
   });
 });

@@ -20,6 +20,12 @@ interface Bound {
 interface ReadPosition extends Bound {
   readonly t: "read";
   readonly p: number;
+  /**
+   * Characters of page `p` already delivered. Present only when a page did not
+   * fit one response: without it the clipped tail would be unreachable, since
+   * re-requesting the page returns the same prefix.
+   */
+  readonly c?: number;
 }
 
 interface FindPosition extends Bound {
@@ -53,7 +59,9 @@ function isOrdinal(value: unknown, minimum: number): boolean {
 const shapes: {
   readonly [K in CursorTool]: (value: Record<string, unknown>) => boolean;
 } = {
-  read: (value) => isOrdinal(value["p"], 1),
+  read: (value) =>
+    isOrdinal(value["p"], 1) &&
+    (value["c"] === undefined || isOrdinal(value["c"], 0)),
   find: (value) => isOrdinal(value["p"], 1) && isOrdinal(value["i"], 0),
 };
 
