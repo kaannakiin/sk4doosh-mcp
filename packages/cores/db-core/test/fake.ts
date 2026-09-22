@@ -7,7 +7,12 @@ import type {
   QuerySpec,
   RunningQuery,
 } from "../src/index.js";
-import { DbSourceError, quotedIdentifier, sqlText } from "../src/index.js";
+import {
+  DbSourceError,
+  dbCoreLimits,
+  quotedIdentifier,
+  sqlText,
+} from "../src/index.js";
 import type { ErrorFactory } from "@sk-mcp/mcp-core";
 import type { DbErrorCode } from "../src/errors.js";
 
@@ -97,10 +102,15 @@ export function createFakeDriver(options: FakeDriverOptions): FakeDriver {
             };
           }
           if (script.kind === "rows") {
+            /**
+             * Guard: the fake stops at `spec.maxRows` and says it did, because a
+             * fake more permissive than any real driver makes a truncation test
+             * pass while production reports a cut listing as complete.
+             */
             const result: QueryResult = {
               columns: script.columns,
-              rows: script.rows,
-              more: script.more ?? false,
+              rows: script.rows.slice(0, spec.maxRows),
+              more: (script.more ?? false) || script.rows.length > spec.maxRows,
             };
             return {
               settled: Promise.resolve(result),
@@ -132,11 +142,11 @@ export function createFakeDriver(options: FakeDriverOptions): FakeDriver {
   return { adapter, stats };
 }
 
-const spec = (text: string): QuerySpec => ({
+const spec = (text: string, maxRows: number): QuerySpec => ({
   sql: sqlText(text),
   parameters: [],
   timeoutMs: 1_000,
-  maxRows: 100,
+  maxRows,
 });
 
 export function createFakeDialect(): Dialect<FakeConfig> {
@@ -162,15 +172,15 @@ export function createFakeDialect(): Dialect<FakeConfig> {
     }),
     introspection: {
       server: () => ({
-        spec: spec("server"),
+        spec: spec("server", 1),
         project: (row) => ({
           engineVersion: String(row["engineVersion"] ?? ""),
           catalog: String(row["catalog"] ?? ""),
           principal: String(row["principal"] ?? ""),
         }),
       }),
-      tables: () => ({
-        spec: spec("tables"),
+      tables: (scope) => ({
+        spec: spec("tables", scope.maxResults),
         project: (row) => ({
           schema: String(row["schema"] ?? ""),
           name: String(row["name"] ?? ""),
@@ -178,7 +188,7 @@ export function createFakeDialect(): Dialect<FakeConfig> {
         }),
       }),
       columns: () => ({
-        spec: spec("columns"),
+        spec: spec("columns", dbCoreLimits.maxColumns + 1),
         project: (row) => ({
           name: String(row["name"] ?? ""),
           ordinal: Number(row["ordinal"] ?? 0),
@@ -188,7 +198,7 @@ export function createFakeDialect(): Dialect<FakeConfig> {
         }),
       }),
       keys: () => ({
-        spec: spec("keys"),
+        spec: spec("keys", dbCoreLimits.maxKeys + 1),
         project: (row) => ({
           name: String(row["name"] ?? ""),
           kind:

@@ -167,13 +167,20 @@ export function createHandlers<TConfig>(
           ? {}
           : { namePattern: args.namePattern }),
         includeViews: args.includeViews ?? true,
-        maxResults,
+        /**
+         * Guard: one row past the page. Asking for exactly `maxResults` makes
+         * the "is there more" test unreachable — the engine returns the cap, the
+         * driver never sees a further row, and a cut listing reports itself
+         * complete. Measured against a 614-object catalogue.
+         */
+        maxResults: maxResults + 1,
       };
       const found = await introspect(
         runner,
         dialect.introspection.tables(scope),
         signal,
       );
+      const overflowed = found.more || found.rows.length > maxResults;
       const reserveBytes = measureJson({
         catalog: source.profile.display.catalog ?? null,
         tables: [],
@@ -189,14 +196,14 @@ export function createHandlers<TConfig>(
       });
       const tables = [];
       let refused = false;
-      for (const entry of found.slice(0, maxResults)) {
+      for (const entry of found.rows.slice(0, maxResults)) {
         if (!budget.admit(entry)) {
           refused = true;
           break;
         }
         tables.push(entry);
       }
-      const truncated = refused || found.length > maxResults;
+      const truncated = refused || overflowed;
       return json({
         catalog: source.profile.display.catalog ?? null,
         tables,
@@ -223,17 +230,22 @@ export function createHandlers<TConfig>(
         dialect.introspection.columns(ref),
         signal,
       );
-      if (columns.length === 0) {
+      if (columns.rows.length === 0) {
         throw fail(
           "object_not_found",
           `No readable ${vocabulary.objectLabel} named ${args.schema}.${args.table}.`,
           `Call ${vocabulary.listTool} for the names this connection can read.`,
         );
       }
-      if (columns.length > limits.maxColumns) {
+      /**
+       * Guard: a partial column list is refused, never returned. The engine
+       * reads one past the limit, so `more` and the row count both answer the
+       * same question and the refusal cannot be outrun by the driver's own cap.
+       */
+      if (columns.more || columns.rows.length > limits.maxColumns) {
         throw fail(
           "resource_limit",
-          `${args.schema}.${args.table} has ${columns.length} columns; the limit is ${limits.maxColumns}.`,
+          `${args.schema}.${args.table} has more than ${limits.maxColumns} columns.`,
           "Query the columns you need by name instead.",
         );
       }
@@ -242,13 +254,19 @@ export function createHandlers<TConfig>(
         dialect.introspection.keys(ref),
         signal,
       );
+      /**
+       * Guard: keys are supplementary, so a cut list is reported rather than
+       * refused — but it has to be reported. A foreign key the agent never sees
+       * is a join it writes wrong, with no error anywhere to show for it.
+       */
+      const keysTruncated = keys.more || keys.rows.length > limits.maxKeys;
       const of = (kind: KeyEntry["kind"]) =>
-        keys.filter((key) => key.kind === kind);
+        keys.rows.slice(0, limits.maxKeys).filter((key) => key.kind === kind);
       const primary = of("primary")[0];
       return json({
         schema: args.schema,
         table: args.table,
-        columns: columns.map(wireColumn),
+        columns: columns.rows.map(wireColumn),
         ...(primary === undefined ? {} : { primaryKey: primary.columns }),
         uniqueKeys: of("unique").map((key) => ({
           name: key.name,
@@ -261,6 +279,13 @@ export function createHandlers<TConfig>(
           referencedTable: key.referencedTable ?? null,
           referencedColumns: key.referencedColumns ?? [],
         })),
+        keysComplete: !keysTruncated,
+        ...(keysTruncated
+          ? {
+              truncationReason: "maxKeys" as const,
+              hint: `Only the first ${limits.maxKeys} constraints are listed; the rest are not shown.`,
+            }
+          : {}),
       });
     }),
 

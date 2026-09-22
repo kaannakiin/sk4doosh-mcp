@@ -38,10 +38,10 @@ export const mssqlDialect = {
   quoteIdentifier,
   quoteQualified,
   describeType,
-  introspection: createIntrospection(
-    limits.queryTimeoutMs,
-    limits.maxListResults,
-  ),
+  introspection: createIntrospection(limits.queryTimeoutMs, {
+    maxColumns: limits.maxColumns,
+    maxKeys: limits.maxKeys,
+  }),
   mapDriverError,
   readOnlyGuard,
 } as const satisfies Dialect<MssqlConfig>;

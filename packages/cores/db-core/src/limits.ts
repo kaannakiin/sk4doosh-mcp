@@ -5,6 +5,7 @@ export const dbCoreLimits = {
   maxRows: 1_000,
   defaultRows: 100,
   maxColumns: 512,
+  maxKeys: 256,
   maxTextChars: 4_096,
   maxBinaryBytes: 4_096,
   maxListResults: 200,

@@ -42,9 +42,20 @@ const number = (row: RowRecord, key: string): number | undefined => {
   return typeof raw === "number" ? raw : undefined;
 };
 
+export interface IntrospectionCaps {
+  readonly maxColumns: number;
+  readonly maxKeys: number;
+}
+
+/**
+ * Guard: each question carries its own row cap, one past the limit db-core
+ * enforces. A single shared cap lets the driver cut a column list below the
+ * limit that would have refused it, so the refusal never fires and the table is
+ * described with columns missing.
+ */
 export function createIntrospection(
   timeoutMs: number,
-  maxResults: number,
+  caps: IntrospectionCaps,
 ): Introspection {
   return {
     server: (): IntrospectionQuery<ServerFacts> => ({
@@ -123,7 +134,7 @@ export function createIntrospection(
           { name: "table", value: ref.name, kind: "text" },
         ],
         timeoutMs,
-        maxResults,
+        caps.maxColumns + 1,
       ),
       project: (row) => {
         const nativeType = text(row, "nativeType");
@@ -188,7 +199,7 @@ export function createIntrospection(
           { name: "table", value: ref.name, kind: "text" },
         ],
         timeoutMs,
-        maxResults,
+        caps.maxKeys + 1,
       ),
       project: (row) => {
         const kind = text(row, "kind");
