@@ -23,6 +23,13 @@ export interface ScanOptions {
   readonly caseSensitive: boolean;
   readonly maxResults: number;
   readonly from?: ScanPosition;
+  /**
+   * Pages whose text may still arrive, because an OCR provider has not reached
+   * them yet. The scan stops before the first of them instead of skipping it:
+   * a page that becomes readable after the cursor has walked past would lose
+   * every match it carries, and the walk would still look complete.
+   */
+  readonly pending?: ReadonlySet<number>;
 }
 
 export interface ScanResult {
@@ -86,11 +93,25 @@ export function scanLiteral(
   const matches: LiteralMatch[] = [];
   const startPage = options.from?.page ?? 1;
   const startOrdinal = options.from?.ordinal ?? 0;
-  const unsearchablePages = pages.filter((page) => page.needsOcr).length;
+  const pending = options.pending ?? new Set<number>();
+  const unsearchablePages = pages.filter(
+    (page) => page.needsOcr && !pending.has(page.page),
+  ).length;
   let searchedPages = 0;
 
   for (const page of pages) {
-    if (page.needsOcr || page.page < startPage) {
+    if (page.page < startPage) {
+      continue;
+    }
+    if (pending.has(page.page)) {
+      return {
+        matches,
+        searchedPages,
+        unsearchablePages,
+        next: { page: page.page, ordinal: 0 },
+      };
+    }
+    if (page.needsOcr) {
       continue;
     }
     searchedPages += 1;

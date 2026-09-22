@@ -16,6 +16,8 @@ export interface Fixtures {
   readonly encrypted: string;
   readonly notPdf: string;
   readonly wide: string;
+  readonly alternating: string;
+  readonly long: string;
 }
 
 const textPages = [
@@ -70,6 +72,34 @@ export async function buildFixtures(): Promise<Fixtures> {
     ),
     encrypted: await write("encrypted.pdf", encryptedPdf()),
     notPdf: await write("notes.txt", Buffer.from("plain text", "utf8")),
+    long: await write(
+      "long.pdf",
+      pdfWithPages([
+        {
+          kind: "text",
+          /**
+           * Prose, not filler: the engine's own quality heuristic marks a page
+           * of repeated nonsense as untrustworthy and extracts nothing from it,
+           * which would make this fixture silently empty.
+           */
+          lines: Array.from(
+            { length: 12 },
+            (_unused, index) =>
+              `Line ${String(index).padStart(2, "0")} the quick brown fox jumps over the lazy dog`,
+          ),
+        },
+        { kind: "text", lines: ["second page body"] },
+      ]),
+    ),
+    alternating: await write(
+      "alternating.pdf",
+      pdfWithPages([
+        { kind: "text", lines: ["page one text"] },
+        { kind: "image" },
+        { kind: "text", lines: ["page three text"] },
+        { kind: "image" },
+      ]),
+    ),
     wide: await write(
       "wide.pdf",
       textPdf([[`WIDE ${"x".repeat(900)}`], ["second page"]]),

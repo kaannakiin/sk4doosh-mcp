@@ -12,6 +12,9 @@ import type {
 import { createHandlers } from "../src/tools/handlers.js";
 import type { ToolHandlers } from "../src/tools/definitions.js";
 import { bodyOf, codeOf } from "./fixtures/harness.js";
+import { pdfWithPages } from "./fixtures/pdf.js";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 let root: DocumentRoot;
 
@@ -268,5 +271,180 @@ describe("provider failures stay honest", () => {
     );
     expect(seen.recognized).toStrictEqual([[1]]);
     expect(body["ocr"]).toMatchObject({ truncated: false });
+  });
+});
+
+describe("search while OCR is still catching up", () => {
+  /**
+   * The failure this guards: OCR transcribes a bounded batch per call, so a page
+   * can become readable only after the cursor has already walked past it. Every
+   * match on that page is then lost, and the walk still reports complete
+   * coverage.
+   */
+  it("never walks past a page whose text has not arrived yet", async () => {
+    const root = inject("fixtures").root;
+    const name = "slow-ocr.pdf";
+    await writeFile(
+      join(root, name),
+      pdfWithPages([
+        ...Array.from({ length: 11 }, () => ({ kind: "image" }) as const),
+        { kind: "text", lines: ["ZETA marker one", "ZETA marker two"] },
+      ]),
+    );
+
+    const seen = recorder();
+    const handlers = handlersWith(
+      fakeBinding(
+        (page) =>
+          page === 11 ? "ZETA hidden on eleven" : `page ${String(page)}`,
+        seen,
+      ),
+    );
+
+    const pages: number[] = [];
+    let cursor: string | undefined;
+    let last: Record<string, unknown> = {};
+    for (let round = 0; round < 10; round += 1) {
+      last = bodyOf(
+        await handlers.find_in_document({
+          filePath: name,
+          query: "ZETA",
+          ocr: true,
+          ...(cursor === undefined ? {} : { cursor }),
+        }),
+      );
+      for (const match of last["matches"] as { page: number }[]) {
+        pages.push(match.page);
+      }
+      const next = last["nextCursor"];
+      if (next === undefined) break;
+      cursor = String(next);
+    }
+
+    expect(pages).toStrictEqual([11, 12, 12]);
+    expect(last["coverageComplete"]).toBe(true);
+  }, 30_000);
+
+  it("refuses a cursor once the caller turns OCR on mid-walk", async () => {
+    const handlers = handlersWith(fakeBinding(() => "transcribed", recorder()));
+    const first = bodyOf(
+      await handlers.find_in_document({
+        filePath: "many.pdf",
+        query: "MARK",
+        maxResults: 5,
+      }),
+    );
+    expect(
+      await codeOf(() =>
+        handlers.find_in_document({
+          filePath: "many.pdf",
+          query: "MARK",
+          ocr: true,
+          cursor: String(first["nextCursor"]),
+        }),
+      ),
+    ).toBe("invalid_argument");
+  });
+});
+
+describe("a timed-out request does not free the machine", () => {
+  /**
+   * The failure this guards: the deadline answers the caller while the provider
+   * keeps working, so releasing the slot at that moment makes the gate count
+   * requests that have not timed out rather than work that is actually running.
+   * A host could then be asked to run any number of transcriptions at once.
+   */
+  it("holds the slot until the provider settles, not until the wait expires", async () => {
+    let finish!: () => void;
+    const hanging = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const base = fakeBinding(() => "unused", recorder());
+    const handlers = handlersWith({
+      ...base,
+      timeoutMs: 60,
+      provider: {
+        name: "hanging",
+        recognize: async () => {
+          await hanging;
+          return [];
+        },
+      },
+    });
+
+    expect(
+      await codeOf(() =>
+        handlers.read_pages({ filePath: "mixed.pdf", ocr: true }),
+      ),
+    ).toBe("ocr_failed");
+
+    expect(
+      await codeOf(() =>
+        handlers.read_pages({ filePath: "mixed.pdf", ocr: true }),
+      ),
+    ).toBe("resource_limit");
+
+    finish();
+  }, 20_000);
+});
+
+describe("answers are matched to what the provider actually saw", () => {
+  /**
+   * The failure this guards: validating answers against the pages the rasterizer
+   * was *asked* for, rather than the images that actually reached recognize().
+   * A page the rasterizer silently omitted never became an image, so a provider
+   * answering for it is answering about something it never saw.
+   */
+  it("discards an answer for a page the rasterizer never rendered", async () => {
+    const seen = recorder();
+    const binding: OcrBinding = {
+      rasterizer: {
+        render: (job) => {
+          seen.rendered.push([...job.pages]);
+          const [first] = job.pages;
+          return Promise.resolve(
+            first === undefined
+              ? []
+              : [
+                  {
+                    page: first,
+                    image: Uint8Array.from([0x89, 0x50, 0x4e, 0x47]),
+                    mediaType: "image/png" as const,
+                  },
+                ],
+          );
+        },
+      },
+      provider: {
+        name: "over-eager",
+        recognize: (job) => {
+          seen.recognized.push(job.pages.map((page) => page.page));
+          return Promise.resolve([
+            { page: 2, markdown: "legitimate transcript of page two" },
+            { page: 4, markdown: "INVENTED for a page never sent" },
+          ]);
+        },
+      },
+    };
+
+    const body = bodyOf(
+      await handlersWith(binding).read_pages({
+        filePath: "alternating.pdf",
+        ocr: true,
+      }),
+    );
+    const pages = body["pages"] as {
+      page: number;
+      needsOcr: boolean;
+      markdown: string;
+    }[];
+    expect(seen.recognized).toStrictEqual([[2]]);
+    for (const page of pages) {
+      expect(page.markdown).not.toContain("INVENTED");
+    }
+    expect(pages.find((page) => page.page === 2)?.markdown).toBe(
+      "legitimate transcript of page two",
+    );
+    expect(pages.find((page) => page.page === 4)?.needsOcr).toBe(true);
   });
 });

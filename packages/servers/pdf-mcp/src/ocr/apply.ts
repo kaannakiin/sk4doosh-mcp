@@ -9,20 +9,37 @@ export interface OcrOutcome {
   readonly pages: readonly ResolvedPage[];
   readonly recognizedPages: readonly number[];
   readonly remainingOcrPages: readonly number[];
+  /**
+   * Pages whose text may still arrive in a later call, because this round's
+   * batch stopped short of them. A reader must not walk past one of these: the
+   * page is not unreadable, it is unread.
+   */
+  readonly pendingPages: readonly number[];
   readonly provider: string;
   readonly truncated: boolean;
 }
 
+/**
+ * Guard: an attempt that produced nothing is remembered as an attempt. Without
+ * that, a page the provider cannot transcribe looks "not yet tried" on every
+ * subsequent call, and a reader that refuses to walk past an untried page never
+ * advances. The page still keeps its needsOcr marking — remembering the failure
+ * is not the same as inventing text for it.
+ */
+export type CachedOcr =
+  | { readonly kind: "text"; readonly value: RecognizedPage }
+  | { readonly kind: "empty" };
+
 export interface OcrCache {
-  get(stamp: Fingerprint, page: number): RecognizedPage | undefined;
-  set(stamp: Fingerprint, page: number, value: RecognizedPage): void;
+  get(stamp: Fingerprint, page: number): CachedOcr | undefined;
+  set(stamp: Fingerprint, page: number, value: CachedOcr): void;
   readonly size: number;
 }
 
 export function createOcrCache(
   maxEntries: number = limits.ocrCacheEntries,
 ): OcrCache {
-  const entries = new Map<string, RecognizedPage>();
+  const entries = new Map<string, CachedOcr>();
   const keyOf = (stamp: Fingerprint, page: number): string =>
     `${stamp}\u0000${String(page)}`;
   return {
@@ -43,39 +60,6 @@ export function createOcrCache(
       return entries.size;
     },
   };
-}
-
-/**
- * Guard: neither port is cancellable by contract, so the deadline refuses the
- * request while the provider keeps working. It bounds what an agent waits for,
- * not what the host spends; the concurrency gate bounds the latter. The signal
- * is passed along so a port that does honour it can stop early.
- */
-async function withDeadline<T>(
-  run: (signal: AbortSignal) => Promise<T>,
-  timeoutMs: number,
-  stage: string,
-): Promise<T> {
-  const controller = new AbortController();
-  let timer: NodeJS.Timeout | undefined;
-  const expiry = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      controller.abort();
-      reject(
-        new SkMcpPdfError(
-          "ocr_failed",
-          `OCR ${stage} exceeded the ${String(timeoutMs)} ms budget.`,
-          "Request fewer pages, or configure a faster provider.",
-        ),
-      );
-    }, timeoutMs);
-    timer.unref();
-  });
-  try {
-    return await Promise.race([run(controller.signal), expiry]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
 }
 
 function asOcrFailure(error: unknown, stage: string): SkMcpPdfError {
@@ -114,6 +98,7 @@ export async function applyOcr(
     readonly stamp: Fingerprint;
     readonly pages: readonly ExtractedPage[];
     readonly wanted: readonly number[];
+    readonly signal?: AbortSignal;
   },
 ): Promise<OcrOutcome> {
   const candidates = input.pages
@@ -122,39 +107,34 @@ export async function applyOcr(
     .filter((page) => input.wanted.includes(page));
 
   const recognized = new Map<number, RecognizedPage>();
-  const pending: number[] = [];
+  const untried: number[] = [];
   for (const page of candidates) {
     const cached = cache.get(input.stamp, page);
-    if (cached === undefined) pending.push(page);
-    else recognized.set(page, cached);
+    if (cached === undefined) {
+      untried.push(page);
+      continue;
+    }
+    if (cached.kind === "text") recognized.set(page, cached.value);
   }
 
   const perCall = Math.min(
     binding.maxPagesPerCall ?? limits.maxOcrPagesPerCall,
     limits.maxOcrPagesPerCall,
   );
-  const batch = pending.slice(0, perCall);
-  const truncated = batch.length < pending.length;
+  const batch = untried.slice(0, perCall);
+  const truncated = batch.length < untried.length;
+  const attempted = new Set(batch);
 
   if (batch.length > 0) {
-    const timeoutMs = Math.min(
-      binding.timeoutMs ?? limits.maxOcrMs,
-      limits.maxOcrMs,
-    );
     const dpi = binding.dpi ?? limits.ocrDpi;
     let rendered: readonly RenderedPage[];
     try {
-      rendered = await withDeadline(
-        (signal) =>
-          binding.rasterizer.render({
-            bytes: input.bytes,
-            pages: batch,
-            dpi,
-            signal,
-          }),
-        timeoutMs,
-        "rasterization",
-      );
+      rendered = await binding.rasterizer.render({
+        bytes: input.bytes,
+        pages: batch,
+        dpi,
+        ...(input.signal === undefined ? {} : { signal: input.signal }),
+      });
     } catch (error) {
       throw asOcrFailure(error, "rasterization");
     }
@@ -162,27 +142,40 @@ export async function applyOcr(
     const usable = batch
       .map((page) => images.get(page))
       .filter((page): page is RenderedPage => page !== undefined);
+    for (const page of batch) {
+      if (!images.has(page)) cache.set(input.stamp, page, { kind: "empty" });
+    }
 
     if (usable.length > 0) {
       let answers: readonly RecognizedPage[];
       try {
-        answers = await withDeadline(
-          (signal) => binding.provider.recognize({ pages: usable, signal }),
-          timeoutMs,
-          "recognition",
-        );
+        answers = await binding.provider.recognize({
+          pages: usable,
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
+        });
       } catch (error) {
         throw asOcrFailure(error, "recognition");
       }
-      const byPage = indexByRequestedPage(answers, batch);
-      for (const [page, answer] of byPage) {
+      /**
+       * Guard: answers are matched against the pages that actually reached
+       * recognize(), not against the pages the rasterizer was asked for. A page
+       * the rasterizer silently omitted never became an image, so a provider
+       * answering for it is answering about something it never saw.
+       */
+      const sent = usable.map((page) => page.page);
+      const byPage = indexByRequestedPage(answers, sent);
+      for (const page of sent) {
+        const answer = byPage.get(page);
         /**
          * Guard: an empty transcription is not an answer. Keeping the page
          * marked needsOcr is the honest outcome — replacing it would turn "the
          * model returned nothing" into "this page is blank".
          */
-        if (answer.markdown.trim() === "") continue;
-        cache.set(input.stamp, page, answer);
+        if (answer === undefined || answer.markdown.trim() === "") {
+          cache.set(input.stamp, page, { kind: "empty" });
+          continue;
+        }
+        cache.set(input.stamp, page, { kind: "text", value: answer });
         recognized.set(page, answer);
       }
     }
@@ -205,12 +198,17 @@ export async function applyOcr(
   );
 
   const recognizedPages = [...recognized.keys()].sort((a, b) => a - b);
+  const remaining = pages
+    .filter((page) => page.needsOcr)
+    .map((page) => page.page);
   return {
     pages,
     recognizedPages,
-    remainingOcrPages: pages
-      .filter((page) => page.needsOcr)
-      .map((page) => page.page),
+    remainingOcrPages: remaining,
+    pendingPages: remaining.filter(
+      (page) =>
+        !attempted.has(page) && cache.get(input.stamp, page) === undefined,
+    ),
     provider: binding.provider.name,
     truncated,
   };

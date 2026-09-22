@@ -22,7 +22,12 @@ import { applyOcr, createOcrCache, type OcrCache } from "../ocr/apply.js";
 import type { OcrBinding } from "../ocr/port.js";
 import { capabilitiesWith } from "../platform/capabilities.js";
 import { SkMcpPdfError } from "../platform/errors.js";
-import { createGate, type Gate } from "../platform/gate.js";
+import {
+  createDeadline,
+  createGate,
+  holdUntilSettled,
+  type Gate,
+} from "../platform/gate.js";
 import { limits, modePolicy } from "../platform/limits.js";
 import {
   listDocuments,
@@ -52,6 +57,13 @@ export interface PdfHandlerDeps {
   readonly ocr?: OcrBinding;
   readonly maxConcurrentListings?: number;
   readonly maxConcurrentExtractions?: number;
+  /**
+   * The budget one response page is assembled against. Lowering it is how the
+   * suite reaches the continuation path: a real PDF page rarely holds half a
+   * megabyte of text, so the path would otherwise never be exercised. The
+   * unbypassable gate in `guard()` still applies on top of this.
+   */
+  readonly maxPayloadBytes?: number;
 }
 
 interface PageEntry {
@@ -63,6 +75,8 @@ interface PageEntry {
   readonly ocrReason?: string;
   readonly ocrConfidence?: number;
   readonly truncatedMarkdown?: true;
+  /** Characters of this page delivered before this response. */
+  readonly markdownOffset?: number;
 }
 
 function entryFor(pages: readonly ResolvedPage[], page: number): PageEntry {
@@ -100,6 +114,7 @@ export function createHandlers(
   deps: PdfHandlerDeps = {},
 ): ToolHandlers {
   const store = deps.store ?? createPdfDocumentStore(root.real);
+  const maxPayloadBytes = deps.maxPayloadBytes ?? limits.maxPayloadBytes;
   const listings: Gate = createGate(
     deps.maxConcurrentListings ?? limits.maxConcurrentListings,
     () => {
@@ -131,11 +146,18 @@ export function createHandlers(
   ): Promise<{ path: SandboxedPath; loaded: LoadedPdf }> => {
     const path: SandboxedPath = await resolveDocumentPath(root, raw);
     const release = extractions.enter();
-    try {
-      return { path, loaded: await store.load(path) };
-    } finally {
-      release();
-    }
+    const work = store.load(path);
+    holdUntilSettled(work, release, limits.settleQuarantineMs);
+    const deadline = createDeadline(
+      limits.maxExtractMs,
+      () =>
+        new SkMcpPdfError(
+          "resource_limit",
+          `Reading '${raw}' exceeded the ${String(limits.maxExtractMs)} ms extraction budget.`,
+          "Read a smaller document; the work already started is not cancelled, and its slot stays taken until it finishes.",
+        ),
+    );
+    return { path, loaded: await deadline.run(work) };
   };
 
   const ocrCache: OcrCache = createOcrCache();
@@ -163,13 +185,19 @@ export function createHandlers(
     requested: boolean,
   ): Promise<{
     pages: readonly ResolvedPage[];
+    pending: ReadonlySet<number>;
     ocr?: {
       provider: string;
       recognizedPages: readonly number[];
       truncated: boolean;
     };
   }> => {
-    if (!requested) return { pages: resolvedPagesOf(loaded.pages) };
+    if (!requested) {
+      return {
+        pages: resolvedPagesOf(loaded.pages),
+        pending: new Set<number>(),
+      };
+    }
     if (deps.ocr === undefined) {
       throw new SkMcpPdfError(
         "ocr_unavailable",
@@ -178,25 +206,42 @@ export function createHandlers(
       );
     }
     const binding = deps.ocr;
+    const timeoutMs = Math.min(
+      binding.timeoutMs ?? limits.maxOcrMs,
+      limits.maxOcrMs,
+    );
     const release = ocrRuns.enter();
-    try {
+    const deadline = createDeadline(
+      timeoutMs,
+      () =>
+        new SkMcpPdfError(
+          "ocr_failed",
+          `OCR exceeded the ${String(timeoutMs)} ms budget.`,
+          "Request fewer pages, or configure a faster provider; the run already started keeps its slot until it finishes.",
+        ),
+    );
+    const work = (async () => {
       const bytes = await readDocumentBytes(root, path, loaded.stamp);
-      const outcome = await applyOcr(binding, ocrCache, {
+      return applyOcr(binding, ocrCache, {
         bytes,
         stamp: loaded.stamp,
         pages: loaded.pages,
         wanted,
+        signal: deadline.signal,
       });
+    })();
+    holdUntilSettled(work, release, limits.settleQuarantineMs);
+    {
+      const outcome = await deadline.run(work);
       return {
         pages: outcome.pages,
+        pending: new Set(outcome.pendingPages),
         ocr: {
           provider: outcome.provider,
           recognizedPages: outcome.recognizedPages,
           truncated: outcome.truncated,
         },
       };
-    } finally {
-      release();
     }
   };
 
@@ -314,13 +359,14 @@ export function createHandlers(
           mode: loaded.mode,
         }) + 64;
       const budget = createPageBudget({
-        maxBytes: limits.maxPayloadBytes,
+        maxBytes: maxPayloadBytes,
         reserveBytes,
       });
 
       const entries: PageEntry[] = [];
       let truncationReason: "maxPages" | "maxPayloadBytes" | undefined;
       let nextPage: number | undefined;
+      let nextOffset = 0;
 
       for (const page of selection) {
         if (entries.length >= maxPages) {
@@ -328,32 +374,50 @@ export function createHandlers(
           nextPage = page;
           break;
         }
-        const entry = entryFor(resolved.pages, page);
+        const whole = entryFor(resolved.pages, page);
+        const offset = page === cursor?.p ? (cursor.c ?? 0) : 0;
+        const entry: PageEntry =
+          offset === 0
+            ? whole
+            : {
+                ...whole,
+                markdown: whole.markdown.slice(offset),
+                markdownOffset: offset,
+              };
         if (budget.admit(entry)) {
           entries.push(entry);
           continue;
         }
-        if (entries.length === 0) {
-          /**
-           * Guard: the first page is clamped rather than refused, so a single
-           * oversized page yields a usable prefix with truncatedMarkdown set
-           * instead of an error the agent cannot act on.
-           */
-          const room = limits.maxPayloadBytes - reserveBytes;
-          const clamped = clampJsonField(entry.markdown, room, (markdown) => ({
-            ...entry,
-            markdown,
-            truncatedMarkdown: true,
-          }));
-          entries.push({
-            ...entry,
-            markdown: clamped,
-            truncatedMarkdown: true,
-          });
-        }
         truncationReason = "maxPayloadBytes";
-        nextPage =
-          entries.length === 1 && entries[0]?.page === page ? page + 1 : page;
+        nextPage = page;
+        nextOffset = offset;
+        if (entries.length > 0) {
+          break;
+        }
+        /**
+         * Guard: the first page is clamped rather than refused, and the cursor
+         * resumes inside it. Advancing to the next page here is what made the
+         * clipped tail unreachable by any call.
+         */
+        const room = maxPayloadBytes - reserveBytes;
+        const kept = clampJsonField(entry.markdown, room, (markdown) => ({
+          ...entry,
+          markdown,
+          truncatedMarkdown: true,
+        }));
+        if (kept.length === 0) {
+          throw new SkMcpPdfError(
+            "resource_limit",
+            `No part of page ${String(page)} fits the ${String(maxPayloadBytes)} byte response budget.`,
+            "Read a document with smaller pages.",
+          );
+        }
+        entries.push({ ...entry, markdown: kept, truncatedMarkdown: true });
+        nextOffset = offset + kept.length;
+        if (nextOffset >= whole.markdown.length) {
+          nextPage = page + 1;
+          nextOffset = 0;
+        }
         break;
       }
 
@@ -382,6 +446,7 @@ export function createHandlers(
                 o: hash,
                 x: expiry(),
                 p: nextPage ?? loaded.pageCount,
+                ...(nextOffset === 0 ? {} : { c: nextOffset }),
               }),
             }
           : {}),
@@ -405,6 +470,7 @@ export function createHandlers(
           query: args.query,
           matchMode,
           caseSensitive,
+          ocr: args.ocr === true,
         });
         const cursor =
           args.cursor === undefined
@@ -427,6 +493,7 @@ export function createHandlers(
           matchMode,
           caseSensitive,
           maxResults,
+          pending: resolved.pending,
           ...(cursor === undefined
             ? {}
             : { from: { page: cursor.p, ordinal: cursor.i } }),
@@ -453,7 +520,7 @@ export function createHandlers(
             }),
           }) + 256;
         const budget = createPageBudget({
-          maxBytes: limits.maxPayloadBytes,
+          maxBytes: maxPayloadBytes,
           reserveBytes,
         });
 
