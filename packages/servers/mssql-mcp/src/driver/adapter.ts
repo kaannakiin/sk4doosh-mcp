@@ -1,14 +1,15 @@
 import mssql from "mssql";
-import type {
-  ColumnDescriptor,
-  DriverAdapter,
-  DriverConnection,
-  QueryResult,
-  QuerySpec,
-  RunningQuery,
+import {
+  columnDescriptor,
+  type ColumnDescriptor,
+  type DriverAdapter,
+  type DriverConnection,
+  type QueryResult,
+  type QuerySpec,
+  type RunningQuery,
 } from "@sk-mcp/db-core";
 import type { MssqlConfig } from "../platform/env.js";
-import { classify } from "../dialect/types.js";
+import { describeType } from "../dialect/types.js";
 
 type Driver = typeof mssql;
 
@@ -47,29 +48,29 @@ function poolConfig(config: MssqlConfig): mssql.config {
   };
 }
 
+/**
+ * Guard: the result-set path and the catalogue path both build their columns
+ * through `columnDescriptor` over the dialect's verdict. Forwarding each
+ * source's own fields instead is what let `run_query` and `describe_table`
+ * report opposite fidelity for the same column.
+ */
 function describe(meta: readonly ColumnMeta[]): ColumnDescriptor[] {
-  return meta.map((column) => {
-    const typeName = column.type?.name ?? "unknown";
-    return {
-      name: column.name,
-      ordinal: column.index,
-      kind: classify({
-        typeName,
+  return meta.map((column) =>
+    columnDescriptor(
+      column.name,
+      column.index,
+      column.nullable !== false,
+      column.type?.name ?? "unknown",
+      describeType({
+        typeName: column.type?.name ?? "unknown",
         ...(column.length === undefined ? {} : { maxLength: column.length }),
         ...(column.precision === undefined
           ? {}
           : { precision: column.precision }),
         ...(column.scale === undefined ? {} : { scale: column.scale }),
       }),
-      nativeType: typeName,
-      nullable: column.nullable !== false,
-      ...(column.length === undefined ? {} : { maxLength: column.length }),
-      ...(column.precision === undefined
-        ? {}
-        : { precision: column.precision }),
-      ...(column.scale === undefined ? {} : { scale: column.scale }),
-    };
-  });
+    ),
+  );
 }
 
 function bind(request: mssql.Request, spec: QuerySpec): void {

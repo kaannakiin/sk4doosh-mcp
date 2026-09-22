@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DbSourceError, type ErrorFactory } from "@sk-mcp/db-core";
 import type { DbErrorCode } from "@sk-mcp/db-core";
-import { classify } from "../src/dialect/types.js";
+import { describeType } from "../src/dialect/types.js";
 import { mapDriverError } from "../src/dialect/errors.js";
 import { readOnlyGuard } from "../src/dialect/guard.js";
 import { quoteIdentifier, quoteQualified } from "../src/dialect/quote.js";
@@ -29,28 +29,133 @@ describe("quoteIdentifier", () => {
   });
 });
 
-describe("classify", () => {
+describe("describeType", () => {
+  const kindOf = (typeName: string) => describeType({ typeName }).kind;
+
   it("answers both vocabularies for the same column", () => {
-    expect(classify({ typeName: "NVarChar" })).toBe("text");
-    expect(classify({ typeName: "nvarchar" })).toBe("text");
+    expect(kindOf("NVarChar")).toBe("text");
+    expect(kindOf("nvarchar")).toBe("text");
   });
 
   it("maps the exact-numeric family to decimal and the wide integer to bigint", () => {
     for (const name of ["decimal", "numeric", "money", "smallmoney"]) {
-      expect(classify({ typeName: name })).toBe("decimal");
+      expect(kindOf(name)).toBe("decimal");
     }
-    expect(classify({ typeName: "bigint" })).toBe("bigint");
-    expect(classify({ typeName: "int" })).toBe("integer");
+    expect(kindOf("bigint")).toBe("bigint");
+    expect(kindOf("int")).toBe("integer");
   });
 
   it("separates the two timestamp families", () => {
-    expect(classify({ typeName: "datetime2" })).toBe("timestamp");
-    expect(classify({ typeName: "datetimeoffset" })).toBe("timestamptz");
+    expect(kindOf("datetime2")).toBe("timestamp");
+    expect(kindOf("datetimeoffset")).toBe("timestamptz");
   });
 
   it("falls back to unknown rather than guessing", () => {
-    expect(classify({ typeName: "geography" })).toBe("unknown");
-    expect(classify({ typeName: "" })).toBe("unknown");
+    expect(kindOf("")).toBe("unknown");
+    expect(kindOf("MyClrType")).toBe("unknown");
+  });
+
+  /**
+   * Guard: T-SQL `timestamp` is `rowversion`, not a point in time. Calling it a
+   * timestamp would hand the agent a date it can neither compare nor order.
+   */
+  it("keeps timestamp in the binary family, where T-SQL puts it", () => {
+    expect(kindOf("timestamp")).toBe("binary");
+    expect(kindOf("rowversion")).toBe("binary");
+    expect(kindOf("datetime")).toBe("timestamp");
+  });
+
+  it("reads hierarchyid through both vocabularies, since the driver renames it", () => {
+    expect(kindOf("hierarchyid")).toBe("binary");
+    expect(kindOf("UDT")).toBe("binary");
+  });
+
+  it("reaches the json kind, which only the native type produces", () => {
+    expect(kindOf("json")).toBe("json");
+  });
+
+  /**
+   * Guard: the driver decodes a spatial value into an object of its own, which
+   * the value encoder can only stringify. Flagging the column is what keeps a
+   * truncated projection from reading as the value itself.
+   */
+  it("flags the spatial types as reshaped rather than typing the projection", () => {
+    for (const name of ["geography", "Geography", "geometry", "Geometry"]) {
+      expect(describeType({ typeName: name })).toMatchObject({
+        kind: "unknown",
+        lossy: "representation",
+      });
+    }
+  });
+
+  /**
+   * Guard: `sql_variant` carries a different type in every row, so no static
+   * kind is true of the column. `vector` has no measured driver shape. Both stay
+   * unknown deliberately, and this test is what records that.
+   */
+  it("leaves the two genuinely unclassifiable types unknown and unflagged", () => {
+    for (const name of ["sql_variant", "Variant", "vector"]) {
+      const facts = describeType({ typeName: name });
+      expect(facts.kind).toBe("unknown");
+      expect(facts.lossy).toBeUndefined();
+    }
+  });
+
+  /**
+   * Guard: the catalogue reports money's precision, a result set does not. Both
+   * had to reach the same verdict or one tool would call a column safe while
+   * the other called it damaged.
+   */
+  it("fills the precision T-SQL fixes by type, whatever the source reported", () => {
+    expect(describeType({ typeName: "Money" })).toMatchObject({
+      precision: 19,
+      scale: 4,
+      lossy: "precision",
+    });
+    expect(
+      describeType({ typeName: "money", precision: 19, scale: 4 }),
+    ).toMatchObject({ precision: 19, scale: 4, lossy: "precision" });
+  });
+
+  it("agrees on money whether the precision came from the driver or the catalogue", () => {
+    const fromDriver = describeType({ typeName: "Money" });
+    const fromCatalogue = describeType({
+      typeName: "money",
+      precision: 19,
+      scale: 4,
+    });
+    expect(fromDriver).toEqual(fromCatalogue);
+  });
+
+  it("leaves smallmoney unflagged, because ten digits fit", () => {
+    const facts = describeType({ typeName: "smallmoney" });
+    expect(facts.precision).toBe(10);
+    expect(facts.lossy).toBeUndefined();
+  });
+
+  it("flags a wide decimal and spares a narrow one", () => {
+    expect(describeType({ typeName: "decimal", precision: 38 }).lossy).toBe(
+      "precision",
+    );
+    expect(describeType({ typeName: "decimal", precision: 15 }).lossy).toBe(
+      undefined,
+    );
+  });
+
+  it("does not mistake float's bit precision for decimal digits", () => {
+    expect(describeType({ typeName: "float", precision: 53 }).lossy).toBe(
+      undefined,
+    );
+    expect(describeType({ typeName: "bigint", precision: 19 }).lossy).toBe(
+      undefined,
+    );
+  });
+
+  it("keeps datetimeoffset zone-aware but reports the zone the driver drops", () => {
+    expect(describeType({ typeName: "DateTimeOffset" })).toMatchObject({
+      kind: "timestamptz",
+      lossy: "timezone",
+    });
   });
 });
 

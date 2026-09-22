@@ -3,7 +3,6 @@ import {
   baseSecretPatterns,
   encodeRow,
   encodeValue,
-  hasPrecisionRisk,
   redactSecrets,
   stableHash,
 } from "../src/index.js";
@@ -71,20 +70,6 @@ describe("encodeValue", () => {
   it("maps null and undefined alike to null", () => {
     expect(encodeValue(null, "text", policy)).toEqual({ value: null });
     expect(encodeValue(undefined, "text", policy)).toEqual({ value: null });
-  });
-});
-
-describe("hasPrecisionRisk", () => {
-  it("flags a decimal wider than binary64 can carry", () => {
-    expect(hasPrecisionRisk("decimal", 38)).toBe(true);
-    expect(hasPrecisionRisk("decimal", 16)).toBe(true);
-  });
-
-  it("stays quiet for a decimal that fits and for other kinds", () => {
-    expect(hasPrecisionRisk("decimal", 15)).toBe(false);
-    expect(hasPrecisionRisk("decimal", undefined)).toBe(false);
-    expect(hasPrecisionRisk("bigint", 38)).toBe(false);
-    expect(hasPrecisionRisk("integer", 38)).toBe(false);
   });
 });
 

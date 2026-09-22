@@ -61,13 +61,16 @@ export {
   type SqlFragment,
   type SqlText,
 } from "./model/sql.js";
-export type {
-  ColumnDescriptor,
-  ColumnKind,
-  EncodedValue,
-  JsonScalar,
-  NativeColumn,
-  ValuePolicy,
+export {
+  columnDescriptor,
+  type ColumnDescriptor,
+  type ColumnKind,
+  type EncodedValue,
+  type JsonScalar,
+  type LossKind,
+  type NativeColumn,
+  type TypeFacts,
+  type ValuePolicy,
 } from "./model/value.js";
 export type {
   IntrospectionScope,
@@ -99,7 +102,7 @@ export type {
   IntrospectionQuery,
   RowRecord,
 } from "./model/dialect.js";
-export { encodeRow, encodeValue, hasPrecisionRisk } from "./values/encode.js";
+export { encodeRow, encodeValue } from "./values/encode.js";
 export { createConnectionPool, type ConnectionPoolSpec } from "./pool/pool.js";
 export { runCancellable } from "./pool/cancel.js";
 export {

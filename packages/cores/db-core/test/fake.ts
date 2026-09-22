@@ -152,12 +152,14 @@ export function createFakeDialect(): Dialect<FakeConfig> {
       return quotedIdentifier(`"${name.replaceAll('"', '""')}"`);
     },
     quoteQualified: (ref) => quotedIdentifier(`"${ref.schema}"."${ref.name}"`),
-    classify: (native) =>
-      native.typeName === "int"
-        ? "integer"
-        : native.typeName === "big"
-          ? "bigint"
-          : "text",
+    describeType: (native) => ({
+      kind:
+        native.typeName === "int"
+          ? "integer"
+          : native.typeName === "big"
+            ? "bigint"
+            : "text",
+    }),
     introspection: {
       server: () => ({
         spec: spec("server"),

@@ -38,6 +38,7 @@ npx sk-mcp-mssql
 - **`sqlText` ve `quotedIdentifier` yalnızca `dialect/` içinde çağrılabilir**, `importNames` ile yasaklanmış. Agent metni `SqlText`'e yalnızca `readOnlyGuard`'ın `allow` kolundan dönüşür.
 - **`process.env` yalnızca `cli.ts`'te okunur** ve her değişken adıyla erişilir — `turbo/no-undeclared-env-vars` böylece her birini `turbo.json`'ın `passThroughEnv`'ine yazmaya zorlar.
 - **Sorgu süre sınırı `request.timeout`'a bırakılmaz.** Ölçüldü ([db-surucu-spike.md](../../../docs/db-surucu-spike.md) §2): o alan çalışan bir statement'ı kesmiyor. Deadline bir zamanlayıcı + açık `cancel()`.
+- **Tip tablosunun kaynağı normatif listedir, bir veritabanında rastlananlar değil.** `dialect/types.ts` T-SQL'in tam tip listesini karşılar ve iki isim uzayına birden cevap verir (`sys.types.name` ve sürücünün result-set adı). Eşlemelerin gerekçeleri ve bilerek `unknown` bırakılan iki tip [mssql-tip-tablosu.md](../../../docs/mssql-tip-tablosu.md)'nde.
 - **Her mantıksal bağlantı `max: 1` olan kendi sürücü havuzudur.** Havuzlamanın sahibi `db-core`; altına ikinci bir havuz koymak iki çağrının onun arkasından aynı soketi paylaşmasına yol açardı — iptal kuralının dayandığı şeyin tam tersi.
 
 ## Test

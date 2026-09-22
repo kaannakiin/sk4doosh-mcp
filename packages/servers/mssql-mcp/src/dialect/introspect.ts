@@ -1,4 +1,5 @@
 import {
+  columnDescriptor,
   sqlText,
   type ColumnDescriptor,
   type Introspection,
@@ -12,7 +13,7 @@ import {
   type TableEntry,
   type TableRef,
 } from "@sk-mcp/db-core";
-import { classify } from "./types.js";
+import { describeType } from "./types.js";
 
 /**
  * Guard: the column list is joined server-side with the unit separator rather
@@ -129,21 +130,18 @@ export function createIntrospection(
         const precision = number(row, "precision");
         const scale = number(row, "scale");
         const maxLength = number(row, "maxLength");
-        return {
-          name: text(row, "name"),
-          ordinal: number(row, "ordinal") ?? 0,
-          kind: classify({
+        return columnDescriptor(
+          text(row, "name"),
+          number(row, "ordinal") ?? 0,
+          row["nullable"] === true || row["nullable"] === 1,
+          nativeType,
+          describeType({
             typeName: nativeType,
             ...(maxLength === undefined ? {} : { maxLength }),
             ...(precision === undefined ? {} : { precision }),
             ...(scale === undefined ? {} : { scale }),
           }),
-          nativeType,
-          nullable: row["nullable"] === true || row["nullable"] === 1,
-          ...(maxLength === undefined ? {} : { maxLength }),
-          ...(precision === undefined ? {} : { precision }),
-          ...(scale === undefined ? {} : { scale }),
-        };
+        );
       },
     }),
 

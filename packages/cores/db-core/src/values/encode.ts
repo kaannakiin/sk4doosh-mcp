@@ -29,7 +29,7 @@ function encodeBinary(bytes: Uint8Array, policy: ValuePolicy): EncodedValue {
  * here. Measured: wide exact-numeric columns arrive as binary64 with their low
  * digits gone, while wide integers arrive as strings and survive. Rendering a
  * damaged number as a string would launder it into a form that claims precision,
- * so the loss is reported on the column by `hasPrecisionRisk` instead.
+ * so the loss is reported on the column by the dialect instead.
  * `NaN`/`Infinity` become null for the same reason: never invent a token the
  * engine did not send. The measurement is recorded in docs/db-surucu-spike.md.
  */
@@ -75,19 +75,4 @@ export function encodeRow(
   return row.map(
     (cell, index) => encodeValue(cell, kinds[index] ?? "unknown", policy).value,
   );
-}
-
-/**
- * Whether a column's values can reach the agent with digits already dropped.
- *
- * Guard: binary64 carries fifteen significant decimal digits. A driver that
- * hands a wider `decimal` over as a `number` has destroyed the value before this
- * package sees it, so the only honest move is to say so on the column. The
- * threshold is the format's, not one engine's.
- */
-export function hasPrecisionRisk(
-  kind: ColumnKind,
-  precision: number | undefined,
-): boolean {
-  return kind === "decimal" && precision !== undefined && precision > 15;
 }

@@ -57,7 +57,7 @@ Sonuç: sorgu süre sınırı sürücünün `timeout` alanına bırakılamaz. De
 | `Time`             | scale 7               |
 | `Xml`              | —                     |
 
-`type.id` tanımsız geliyor; eşleme `type.name` üzerinden yapılacak.
+`type.id` tanımsız geliyor; eşleme `type.name` üzerinden yapılacak. Buradaki liste bu veritabanında rastlanan tiplerdir, normatif T-SQL listesi değil — fark [mssql-tip-tablosu.md](mssql-tip-tablosu.md)'nde kapatıldı.
 
 ## 5. JavaScript değer tipleri — bir tasarım değişikliği gerektirdi
 
@@ -73,9 +73,9 @@ Sonuç: sorgu süre sınırı sürücünün `timeout` alanına bırakılamaz. De
 
 **Kritik bulgu:** `123456789012345678.1234` sürücüden `123456789012345680` olarak geliyor. `encodeValue`'nun ilk hali `decimal`'i string'e çeviriyordu — yani **yanlış bir sayıyı hassas görünen bir string'e** çeviriyordu. Korumasızlıktan kötü.
 
-Düzeltildi: `decimal` artık olduğu gibi (`Number`) geçiyor, ve risk **kolon seviyesinde** `precisionRisk: true` ile bildiriliyor (`hasPrecisionRisk`, eşik binary64'ün 15 anlamlı basamağı). Gerçek çözüm — SQL tarafında string'e cast — yalnızca bizim ürettiğimiz introspection sorguları için mümkün; keyfi `run_query` metnine uygulanamaz, o yüzden F1 durumu gizlemek yerine bildiriyor.
+Düzeltildi: `decimal` artık olduğu gibi (`Number`) geçiyor, ve kayıp **kolon seviyesinde** `lossy: "precision"` ile bildiriliyor (eşik binary64'ün 15 anlamlı basamağı). Gerçek çözüm — SQL tarafında string'e cast — yalnızca bizim ürettiğimiz introspection sorguları için mümkün; keyfi `run_query` metnine uygulanamaz, o yüzden F1 durumu gizlemek yerine bildiriyor.
 
-`datetimeoffset`'in offset kaybı da aynı sınıfta ve F1'de bildirilmiyor — ayrı bir karar.
+`datetimeoffset`'in offset kaybı da aynı sınıfta ve `lossy: "timezone"` ile bildiriliyor. Üçüncü kayıp türü `representation` ve tip tablosunun tamamı [mssql-tip-tablosu.md](mssql-tip-tablosu.md)'nde.
 
 ## 6. Hata taksonomisi
 

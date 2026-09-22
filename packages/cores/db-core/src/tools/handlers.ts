@@ -11,7 +11,7 @@ import type { KeyEntry } from "../model/catalog.js";
 import type { ColumnDescriptor, JsonScalar } from "../model/value.js";
 import type { QueryResult } from "../model/sql.js";
 import type { DbSource } from "../source.js";
-import { encodeRow, hasPrecisionRisk } from "../values/encode.js";
+import { encodeRow } from "../values/encode.js";
 import {
   type Definitions,
   type ToolHandlers,
@@ -24,7 +24,7 @@ interface WireColumn {
   readonly kind: string;
   readonly nativeType: string;
   readonly nullable: boolean;
-  readonly precisionRisk?: true;
+  readonly lossy?: string;
 }
 
 const wireColumn = (column: ColumnDescriptor): WireColumn => ({
@@ -32,9 +32,7 @@ const wireColumn = (column: ColumnDescriptor): WireColumn => ({
   kind: column.kind,
   nativeType: column.nativeType,
   nullable: column.nullable,
-  ...(hasPrecisionRisk(column.kind, column.precision)
-    ? { precisionRisk: true as const }
-    : {}),
+  ...(column.lossy === undefined ? {} : { lossy: column.lossy }),
 });
 
 interface RowPage {

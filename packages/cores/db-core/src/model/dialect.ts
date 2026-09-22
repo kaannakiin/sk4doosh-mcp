@@ -9,7 +9,7 @@ import type {
   TableRef,
 } from "./catalog.js";
 import type { QuerySpec, QuotedIdentifier } from "./sql.js";
-import type { ColumnDescriptor, ColumnKind, NativeColumn } from "./value.js";
+import type { ColumnDescriptor, NativeColumn, TypeFacts } from "./value.js";
 
 export type GuardOutcome =
   | { readonly verdict: "allow"; readonly statement: QuerySpec["sql"] }
@@ -75,7 +75,12 @@ export interface Dialect<TConfig> {
     fail: ErrorFactory<DbErrorCode>,
   ): QuotedIdentifier;
 
-  classify(column: NativeColumn): ColumnKind;
+  /**
+   * Completes one engine type: its kind, the facts the engine defines even when
+   * the source omitted them, and whether this engine's driver hands the value
+   * over intact.
+   */
+  describeType(native: NativeColumn): TypeFacts;
 
   readonly introspection: Introspection;
 

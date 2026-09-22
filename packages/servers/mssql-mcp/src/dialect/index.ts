@@ -6,7 +6,7 @@ import { mapDriverError } from "./errors.js";
 import { readOnlyGuard } from "./guard.js";
 import { createIntrospection } from "./introspect.js";
 import { quoteIdentifier, quoteQualified } from "./quote.js";
-import { classify } from "./types.js";
+import { describeType } from "./types.js";
 
 /**
  * Guard: `lock_timeout` is what stops a read from waiting behind a writer
@@ -37,7 +37,7 @@ export const mssqlDialect = {
   sessionIntent: () => "none" as const,
   quoteIdentifier,
   quoteQualified,
-  classify,
+  describeType,
   introspection: createIntrospection(
     limits.queryTimeoutMs,
     limits.maxListResults,
