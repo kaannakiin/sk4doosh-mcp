@@ -8,7 +8,7 @@ Dört tool: `describe_connection`, `search_catalog`, `describe_table`, `run_quer
 
 Bağlantı süreç başlarken ortamdan girer. **Agent bağlantı bilgisi veremez** — hiçbir tool argümanı taşımaz.
 
-```
+```text
 SKMCP_MSSQL_SERVER=10.0.0.5
 SKMCP_MSSQL_DATABASE=Sales
 SKMCP_MSSQL_USER=mcp_reader
@@ -47,7 +47,7 @@ npx sk-mcp-mssql
 
 Katalog SQL'i sahteyle doğrulanamaz: snapshot metnin değişmediğini kanıtlar, join'lerin doğru olduğunu değil. `test/live.spec.ts` bunun için var ve gerçek bir sunucuya karşı koşar:
 
-```
+```text
 SKMCP_MSSQL_LIVE=1 SKMCP_MSSQL_SERVER=... pnpm turbo run test --filter=@sk-mcp/mssql-mcp
 ```
 

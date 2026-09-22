@@ -287,7 +287,14 @@ describe("search_catalog and describe_table", () => {
 
   it("finds an object through its description, folded", async () => {
     const envelope = await search({ query: "SIPARIS" });
+    const first = (envelope["results"] as Record<string, unknown>[])[0];
     expect((envelope["results"] as unknown[]).length).toBe(1);
+    expect(first?.["matched"]).toContainEqual({
+      field: "description",
+      term: "siparis",
+      value: "Sipariş başlıkları",
+    });
+    expect(first?.["description"]).toBe("Sipariş başlıkları");
   });
 
   /**

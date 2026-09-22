@@ -174,11 +174,24 @@ sınır  dbo.SYS_CustomReportWebServiceUsers   17 kolonunun hepsi indekste
 
 Sınırdaki nesne yarım değil tam — kuralın birinci maddesi. `SYS_SurveyAnswers` alfabetik olarak sınırın ötesinde kaldığı için bulunamıyor, ama yanıt bunu "yok" diye sunmuyor: aynı sorgu tam indekste hint'siz ve `complete: true` dönüyor.
 
-### Açıklama yolu gerçek veriyle doğrulanmadı
+### Açıklama yolu — geçici bir tabloyla doğrulandı
 
-Bu katalogda `MS_Description` taşıyan nesne ve kolon sayısı **sıfır**. Yani SQL join'i çalışıyor ve sıfır satır döndürüyor, ama açıklamaların indekslenmesi, sıralanması ve yanıtta gösterilmesi yalnızca sahte katalogda kanıtlandı.
+Bu katalogda `MS_Description` taşıyan nesne sayısı **sıfır**. Join'in 0 satır döndürmesi "join doğru, veri yok" ile "join bozuk"u ayırt etmiyordu, yani yazılmış ama yanlışlanamaz durumdaydı.
 
-Bu, o yolun gereksiz olduğunu göstermiyor — kriptik adlar taşıyan şemalarda açıklama tek anlamlı metin, ve bu katalog tam olarak öyle bir katalog (`SYS_`, `VPOS_`, `CubiclApi_` önekleri). Yalnızca bu dağıtımın onları doldurmadığını gösteriyor.
+Test veritabanında geçici bir tablo kurulup ölçüldü ve silindi (mevcut hiçbir nesneye dokunulmadan):
+
+```text
+nesne açıklaması   "Tedarikci fatura mutabakat kayitlari"
+kolon açıklaması   ZZQ1 → null,  ZZQ2 → "Musteri vergi numarasi"
+
+"mutabakat"        field=description        value=<açıklama metni>
+"vergi numarasi"   field=columnDescription  value=ZZQ2
+yanıtta            description alanı açıklamayı taşıyor
+```
+
+Belirleyici satır `ZZQ1 → null`. Yüklem yanlış olsaydı (`minor_id` eksik ya da `class` yanlış) tablo açıklaması **bütün kolonlara yayılırdı**; sıfır satır dönen bir join bunu asla göstermezdi.
+
+`columnDescription` eşleşmesinin `value`'su kolon adı, açıklama metni değil — tasarım gereği, kolon açıklamaları indekslenip metinleri saklanmıyor.
 
 ## Kapsam dışı
 
