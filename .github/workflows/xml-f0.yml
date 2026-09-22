@@ -5,11 +5,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/xml-lab/**"
+      - "packages/lab/xml-lab/**"
       - "pnpm-lock.yaml"
   pull_request:
     paths:
-      - "packages/xml-lab/**"
+      - "packages/lab/xml-lab/**"
       - "pnpm-lock.yaml"
 
 concurrency:
@@ -44,7 +44,7 @@ jobs:
       - run: pnpm turbo run test --filter=@sk-mcp/xml-lab --force
         env:
           SKMCP_XML_BENCH: "1"
-      - run: node packages/xml-lab/collect-evidence.mjs
+      - run: node packages/lab/xml-lab/collect-evidence.mjs
         if: always()
         continue-on-error: true
         env:

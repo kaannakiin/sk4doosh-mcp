@@ -124,4 +124,4 @@ flood the agent on its own, and no argument narrows a schema. If you hit that, t
 depth budget, not a larger response budget.
 
 The normative rules are in
-[invoke-semantics.md](https://github.com/kaannakiin/sk-mcp/blob/main/packages/spec/invoke-semantics.md).
+[invoke-semantics.md](https://github.com/kaannakiin/sk-mcp/blob/main/packages/http/spec/invoke-semantics.md).

@@ -56,7 +56,7 @@ farklı sorulara verdiği cevaplardır. Görünürlük konusunun dört sayfası 
 
 Bir sayfa tek bir ürün hattını anlatır; sayfanın ürünü yoludur. İki ürünü karşılaştıran bir sayfa
 yazma isteği geldiğinde o sayfa aslında iki explanation sayfasıdır — veya hiçbiri. Ortak olan şey
-ürün değil spec'tir; ortak anlatımın yeri `packages/spec/` ve repo kökündeki `docs/`'tur.
+ürün değil spec'tir; ortak anlatımın yeri `packages/http/spec/` ve repo kökündeki `docs/`'tur.
 
 Ürün klasörünün adı, ürünün paket ya da dizin adıyla eşleşir (`excel-mcp`, `xml-mcp`, `file-core`).
 `http-catalog` bilinçli istisnadır: bir paketi değil, iki SDK'ya yayılan bir yeteneği — ASP.NET Core
@@ -64,7 +64,7 @@ ve NestJS HTTP endpoint kataloğunu — adlandırır.
 
 ### 2. Reference üretilir, yazılmaz
 
-Makine-okur kaynağı olan hiçbir şey elle yazılmaz. `packages/spec/schemas/*.schema.json` bu
+Makine-okur kaynağı olan hiçbir şey elle yazılmaz. `packages/http/spec/schemas/*.schema.json` bu
 repo'nun tek doğruluk kaynağıdır; tip üretimi için geçerli olan kural doküman için de geçerlidir.
 
 Bir şema alanını reference sayfasına elle kopyalarsan üç ay içinde yalan olur. Bugün üretim
@@ -72,7 +72,7 @@ hattı yoksa bile sayfa **şemaya link verir** ve alan listesini şemadan kopyal
 
 ### 3. RFC 2119 anahtar kelimeleri yalnız spec'te
 
-`MUST` / `SHOULD` / `MAY` yalnız `packages/spec/*.md` içinde geçer.
+`MUST` / `SHOULD` / `MAY` yalnız `packages/http/spec/*.md` içinde geçer.
 Bir tutorial'da normatif dil kullanmak ikisini birden bozar: tutorial emir kipi kullanır çünkü
 öğretiyor, spec normatif kip kullanır çünkü uygulayıcıyı bağlıyor. Aynı kelimeleri paylaşamazlar.
 
@@ -101,7 +101,7 @@ Tutorial sonuna kadar götürür; başarı gözle görülür bir çıktıyla bit
 
 ### 6. Policy adları sızmaz
 
-`packages/spec/visibility.md` değişmez 3: policy adları agent'a sızmaz. Aynısı dokümanda da
+`packages/http/spec/visibility.md` değişmez 3: policy adları agent'a sızmaz. Aynısı dokümanda da
 geçerlidir — örneklerde gerçek müşteri policy adı, tenant adı veya endpoint yolu kullanılmaz.
 DemoApi'nin `OrdersRead`, `BusinessHours`, `alice`/`bob`/`carol` kadrosu bu iş için vardır.
 
@@ -129,7 +129,7 @@ yazmaya hazır değilsin.
 ## Dil
 
 - Site içeriği ve arayüz metinleri **İngilizce** — site sk-mcp'nin public yüzü.
-- `packages/spec/` **İngilizce** — site ona normatif kaynak olarak link verir, aynı kitlenin okuması gerekir.
+- `packages/http/spec/` **İngilizce** — site ona normatif kaynak olarak link verir, aynı kitlenin okuması gerekir.
 - Repo kökündeki `docs/` ve bu dosya **Türkçe** — iç tasarım dokümanları.
 - i18n katmanı yoktur, bilinçli: tek dil, drift yok.
 

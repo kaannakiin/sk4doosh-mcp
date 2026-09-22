@@ -244,6 +244,7 @@ function VerifyStep({ challenge }: Readonly<{ challenge: PendingChallenge }>) {
             length={CODE_LENGTH}
             type="number"
             autoFocus
+            placeholder=""
             size="md"
             radius="md"
             gap="xs"

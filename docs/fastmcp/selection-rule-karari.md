@@ -2,7 +2,7 @@
 
 **Durum:** sevk edildi — uygulama bu kaydı takip eder
 **Tarih:** 19 Eylül 2026
-**Kapsam:** `packages/spec`, `packages/conformance`, `packages/core`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
+**Kapsam:** `packages/http/spec`, `packages/http/conformance`, `packages/http/core`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
 **Kaynak tartışma:** [fastmcp-karsilastirma.md](fastmcp-karsilastirma.md) §4.6
 
 ---
@@ -47,7 +47,7 @@ Keşifte çıktı ki repo'da **eşli, iki SDK'da çalışan bir route glob match
 
 Semantiği ölçüldü: `*` segment içi, `**` segment aşan, `^...$` anchor, escape edilmiş literal, case-sensitive, `{id}` literal. **Taban kural `**`, `*` değil** — `*` bir bölü taşıyan route'u tutmaz.
 
-Kendi prefix dilimizi yazmak aynı üründe iki route pattern dili doğururdu. Karar: matcher ikisinden de çıkarılıp paylaşılan yere taşındı (`packages/core/src/route-glob.ts`, `Discovery/RouteGlob.cs`) ve seçim ile küratörlük aynı kapıdan geçiyor.
+Kendi prefix dilimizi yazmak aynı üründe iki route pattern dili doğururdu. Karar: matcher ikisinden de çıkarılıp paylaşılan yere taşındı (`packages/http/core/src/route-glob.ts`, `Discovery/RouteGlob.cs`) ve seçim ile küratörlük aynı kapıdan geçiyor.
 
 ## 5. Özgüllük — küratörlükten tek bilinçli sapma
 

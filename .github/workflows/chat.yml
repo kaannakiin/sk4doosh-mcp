@@ -5,8 +5,8 @@ on:
     branches: [main]
     paths:
       - "products/**"
-      - "packages/eslint-config/**"
-      - "packages/typescript-config/**"
+      - "packages/toolchain/eslint-config/**"
+      - "packages/toolchain/typescript-config/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "turbo.json"
@@ -14,8 +14,8 @@ on:
   pull_request:
     paths:
       - "products/**"
-      - "packages/eslint-config/**"
-      - "packages/typescript-config/**"
+      - "packages/toolchain/eslint-config/**"
+      - "packages/toolchain/typescript-config/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "turbo.json"

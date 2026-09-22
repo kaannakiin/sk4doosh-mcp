@@ -2,7 +2,7 @@
 
 **Durum:** sevk edildi — uygulama bu kaydı takip eder
 **Tarih:** 21 Eylül 2026
-**Kapsam:** `packages/spec`, `packages/conformance`, `packages/core`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
+**Kapsam:** `packages/http/spec`, `packages/http/conformance`, `packages/http/core`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
 **Kaynak tartışma:** [fastmcp-karsilastirma.md](fastmcp-karsilastirma.md) §4.9
 
 ---

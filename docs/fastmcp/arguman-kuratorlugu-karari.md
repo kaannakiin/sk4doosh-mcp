@@ -2,7 +2,7 @@
 
 **Durum:** kabul edildi — uygulama bu kararı takip eder
 **Tarih:** 17 Eylül 2026
-**Kapsam:** `packages/spec`, `packages/core`, `sdks/dotnet`, `sdks/nestjs` — HTTP katalog ürün hattı
+**Kapsam:** `packages/http/spec`, `packages/http/core`, `sdks/dotnet`, `sdks/nestjs` — HTTP katalog ürün hattı
 **Kaynak tartışma:** [fastmcp-karsilastirma.md](fastmcp-karsilastirma.md) §4.4
 
 ---
@@ -33,7 +33,7 @@ Karar 003'ün ölçüsü: doğru cevap backend'den backend'e değişiyorsa **pol
 | ---------------------------------------------------------- | ------------------------------------- | --------------------------------------------------------- |
 | Hangi argüman gizlenir, neye yeniden adlandırılır          | Politika, **beyan listesi** biçiminde | Decorator/attribute + `options.arguments`                 |
 | Gizli bir değerin çağırandan nasıl türetildiği             | Politika, **kod** biçiminde           | Adlandırılmış değer üreticisi (`Identity.Project` ailesi) |
-| Küratörlüğün `inputSchema`'ya ve şablona nasıl uygulandığı | Mekanik                               | `packages/core` + fixture, düğmesiz                       |
+| Küratörlüğün `inputSchema`'ya ve şablona nasıl uygulandığı | Mekanik                               | `packages/http/core` + fixture, düğmesiz                  |
 | Doldurulmuş değerin kodlanması, tip kapısı, hata kodları   | Mekanik                               | Aynı                                                      |
 | Şekil seçimi (kök modu, düzleştirme, çakışma)              | Mekanik ve **küratörlükten bağımsız** | Değişmez                                                  |
 

@@ -21,26 +21,29 @@ so parity is a test result rather than a claim.
 
 | Path                                                                 | Role                                                                                                             |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [packages/spec](packages/spec)                                       | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages               |
-| [packages/conformance](packages/conformance)                         | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                |
-| [packages/core](packages/core)                                       | TS reference implementation; spec types are generated, never hand-written. Internal                              |
+| [packages/http/spec](packages/http/spec)                             | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages               |
+| [packages/http/conformance](packages/http/conformance)               | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                |
+| [packages/http/core](packages/http/core)                             | TS reference implementation; spec types are generated, never hand-written. Internal                              |
 | [sdks/dotnet](sdks/dotnet)                                           | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                                      |
 | [sdks/nestjs](sdks/nestjs)                                           | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md)) |
 | [sdks/nestjs/samples/agent-client](sdks/nestjs/samples/agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                             |
-| [packages/file-core](packages/file-core)                             | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                     |
-| [packages/ooxml-core](packages/ooxml-core)                           | Published shared reader for OOXML containers: zip, OPC, relationships, content types                             |
-| [packages/excel-mcp](packages/excel-mcp)                             | Standalone published product: an MCP server that reads local Excel workbooks                                     |
-| [packages/xml-mcp](packages/xml-mcp)                                 | Standalone published product: an MCP server that reads local XML documents                                       |
+| [packages/cores/mcp-core](packages/cores/mcp-core)                   | Published source-agnostic machinery for read-only MCP servers: tools, budget, errors, cursors                    |
+| [packages/cores/file-core](packages/cores/file-core)                 | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                     |
+| [packages/cores/db-core](packages/cores/db-core)                     | Published shared machinery for read-only, dialect-agnostic, database-backed MCP servers                          |
+| [packages/servers/mssql-mcp](packages/servers/mssql-mcp)             | Standalone published product: a read-only MCP server for Microsoft SQL Server                                    |
+| [packages/cores/ooxml-core](packages/cores/ooxml-core)               | Published shared reader for OOXML containers: zip, OPC, relationships, content types                             |
+| [packages/servers/excel-mcp](packages/servers/excel-mcp)             | Standalone published product: an MCP server that reads local Excel workbooks                                     |
+| [packages/servers/xml-mcp](packages/servers/xml-mcp)                 | Standalone published product: an MCP server that reads local XML documents                                       |
 | [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                   |
 | [products/chat/contracts](products/chat/contracts)                   | Shared zod schemas of the chat product, consumed by both its api and its web app                                 |
 | [products/chat/api](products/chat/api)                               | NestJS 12 chat backend, localized (`en`, `tr`)                                                                   |
 | [products/chat/web](products/chat/web)                               | TanStack Start + Mantine + Tailwind chat frontend, localized (`en`, `tr`)                                        |
 
-`packages/eslint-config` and `packages/typescript-config` are internal configuration packages.
-`packages/xml-lab` is an evidence harness with no shipping surface.
+`packages/toolchain/eslint-config` and `packages/toolchain/typescript-config` are internal configuration packages.
+`packages/lab/xml-lab` is an evidence harness with no shipping surface.
 
-The HTTP catalog (`packages/core`, both SDKs) and the file-backed servers (`packages/file-core`,
-`packages/ooxml-core`, `excel-mcp`, `xml-mcp`) are two separate product shapes that share no runtime code path. One is a
+The HTTP catalog (`packages/http/core`, both SDKs) and the local-source servers (`packages/cores/mcp-core`,
+`packages/cores/file-core`, `packages/cores/ooxml-core`, `excel-mcp`, `xml-mcp`) are two separate product shapes that share no runtime code path. One is a
 library you embed in your backend; the others are servers you run against local files.
 
 `products/chat` is a third line, and it shares only the toolchain: no `packages/*` or `sdks/*`
@@ -64,12 +67,12 @@ Per product line: `pnpm dev:chat` / `pnpm build:chat` for the chat product, `pnp
 `pnpm build:sk` for everything else. `pnpm boundaries` checks that the two lines stay apart.
 
 Spec types are generated. Change the schema, then run `pnpm turbo run gen`.
-`packages/core/src/generated/` and `sdks/dotnet/src/SkMcp.AspNetCore/Generated/` are committed and
+`packages/http/core/src/generated/` and `sdks/dotnet/src/SkMcp.AspNetCore/Generated/` are committed and
 never hand-edited.
 
 ## Documentation and language
 
-The site under `apps/docs` and the spec under `packages/spec` are written in **English** — the site
+The site under `apps/docs` and the spec under `packages/http/spec` are written in **English** — the site
 is sk-mcp's public face and the spec is what it links to as normative. The design records under
 `docs/` stay **Turkish**: they are internal, and the ADRs there are immutable. Site pages describe
 and link; the spec binds. `apps/docs` carries no i18n layer, by design; `products/chat` is localized (`en`, `tr`).

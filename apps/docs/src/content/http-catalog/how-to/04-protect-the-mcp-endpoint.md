@@ -109,7 +109,7 @@ that the path includes your MCP route.
 sk-mcp models no scopes and grants nothing. `scopes_supported` is passed through from your options
 for clients to read; what a token is allowed to do is decided by your authorization server and your
 endpoints. The normative transport rules are in
-[`packages/spec/transport.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/transport.md).
+[`packages/http/spec/transport.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/transport.md).
 
 ## One transport detail that looks like a bug
 

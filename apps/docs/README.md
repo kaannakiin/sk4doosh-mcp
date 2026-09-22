@@ -19,7 +19,7 @@ Yapısal kuralları `pnpm --filter @sk-mcp/docs validate` zorlar (mod klasör ad
 tekil slug, `# Title`, site içi link hedefleri). `pnpm lint` bunu da koşar.
 
 Site içeriği ve arayüz metinleri **İngilizce** yazılır — site sk-mcp'nin public yüzü. Repo
-kökündeki `docs/` (iç tasarım dokümanları) Türkçe kalır; `packages/spec/` İngilizcedir çünkü site
+kökündeki `docs/` (iç tasarım dokümanları) Türkçe kalır; `packages/http/spec/` İngilizcedir çünkü site
 ona normatif kaynak olarak link verir. i18n katmanı yok: tek dil, drift yok.
 
 ## Stil katmanları

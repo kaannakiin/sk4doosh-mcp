@@ -1,8 +1,8 @@
 # OOXML çekirdeği — paket ayrımı ve motor seçimi
 
-**Durum:** uygulandı (Faz A) — `packages/ooxml-core` yayınlanabilir, `@sk-mcp/excel-mcp` tüketicisi
+**Durum:** uygulandı (Faz A) — `packages/cores/ooxml-core` yayınlanabilir, `@sk-mcp/excel-mcp` tüketicisi
 **Tarih:** 17 Eylül 2026
-**Kapsam:** `packages/ooxml-core`, `packages/excel-mcp`. `packages/xml-mcp` ve `packages/xml-lab` bu kararın dışındadır ve değişmedi.
+**Kapsam:** `packages/cores/ooxml-core`, `packages/servers/excel-mcp`. `packages/servers/xml-mcp` ve `packages/lab/xml-lab` bu kararın dışındadır ve değişmedi.
 
 ## Sorun
 
@@ -16,7 +16,7 @@ açmıyor, yani o kaçış kapanıyor. Ortak makine paylaşılan bir pakete çı
 
 ## Karar
 
-`packages/ooxml-core` yayınlanan bir paket olarak ayrıldı: zip part kaynağı, OPC paketi, ilişkiler,
+`packages/cores/ooxml-core` yayınlanan bir paket olarak ayrıldı: zip part kaynağı, OPC paketi, ilişkiler,
 içerik türleri ve tek geçişli XML part taraması. `excel-mcp` bu çekirdeğe geçti; `docx-mcp` ve
 `pptx-mcp` aynı çekirdeğe oturacak.
 
@@ -24,7 +24,7 @@ içerik türleri ve tek geçişli XML part taraması. `excel-mcp` bu çekirdeğe
 
 `file-core` kuralının aynısı geçerli: `xl/`, `word/`, `ppt/` önekleri, SpreadsheetML /
 WordprocessingML / PresentationML namespace'leri ve "workbook", "sheet", "document", "presentation"
-adları `packages/ooxml-core/src` içinde defect'tir. Konteyner adları — package, part, relationship,
+adları `packages/cores/ooxml-core/src` içinde defect'tir. Konteyner adları — package, part, relationship,
 archive — ECMA-376 kelime hazinesidir ve serbesttir.
 
 Bunun somut sonucu: `sheetParts` ve `mediaParts` çekirdeğe **girmedi**, `excel-mcp` tarafında çekirdek
@@ -45,7 +45,7 @@ Adaptör kazara atlanamaz.
 `asciiLower` kopyalandı (`src/primitives/text.ts`), `file-core`'dan import edilmedi. OPC part adlarını
 ve `Default Extension` değerlerini ASCII-case-insensitive karşılaştırır, yani casing gerekli;
 `file-core`'a bağlanmak ise MCP SDK ve zod peer'larını hiçbirine ihtiyacı olmayan bir pakete
-sürükler ve katmanı ters çevirirdi. Emsal: `packages/xml-mcp/src/primitives/text.ts`.
+sürükler ve katmanı ters çevirirdi. Emsal: `packages/servers/xml-mcp/src/primitives/text.ts`.
 
 ### saxes kalır, libxml2-wasm girmez
 

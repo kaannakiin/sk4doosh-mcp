@@ -1,11 +1,11 @@
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { createFileSourceServer } from "../src/server.js";
+import { createMcpSourceServer } from "../src/server.js";
 import {
-  FileSourceError,
-  type CoreErrorCode,
+  McpSourceError,
   type ErrorFactory,
+  type SourceErrorCode,
 } from "../src/errors.js";
 import { measureJson } from "../src/payload.js";
 import {
@@ -16,8 +16,8 @@ import {
   type ToolDefinitions,
 } from "../src/tools.js";
 
-const fail: ErrorFactory<CoreErrorCode> = (code, message, recovery) =>
-  new FileSourceError(code, message, recovery);
+const fail: ErrorFactory<SourceErrorCode> = (code, message, recovery) =>
+  new McpSourceError(code, message, recovery);
 
 const definitions = {
   big_document: {
@@ -29,8 +29,8 @@ const definitions = {
 
 type Definitions = typeof definitions;
 
-const normalize = (error: unknown): FileSourceError =>
-  error instanceof FileSourceError ? error : fail("internal_error", "boom");
+const normalize = (error: unknown): McpSourceError =>
+  error instanceof McpSourceError ? error : fail("internal_error", "boom");
 
 interface TextResult {
   readonly content: readonly unknown[];
@@ -50,11 +50,11 @@ function textBytes(result: TextResult): number {
 describe("toToolError under a byte budget", () => {
   it("keeps a small envelope untouched", () => {
     const result = toToolError(
-      fail("file_not_found", "No such document.", "Call list_documents."),
+      fail("invalid_argument", "No such document.", "Call list_documents."),
       {},
     );
     expect(envelopeOf(result)).toEqual({
-      error: "file_not_found",
+      error: "invalid_argument",
       message: "No such document.",
       recovery: "Call list_documents.",
     });
@@ -70,11 +70,26 @@ describe("toToolError under a byte budget", () => {
     expect(envelopeOf(result)["error"]).toBe("internal_error");
   });
 
-  it("clamps after redaction, never before", () => {
-    const result = toToolError(fail("not_a_file", "'/a' is odd."), {
-      root: "/somewhere",
+  it("runs the injected redactor over the message and the recovery", () => {
+    const result = toToolError(
+      fail("internal_error", "the secret is here", "drop the secret"),
+      { redact: (detail) => detail.replaceAll("secret", "[redacted]") },
+    );
+    expect(envelopeOf(result)).toEqual({
+      error: "internal_error",
+      message: "the [redacted] is here",
+      recovery: "drop the [redacted]",
     });
-    expect(envelopeOf(result)["message"]).toContain("[path]");
+  });
+
+  it("clamps after redaction, never before", () => {
+    const result = toToolError(
+      fail("internal_error", `${"a".repeat(400)} secret`),
+      { redact: (detail) => detail.replaceAll("secret", "") },
+      64,
+    );
+    expect(envelopeOf(result)["message"]).not.toContain("secret");
+    expect(textBytes(result)).toBeLessThanOrEqual(64);
   });
 
   it("drops recovery only when an empty message still does not fit", () => {
@@ -99,7 +114,7 @@ describe("toToolError under a byte budget", () => {
 
   it("never throws, whatever it is handed", () => {
     const messages = ["", "\ud83d", "ctrl", "s".repeat(300)];
-    const codes: CoreErrorCode[] = ["internal_error", "resource_limit"];
+    const codes: SourceErrorCode[] = ["internal_error", "resource_limit"];
     for (const code of codes) {
       for (const maxBytes of [-1, 0, 1, 39, 40, 4_096]) {
         for (const message of messages) {
@@ -120,7 +135,6 @@ describe("the guard payload gate", () => {
     guard<Definitions, "big_document">(
       {
         tool: "big_document",
-        root: "/data",
         fail,
         ...(maxBytes === undefined ? {} : { maxBytes }),
       },
@@ -154,12 +168,12 @@ describe("the gate over a real transport", () => {
   let client: Client;
 
   beforeAll(async () => {
-    const server = createFileSourceServer(
+    const server = createMcpSourceServer(
       { name: "probe-mcp", version: "9.9.9" },
       definitions,
       {
         big_document: guard<Definitions, "big_document">(
-          { tool: "big_document", root: "/data", fail },
+          { tool: "big_document", fail },
           async () => json({ blob: "x".repeat(600_000) }),
           normalize,
         ),

@@ -6,9 +6,9 @@ decoration a generator writes around it — a `$schema` keyword, the numeric bou
 are framework detail, not contract.
 
 > **Source of truth.** The search and card semantics are normative in
-> [`packages/spec/search-semantics.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/search-semantics.md)
+> [`packages/http/spec/search-semantics.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/search-semantics.md)
 > and the loaded tool's shape in
-> [`tool-definition.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/schemas/tool-definition.schema.json);
+> [`tool-definition.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/schemas/tool-definition.schema.json);
 > where they differ from this page, they win.
 
 ## The three tools

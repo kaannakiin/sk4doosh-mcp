@@ -1,8 +1,8 @@
 # Invoke Korumaları Kararı — yanıt bütçesi, deadline, iptal merdiveni
 
-**Durum:** Sevk edildi. Spec [packages/spec/invoke-semantics.md](../../packages/spec/invoke-semantics.md), iki SDK'da uygulandı, 13 yeni fixture.
+**Durum:** Sevk edildi. Spec [packages/http/spec/invoke-semantics.md](../../packages/http/spec/invoke-semantics.md), iki SDK'da uygulandı, 13 yeni fixture.
 **Tarih:** 18 Eylül 2026
-**Kapsam:** `packages/spec`, `packages/core`, `sdks/nestjs`, `sdks/dotnet` — HTTP katalog ürün hattı
+**Kapsam:** `packages/http/spec`, `packages/http/core`, `sdks/nestjs`, `sdks/dotnet` — HTTP katalog ürün hattı
 **Kaynak tartışma:** [fastmcp-karsilastirma.md](fastmcp-karsilastirma.md) §4.2
 
 ---
@@ -15,7 +15,7 @@
 - **Invoke deadline'ı** yalnız `invoke_tool`'da, varsayılan 30 000 ms.
 - **İptal merdiveni** L0/L1/L2 olarak normatif, ve L2 asla vaat edilmez.
 
-Karşı taraf olan FastMCP'nin bu alanda opt-in bir `ResponseSizeLimitMiddleware`'i (500 KB'de keser) var; asıl karşılaştırma noktası o değil, `packages/file-core`'un çoktan verdiği karardır (512 KiB, `resource_limit`, reddeder). Aynı üründe iki farklı cevap olmasın diye kapandı.
+Karşı taraf olan FastMCP'nin bu alanda opt-in bir `ResponseSizeLimitMiddleware`'i (500 KB'de keser) var; asıl karşılaştırma noktası o değil, `packages/cores/file-core`'un çoktan verdiği karardır (512 KiB, `resource_limit`, reddeder). Aynı üründe iki farklı cevap olmasın diye kapandı.
 
 ## 2. Neden kesme değil ret
 

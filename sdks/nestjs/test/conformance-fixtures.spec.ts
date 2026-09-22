@@ -43,7 +43,7 @@ function fixturesOf<K extends Fixture["kind"]>(
   kind: K,
 ): Array<[string, FixtureOf<K>]> {
   const dir = fileURLToPath(
-    new URL(`../../../packages/conformance/${kind}/`, import.meta.url),
+    new URL(`../../../packages/http/conformance/${kind}/`, import.meta.url),
   );
   const files = readdirSync(dir)
     .filter((file) => file.endsWith(".json"))

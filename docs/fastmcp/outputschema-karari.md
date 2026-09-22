@@ -2,7 +2,7 @@
 
 **Durum:** sevk edildi — uygulama bu kaydı takip eder
 **Tarih:** 17 Eylül 2026
-**Kapsam:** `packages/spec`, `packages/core`, `packages/conformance`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
+**Kapsam:** `packages/http/spec`, `packages/http/core`, `packages/http/conformance`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
 **Kaynak tartışma:** [fastmcp-karsilastirma.md](fastmcp-karsilastirma.md) §4.1
 
 ---
@@ -11,7 +11,7 @@
 
 `ToolDefinition` isteğe bağlı bir `outputSchema` alanı kazandı ve `load_tool` bunu yayınlıyor.
 Değer `EndpointDescriptor.responses`'tan türetiliyor; descriptor alanı zaten vardı ve
-[schema-conversion-rules.md](../../packages/spec/schema-conversion-rules.md) Tablo 4 onu `readOnly`
+[schema-conversion-rules.md](../../packages/http/spec/schema-conversion-rules.md) Tablo 4 onu `readOnly`
 üyeler korunarak yazmayı çoktan zorunlu kılıyordu. Eksik olan tek şey türetme kuralı ve yüzeydi.
 
 Neden: ajan bugün tool'un **ne göndereceğini** biliyordu, **ne alacağını** bilmiyordu. Çok adımlı
@@ -22,7 +22,7 @@ eleştirisinin bize düşen payı buydu.
 ## 2. Dokuz kural
 
 Kurallar iki SDK'da aynı ve fixture ile sabitli. Normatif metin
-[metadata-contract.md](../../packages/spec/metadata-contract.md) `## Producing outputSchema`
+[metadata-contract.md](../../packages/http/spec/metadata-contract.md) `## Producing outputSchema`
 bölümünde.
 
 1. **Birincil response:** `200`, `201`, `202`, `204` bu sırayla; hiçbiri yoksa kalan 2xx'lerin
@@ -90,17 +90,17 @@ Aynı fallback deseni `descriptionOf` ile birebir, yani SDK'da yeni bir kavram d
 
 ## 4. Ne değişti
 
-| Katman          | Değişiklik                                                                                                                                                                                                        |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Şema            | `tool-definition.schema.json` `outputSchema` kazandı (`required`'a **eklenmedi**). `additionalProperties: false` olduğu için bu edit olmadan hiçbir fixture alanı taşıyamazdı                                     |
-| Üretilmiş tip   | `ToolDefinition.outputSchema?: JsonSchemaObject` ve `JsonObject? OutputSchema`. Elle yazılmadı; `pnpm gen` üretti                                                                                                 |
-| `packages/core` | `buildOutputSchema` + `primaryResponseOf` + `isObjectRoot`, `createToolDefinition` içinde koşullu spread. `liftDefs` ve `typeOf` yeniden kullanıldı, yeni yardımcı yazılmadı                                      |
-| `sdks/dotnet`   | `ToolDefinitionFactory`'de TS ikizi; `SkMcpMetaTools` `load_tool` payload'ı `OutputSchema` kazandı. Katalog tarafına **hiç dokunulmadı** — `Responses` zaten doluydu                                              |
-| `sdks/nestjs`   | `McpToolOptions.responses` + `McpResponseDeclaration`; discovery'de `responsesOf` ve üç katman; `shapeOf` ikinci bir `SchemaSimplificationOptions` parametresi aldı; `load_tool` payload'ı `outputSchema` kazandı |
-| Fixture         | 3 mevcut fixture `expected`'ına `outputSchema` aldı (zaten `responses` taşıyorlardı), 5 yeni vaka eklendi. 202 → **207**                                                                                          |
-| Spec            | `metadata-contract.md` (yeni `## Producing outputSchema` bölümü + tabloya satır), `search-semantics.md` (meta-tool kontratı), `schema-conversion-rules.md` (Tablo 4 response paragrafına ileri referans)          |
-| Docs            | Yeni how-to `09-tell-the-agent-what-a-tool-returns.md`, meta-tool contract ve configuration reference sayfaları, iki SDK README'sine `3c` bölümü                                                                  |
-| Demo            | İki demo da `get_order` için response tipi bildiriyor — `[ProducesResponseType]` ve `@McpTool({ responses })`. Parite iddiasının canlı ölçümü                                                                     |
+| Katman               | Değişiklik                                                                                                                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Şema                 | `tool-definition.schema.json` `outputSchema` kazandı (`required`'a **eklenmedi**). `additionalProperties: false` olduğu için bu edit olmadan hiçbir fixture alanı taşıyamazdı                                     |
+| Üretilmiş tip        | `ToolDefinition.outputSchema?: JsonSchemaObject` ve `JsonObject? OutputSchema`. Elle yazılmadı; `pnpm gen` üretti                                                                                                 |
+| `packages/http/core` | `buildOutputSchema` + `primaryResponseOf` + `isObjectRoot`, `createToolDefinition` içinde koşullu spread. `liftDefs` ve `typeOf` yeniden kullanıldı, yeni yardımcı yazılmadı                                      |
+| `sdks/dotnet`        | `ToolDefinitionFactory`'de TS ikizi; `SkMcpMetaTools` `load_tool` payload'ı `OutputSchema` kazandı. Katalog tarafına **hiç dokunulmadı** — `Responses` zaten doluydu                                              |
+| `sdks/nestjs`        | `McpToolOptions.responses` + `McpResponseDeclaration`; discovery'de `responsesOf` ve üç katman; `shapeOf` ikinci bir `SchemaSimplificationOptions` parametresi aldı; `load_tool` payload'ı `outputSchema` kazandı |
+| Fixture              | 3 mevcut fixture `expected`'ına `outputSchema` aldı (zaten `responses` taşıyorlardı), 5 yeni vaka eklendi. 202 → **207**                                                                                          |
+| Spec                 | `metadata-contract.md` (yeni `## Producing outputSchema` bölümü + tabloya satır), `search-semantics.md` (meta-tool kontratı), `schema-conversion-rules.md` (Tablo 4 response paragrafına ileri referans)          |
+| Docs                 | Yeni how-to `09-tell-the-agent-what-a-tool-returns.md`, meta-tool contract ve configuration reference sayfaları, iki SDK README'sine `3c` bölümü                                                                  |
+| Demo                 | İki demo da `get_order` için response tipi bildiriyor — `[ProducesResponseType]` ve `@McpTool({ responses })`. Parite iddiasının canlı ölçümü                                                                     |
 
 ### Nest'te tanı çift raporlanması
 

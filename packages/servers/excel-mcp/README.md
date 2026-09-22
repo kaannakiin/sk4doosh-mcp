@@ -25,13 +25,13 @@ Depo içinden çalıştırmak için:
 
 ```bash
 pnpm turbo run build --filter=@sk-mcp/excel-mcp
-node packages/excel-mcp/dist/cli.js /Users/me/sheets
+node packages/servers/excel-mcp/dist/cli.js /Users/me/sheets
 ```
 
 Inspector ile denemek için:
 
 ```bash
-npx @modelcontextprotocol/inspector node packages/excel-mcp/dist/cli.js /Users/me/sheets
+npx @modelcontextprotocol/inspector node packages/servers/excel-mcp/dist/cli.js /Users/me/sheets
 ```
 
 ## Tool'lar

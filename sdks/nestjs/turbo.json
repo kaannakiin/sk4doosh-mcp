@@ -4,7 +4,7 @@
   "tasks": {
     "test": {
       "dependsOn": ["$TURBO_EXTENDS$"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/conformance/**"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/http/conformance/**"],
       "outputs": []
     }
   }

@@ -5,9 +5,9 @@ sk-mcp produced before your backend was reached. Telling the last two apart is w
 for.
 
 > **Source of truth.** The success and backend-error shapes are
-> [`invoke-result.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/schemas/invoke-result.schema.json),
+> [`invoke-result.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/schemas/invoke-result.schema.json),
 > and the code meanings and leak rules are normative in
-> [`packages/spec/error-mapping.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/error-mapping.md);
+> [`packages/http/spec/error-mapping.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/error-mapping.md);
 > where they differ from this page, they win.
 
 ## Two layers
@@ -107,7 +107,7 @@ naming the arguments that narrow the call, and `invoke_timeout` is the one SDK-s
 
 This list is deliberately not tabulated with meanings here. Unlike the backend codes it has no
 schema and no spec table yet — it lives in
-[`errors.ts`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/core/src/errors.ts)
+[`errors.ts`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/core/src/errors.ts)
 and the SDKs' argument exceptions, and this page will not become its de facto registry. Pinning it
 in the spec is open work.
 

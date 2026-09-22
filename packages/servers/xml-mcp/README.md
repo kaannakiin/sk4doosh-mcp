@@ -2,7 +2,7 @@
 
 Yerel XML belgelerini okuyan, salt-okunur, sandbox'lanmış MCP sunucusu.
 `@sk-mcp/file-core` üzerine kuruludur; `@sk-mcp/core`'a **bağımlı değildir** ve
-`packages/xml-lab`'den hiçbir şey import etmez.
+`packages/lab/xml-lab`'den hiçbir şey import etmez.
 
 ## Bu sürümde ne var
 
@@ -38,7 +38,7 @@ varsayılan S=4 en küçük desteklenen hostta güvenlidir.
 
 ## Bağlayıcı kurallar
 
-- **Parse worker'da olur.** Ana süreç yalnız serileştirilebilir handle taşır; WASM pointer'ı sınırı geçmez. `packages/file-core`'un doküman store'una disposal hook'u eklenmedi ve gerekmedi.
+- **Parse worker'da olur.** Ana süreç yalnız serileştirilebilir handle taşır; WASM pointer'ı sınırı geçmez. `packages/cores/file-core`'un doküman store'una disposal hook'u eklenmedi ve gerekmedi.
 - **Yerleşim worker/host sınırını izler.** `engine/` worker grafiğidir ve `host/` ile `tools/` adını hiç anmaz; `model/` ve `primitives/` iki tarafın ortak sözlüğüdür. `index.ts`, `cli.ts`, `xml-worker.ts` ve `server.ts` kökte kalır — sırasıyla tarball girişi, `bin`, CI tarball denetimi ve `../package.json` okuması onları oraya bağlar.
 - **Worker girişi host yüzeyini import etmez.** `src/xml-worker.ts` yalnız `node:worker_threads`, `node:buffer`, `libxml2-wasm` ve type-only protokolü görür; bir lint sınırı bunu zorlar. Worker bir kod string'i döner, hata nesnesini ana taraf kurar.
 - **DOCTYPE parse'tan önce reddedilir.** Prolog tarayıcısı ana süreçte çalışır; `doc.dtd` yalnız ikinci denetimdir. Ölçüldü: `XML_PARSE_NO_XXE` internal DTD subset'ini engellemiyor.

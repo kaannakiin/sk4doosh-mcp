@@ -4,11 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const schemasDir = path.resolve(here, "../../../packages/spec/schemas");
+const schemasDir = path.resolve(here, "../../../packages/http/spec/schemas");
 const outDir = path.resolve(here, "../src/SkMcp.AspNetCore/Generated");
 const specVersion = JSON.parse(
   readFileSync(
-    path.resolve(here, "../../../packages/spec/package.json"),
+    path.resolve(here, "../../../packages/http/spec/package.json"),
     "utf8",
   ),
 ).version;

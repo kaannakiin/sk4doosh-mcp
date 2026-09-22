@@ -3,14 +3,14 @@ import type { CallToolResult } from "@modelcontextprotocol/client";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
-  FileSourceError,
+  McpSourceError,
   internalErrorMessage,
   internalErrorRecovery,
-  type CoreErrorCode,
+  type SourceErrorCode,
   type ErrorContext,
   type ErrorFactory,
 } from "../src/errors.js";
-import { createFileSourceServer, toolNamesOf } from "../src/server.js";
+import { createMcpSourceServer, toolNamesOf } from "../src/server.js";
 import {
   guard,
   json,
@@ -23,17 +23,14 @@ import type { Vocabulary } from "../src/vocabulary.js";
 const vocabulary: Vocabulary<string> = {
   serverName: "probe-mcp",
   subject: "document",
-  rootLabel: "document root",
-  readableLabel: "readable document",
   listTool: "list_documents",
-  tooLargeRecovery: "Read a smaller file.",
 };
 
-const fail: ErrorFactory<CoreErrorCode> = (code, message, recovery) =>
-  new FileSourceError(code, message, recovery);
+const fail: ErrorFactory<SourceErrorCode> = (code, message, recovery) =>
+  new McpSourceError(code, message, recovery);
 
-function normalize(error: unknown, context: ErrorContext): FileSourceError {
-  if (error instanceof FileSourceError) {
+function normalize(error: unknown, context: ErrorContext): McpSourceError {
+  if (error instanceof McpSourceError) {
     return error;
   }
   return fail(
@@ -65,16 +62,16 @@ type Definitions = typeof definitions;
 
 const handlers: HandlersOf<Definitions> = {
   list_documents: guard<Definitions, "list_documents">(
-    { tool: "list_documents", root: "/data", fail },
+    { tool: "list_documents", fail },
     async (args) => json({ pattern: args.pattern ?? "*" }),
     normalize,
   ),
   read_document: guard<Definitions, "read_document">(
-    { tool: "read_document", root: "/data", fail },
+    { tool: "read_document", fail },
     async (args) => {
       if (args.filePath === "missing.probe") {
         throw fail(
-          "file_not_found",
+          "invalid_argument",
           "No such document.",
           "Call list_documents.",
         );
@@ -84,7 +81,7 @@ const handlers: HandlersOf<Definitions> = {
     normalize,
   ),
   break_document: guard<Definitions, "break_document">(
-    { tool: "break_document", root: "/data", fail },
+    { tool: "break_document", fail },
     async () => {
       throw new TypeError("x is not a function");
     },
@@ -103,7 +100,7 @@ function body(result: CallToolResult): Record<string, unknown> {
 let client: Client;
 
 beforeAll(async () => {
-  const server = createFileSourceServer(
+  const server = createMcpSourceServer(
     { name: "probe-mcp", version: "9.9.9" },
     definitions,
     handlers,
@@ -117,7 +114,7 @@ beforeAll(async () => {
   ]);
 });
 
-describe("createFileSourceServer", () => {
+describe("createMcpSourceServer", () => {
   it("registers exactly the declared tools, derived from the definitions", async () => {
     const listed = (await client.listTools()).tools;
     expect(listed.map((tool) => tool.name).sort()).toEqual(
@@ -191,7 +188,7 @@ describe("the guard", () => {
     })) as CallToolResult;
     expect(result.isError).toBe(true);
     expect(body(result)).toEqual({
-      error: "file_not_found",
+      error: "invalid_argument",
       message: "No such document.",
       recovery: "Call list_documents.",
     });
@@ -218,7 +215,7 @@ describe("the guard", () => {
   });
 
   it("omits recovery when the failure carries none", async () => {
-    const bare = fail("not_a_file", "plain");
+    const bare = fail("invalid_argument", "plain");
     expect(bare.recovery).toBeUndefined();
   });
 });

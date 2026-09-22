@@ -38,7 +38,7 @@ type MetadataFixture = Extract<Fixture, { kind: "metadata-extraction" }>;
 function fixtures(): Array<[string, MetadataFixture]> {
   const dir = fileURLToPath(
     new URL(
-      "../../../packages/conformance/metadata-extraction/",
+      "../../../packages/http/conformance/metadata-extraction/",
       import.meta.url,
     ),
   );

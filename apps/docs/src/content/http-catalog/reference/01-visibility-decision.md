@@ -3,7 +3,7 @@
 Every endpoint gets one of three decisions per caller, per search. This page describes the model.
 
 > **Source of truth.** The normative text is
-> [`packages/spec/visibility.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/visibility.md);
+> [`packages/http/spec/visibility.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/visibility.md);
 > where the two differ, the spec wins.
 
 ## Decision values
@@ -22,7 +22,7 @@ caller can actually use; collapsing it to `allow` hides the uncertainty from the
 The decision is a pure function of two records:
 
 - **`auth`** — what the endpoint declares. Its fields are defined by `$defs/Auth` in
-  [`endpoint-descriptor.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/spec/schemas/endpoint-descriptor.schema.json). That schema is the source of truth; this
+  [`endpoint-descriptor.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/schemas/endpoint-descriptor.schema.json). That schema is the source of truth; this
   page does not restate the field list.
 - **`callerFacts`** — what the platform found out about this caller: a three-valued identity
   (`present` / `absent` / `unknown`) and a set of policy results.

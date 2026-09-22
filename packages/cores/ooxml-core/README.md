@@ -25,7 +25,7 @@ hata sınıfını, kod kelime hazinesini ve recovery metnini tüketici seçer �
 
 ## Neden SAX, neden DOM değil
 
-`packages/xml-mcp` `libxml2-wasm` kullanıyor çünkü şeması **bilinmeyen** belge üstünde DOM ve XPath
+`packages/servers/xml-mcp` `libxml2-wasm` kullanıyor çünkü şeması **bilinmeyen** belge üstünde DOM ve XPath
 gerekiyor; o seçim worker izolasyonunu, pool'u ve makine-denetimli worker modül grafiğini getirdi.
 OOXML part'larında şema **bilinir** ve her okuma ileri yönlü tek geçiştir. Rastgele erişim part'lar
 _arasındadır_, ki onu `PartSource` indeksi karşılar. Bu yüzden burada worker yok, pool yok, WASM yok.

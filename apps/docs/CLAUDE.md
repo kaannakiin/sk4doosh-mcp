@@ -21,7 +21,7 @@ are no tests in this app.
 
 **Read [dokuman-kurallari.md](dokuman-kurallari.md) before adding or editing any page.** It is the
 binding convention: Diátaxis four-mode taxonomy, one page = one mode, reference is generated not
-written, RFC 2119 keywords stay in `packages/spec`, every code example must have been run.
+written, RFC 2119 keywords stay in `packages/http/spec`, every code example must have been run.
 
 Pages are markdown under `src/content/<product>/`. The tree has two axes: the first directory is
 the **product line** (`http-catalog/`, later `excel-mcp/`, `xml-mcp/`), the second is the
@@ -48,7 +48,7 @@ time, so a `throw` in it fails `dev` but not `build`. The `validate` script is t
 ## Language
 
 Site content and UI strings are **English** — this site is sk-mcp's public face, and so is
-`packages/spec`, which these pages link to as normative. The root CLAUDE.md's Turkish-prose rule
+`packages/http/spec`, which these pages link to as normative. The root CLAUDE.md's Turkish-prose rule
 governs `docs/` only. `dokuman-kurallari.md` is internal and stays Turkish. There is no i18n layer,
 by design.
 

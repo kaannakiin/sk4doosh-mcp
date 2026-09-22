@@ -1,0 +1,41 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "passThroughEnv": [
+        "SKMCP_MSSQL_SERVER",
+        "SKMCP_MSSQL_PORT",
+        "SKMCP_MSSQL_DATABASE",
+        "SKMCP_MSSQL_USER",
+        "SKMCP_MSSQL_PASSWORD",
+        "SKMCP_MSSQL_ENCRYPT",
+        "SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE",
+        "SKMCP_MSSQL_CONNECT_TIMEOUT_MS",
+        "SKMCP_MSSQL_QUERY_TIMEOUT_MS",
+        "SKMCP_MSSQL_LIVE"
+      ]
+    },
+    "test:coverage": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"]
+    },
+    "dev": {
+      "passThroughEnv": [
+        "SKMCP_MSSQL_SERVER",
+        "SKMCP_MSSQL_PORT",
+        "SKMCP_MSSQL_DATABASE",
+        "SKMCP_MSSQL_USER",
+        "SKMCP_MSSQL_PASSWORD",
+        "SKMCP_MSSQL_ENCRYPT",
+        "SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE",
+        "SKMCP_MSSQL_CONNECT_TIMEOUT_MS",
+        "SKMCP_MSSQL_QUERY_TIMEOUT_MS"
+      ]
+    }
+  }
+}

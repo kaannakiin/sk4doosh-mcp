@@ -2,7 +2,7 @@
 
 **Durum:** sevk edildi — uygulama bu kaydı takip eder
 **Tarih:** 18 Eylül 2026
-**Kapsam:** `packages/spec`, `packages/conformance`, `packages/core`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
+**Kapsam:** `packages/http/spec`, `packages/http/conformance`, `packages/http/core`, `sdks/dotnet`, `sdks/nestjs`, `apps/docs` — HTTP katalog ürün hattı
 **Kaynak tartışma:** [fastmcp-karsilastirma.md](fastmcp-karsilastirma.md) §4.5
 
 ---
@@ -49,7 +49,7 @@ export type ToolDetail = Pick<
 ```
 
 `Pick` `auth`'u adlandırmıyor, dolayısıyla `{ ...tool }` yazmak **tip hatası**. Politika adının
-ajana sızmaması ([visibility.md](../../packages/spec/visibility.md) değişmez 3) böylece derleyici
+ajana sızmaması ([visibility.md](../../packages/http/spec/visibility.md) değişmez 3) böylece derleyici
 tarafından korunuyor; C# tarafında üyeler tek tek adlandırılıyor ve ikisini birden
 `detail/auth-is-never-emitted.json` kontrol ediyor.
 
@@ -89,7 +89,7 @@ guard yorumu olarak duruyor.
 `schema` dışındaki her değer — yok, boş, tanınmayan, büyük/küçük harf farkı — `card`. Karşılaştırma
 tam eşleşme (`Ordinal`).
 
-Yasak [naming.md](../../packages/spec/naming.md)'in kuralı ve **katalog** hakkında: iki endpoint bir
+Yasak [naming.md](../../packages/http/spec/naming.md)'in kuralı ve **katalog** hakkında: iki endpoint bir
 adı talep ettiğinde SDK host'un beyan etmediği bir kazanan uydurur ve gerçek bir defekti
 geliştiriciden gizler. `detail` çağrı başına bir ajan argümanı, beyan edilmiş bir default'u var ve
 tek talep sahibi. Beyan edilmiş default'a düşmek hakemlik değil, default'un işini yapması —
@@ -117,7 +117,7 @@ yeniden yorumlayamaz.
 
 ## 8. Yeni fixture kind `detail` — ve kapattığı eski açık
 
-Onuncu kind açıldı: `packages/conformance/detail/`, 6 vaka, 227 → **233**.
+Onuncu kind açıldı: `packages/http/conformance/detail/`, 6 vaka, 227 → **233**.
 
 Mevcut `card` kind'ını genişletmek reddedildi: `CardFixture.expected` `additionalProperties: false`
 ve iki şekli bir disjunction yapmak, `parameters`'ı unutulmuş bir kart fixture'ının sessizce ikinci

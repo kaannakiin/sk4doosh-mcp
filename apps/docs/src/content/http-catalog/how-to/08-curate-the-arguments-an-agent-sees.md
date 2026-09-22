@@ -215,4 +215,4 @@ It will not add an argument your backend does not accept, narrow an argument's s
 arguments, or vary per caller. The published schema is the same for everyone; only the value of a
 provider-filled argument changes from one caller to the next.
 
-The normative rules are in `packages/spec/argument-curation.md`.
+The normative rules are in `packages/http/spec/argument-curation.md`.

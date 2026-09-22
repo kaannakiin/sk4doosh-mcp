@@ -5,8 +5,8 @@
     "gen": {
       "inputs": [
         "scripts/**",
-        "$TURBO_ROOT$/packages/spec/schemas/**",
-        "$TURBO_ROOT$/packages/spec/package.json"
+        "$TURBO_ROOT$/packages/http/spec/schemas/**",
+        "$TURBO_ROOT$/packages/http/spec/package.json"
       ],
       "outputs": ["src/SkMcp.AspNetCore/Generated/**"]
     },
@@ -23,7 +23,7 @@
     },
     "test": {
       "dependsOn": ["$TURBO_EXTENDS$", "gen"],
-      "inputs": ["src/**", "tests/**", "samples/**", "$TURBO_ROOT$/packages/conformance/**"],
+      "inputs": ["src/**", "tests/**", "samples/**", "$TURBO_ROOT$/packages/http/conformance/**"],
       "outputs": []
     },
     "pack": {

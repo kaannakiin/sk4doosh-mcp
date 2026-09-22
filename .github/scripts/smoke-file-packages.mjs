@@ -30,6 +30,9 @@ try {
       dependencies: {
         "@modelcontextprotocol/client": "^2.0.0",
         "@sk-mcp/file-core-native": archive("sk-mcp-file-core-native-"),
+        "@sk-mcp/mcp-core": archive("sk-mcp-mcp-core-"),
+        "@sk-mcp/db-core": archive("sk-mcp-db-core-"),
+        "@sk-mcp/mssql-mcp": archive("sk-mcp-mssql-mcp-"),
         "@sk-mcp/file-core": archive("sk-mcp-file-core-0"),
         "@sk-mcp/ooxml-core": archive("sk-mcp-ooxml-core-"),
         "@sk-mcp/excel-mcp": archive("sk-mcp-excel-mcp-"),
@@ -37,6 +40,8 @@ try {
       },
       overrides: {
         "@sk-mcp/file-core-native": "$@sk-mcp/file-core-native",
+        "@sk-mcp/mcp-core": "$@sk-mcp/mcp-core",
+        "@sk-mcp/db-core": "$@sk-mcp/db-core",
         "@sk-mcp/file-core": "$@sk-mcp/file-core",
         "@sk-mcp/ooxml-core": "$@sk-mcp/ooxml-core",
       },
