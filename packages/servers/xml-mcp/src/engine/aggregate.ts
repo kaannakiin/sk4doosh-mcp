@@ -15,6 +15,7 @@ import {
   emptyReports,
   groupKeyOf,
   matchesWhere,
+  presentCells,
   scanItems,
 } from "./records.js";
 
@@ -179,12 +180,38 @@ function compareKeys(left: readonly Cell[], right: readonly Cell[]): number {
   return 0;
 }
 
-function metricOrder(group: GroupState, index: number): number {
-  const state = group.metrics[index];
-  if (state === undefined) return 0;
-  if (state.sum !== undefined) return sumOf(state.sum);
-  if (state.distinct !== undefined) return state.distinct.size;
-  return state.extreme ?? state.counted;
+function compareGroups(left: GroupState, right: GroupState): number {
+  const byKey = compareKeys(left.key, right.key);
+  if (byKey !== 0) return byKey;
+  return left.encoded < right.encoded
+    ? -1
+    : left.encoded > right.encoded
+      ? 1
+      : 0;
+}
+
+/**
+ * Ranks by the reported value, never the accumulator: `avg` holds a running
+ * sum. An undefined metric sorts last in either direction.
+ */
+function compareMetric(
+  left: MetricValue | undefined,
+  right: MetricValue | undefined,
+  direction: 1 | -1,
+): number {
+  const a =
+    left === undefined || left.kind === "undefined" ? undefined : left.value;
+  const b =
+    right === undefined || right.kind === "undefined" ? undefined : right.value;
+  if (a === undefined || b === undefined) {
+    return a === b ? 0 : a === undefined ? 1 : -1;
+  }
+  return a === b ? 0 : (a < b ? -1 : 1) * direction;
+}
+
+interface FinishedGroup {
+  readonly group: GroupState;
+  readonly metrics: readonly MetricValue[];
 }
 
 export function aggregateDocument(
@@ -232,32 +259,34 @@ export function aggregateDocument(
     });
   }
 
-  const ordered = [...groups.values()].sort((left, right) => {
-    if (probe.orderBy === "metric") {
-      const index = probe.orderByMetric - 1;
-      const delta = metricOrder(left, index) - metricOrder(right, index);
-      if (delta !== 0) return delta;
-    }
-    const byKey = compareKeys(left.key, right.key);
-    if (byKey !== 0) return byKey;
-    return left.encoded < right.encoded
-      ? -1
-      : left.encoded > right.encoded
-        ? 1
-        : 0;
-  });
-  if (probe.descending) ordered.reverse();
-
-  const kept = ordered.slice(0, probe.maxGroups);
-  const results: GroupResult[] = kept.map((group) => ({
-    key: group.key,
-    rows: group.rows,
+  const finished: FinishedGroup[] = [...groups.values()].map((group) => ({
+    group,
     metrics: group.metrics.map((state, index) => {
       const request = probe.metrics[index];
       return request === undefined
         ? { kind: "count" as const, value: 0 }
         : finish(state, request, group.rows);
     }),
+  }));
+  const direction = probe.descending ? -1 : 1;
+  const metricIndex = probe.orderByMetric - 1;
+  const ordered = finished.sort((left, right) => {
+    if (probe.orderBy !== "metric") {
+      return compareGroups(left.group, right.group) * direction;
+    }
+    const byMetric = compareMetric(
+      left.metrics[metricIndex],
+      right.metrics[metricIndex],
+      direction,
+    );
+    return byMetric !== 0 ? byMetric : compareGroups(left.group, right.group);
+  });
+
+  const kept = ordered.slice(0, probe.maxGroups);
+  const results: GroupResult[] = kept.map(({ group, metrics }) => ({
+    key: presentCells(group.key, probe.maxChars),
+    rows: group.rows,
+    metrics,
   }));
 
   return {
@@ -270,7 +299,10 @@ export function aggregateDocument(
     matchedItems: matched,
     totalItems: scan.items.length,
     totalItemsExact: scan.complete,
-    returnedMatchedItems: kept.reduce((total, group) => total + group.rows, 0),
+    returnedMatchedItems: kept.reduce(
+      (total, { group }) => total + group.rows,
+      0,
+    ),
     complete: scan.complete,
     groupsTruncated: kept.length < ordered.length,
   };

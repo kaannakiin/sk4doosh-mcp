@@ -33,13 +33,23 @@ import {
 import { resolveHeaderRow } from "./coerce.js";
 import { modeEnvelopeBytes, withCsv, withMode } from "./envelope.js";
 
+interface CsvOptions {
+  readonly delimiter?: DelimiterName;
+  readonly encoding?: EncodingName;
+}
+
+function csvOptionsOf(args: CsvOptions): CsvOptions {
+  return {
+    ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
+    ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+  };
+}
+
 export function createHandlers(root: WorkbookRoot): ToolHandlers {
   const cache = createDocumentCache(root.real);
   const openXlsx = createXlsxOpener(root, cache);
-  const openFor = async (
-    path: string,
-    csv: { delimiter?: DelimiterName; encoding?: EncodingName } = {},
-  ) => cache.load(await resolveWorkbookPath(root, path), csv);
+  const openFor = async (path: string, csv: CsvOptions = {}) =>
+    cache.load(await resolveWorkbookPath(root, path), csv);
 
   return {
     list_workbooks: guard(
@@ -60,12 +70,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
     describe_workbook: guard(
       { root: root.real, tool: "describe_workbook" },
       async (args) => {
-        const loaded = await openFor(args.filePath, {
-          ...(args.delimiter === undefined
-            ? {}
-            : { delimiter: args.delimiter }),
-          ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
-        });
+        const loaded = await openFor(args.filePath, csvOptionsOf(args));
         return json(
           withMode(
             describeDocument(
@@ -88,10 +93,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       const csvEnvelope = (report: CsvReport | undefined): number =>
         report === undefined ? 0 : measureJson({ csv: report });
       if (args.cursor === undefined) assertHeaderScan(args, args.filePath);
-      const loaded = await openFor(args.filePath, {
-        ...(args.delimiter === undefined ? {} : { delimiter: args.delimiter }),
-        ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
-      });
+      const loaded = await openFor(args.filePath, csvOptionsOf(args));
       rejectForCsv(loaded, "valueMode", raw.valueMode, args.filePath);
       rejectForCsv(loaded, "mergedCells", raw.mergedCells, args.filePath);
       rejectForCsv(
@@ -120,10 +122,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
                   headerRowSource: "cursor" as const,
                 }),
             headerScan: args.headerScan ?? false,
-            ...(args.delimiter === undefined
-              ? {}
-              : { delimiter: args.delimiter }),
-            ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
+            ...csvOptionsOf(args),
             includeHyperlinks: args.includeHyperlinks ?? false,
           }),
           report,
@@ -215,7 +214,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
       { root: root.real, tool: "aggregate_sheet" },
       async (args) => {
         assertHeaderScan(args, args.filePath);
-        const loaded = await openFor(args.filePath);
+        const loaded = await openFor(args.filePath, csvOptionsOf(args));
         return json(
           withCsv(
             aggregateSheet(sheetSource(loaded), {
@@ -249,12 +248,7 @@ export function createHandlers(root: WorkbookRoot): ToolHandlers {
     find_in_sheet: guard(
       { root: root.real, tool: "find_in_sheet" },
       async (args, _tool, signal) => {
-        const loaded = await openFor(args.filePath, {
-          ...(args.delimiter === undefined
-            ? {}
-            : { delimiter: args.delimiter }),
-          ...(args.encoding === undefined ? {} : { encoding: args.encoding }),
-        });
+        const loaded = await openFor(args.filePath, csvOptionsOf(args));
         rejectForCsv(
           loaded,
           "searchIn",

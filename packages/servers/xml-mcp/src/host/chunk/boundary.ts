@@ -432,6 +432,10 @@ function runScan(
   let oversized: ScanRefusal | undefined;
   let scanned = 0;
   let jumped = false;
+  let lookahead: number | undefined;
+  const full = (): boolean => offsets.length >= options.maxSpans * 2;
+  const ordinalBase = (): number =>
+    jumped && hint !== undefined ? hint.ordinal : 1;
 
   const outcome = walkElements(bytes, {
     onStart(stack, frame) {
@@ -441,8 +445,16 @@ function runScan(
         return;
       }
       if (stack.length !== depth || ancestorsMatched !== depth) return;
+      if (!matchesStep(frame, selector.name)) {
+        if (!full()) scanned += 1;
+        return;
+      }
+      if (full()) {
+        lookahead = frame.start;
+        return;
+      }
       scanned += 1;
-      if (open === undefined && matchesStep(frame, selector.name)) open = frame;
+      open ??= frame;
     },
     jump(stack) {
       if (
@@ -463,15 +475,14 @@ function runScan(
       if (size > options.maxRecordBytes) {
         oversized = {
           reason: "record_too_large",
-          occurrence: offsets.length / 2 + 1,
+          occurrence: ordinalBase() + offsets.length / 2,
           bytes: size,
         };
         return;
       }
       offsets.push(frame.start, end);
     },
-    done: () =>
-      oversized !== undefined || offsets.length >= options.maxSpans * 2,
+    done: () => oversized !== undefined || lookahead !== undefined,
   });
 
   if (oversized !== undefined) return oversized;
@@ -480,10 +491,11 @@ function runScan(
   return {
     context,
     offsets: Float64Array.from(offsets),
-    firstOrdinal: jumped && hint !== undefined ? hint.ordinal : 1,
+    firstOrdinal: ordinalBase(),
     scanned,
     complete: outcome.complete,
     resumedFromHint: jumped,
+    ...(lookahead === undefined ? {} : { lookahead }),
   };
 }
 

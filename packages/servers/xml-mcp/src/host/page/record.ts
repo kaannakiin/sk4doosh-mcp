@@ -40,8 +40,9 @@ export interface AssembleRecordInput {
   readonly mode: SourceMode;
   readonly optionsHash: string;
   readonly offset: number;
+  readonly resumeFrom?: number;
   readonly page: RecordPage;
-  readonly resumeBytes?: ReadonlyMap<number, number>;
+  readonly byteOf?: (ordinal: number) => number | undefined;
 }
 
 const hint =
@@ -49,15 +50,20 @@ const hint =
 
 export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
   const { page, snapshotId } = input;
-  const cursorAt = (position: number): string => {
-    const byte = input.resumeBytes?.get(position);
+  const cursorAt = (position: number, ordinal: number): string => {
+    const byte = input.byteOf?.(ordinal);
     return encodePosition(snapshotId, {
       t: "records",
       i: position,
+      r: ordinal,
       ...(byte === undefined ? {} : { b: byte }),
       o: input.optionsHash,
       x: Date.now() + cursorTtlMs,
     });
+  };
+  const resumeAfter = (rows: readonly Row[]): number => {
+    const last = rows.at(-1);
+    return last === undefined ? page.resumeOrdinal : last.occurrence + 1;
   };
 
   const reserveBytes =
@@ -77,7 +83,10 @@ export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
       complete: false,
       truncated: true,
       truncationReason: "maxPayloadBytes",
-      nextCursor: cursorAt(input.offset + page.rows.length),
+      nextCursor: cursorAt(
+        input.offset + page.rows.length,
+        resumeAfter(page.rows),
+      ),
       hint,
     }) + cursorSlackBytes;
 
@@ -107,6 +116,18 @@ export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
 
   const consumed = input.offset + admitted.length;
   const complete = page.complete && !refused && consumed >= page.matchedItems;
+  const ordinal = resumeAfter(admitted);
+  if (
+    !complete &&
+    input.resumeFrom !== undefined &&
+    ordinal <= input.resumeFrom
+  ) {
+    throw new SkMcpXmlError(
+      "resource_limit",
+      "The page made no progress through the record set.",
+      "Start again without a cursor, or narrow itemAddress.",
+    );
+  }
   const truncationReason: RecordTruncation | undefined = complete
     ? undefined
     : refused
@@ -131,6 +152,6 @@ export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
     complete,
     truncated: !complete,
     ...(truncationReason === undefined ? {} : { truncationReason }),
-    ...(complete ? {} : { nextCursor: cursorAt(consumed), hint }),
+    ...(complete ? {} : { nextCursor: cursorAt(consumed, ordinal), hint }),
   };
 }

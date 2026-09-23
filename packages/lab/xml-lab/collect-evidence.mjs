@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { runProbe, parseProbeRecord } from "./src/record.ts";
 
-const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
+const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const outputDirectory = join(repoRoot, "docs", "xml", "f0");
 
 const git = (...args) => {

@@ -1,8 +1,4 @@
-import {
-  truncate,
-  type CellFacts,
-  type CellSnapshot,
-} from "../grid/cell-value.js";
+import type { CellFacts, CellSnapshot } from "../grid/cell-value.js";
 import { SkMcpExcelError } from "../platform/errors.js";
 
 export interface SheetJsCell {
@@ -80,7 +76,7 @@ function factsOf(cell: SheetJsCell): CellFacts {
   if (typeof value === "boolean") {
     return { value };
   }
-  return truncate(value);
+  return { value };
 }
 
 function withHyperlink(facts: CellFacts, cell: SheetJsCell): CellFacts {

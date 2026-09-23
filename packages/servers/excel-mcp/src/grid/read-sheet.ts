@@ -6,6 +6,7 @@ import {
 } from "@sk-mcp/file-core";
 import {
   normalizeCell,
+  resolveCell,
   type CellNote,
   type CellScalar,
   type NormalizeOptions,
@@ -493,23 +494,33 @@ async function findWithMatcher(
     batchBytes = 2;
   };
 
-  for (let rowNumber = bounds.top; rowNumber <= bounds.bottom; rowNumber += 1) {
-    if (regexTest !== undefined && (rowNumber - bounds.top) % 128 === 0)
-      await regexTest([]);
+  const withCovered =
+    normalizeOptions.mergePolicy === "repeat" || options.searchIn !== "values";
+  let visitedRows = 0;
+  for (const rowNumber of sheet.populatedRows({
+    from: bounds.top,
+    to: bounds.bottom,
+    withCovered,
+  })) {
+    if (regexTest !== undefined && visitedRows % 128 === 0) await regexTest([]);
+    visitedRows += 1;
     const row = sheet.rowAt(rowNumber);
     if (row === undefined) {
       continue;
     }
-    for (let column = bounds.left; column <= bounds.right; column += 1) {
+    for (const column of row.populatedColumns({
+      from: bounds.left,
+      to: bounds.right,
+      withCovered,
+    })) {
       const snapshot = row.cellAt(column);
       if (snapshot === undefined) {
         continue;
       }
       scannedCells += 1;
-      const normalized = normalizeCell(snapshot, normalizeOptions);
       const haystacks: string[] = [];
       if (options.searchIn !== "formulas") {
-        haystacks.push(renderScalar(normalized.value));
+        haystacks.push(renderScalar(resolveCell(snapshot, normalizeOptions)));
       }
       if (
         options.searchIn !== "values" &&
@@ -530,7 +541,7 @@ async function findWithMatcher(
             address: formatCellRef(rowNumber, column),
             row: rowNumber,
             column,
-            value: normalized.value,
+            value: normalizeCell(snapshot, normalizeOptions).value,
           },
           texts: haystacks,
         });
@@ -547,7 +558,7 @@ async function findWithMatcher(
           address: formatCellRef(rowNumber, column),
           row: rowNumber,
           column,
-          value: normalized.value,
+          value: normalizeCell(snapshot, normalizeOptions).value,
         });
       }
     }

@@ -30,8 +30,8 @@ import {
   type PredicateOptions,
 } from "./predicate.js";
 import { columnToLetters, formatRange, resolveRange } from "./range.js";
-import { normalizeCell } from "./cell-value.js";
-import type { SheetView } from "./sheet.js";
+import { isUncachedFormula, presentScalar, resolveCell } from "./cell-value.js";
+import type { RowView } from "./sheet.js";
 import { requireSheetBounds, type SheetSource } from "./sheet.js";
 
 export type MetricFunction =
@@ -168,24 +168,21 @@ interface GridRead {
 }
 
 function readGrid(
-  sheet: SheetView,
-  row: number,
+  rowView: RowView | undefined,
   column: number,
   mergedCells: "master" | "repeat",
 ): GridRead {
-  const snapshot = sheet.rowAt(row)?.cellAt(column);
+  const snapshot = rowView?.cellAt(column);
   if (snapshot === undefined) {
     return { value: null, uncachedFormula: false };
   }
-  const normalized = normalizeCell(snapshot, {
-    valueMode: "values",
-    mergePolicy: mergedCells,
-    includeHyperlinks: false,
-  });
+  const merged = snapshot.merged && mergedCells === "master";
   return {
-    value: normalized.value,
-    uncachedFormula:
-      normalized.note?.kind === "formula" && !normalized.note.cached,
+    value: resolveCell(snapshot, {
+      valueMode: "values",
+      mergePolicy: mergedCells,
+    }),
+    uncachedFormula: !merged && isUncachedFormula(snapshot),
   };
 }
 
@@ -331,49 +328,50 @@ export function aggregateSheet(
   };
 
   const groups = new Map<string, GroupState>();
+  const groupFor = (key: readonly CellScalar[]): GroupState => {
+    const id = keyOf(key);
+    const existing = groups.get(id);
+    if (existing !== undefined) {
+      return existing;
+    }
+    if (groups.size >= limits.maxAggregateGroups) {
+      throw new SkMcpExcelError(
+        "resource_limit",
+        `The rows form more than ${limits.maxAggregateGroups} groups.`,
+        "Group by fewer or coarser columns, or add where conditions.",
+      );
+    }
+    const fresh: GroupState = {
+      key,
+      rows: 0,
+      metrics: options.metrics.map((metric) => newMetricState(metric.fn)),
+    };
+    groups.set(id, fresh);
+    return fresh;
+  };
+  let visits = 0;
+  const visit = (): void => {
+    visits += 1;
+    if (visits > limits.maxAggregateCellVisits) {
+      throw new SkMcpExcelError(
+        "resource_limit",
+        `Aggregating this range reads more than ${limits.maxAggregateCellVisits} cells.`,
+        "Pass a narrower range, or split the aggregate into several ranges.",
+      );
+    }
+  };
   const startRow =
     options.headerRow >= bounds.top && options.headerRow <= bounds.bottom
       ? Math.max(bounds.top, options.headerRow + 1)
       : bounds.top;
+  const withCovered = options.mergedCells === "repeat";
 
   let scannedRows = 0;
   let matchedRows = 0;
   let uncachedFormulas = 0;
   let blankRows = 0;
 
-  for (let row = startRow; row <= bounds.bottom; row += 1) {
-    scannedRows += 1;
-    const rowView = sheet.rowAt(row);
-    let blank = true;
-    if (rowView !== undefined) {
-      for (let column = bounds.left; column <= bounds.right; column += 1) {
-        const snapshot = rowView.cellAt(column);
-        if (snapshot === undefined) {
-          continue;
-        }
-        if (
-          normalizeCell(snapshot, {
-            valueMode: "values",
-            mergePolicy: options.mergedCells,
-            includeHyperlinks: false,
-          }).value !== null
-        ) {
-          blank = false;
-          break;
-        }
-      }
-    }
-    if (blank) {
-      blankRows += 1;
-    }
-    const cellAt = (column: number): CellScalar => {
-      const read = readGrid(sheet, row, column, options.mergedCells);
-      if (read.uncachedFormula) {
-        uncachedFormulas += 1;
-      }
-      return read.value;
-    };
-
+  const matches = (cellAt: (column: number) => CellScalar): boolean => {
     let matched = conditions.length === 0 ? true : options.match === "all";
     for (const entry of conditions) {
       const hit = evaluate(
@@ -383,22 +381,54 @@ export function aggregateSheet(
       );
       matched = options.match === "all" ? matched && hit : matched || hit;
     }
-    if (!matched) {
+    return matched;
+  };
+
+  for (const row of sheet.populatedRows({
+    from: startRow,
+    to: bounds.bottom,
+    withCovered,
+  })) {
+    scannedRows += 1;
+    visit();
+    const rowView = sheet.rowAt(row);
+    let blank = true;
+    for (const column of rowView?.populatedColumns({
+      from: bounds.left,
+      to: bounds.right,
+      withCovered,
+    }) ?? []) {
+      visit();
+      const snapshot = rowView?.cellAt(column);
+      if (
+        snapshot !== undefined &&
+        resolveCell(snapshot, {
+          valueMode: "values",
+          mergePolicy: options.mergedCells,
+        }) !== null
+      ) {
+        blank = false;
+        break;
+      }
+    }
+    if (blank) {
+      blankRows += 1;
+    }
+    const cellAt = (column: number): CellScalar => {
+      visit();
+      const read = readGrid(rowView, column, options.mergedCells);
+      if (read.uncachedFormula) {
+        uncachedFormulas += 1;
+      }
+      return read.value;
+    };
+
+    if (!matches(cellAt)) {
       continue;
     }
     matchedRows += 1;
 
-    const key = groupColumns.map((entry) => cellAt(entry.column));
-    const id = keyOf(key);
-    let group = groups.get(id);
-    if (group === undefined) {
-      group = {
-        key,
-        rows: 0,
-        metrics: options.metrics.map((metric) => newMetricState(metric.fn)),
-      };
-      groups.set(id, group);
-    }
+    const group = groupFor(groupColumns.map((entry) => cellAt(entry.column)));
     group.rows += 1;
 
     for (let slot = 0; slot < metricColumns.length; slot += 1) {
@@ -491,6 +521,32 @@ export function aggregateSheet(
     }
   }
 
+  /**
+   * A row with no stored cell reads null in every column, so those rows fold
+   * in one step weighted by their count; query-values.spec.ts pins the
+   * counts.
+   */
+  const absent = Math.max(0, bounds.bottom - startRow + 1) - scannedRows;
+  if (absent > 0) {
+    scannedRows += absent;
+    blankRows += absent;
+    if (matches(() => null)) {
+      matchedRows += absent;
+      const group = groupFor(groupColumns.map(() => null));
+      group.rows += absent;
+      metricColumns.forEach((entry, slot) => {
+        const state = group.metrics[slot];
+        if (state === undefined) return;
+        if (entry.metric.fn === "count") {
+          state.counted += absent;
+          return;
+        }
+        censusFor(entry.column as number).nulls += absent;
+        state.skipped += absent;
+      });
+    }
+  }
+
   const ordered = [...groups.values()];
   const metricSlot = (options.orderByMetric ?? 1) - 1;
   ordered.sort((left, right) => {
@@ -566,9 +622,9 @@ export function aggregateSheet(
           ] as CellScalar[],
         ]
       : page.map((group) => [
-          ...group.key,
+          ...group.key.map(presentScalar),
           ...options.metrics.map((metric, slot) =>
-            finish(metric, group.metrics[slot] as MetricState),
+            presentScalar(finish(metric, group.metrics[slot] as MetricState)),
           ),
         ]);
 
@@ -601,7 +657,9 @@ export function aggregateSheet(
     bucket.add(
       group.key
         .map((value) =>
-          typeof value === "string" ? value : JSON.stringify(value),
+          typeof value === "string"
+            ? String(presentScalar(value))
+            : JSON.stringify(value),
         )
         .join(" / "),
     );

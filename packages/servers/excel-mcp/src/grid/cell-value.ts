@@ -24,7 +24,6 @@ export type CellNote =
 
 export interface CellFacts {
   readonly value: CellScalar;
-  readonly truncatedFrom?: number;
   readonly href?: string;
 }
 
@@ -42,6 +41,8 @@ export interface NormalizeOptions {
   readonly includeHyperlinks: boolean;
 }
 
+export type ResolveOptions = Omit<NormalizeOptions, "includeHyperlinks">;
+
 export interface NormalizedCell {
   readonly value: CellScalar;
   readonly note?: CellNote;
@@ -49,40 +50,77 @@ export interface NormalizedCell {
 
 export const emptyCell: NormalizedCell = { value: null };
 
-export function truncate(text: string): CellFacts {
-  if (text.length <= limits.maxStringChars) {
-    return { value: text };
+interface Presented {
+  readonly value: CellScalar;
+  readonly truncatedFrom?: number;
+}
+
+function clamp(value: CellScalar): Presented {
+  if (typeof value !== "string" || value.length <= limits.maxStringChars) {
+    return { value };
   }
   return {
-    value: truncateWellFormed(text, limits.maxStringChars),
-    truncatedFrom: text.length,
+    value: truncateWellFormed(value, limits.maxStringChars),
+    truncatedFrom: value.length,
   };
+}
+
+/**
+ * Shortens a value for the response. Only output goes through here: predicates,
+ * group keys and distinct counts read `resolveCell`, so two strings sharing
+ * their first `maxStringChars` characters stay distinct (query-values.spec.ts).
+ */
+export function presentScalar(value: CellScalar): CellScalar {
+  return clamp(value).value;
 }
 
 function noteOf(
   facts: CellFacts,
+  truncatedFrom: number | undefined,
   options: NormalizeOptions,
 ): CellNote | undefined {
   if (facts.href !== undefined && options.includeHyperlinks) {
     return {
       kind: "hyperlink",
       href: facts.href,
-      ...(facts.truncatedFrom === undefined
-        ? {}
-        : { truncatedFrom: facts.truncatedFrom }),
+      ...(truncatedFrom === undefined ? {} : { truncatedFrom }),
     };
   }
-  if (facts.truncatedFrom !== undefined) {
-    return { kind: "truncated", length: facts.truncatedFrom };
+  if (truncatedFrom !== undefined) {
+    return { kind: "truncated", length: truncatedFrom };
   }
   return undefined;
 }
 
 function present(facts: CellFacts, options: NormalizeOptions): NormalizedCell {
-  const note = noteOf(facts, options);
-  return note === undefined
-    ? { value: facts.value }
-    : { value: facts.value, note };
+  const { value, truncatedFrom } = clamp(facts.value);
+  const note = noteOf(facts, truncatedFrom, options);
+  return note === undefined ? { value } : { value, note };
+}
+
+export function resolveCell(
+  snapshot: CellSnapshot,
+  options: ResolveOptions,
+): CellScalar {
+  if (snapshot.merged && options.mergePolicy === "master") {
+    return null;
+  }
+  const formula = snapshot.formula;
+  if (formula === undefined || formula === "") {
+    return snapshot.value.value;
+  }
+  if (options.valueMode === "formulas") {
+    return `=${formula}`;
+  }
+  return snapshot.cached?.value ?? null;
+}
+
+export function isUncachedFormula(snapshot: CellSnapshot): boolean {
+  return (
+    snapshot.formula !== undefined &&
+    snapshot.formula !== "" &&
+    snapshot.cached === undefined
+  );
 }
 
 export function normalizeCell(
@@ -103,8 +141,8 @@ export function normalizeCell(
   }
   const scalar =
     snapshot.cached === undefined
-      ? emptyCell
-      : present(snapshot.cached, options);
+      ? { value: null, truncatedFrom: undefined }
+      : clamp(snapshot.cached.value);
   if (options.valueMode === "both" || !cached) {
     return {
       value: scalar.value,
@@ -112,11 +150,13 @@ export function normalizeCell(
         kind: "formula",
         formula: text,
         cached,
-        ...(snapshot.cached?.truncatedFrom === undefined
+        ...(scalar.truncatedFrom === undefined
           ? {}
-          : { truncatedFrom: snapshot.cached.truncatedFrom }),
+          : { truncatedFrom: scalar.truncatedFrom }),
       },
     };
   }
-  return scalar;
+  return snapshot.cached === undefined
+    ? emptyCell
+    : present(snapshot.cached, options);
 }

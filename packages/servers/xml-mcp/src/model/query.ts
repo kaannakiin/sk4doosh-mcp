@@ -152,6 +152,7 @@ export interface RecordProbe extends ScanLimits {
   readonly caseSensitive: boolean;
   readonly offset: number;
   readonly maxRows: number;
+  readonly resumeFrom?: number;
 }
 
 export interface Row {
@@ -195,6 +196,7 @@ export interface RecordPage extends ItemScope {
   readonly columns: readonly ColumnReport[];
   readonly complete: boolean;
   readonly next?: number;
+  readonly resumeOrdinal: number;
 }
 
 export type MetricFunction =
