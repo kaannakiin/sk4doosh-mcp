@@ -98,8 +98,6 @@ Tasarımın her kısıtı kurulu framework'e karşı ölçüldü; hiçbiri sözl
 
 **Streaming gövde.** İki dispatcher da gövdeyi bellekte tutuyor; `maxFileBytes` bunun sınırı. Stream'e geçiş ayrı bir iş.
 
-**`JsonPatchDocument<T>`'nin RFC 6902 şeması.** Tip bugün nesne olarak yansıtılıyor, tel ise dizi. Bu bir tip eşleme sorunu, media type sorunu değil; SDK'nın referans vermediği bir paketi ad üzerinden tanımak ayrı bir karar. `[Consumes]` ile beyan edilmiş `json-patch+json` gövdesi bu işle doğru header'ı alıyor.
-
 ## 8. Kodlar
 
 | Kod                                                                                    | Tür              | Sonuç                                                 |
@@ -110,3 +108,17 @@ Tasarımın her kısıtı kurulu framework'e karşı ölçüldü; hiçbiri sözl
 | `invalid_file_argument`, `file_too_large`, `file_unresolved`                           | `SdkErrorCode`   | `file_unresolved` yalnız `unavailable` iken retryable |
 
 Yeni tanı kodları iki severity tablosuna aynı değişiklikte girer — `duplicate_argument`'ın tablolarda unutulması (`deepObject` Aşama 0) tekrarlanmasın.
+
+## 9. JSON Patch — sonradan kapatıldı
+
+İlk teslimde ertelenmişti: header doğru gidiyordu ama şema yanlıştı, yani tool listede olup hiçbir çağrısı geçemiyordu. Bu, endpoint'i hiç listelememekten kötü; ertelemenin gerekçesi ("referans verilmeyen paketi ad üzerinden tanımak ayrı karar") da tutmadı, çünkü Microsoft aynı kararı aynı gerekçeyle vermiş.
+
+**Ölçülen önceki çıktı** (`JsonPatchSchemaTests`, düzeltmeden önce):
+
+- Newtonsoft `JsonPatchDocument<T>`: `{Operations: [...], ContractResolver: {}}` — nesne.
+- System.Text.Json `JsonPatchDocument<T>`: `Operations` artı `SerializerOptions`'ın reflection'ı; `Assembly`, `TypeInfo`, `MethodInfo`… onlarca `$defs`.
+- `AddNewtonsoftJson` açıkken ApiExplorer tipi `Operation[]` olarak yeniden yazıyor (`JsonPatchOperationsArrayProvider`): dizi, ama `op` enum'u yok ve `value` nesne tipli — string değer gönderen ajan şemayı ihlal ediyor.
+
+**Karar.** İki namespace'teki (`Microsoft.AspNetCore.JsonPatch`, `….SystemTextJson`) `JsonPatchDocument` / `JsonPatchDocument<T>` ve türevleri ad ve namespace üzerinden, base type zinciri yürünerek tanınır ve `verbatim` düğümle RFC 6902 dizisine bağlanır. Şema Microsoft.AspNetCore.OpenApi'nin .NET 10'daki şemasının aynısı (dotnet/aspnetcore#63052): `oneOf` ile `add|replace|test` (`value`), `move|copy` (`from`), `remove`. Microsoft yalnız System.Text.Json varyantını kapsıyor; biz Newtonsoft'u da kapsıyoruz, çünkü .NET 8 host'larının yolu o. Host'un `TypeSchema` beyanı yine önce gelir. Newtonsoft'ta gövde tipi ApiExplorer'dan değil action parametresinin kendi tipinden okunur.
+
+**Yol üstünde bulunan önceden var olan hata — minimal API JSON gövdesi hiç okunmuyordu.** `RequestDelegateFactory` JSON gövdesini yalnız `IHttpRequestBodyDetectionFeature.CanHaveBody == true` iken okuyor; sentetik `DefaultHttpContext` bu feature'ı taşımıyor. Sonuç: sk-mcp üzerinden çağrılan her minimal API tipli JSON gövdesi "Implicit body inferred … but no body was provided" ile 400 dönüyordu; gövde opsiyonelse handler sessizce `null` alıyordu. MVC etkilenmiyordu, form okuması da (`CanHaveBody == false` kontrolü, null'da geçer) etkilenmiyordu; bu yüzden hiçbir test yakalamamıştı — mevcut minimal API testi ham stream okuyordu. Dispatcher artık Kestrel gibi feature'ı her istekte kuruyor (`CanHaveBody` = gövde yazıldı mı). `MinimalJsonBodyHostTests` bunu pinliyor; satır kaldırılınca MJ1, MJ2 ve minimal JsonPatch testi kırılıyor, controller testleri geçiyor.

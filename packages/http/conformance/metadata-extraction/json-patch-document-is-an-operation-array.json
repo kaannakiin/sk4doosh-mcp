@@ -1,0 +1,155 @@
+{
+  "kind": "metadata-extraction",
+  "description": "JSON Patch govdesi RFC 6902 islem dizisidir: kok 'body' argumani olur ve islem semasi bozulmadan tasinir",
+  "input": {
+    "method": "PATCH",
+    "route": "/orders/{id}/draft",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["op", "path", "value"],
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": ["add", "replace", "test"]
+                },
+                "path": {
+                  "type": "string"
+                },
+                "value": {}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["op", "path", "from"],
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": ["move", "copy"]
+                },
+                "path": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["op", "path"],
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": ["remove"]
+                },
+                "path": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "required": true,
+      "contentType": "application/json-patch+json"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "patch_orders_draft_by_id",
+    "description": "PATCH /orders/{id}/draft",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["op", "path", "value"],
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "enum": ["add", "replace", "test"]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "value": {}
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["op", "path", "from"],
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "enum": ["move", "copy"]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["op", "path"],
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "enum": ["remove"]
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required": ["id", "body"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

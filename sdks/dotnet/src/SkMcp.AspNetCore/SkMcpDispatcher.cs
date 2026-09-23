@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Errors;
@@ -31,8 +33,20 @@ internal sealed class SkMcpFileRefused(string field, string reason, int limit)
 /// <summary>What an invocation's body needs beyond its arguments: the budgets and whom a <c>ref</c> is resolved for.</summary>
 internal sealed record DispatchFiles(InvokeTarget Target, int MaxInlineFileBytes, int MaxFileBytes);
 
+/// <remarks>
+/// Guard: minimal APIs read a JSON body only when this feature says <c>CanHaveBody</c>, and a
+/// <see cref="DefaultHttpContext"/> carries none, so without it every minimal-API JSON body binds
+/// as absent (a 400, or a silent <c>null</c> for an optional one). Kestrel sets it per request;
+/// this mirrors it. Pinned by JsonPatchHostTests.JH4 and MinimalJsonBodyHostTests.
+/// </remarks>
+internal sealed class SyntheticBodyDetection(bool canHaveBody) : IHttpRequestBodyDetectionFeature
+{
+    public bool CanHaveBody { get; } = canHaveBody;
+}
+
 internal sealed class SkMcpDispatcher(
-    PipelineHolder holder, SyntheticRequestFactory requests, IServiceProvider services)
+    PipelineHolder holder, SyntheticRequestFactory requests, IServiceProvider services,
+    ILogger<SkMcpDispatcher> logger)
 {
     private static readonly IReadOnlyDictionary<string, string> NoHeaders =
         new Dictionary<string, string>();
@@ -67,9 +81,33 @@ internal sealed class SkMcpDispatcher(
         context.Response.Body = Stream.Null;
         SkMcpProbe.MarkProbe(context);
 
-        await pipeline(context);
+        await RunAsync(pipeline, context);
 
         return new ProbeOutcome(context.Response.StatusCode, SkMcpProbe.WasShortCircuited(context));
+    }
+
+    /// <remarks>
+    /// Guard: Kestrel answers an exception that escapes the pipeline with a bare 500 and logs it;
+    /// the dispatcher does the same. Letting it propagate made a handler's exception an
+    /// <c>internal_error</c> blamed on sk-mcp and carrying the exception message to the agent,
+    /// where every other 5xx body is withheld. A cancellation of the synthetic request itself still
+    /// propagates, because that is the deadline or the caller, not the handler. Pinned by
+    /// UnhandledExceptionHostTests.
+    /// </remarks>
+    private async Task RunAsync(RequestDelegate pipeline, HttpContext context)
+    {
+        try
+        {
+            await pipeline(context).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (!(ex is OperationCanceledException && context.RequestAborted.IsCancellationRequested))
+        {
+            logger.LogError(
+                ex, "sk-mcp: an unhandled exception escaped {Method} {Path}; answered 500.",
+                context.Request.Method, context.Request.Path);
+            context.Response.Clear();
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        }
     }
 
     private RequestDelegate Pipeline() => holder.Pipeline
@@ -175,6 +213,7 @@ internal sealed class SkMcpDispatcher(
             {
                 context.Request.Headers[name] = value;
             }
+            context.Features.Set<IHttpRequestBodyDetectionFeature>(new SyntheticBodyDetection(written is not null));
             if (written is not null)
             {
                 context.Request.Body = new MemoryStream(written.Bytes);
@@ -185,7 +224,7 @@ internal sealed class SkMcpDispatcher(
             MemoryStream responseBody = new();
             context.Response.Body = responseBody;
 
-            Task run = pipeline(context);
+            Task run = RunAsync(pipeline, context);
             TaskCompletionSource abandoned = new(TaskCreationOptions.RunContinuationsAsynchronously);
             using (linked.Token.Register(() => abandoned.TrySetResult()))
             {

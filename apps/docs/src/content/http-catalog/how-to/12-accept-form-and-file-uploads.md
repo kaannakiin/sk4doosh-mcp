@@ -24,6 +24,9 @@ those arguments go on the wire, from what your framework already says about the 
   Nest, the notation each framework's binder reads.
 - **Files.** `IFormFile`, `IFormFileCollection`, and a Nest `FileInterceptor` with its field declared
   become multipart file fields.
+- **JSON Patch.** A `JsonPatchDocument<T>` body, from either the Newtonsoft or the System.Text.Json
+  package, is published as the RFC 6902 operation array the agent sends as `body`:
+  `[{ "op": "replace", "path": "/status", "value": "shipped" }]`.
 
 ## Declare what cannot be read
 
@@ -161,4 +164,3 @@ security control is your decision.
   parser for the variant.
 - Bodies are held in memory, so the peak is `invoke.maxFileBytes` times the number of concurrent
   calls.
-- `JsonPatchDocument<T>` is still described as an object; its wire form is an array.
