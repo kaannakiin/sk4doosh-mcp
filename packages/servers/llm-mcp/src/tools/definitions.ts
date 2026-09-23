@@ -21,7 +21,7 @@ export const toolDefinitions = {
   },
   local_task: {
     description:
-      "Run one bounded language task on the free local model: classify, extract, summarize, transform, or free. Pass file paths in `files` instead of pasting their contents; the server reads them itself, so their text never enters your context. With `jsonSchema` the answer is JSON matching that schema, returned as `result`; otherwise it is text, returned as `answer`. The local window is small: an input over its budget is refused as input_too_large, never truncated.",
+      "Run one bounded language task on the free local model: classify, extract, summarize, transform, or free. Pass file paths in `files` instead of pasting their contents; the server reads them itself, so their text never enters your context. With `jsonSchema` the answer is JSON matching that schema, returned as `result`; otherwise it is text, returned as `answer`. The local window is small: summarize and extract split a long input themselves and read all of it; the other kinds refuse an input over the budget as input_too_large. Nothing is ever truncated.",
     inputSchema: z.object({
       kind: z.enum(taskKinds),
       instruction: z

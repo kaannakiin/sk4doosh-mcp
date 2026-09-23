@@ -1,6 +1,6 @@
 # llm-mcp — codex'in yerel modellere iş devretmesi
 
-**Durum:** F0–F3 uygulandı — F4'ten itibaren öneri
+**Durum:** F0–F4 uygulandı — F5'ten itibaren öneri
 **Tarih:** 23 Eylül 2026
 **Kapsam:** `packages/servers/llm-mcp` (yeni), `packages/cores/mcp-core` (yazan tool türü), `products/chat/api` (`codex-client.ts` bağlantısı ve workspace'e yazılan `AGENTS.md`)
 **Kaynak:** scratchpad'de prototip sunucu, Ollama ölçümleri, `gpt-5.6-luna` (`low`) ile 8 codex koşusu, 6 açık kaynak reponun incelenmesi
@@ -204,6 +204,15 @@ Prototipten farklar:
 - `summarize` ve `extract` için parçalama (map-reduce).
 
 **Çıkış:** 54k karakterlik bir döküman kesilmeden özetleniyor ve özet dökümanın sonundaki kararları da içeriyor.
+
+**Durum:** uygulandı. `docs/auth-design.md` (53.751 bayt) stdio'dan `summarize` ile 4 parça + 1 birleştirme çağrısında, 95 sn'de, kesilmeden özetlendi (18,8k prompt, 4,0k output token). Özet son bölümün (34) kararlarından üçünü anıyor: `activeTools` ile etkinleştirme (34.1), `public_id`'den türeyen ad (34.3), `destructiveHint`'in onay çıtasını yükseltmesi (34.5). 34.9 ve 34.10 özete girmedi.
+
+İlk denemede birleştirme hiç yakınsamadı: not tavanı `bütçe / parça sayısı` idi, üç turdan sonra notlar hâlâ 7.917 token'dı. Tavan artık son çağrıya kalan bütçenin yarısının not sayısına bölümü. Yarısı, çünkü tahmin (1,8 karakter/token) İngilizce metinde gerçek token'ın iki katına çıkabiliyor.
+
+Codex turu (`gpt-5.6-luna`, `low`):
+
+- İlk `AGENTS.md` ile codex `local_task`'ı çağırdı ama dökümanı `sed` ile kendisi de okudu. 38,4k cache'siz token harcadı, 1.320. satırda durduğu için "son bölüm" diye yanlış bölümü özetledi.
+- Şablona "devrettiğin dökümanı kendin de okuma; eksik varsa `local_task`'a daha dar bir soru sor" maddesi eklendi. Aynı tur sonra 14,2k cache'siz token harcadı; codex yalnız son 80 satırı kendisi kontrol etti (129 sn).
 
 ### F5 — Chat entegrasyonu
 

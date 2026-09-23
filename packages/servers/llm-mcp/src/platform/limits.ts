@@ -12,6 +12,11 @@ import { mcpCoreLimits } from "@sk-mcp/mcp-core";
  * (rule 9). 2,000 rows is about nine minutes, inside the 900 s tool timeout
  * codex is given; a larger file is refused up front rather than timed out
  * halfway with nothing written.
+ *
+ * Guard: a long summarize or extract runs one call per chunk plus the merge.
+ * Seventeen documents were measured clearing the queue in 157 s (rule 14's
+ * run), so 32 chunks and three merge rounds stay inside the same 900 s; a
+ * larger input is refused before the first call.
  */
 export const limits = {
   ...mcpCoreLimits,
@@ -22,6 +27,9 @@ export const limits = {
   outputTokensPerRow: 17,
   maxMapRows: 2_000,
   maxMapBytes: 8 * 1024 * 1024,
+  maxLongInputBytes: 1024 * 1024,
+  maxChunks: 32,
+  maxReduceRounds: 3,
 } as const;
 
 export function inputBudgetTokens(contextTokens: number): number {
@@ -50,5 +58,17 @@ export function maxReadableBytes(contextTokens: number): number {
     inputBudgetTokens(contextTokens) *
       limits.charsPerToken *
       limits.maxBytesPerChar,
+  );
+}
+
+/**
+ * Characters one chunk may hold once a prompt of `overheadTokens` is added.
+ */
+export function chunkChars(
+  contextTokens: number,
+  overheadTokens: number,
+): number {
+  return Math.floor(
+    (inputBudgetTokens(contextTokens) - overheadTokens) * limits.charsPerToken,
   );
 }

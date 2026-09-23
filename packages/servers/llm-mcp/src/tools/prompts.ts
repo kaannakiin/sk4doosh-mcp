@@ -8,6 +8,17 @@ export const taskKinds = [
 
 export type TaskKind = (typeof taskKinds)[number];
 
+export const splittableKinds = [
+  "summarize",
+  "extract",
+] as const satisfies readonly TaskKind[];
+
+export type SplittableKind = (typeof splittableKinds)[number];
+
+export function isSplittable(kind: TaskKind): kind is SplittableKind {
+  return (splittableKinds as readonly TaskKind[]).includes(kind);
+}
+
 export const systemPrompts = {
   classify:
     "You are a classifier. Answer only with the requested labels. No commentary.",
@@ -21,3 +32,9 @@ export const systemPrompts = {
 } as const satisfies Record<TaskKind, string>;
 
 export const schemaSuffix = " Answer with JSON that matches the given schema.";
+
+export const notesPrompt =
+  "You take notes for a later step. Write compact notes of the facts, decisions and numbers in this text that the instruction needs. No preamble.";
+
+export const mergePrompt =
+  "You merge notes for a later step. Combine these notes into shorter notes, keeping every fact, decision and number the instruction needs. No preamble.";

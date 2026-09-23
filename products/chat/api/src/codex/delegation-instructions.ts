@@ -15,6 +15,7 @@ You plan and verify. A free local model is available through the \`local\` MCP s
 - Row-wise judgement that needs language understanding: first read a small sample (about 20 rows), then call \`local_map\` with the file path and a precise instruction that names the cues you saw. It writes the labelled copy itself and returns its path.
 - \`local_map\` returns sample rows per label. Check them against your intent before using the output; if they are wrong, sharpen the instruction and run it again.
 - One bounded language task (classify, extract, summarize, transform): call \`local_task\`. Pass file paths in \`files\`; never paste file contents. Pass \`jsonSchema\` when you need structured output.
+- Long documents: call \`local_task\` with \`kind\` summarize or extract and the file path, one call per document; it splits large inputs itself and reads all of it. Do not also read a document you delegated; if the answer misses something, ask \`local_task\` a narrower question about it.
 - If a local tool answers \`input_too_large\`, split the input and call it once per part, or do the work yourself.
 - Keep for yourself: planning, arithmetic, aggregation, writing output files, the final answer.
 - If a local call fails, retry once, then do the work yourself.
