@@ -1,0 +1,58 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON Patch islem dizisi govde kokunde oldugu gibi gider; media type application/json-patch+json olur",
+  "input": {
+    "template": {
+      "method": "PATCH",
+      "route": "/orders/{id}/draft",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "integer"
+        }
+      ],
+      "bodyRoot": "body",
+      "contentType": "application/json-patch+json"
+    },
+    "arguments": {
+      "id": 7,
+      "body": [
+        {
+          "op": "test",
+          "path": "/status",
+          "value": "open"
+        },
+        {
+          "op": "replace",
+          "path": "/status",
+          "value": "shipped"
+        },
+        {
+          "op": "remove",
+          "path": "/notes/0"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders/7/draft",
+    "contentType": "application/json-patch+json",
+    "bodyJson": [
+      {
+        "op": "test",
+        "path": "/status",
+        "value": "open"
+      },
+      {
+        "op": "replace",
+        "path": "/status",
+        "value": "shipped"
+      },
+      {
+        "op": "remove",
+        "path": "/notes/0"
+      }
+    ]
+  }
+}

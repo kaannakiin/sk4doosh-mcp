@@ -755,6 +755,8 @@ const unproducible: Record<string, string> = {
     "The binder hoists a nested DTO into $defs and discovery inlines one level only, so the descriptor carries a $ref where the fixture pins an inline second level.",
   "form-array-of-objects-rejected.json":
     "An array-of-DTO member reaches the descriptor as an items $ref into $defs, not the inline object the fixture pins.",
+  "json-patch-document-is-an-operation-array.json":
+    "Nest has no JSON Patch document type; the operation array is the ASP.NET Core binding of JsonPatchDocument<T>.",
   "form-free-form-body-rejected.json":
     "A decorated DTO never carries additionalProperties beside its properties; only a host-supplied verbatim schema does.",
   "form-structural-member-name-rejected.json":

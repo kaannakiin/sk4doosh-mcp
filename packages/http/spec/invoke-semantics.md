@@ -13,7 +13,7 @@ Nothing normatively described what an invocation costs. A tool response was unbo
 Every meta-tool answer passes five stages, in order:
 
 1. **Compose** — flat agent arguments become an HTTP request ([argument-mapping.md](argument-mapping.md)).
-2. **Dispatch under a deadline** — every `ref` file argument is resolved, then the request runs through the backend's own pipeline. Resolution is inside the deadline, so a resolver that hangs is bounded the way a backend that hangs is ([request-bodies.md](request-bodies.md)).
+2. **Dispatch under a deadline** — every `ref` file argument is resolved, then the request runs through the backend's own pipeline. Resolution is inside the deadline, so a resolver that hangs is bounded the way a backend that hangs is ([request-bodies.md](request-bodies.md)). An exception that escapes the backend's pipeline is answered the way the backend's own server answers it: a `500` with no body and no headers, logged by the SDK. It is therefore mapped as `backend_error`, never as `internal_error` — that code belongs to the layer's own failures, and an exception message reaching the agent would bypass the rule that no 5xx body is forwarded ([error-mapping.md](error-mapping.md)). A probe dispatch follows the same rule.
 3. **Map** — the backend response becomes an `InvokeSuccess` or a `MappedError` ([error-mapping.md](error-mapping.md)).
 4. **Gate** — the serialized answer is measured against the payload budget.
 5. **Emit** — the answer becomes a `CallToolResult`.

@@ -438,4 +438,4 @@ Karar kaydı: [govde-tipleri-karari.md](govde-tipleri-karari.md). Normatif spec:
 
 **Uçtan uca.** İki demo da `agent-client --scenario upload` ile koşuldu: non-ASCII adlı metin dosyası handler'a sağlam ulaşıyor, çağıranın kendi ref'i çözülüyor, başkasının ref'i var olmayan ref'le aynı mesajı veriyor, iki kaynaklı argüman `invalid_file_argument` dönüyor. DemoApi'deki merge-patch PATCH artık 200 dönüyor.
 
-**Bilinçli kapsam dışı.** Streaming gövde, `JsonPatchDocument<T>`'nin RFC 6902 dizi şeması, sk-mcp'nin kendi upload endpoint'i ve MVC'nin filter tabanlı antiforgery'si (`[ValidateAntiForgeryToken]` metadata değil filter; böyle bir endpoint çağrıda 400 ile yüzeye çıkıyor, sessiz değil). Karar kaydının §7'si gerekçeleri taşıyor.
+**Bilinçli kapsam dışı.** Streaming gövde, sk-mcp'nin kendi upload endpoint'i ve MVC'nin filter tabanlı antiforgery'si (`[ValidateAntiForgeryToken]` metadata değil filter; böyle bir endpoint çağrıda 400 ile yüzeye çıkıyor, sessiz değil). Karar kaydının §7'si gerekçeleri taşıyor. `JsonPatchDocument<T>` sonradan kapatıldı (karar kaydı §9).

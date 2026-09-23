@@ -43,16 +43,16 @@ not carry is tested by `pnpm validate`'s per-kind shape pass.
 
 The order is normative; the first matching branch wins.
 
-| #   | Branch           | Condition        | Output                                                                      |
-| --- | ---------------- | ---------------- | --------------------------------------------------------------------------- |
-| 0   | host declaration | `kind: verbatim` | `schema`, deep-copied                                                       |
-| 1   | binary           | `kind: binary`   | `{"type":"string","contentEncoding":"base64"}`                              |
-| 2   | scalar           | `kind: scalar`   | Table 2                                                                     |
-| 3   | enum             | `kind: enum`     | Table 3                                                                     |
-| 4   | map              | `kind: map`      | `{"type":"object","additionalProperties":<value schema>}` + `propertyNames` |
-| 5   | array            | `kind: array`    | `{"type":"array","items":<element schema>}`                                 |
-| 6   | reference        | `kind: ref`      | an inline object, or `{"$ref":"#/$defs/<name>"}` if hoisted                 |
-| 7   | unreadable       | `kind: unknown`  | `{"type":"object","additionalProperties":true}` + `unreadable_shape`        |
+| #   | Branch     | Condition        | Output                                                                      |
+| --- | ---------- | ---------------- | --------------------------------------------------------------------------- |
+| 0   | verbatim   | `kind: verbatim` | `schema`, deep-copied                                                       |
+| 1   | binary     | `kind: binary`   | `{"type":"string","contentEncoding":"base64"}`                              |
+| 2   | scalar     | `kind: scalar`   | Table 2                                                                     |
+| 3   | enum       | `kind: enum`     | Table 3                                                                     |
+| 4   | map        | `kind: map`      | `{"type":"object","additionalProperties":<value schema>}` + `propertyNames` |
+| 5   | array      | `kind: array`    | `{"type":"array","items":<element schema>}`                                 |
+| 6   | reference  | `kind: ref`      | an inline object, or `{"$ref":"#/$defs/<name>"}` if hoisted                 |
+| 7   | unreadable | `kind: unknown`  | `{"type":"object","additionalProperties":true}` + `unreadable_shape`        |
 
 **Map MUST come before array.** Dictionaries also present as an enumerable of key/value pairs; if
 the array branch came first, every dictionary would be described as `[{"key":…,"value":…}]` and no
@@ -84,6 +84,67 @@ the endpoint silently uncallable.
 
 Types that are absent from the scalar dictionary and are not objects either (`object`, unreadable
 members) become an `unknown` node, not an empty object.
+
+## Types whose wire form is not their members
+
+A `verbatim` node is written by a host declaration, or by the binding layer for a type whose
+serializer does not write the type's members. Reflecting such a type publishes an object the backend
+never accepts, so the binding layer MUST bind it to the schema its serializer actually reads.
+
+**JSON Patch documents.** In C#, `JsonPatchDocument` and `JsonPatchDocument<T>` from
+`Microsoft.AspNetCore.JsonPatch` or `Microsoft.AspNetCore.JsonPatch.SystemTextJson`, and every type
+derived from one of them, bind to a `verbatim` node carrying the RFC 6902 operation array:
+
+```json
+{
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op", "path", "value"],
+        "properties": {
+          "op": { "type": "string", "enum": ["add", "replace", "test"] },
+          "path": { "type": "string" },
+          "value": {}
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op", "path", "from"],
+        "properties": {
+          "op": { "type": "string", "enum": ["move", "copy"] },
+          "path": { "type": "string" },
+          "from": { "type": "string" }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op", "path"],
+        "properties": {
+          "op": { "type": "string", "enum": ["remove"] },
+          "path": { "type": "string" }
+        }
+      }
+    ]
+  }
+}
+```
+
+- The type is matched by namespace and name, walking the base types, because the SDK references
+  neither package. A type of the same name in another namespace is an ordinary object.
+- A host declaration for the type still wins; the rule applies only where the host said nothing.
+- The schema does not depend on `T`. RFC 6902 paths are strings; a path the model does not have
+  fails when the backend applies the patch, not when the arguments are checked.
+- ASP.NET Core's ApiExplorer reports such a body as `Operation[]` once `AddNewtonsoftJson` is
+  registered. That class has no `op` enum and types `value` as an object, so the binding layer MUST
+  read the action parameter's declared type instead.
+- The operation array is a non-object body root, so the tool takes it as the `body` argument
+  (Table 6). The media type is chosen by [request-bodies.md](request-bodies.md); a
+  `[Consumes("application/json-patch+json")]` endpoint is sent that type.
 
 ## Table 3 — Enum wire form
 

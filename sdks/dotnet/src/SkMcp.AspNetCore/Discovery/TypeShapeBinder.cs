@@ -39,6 +39,10 @@ internal sealed class TypeShapeBinder
         {
             return new TypeNode { Kind = TypeKind.Verbatim, Schema = supplied };
         }
+        if (JsonPatchSchema.IsDocument(resolved))
+        {
+            return new TypeNode { Kind = TypeKind.Verbatim, Schema = JsonPatchSchema.Operations() };
+        }
         if (Binary(resolved))
         {
             return new TypeNode { Kind = TypeKind.Binary };

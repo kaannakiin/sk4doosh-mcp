@@ -356,7 +356,7 @@ internal static partial class EndpointCatalog
                     }
                     body = new RequestBody
                     {
-                        Schema = JsonSchemaMapper.Map(parameter.Type ?? typeof(object), schema),
+                        Schema = JsonSchemaMapper.Map(BodyTypeOf(parameter), schema),
                         Required = parameter.IsRequired,
                         Description = ParameterDescription(parameter),
                     };
@@ -543,6 +543,16 @@ internal static partial class EndpointCatalog
         }
         return description;
     }
+
+    /// <remarks>
+    /// Guard: <c>AddNewtonsoftJson</c> registers an ApiExplorer provider that rewrites a JsonPatch
+    /// body's type to <c>Operation[]</c>, a class with no <c>op</c> enum and an object-typed
+    /// <c>value</c>. The action's own parameter type is what binds (JsonPatchHostTests.JH1).
+    /// </remarks>
+    private static Type BodyTypeOf(ApiParameterDescription parameter) =>
+        parameter.ParameterDescriptor?.ParameterType is { } declared && JsonPatchSchema.IsDocument(declared)
+            ? declared
+            : parameter.Type ?? typeof(object);
 
     internal static string? ParameterDescription(ApiParameterDescription parameter) =>
         parameter.ParameterDescriptor is ControllerParameterDescriptor { ParameterInfo: { } info }

@@ -103,6 +103,10 @@ The three file codes are described in
 [how to accept form bodies and file uploads](/docs/http-catalog/accept-form-and-file-uploads);
 `file_unresolved` is retryable only when the resolver reported its store unavailable.
 
+`internal_error` means sk-mcp itself failed. An exception your handler does not catch is answered
+the way your server answers it, a 500 with no body, so it reaches the agent as `backend_error` and
+its message is never forwarded.
+
 The last three come from the invoke guards rather than from argument composition, and two of them
 carry more than the envelope above: `response_too_large` adds a `payload` block and a `fields` list
 naming the arguments that narrow the call, and `invoke_timeout` is the one SDK-side code with
