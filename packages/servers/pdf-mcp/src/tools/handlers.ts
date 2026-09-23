@@ -36,17 +36,23 @@ import {
   type SandboxedPath,
 } from "../platform/paths.js";
 import {
+  resumeAt,
   scanLiteral,
   type LiteralMatch,
   type MatchMode,
+  type ScanOptions,
+  type ScanResume,
 } from "../search/literal.js";
 import {
   assertFresh,
   assertSameOptions,
+  assertSameText,
   cursorTtlMs,
   decodeCursor,
   encodePosition,
   optionsHash,
+  pageDigest,
+  type PageAnchor,
   type PdfPosition,
 } from "./cursor.js";
 import type { ToolHandlers } from "./definitions.js";
@@ -64,6 +70,7 @@ export interface PdfHandlerDeps {
    * unbypassable gate in `guard()` still applies on top of this.
    */
   readonly maxPayloadBytes?: number;
+  readonly ocrCache?: OcrCache;
 }
 
 interface PageEntry {
@@ -109,6 +116,19 @@ function expiry(): number {
   return Date.now() + cursorTtlMs;
 }
 
+function pagesFrom(first: number, pageCount: number): number[] {
+  return Array.from(
+    { length: Math.max(0, pageCount - first + 1) },
+    (_unused, index) => first + index,
+  );
+}
+
+const worstDigest = "0".repeat(16);
+
+function anchorOf(anchor: PageAnchor): PageAnchor {
+  return anchor.c === undefined ? {} : { c: anchor.c, h: anchor.h };
+}
+
 export function createHandlers(
   root: DocumentRoot,
   deps: PdfHandlerDeps = {},
@@ -131,7 +151,7 @@ export function createHandlers(
       throw new SkMcpPdfError(
         "resource_limit",
         "Too many documents are already being read.",
-        "Retry once an earlier read finishes; PDF extraction is memory-bound.",
+        "Retry once an earlier read finishes; PDF extraction is memory-bound. A read that exceeded its budget keeps its slot until it ends, and only a server restart reclaims one that never does.",
       );
     },
   );
@@ -147,7 +167,7 @@ export function createHandlers(
     const path: SandboxedPath = await resolveDocumentPath(root, raw);
     const release = extractions.enter();
     const work = store.load(path);
-    holdUntilSettled(work, release, limits.settleQuarantineMs);
+    holdUntilSettled(work, release);
     const deadline = createDeadline(
       limits.maxExtractMs,
       () =>
@@ -160,12 +180,12 @@ export function createHandlers(
     return { path, loaded: await deadline.run(work) };
   };
 
-  const ocrCache: OcrCache = createOcrCache();
+  const ocrCache: OcrCache = deps.ocrCache ?? createOcrCache();
   const ocrRuns: Gate = createGate(limits.maxConcurrentOcr, () => {
     throw new SkMcpPdfError(
       "resource_limit",
       "An OCR run is already in progress.",
-      "Retry once it finishes; transcription is the slowest thing this server does.",
+      "Retry once it finishes; transcription is the slowest thing this server does. A run that exceeded its budget keeps its slot until it ends, and only a server restart reclaims one that never does.",
     );
   });
 
@@ -230,7 +250,7 @@ export function createHandlers(
         signal: deadline.signal,
       });
     })();
-    holdUntilSettled(work, release, limits.settleQuarantineMs);
+    holdUntilSettled(work, release);
     {
       const outcome = await deadline.run(work);
       return {
@@ -302,16 +322,16 @@ export function createHandlers(
       /**
        * Guard: page size is deliberately not part of the cursor identity. The
        * resume position is a page number, so walking with a different maxPages
-       * still yields every page exactly once and in order. Only an option that
-       * changes which pages answer the call belongs here, and read_pages has
-       * none — an explicit selection cannot be combined with a cursor.
+       * still yields every page exactly once and in order. ocr is: it decides
+       * which text a page answers with, and a resume offset measured in one
+       * mode's text means nothing in the other's.
        */
-      const hash = optionsHash({ tool: "read" });
+      const hash = optionsHash({ tool: "read", ocr: args.ocr === true });
       if (args.cursor !== undefined && args.pages !== undefined) {
         throw new SkMcpPdfError(
           "invalid_argument",
           "cursor cannot be combined with pages.",
-          "The cursor already carries the position the previous page stopped at.",
+          "The cursor already carries the pages and the position the previous response stopped at.",
         );
       }
       const cursor =
@@ -323,16 +343,14 @@ export function createHandlers(
       const { path, loaded } = await open(args.filePath);
       if (cursor !== undefined) assertFresh(cursor, loaded.stamp);
 
-      const explicit = args.pages !== undefined;
-      if (args.pages !== undefined) {
-        assertSelectablePages(args.pages, loaded.pageCount);
+      const chosen = cursor?.s ?? args.pages;
+      if (chosen !== undefined) {
+        assertSelectablePages(chosen, loaded.pageCount);
       }
-      const selection = explicit
-        ? [...(args.pages ?? [])]
-        : Array.from(
-            { length: loaded.pageCount },
-            (_unused, index) => index + 1,
-          ).filter((page) => page >= (cursor?.p ?? 1));
+      const selection =
+        chosen === undefined
+          ? pagesFrom(cursor?.p ?? 1, loaded.pageCount)
+          : [...chosen];
 
       const resolved = await resolve(
         path,
@@ -354,6 +372,11 @@ export function createHandlers(
             o: hash,
             x: expiry(),
             p: loaded.pageCount,
+            ...(chosen === undefined
+              ? {}
+              : { s: chosen.map(() => loaded.pageCount) }),
+            c: Number.MAX_SAFE_INTEGER,
+            h: worstDigest,
           }),
           pagesNeedingOcr: loaded.pagesNeedingOcr,
           mode: loaded.mode,
@@ -365,17 +388,17 @@ export function createHandlers(
 
       const entries: PageEntry[] = [];
       let truncationReason: "maxPages" | "maxPayloadBytes" | undefined;
-      let nextPage: number | undefined;
-      let nextOffset = 0;
+      let next: ({ readonly index: number } & PageAnchor) | undefined;
 
-      for (const page of selection) {
+      for (const [index, page] of selection.entries()) {
         if (entries.length >= maxPages) {
           truncationReason = "maxPages";
-          nextPage = page;
+          next = { index };
           break;
         }
         const whole = entryFor(resolved.pages, page);
-        const offset = page === cursor?.p ? (cursor.c ?? 0) : 0;
+        const offset = index === 0 ? (cursor?.c ?? 0) : 0;
+        if (offset > 0) assertSameText(cursor?.h, page, whole.markdown);
         const entry: PageEntry =
           offset === 0
             ? whole
@@ -389,8 +412,7 @@ export function createHandlers(
           continue;
         }
         truncationReason = "maxPayloadBytes";
-        nextPage = page;
-        nextOffset = offset;
+        next = { index };
         if (entries.length > 0) {
           break;
         }
@@ -413,16 +435,16 @@ export function createHandlers(
           );
         }
         entries.push({ ...entry, markdown: kept, truncatedMarkdown: true });
-        nextOffset = offset + kept.length;
-        if (nextOffset >= whole.markdown.length) {
-          nextPage = page + 1;
-          nextOffset = 0;
-        }
+        const delivered = offset + kept.length;
+        next =
+          delivered >= whole.markdown.length
+            ? { index: index + 1 }
+            : { index, c: delivered, h: pageDigest(whole.markdown) };
         break;
       }
 
-      const truncated = truncationReason !== undefined;
-      const more = nextPage !== undefined && nextPage <= loaded.pageCount;
+      const rest = next === undefined ? [] : selection.slice(next.index);
+      const [nextPage] = rest;
       return json({
         filePath: args.filePath,
         pageCount: loaded.pageCount,
@@ -432,24 +454,20 @@ export function createHandlers(
           .filter((page) => page.needsOcr)
           .map((page) => page.page),
         ...(resolved.ocr === undefined ? {} : { ocr: resolved.ocr }),
-        truncated,
+        truncated: truncationReason !== undefined,
         ...(truncationReason === undefined ? {} : { truncationReason }),
-        /**
-         * Guard: an explicit selection gets no cursor. Resuming a hand-picked
-         * page list through an ordinal would silently change which pages the
-         * caller asked for; they re-request the pages they still want.
-         */
-        ...(more && !explicit
-          ? {
+        ...(next === undefined || nextPage === undefined
+          ? {}
+          : {
               nextCursor: cursorFor(loaded.stamp, {
                 t: "read",
                 o: hash,
                 x: expiry(),
-                p: nextPage ?? loaded.pageCount,
-                ...(nextOffset === 0 ? {} : { c: nextOffset }),
+                p: nextPage,
+                ...(chosen === undefined ? {} : { s: rest }),
+                ...anchorOf(next),
               }),
-            }
-          : {}),
+            }),
         mode: loaded.mode,
       });
     }),
@@ -481,14 +499,27 @@ export function createHandlers(
         const { path, loaded } = await open(args.filePath);
         if (cursor !== undefined) assertFresh(cursor, loaded.stamp);
 
+        /**
+         * Guard: only the pages from the cursor on are offered for OCR. The scan
+         * never reads the pages behind it, and offering them again once their
+         * transcriptions leave the cache spends every batch behind the cursor,
+         * so the walk stops advancing on any document larger than the cache.
+         */
         const resolved = await resolve(
           path,
           loaded,
-          Array.from({ length: loaded.pageCount }, (_unused, i) => i + 1),
+          pagesFrom(cursor?.p ?? 1, loaded.pageCount),
           args.ocr === true,
         );
+        if (cursor !== undefined && cursor.i > 0) {
+          assertSameText(
+            cursor.h,
+            cursor.p,
+            pageAt(resolved.pages, cursor.p)?.markdown ?? "",
+          );
+        }
 
-        const scan = scanLiteral(resolved.pages, {
+        const scanOptions: ScanOptions = {
           query: args.query,
           matchMode,
           caseSensitive,
@@ -496,8 +527,15 @@ export function createHandlers(
           pending: resolved.pending,
           ...(cursor === undefined
             ? {}
-            : { from: { page: cursor.p, ordinal: cursor.i } }),
-        });
+            : {
+                from: {
+                  page: cursor.p,
+                  ordinal: cursor.i,
+                  unsearchableBehind: cursor.u,
+                },
+              }),
+        };
+        const scan = scanLiteral(resolved.pages, scanOptions);
 
         const reserveBytes =
           measureJson({
@@ -517,6 +555,8 @@ export function createHandlers(
               x: expiry(),
               p: loaded.pageCount,
               i: 0,
+              u: loaded.pageCount,
+              h: worstDigest,
             }),
           }) + 256;
         const budget = createPageBudget({
@@ -525,13 +565,16 @@ export function createHandlers(
         });
 
         const admitted: LiteralMatch[] = [];
-        let cut: { page: number; ordinal: number } | undefined;
+        let cut: ScanResume | undefined;
         for (const match of scan.matches) {
           if (budget.admit(match)) {
             admitted.push(match);
             continue;
           }
-          cut = { page: match.page, ordinal: match.ordinal };
+          cut = resumeAt(resolved.pages, scanOptions, {
+            page: match.page,
+            ordinal: match.ordinal,
+          });
           break;
         }
         const next = cut ?? scan.next;
@@ -566,6 +609,14 @@ export function createHandlers(
                   x: expiry(),
                   p: next.page,
                   i: next.ordinal,
+                  u: next.unsearchableBehind,
+                  ...(next.ordinal === 0
+                    ? {}
+                    : {
+                        h: pageDigest(
+                          pageAt(resolved.pages, next.page)?.markdown ?? "",
+                        ),
+                      }),
                 }),
               }),
           mode: loaded.mode,

@@ -28,12 +28,11 @@ export function createGate(limit: number, refuse: () => never): Gate {
  *
  * Guard: neither the PDF engine's async task nor an injected OCR port is
  * cancellable by contract — Node-API cannot cancel an async work item that has
- * already started. Releasing the slot when a deadline answers the caller would
- * make the gate count requests that have not timed out rather than work that is
- * running, and a host could be asked to run any number of transcriptions at
- * once. The quarantine is the bounded escape hatch: work that never settles
- * would otherwise cost that slot forever, so past it the slot is reclaimed and
- * the overshoot is bounded instead of permanent.
+ * already started. Releasing the slot on a deadline, or on any timer, would make
+ * the gate count work somebody is still waiting for rather than work that is
+ * running, and the limit would only be postponed. Work that never settles keeps
+ * its slot for the life of the process; restarting the server is the only way
+ * to reclaim it, because it is the only thing that ends the work.
  *
  * Attaching a handler here also keeps abandoned work from surfacing as an
  * unhandled rejection after its caller has already been answered.
@@ -41,19 +40,8 @@ export function createGate(limit: number, refuse: () => never): Gate {
 export function holdUntilSettled(
   work: Promise<unknown>,
   release: () => void,
-  quarantineMs: number,
 ): void {
-  let released = false;
-  const free = (): void => {
-    if (released) return;
-    released = true;
-    release();
-  };
-  const quarantine = setTimeout(free, quarantineMs);
-  quarantine.unref();
-  void work.then(free, free).then(() => {
-    clearTimeout(quarantine);
-  });
+  void work.then(release, release);
 }
 
 export interface Deadline {

@@ -43,7 +43,7 @@ export const toolDefinitions = {
   },
   read_pages: {
     description:
-      "Read selected pages as Markdown, one entry per page, with page numbers counted from 1. A page whose text the engine could not trust is returned with needsOcr true rather than omitted, so a scanned page is never presented as an empty one; empty distinguishes a genuinely blank page from an unreadable one. Each page reports source: text when the PDF's own text layer was used, ocr when a provider transcribed it. A page whose Markdown does not fit the response budget is clamped and marked truncatedMarkdown.",
+      "Read selected pages as Markdown, one entry per page, with page numbers counted from 1. A page whose text the engine could not trust is returned with needsOcr true rather than omitted, so a scanned page is never presented as an empty one; empty distinguishes a genuinely blank page from an unreadable one. Each page reports source: text when the PDF's own text layer was used, ocr when a provider transcribed it. A page whose Markdown does not fit the response budget is clamped and marked truncatedMarkdown; nextCursor then resumes inside that page. With an explicit pages selection, nextCursor stays within the selected pages.",
     inputSchema: z.object({
       filePath,
       pages: pages.optional(),
@@ -65,7 +65,7 @@ export const toolDefinitions = {
         .string()
         .optional()
         .describe(
-          "nextCursor from a previous read_pages response. Cannot be combined with pages.",
+          "nextCursor from a previous read_pages response. It carries the selection it was produced for, so it cannot be combined with pages.",
         ),
     }),
     annotations: readOnly,

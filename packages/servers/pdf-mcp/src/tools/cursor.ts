@@ -7,6 +7,7 @@ import {
   type Fingerprint,
 } from "@sk-mcp/file-core";
 import { SkMcpPdfError } from "../platform/errors.js";
+import { limits } from "../platform/limits.js";
 
 export type CursorTool = "read" | "find";
 
@@ -17,22 +18,30 @@ interface Bound {
   readonly x: number;
 }
 
-interface ReadPosition extends Bound {
+/**
+ * Guard: an offset is only meaningful against the text it was measured in, so
+ * it never travels without that text's digest. Either both are present or
+ * neither is.
+ */
+export type PageAnchor =
+  | { readonly c: number; readonly h: string }
+  | { readonly c?: never; readonly h?: never };
+
+type ReadPosition = Bound & {
   readonly t: "read";
   readonly p: number;
-  /**
-   * Characters of page `p` already delivered. Present only when a page did not
-   * fit one response: without it the clipped tail would be unreachable, since
-   * re-requesting the page returns the same prefix.
-   */
-  readonly c?: number;
-}
+  /** The part of an explicit selection not yet delivered, starting at `p`. */
+  readonly s?: readonly number[];
+} & PageAnchor;
 
-interface FindPosition extends Bound {
+type FindPosition = Bound & {
   readonly t: "find";
   readonly p: number;
   readonly i: number;
-}
+  /** Unsearchable pages the walk has already passed. */
+  readonly u: number;
+  readonly h?: string;
+};
 
 export type PdfPosition = ReadPosition | FindPosition;
 
@@ -43,11 +52,16 @@ export type PdfPositionOf<K extends CursorTool> = Extract<
 
 export type PdfCursorOf<K extends CursorTool> = Cursor<PdfPositionOf<K>, 1>;
 
+function digest(text: string): string {
+  return createHash("sha256").update(text).digest("hex").slice(0, 16);
+}
+
 export function optionsHash(value: unknown): string {
-  return createHash("sha256")
-    .update(JSON.stringify(value) ?? "null")
-    .digest("hex")
-    .slice(0, 16);
+  return digest(JSON.stringify(value) ?? "null");
+}
+
+export function pageDigest(markdown: string): string {
+  return digest(markdown);
 }
 
 function isOrdinal(value: unknown, minimum: number): boolean {
@@ -56,13 +70,40 @@ function isOrdinal(value: unknown, minimum: number): boolean {
   );
 }
 
+const digestPattern = /^[a-f0-9]{16}$/u;
+
+function isDigest(value: unknown): boolean {
+  return typeof value === "string" && digestPattern.test(value);
+}
+
+function isAnchor(value: Record<string, unknown>): boolean {
+  if (value["c"] === undefined && value["h"] === undefined) return true;
+  return isOrdinal(value["c"], 1) && isDigest(value["h"]);
+}
+
+function isSelection(value: unknown, first: unknown): boolean {
+  if (value === undefined) return true;
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.length <= limits.maxReadPages &&
+    value.every((page) => isOrdinal(page, 1)) &&
+    value[0] === first
+  );
+}
+
 const shapes: {
   readonly [K in CursorTool]: (value: Record<string, unknown>) => boolean;
 } = {
   read: (value) =>
     isOrdinal(value["p"], 1) &&
-    (value["c"] === undefined || isOrdinal(value["c"], 0)),
-  find: (value) => isOrdinal(value["p"], 1) && isOrdinal(value["i"], 0),
+    isAnchor(value) &&
+    isSelection(value["s"], value["p"]),
+  find: (value) =>
+    isOrdinal(value["p"], 1) &&
+    isOrdinal(value["i"], 0) &&
+    isOrdinal(value["u"], 0) &&
+    (value["h"] === undefined || isDigest(value["h"])),
 };
 
 function isPdfCursor<K extends CursorTool>(
@@ -77,7 +118,7 @@ function isPdfCursor<K extends CursorTool>(
     /^[a-f0-9]{16,64}$/u.test(value["f"]) &&
     value["t"] === tool &&
     typeof value["o"] === "string" &&
-    /^[a-f0-9]{16}$/u.test(value["o"]) &&
+    digestPattern.test(value["o"]) &&
     isOrdinal(value["x"], 0) &&
     shapes[tool](value)
   );
@@ -149,6 +190,26 @@ export function assertSameOptions(
       "invalid_argument",
       "The options differ from the ones the cursor was produced with.",
       "Drop cursor to start over with the new options.",
+    );
+  }
+}
+
+/**
+ * Guard: an OCR page's text is produced again once its transcription leaves the
+ * cache, and a provider need not answer the same way twice. An offset or match
+ * ordinal measured in the old text would then skip or repeat content with no
+ * sign that it had, so a resume inside a page whose text changed is refused.
+ */
+export function assertSameText(
+  expected: string | undefined,
+  page: number,
+  markdown: string,
+): void {
+  if (expected !== undefined && expected !== pageDigest(markdown)) {
+    throw new SkMcpPdfError(
+      "stale_cursor",
+      `The text of page ${String(page)} changed since the cursor was produced; it was transcribed again.`,
+      "Call the tool again without a cursor.",
     );
   }
 }

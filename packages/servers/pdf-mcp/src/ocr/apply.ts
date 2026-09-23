@@ -10,9 +10,11 @@ export interface OcrOutcome {
   readonly recognizedPages: readonly number[];
   readonly remainingOcrPages: readonly number[];
   /**
-   * Pages whose text may still arrive in a later call, because this round's
-   * batch stopped short of them. A reader must not walk past one of these: the
-   * page is not unreadable, it is unread.
+   * Wanted pages whose text may still arrive in a later call, because this
+   * round's batch stopped short of them. A reader must not walk past one of
+   * these: the page is not unreadable, it is unread. A page outside `wanted` is
+   * never pending — its transcription leaving the cache says nothing about
+   * whether it could be read.
    */
   readonly pendingPages: readonly number[];
   readonly provider: string;
@@ -101,10 +103,10 @@ export async function applyOcr(
     readonly signal?: AbortSignal;
   },
 ): Promise<OcrOutcome> {
+  const wanted = new Set(input.wanted);
   const candidates = input.pages
-    .filter((page) => page.needsOcr)
-    .map((page) => page.page)
-    .filter((page) => input.wanted.includes(page));
+    .filter((page) => page.needsOcr && wanted.has(page.page))
+    .map((page) => page.page);
 
   const recognized = new Map<number, RecognizedPage>();
   const untried: number[] = [];
@@ -207,7 +209,9 @@ export async function applyOcr(
     remainingOcrPages: remaining,
     pendingPages: remaining.filter(
       (page) =>
-        !attempted.has(page) && cache.get(input.stamp, page) === undefined,
+        wanted.has(page) &&
+        !attempted.has(page) &&
+        cache.get(input.stamp, page) === undefined,
     ),
     provider: binding.provider.name,
     truncated,

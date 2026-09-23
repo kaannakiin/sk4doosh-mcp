@@ -17,12 +17,22 @@ export interface ScanPosition {
   readonly ordinal: number;
 }
 
+/**
+ * Guard: a walk's coverage is carried with its position rather than recounted
+ * from the pages behind it. Behind the cursor those pages are no longer
+ * resolved, so their transcriptions can leave the cache, and a recount would
+ * report as searched a page that never yielded text.
+ */
+export interface ScanResume extends ScanPosition {
+  readonly unsearchableBehind: number;
+}
+
 export interface ScanOptions {
   readonly query: string;
   readonly matchMode: MatchMode;
   readonly caseSensitive: boolean;
   readonly maxResults: number;
-  readonly from?: ScanPosition;
+  readonly from?: ScanResume;
   /**
    * Pages whose text may still arrive, because an OCR provider has not reached
    * them yet. The scan stops before the first of them instead of skipping it:
@@ -36,7 +46,34 @@ export interface ScanResult {
   readonly matches: readonly LiteralMatch[];
   readonly searchedPages: number;
   readonly unsearchablePages: number;
-  readonly next?: ScanPosition;
+  readonly next?: ScanResume;
+}
+
+function isUnsearchable(
+  page: ExtractedPage,
+  pending: ReadonlySet<number>,
+): boolean {
+  return page.needsOcr && !pending.has(page.page);
+}
+
+/** The resume point for `position`, with the coverage the walk has passed. */
+export function resumeAt(
+  pages: readonly ExtractedPage[],
+  options: Pick<ScanOptions, "from" | "pending">,
+  position: ScanPosition,
+): ScanResume {
+  const startPage = options.from?.page ?? 1;
+  const pending = options.pending ?? new Set<number>();
+  const passed = pages.filter(
+    (page) =>
+      page.page >= startPage &&
+      page.page < position.page &&
+      isUnsearchable(page, pending),
+  ).length;
+  return {
+    ...position,
+    unsearchableBehind: (options.from?.unsearchableBehind ?? 0) + passed,
+  };
 }
 
 /**
@@ -94,22 +131,25 @@ export function scanLiteral(
   const startPage = options.from?.page ?? 1;
   const startOrdinal = options.from?.ordinal ?? 0;
   const pending = options.pending ?? new Set<number>();
-  const unsearchablePages = pages.filter(
-    (page) => page.needsOcr && !pending.has(page.page),
-  ).length;
   let searchedPages = 0;
+  const unsearchablePages =
+    (options.from?.unsearchableBehind ?? 0) +
+    pages.filter(
+      (page) => page.page >= startPage && isUnsearchable(page, pending),
+    ).length;
+  const stop = (position: ScanPosition): ScanResult => ({
+    matches,
+    searchedPages,
+    unsearchablePages,
+    next: resumeAt(pages, options, position),
+  });
 
   for (const page of pages) {
     if (page.page < startPage) {
       continue;
     }
     if (pending.has(page.page)) {
-      return {
-        matches,
-        searchedPages,
-        unsearchablePages,
-        next: { page: page.page, ordinal: 0 },
-      };
+      return stop({ page: page.page, ordinal: 0 });
     }
     if (page.needsOcr) {
       continue;
@@ -126,12 +166,7 @@ export function scanLiteral(
           continue;
         }
         if (matches.length >= options.maxResults) {
-          return {
-            matches,
-            searchedPages,
-            unsearchablePages,
-            next: { page: page.page, ordinal: current },
-          };
+          return stop({ page: page.page, ordinal: current });
         }
         matches.push({
           page: page.page,

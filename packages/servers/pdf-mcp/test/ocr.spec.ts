@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, inject, it } from "vitest";
+import { beforeAll, describe, expect, inject, it, vi } from "vitest";
 import {
   createDocumentRoot,
   type DocumentRoot,
@@ -9,7 +9,9 @@ import type {
   PageRasterizer,
   RenderedPage,
 } from "../src/ocr/port.js";
-import { createHandlers } from "../src/tools/handlers.js";
+import { applyOcr, createOcrCache } from "../src/ocr/apply.js";
+import { fingerprintFromDigest } from "@sk-mcp/file-core";
+import { createHandlers, type PdfHandlerDeps } from "../src/tools/handlers.js";
 import type { ToolHandlers } from "../src/tools/definitions.js";
 import { bodyOf, codeOf } from "./fixtures/harness.js";
 import { pdfWithPages } from "./fixtures/pdf.js";
@@ -64,8 +66,46 @@ function recorder(): Recorder {
   return { rendered: [], recognized: [] };
 }
 
-function handlersWith(binding?: OcrBinding): ToolHandlers {
-  return createHandlers(root, binding === undefined ? {} : { ocr: binding });
+function handlersWith(
+  binding?: OcrBinding,
+  deps: Omit<PdfHandlerDeps, "ocr"> = {},
+): ToolHandlers {
+  return createHandlers(
+    root,
+    binding === undefined ? deps : { ...deps, ocr: binding },
+  );
+}
+
+async function scannedPdf(name: string, pages: number): Promise<string> {
+  await writeFile(
+    join(inject("fixtures").root, name),
+    pdfWithPages(Array.from({ length: pages }, () => ({ kind: "image" }))),
+  );
+  return name;
+}
+
+async function walkFind(
+  handlers: ToolHandlers,
+  args: Parameters<ToolHandlers["find_in_document"]>[0],
+): Promise<{ pages: number[]; last: Record<string, unknown> }> {
+  const pages: number[] = [];
+  let cursor: string | undefined;
+  let last: Record<string, unknown> = {};
+  for (let round = 0; round < 100; round += 1) {
+    last = bodyOf(
+      await handlers.find_in_document({
+        ...args,
+        ...(cursor === undefined ? {} : { cursor }),
+      }),
+    );
+    for (const match of last["matches"] as { page: number }[]) {
+      pages.push(match.page);
+    }
+    const next = last["nextCursor"];
+    if (next === undefined) break;
+    cursor = String(next);
+  }
+  return { pages, last };
 }
 
 describe("without a provider", () => {
@@ -385,6 +425,13 @@ describe("a timed-out request does not free the machine", () => {
     ).toBe("resource_limit");
 
     finish();
+    await vi.waitFor(async () => {
+      const result = await handlers.read_pages({
+        filePath: "mixed.pdf",
+        ocr: true,
+      });
+      expect(result.isError).not.toBe(true);
+    });
   }, 20_000);
 });
 
@@ -446,5 +493,166 @@ describe("answers are matched to what the provider actually saw", () => {
       "legitimate transcript of page two",
     );
     expect(pages.find((page) => page.page === 4)?.needsOcr).toBe(true);
+  });
+});
+
+describe("a document larger than the OCR cache", () => {
+  /**
+   * The failure this guards: the cache doubled as the record of which pages the
+   * walk had already transcribed. Once early pages left it they were offered
+   * for OCR again, every batch was spent behind the cursor, and the walk stopped
+   * advancing while still doing work.
+   */
+  it("walks to the end, transcribing each page once", async () => {
+    const name = await scannedPdf("bigger-than-cache.pdf", 20);
+    const seen = recorder();
+    const handlers = handlersWith(
+      fakeBinding((page) => `HIT on ${String(page)}`, seen, {
+        maxPagesPerCall: 3,
+      }),
+      { ocrCache: createOcrCache(4) },
+    );
+
+    const { pages, last } = await walkFind(handlers, {
+      filePath: name,
+      query: "HIT",
+      ocr: true,
+    });
+
+    expect(pages).toStrictEqual(
+      Array.from({ length: 20 }, (_unused, index) => index + 1),
+    );
+    expect(last["coverageComplete"]).toBe(true);
+    expect(seen.recognized.flat()).toHaveLength(20);
+  }, 60_000);
+
+  it("keeps an unreadable page counted after it leaves the cache", async () => {
+    const name = await scannedPdf("evicted-blank.pdf", 10);
+    const handlers = handlersWith(
+      fakeBinding((page) => (page === 2 ? "" : "HIT"), recorder(), {
+        maxPagesPerCall: 2,
+      }),
+      { ocrCache: createOcrCache(2) },
+    );
+
+    const { pages, last } = await walkFind(handlers, {
+      filePath: name,
+      query: "HIT",
+      ocr: true,
+    });
+
+    expect(pages).toStrictEqual([1, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(last["unsearchablePages"]).toBe(1);
+    expect(last["coverageComplete"]).toBe(false);
+  }, 60_000);
+});
+
+describe("a resume inside a page whose transcription changed", () => {
+  function driftingBinding(text: (call: number) => string): OcrBinding {
+    let call = 0;
+    const base = fakeBinding(() => "unused", recorder());
+    return {
+      ...base,
+      provider: {
+        name: "drifting",
+        recognize: (job) => {
+          call += 1;
+          return Promise.resolve(
+            job.pages.map((page) => ({
+              page: page.page,
+              markdown: text(call),
+            })),
+          );
+        },
+      },
+    };
+  }
+
+  it("refuses a search cursor instead of skipping or repeating matches", async () => {
+    const name = await scannedPdf("drift-find.pdf", 3);
+    const handlers = handlersWith(
+      driftingBinding((call) => `HIT a ${String(call)}\nHIT b ${String(call)}`),
+      { ocrCache: createOcrCache(1) },
+    );
+    const first = bodyOf(
+      await handlers.find_in_document({
+        filePath: name,
+        query: "HIT",
+        maxResults: 1,
+        ocr: true,
+      }),
+    );
+    expect(
+      await codeOf(() =>
+        handlers.find_in_document({
+          filePath: name,
+          query: "HIT",
+          maxResults: 1,
+          ocr: true,
+          cursor: String(first["nextCursor"]),
+        }),
+      ),
+    ).toBe("stale_cursor");
+  });
+
+  it("refuses a read cursor whose offset points into the old text", async () => {
+    const name = await scannedPdf("drift-read.pdf", 2);
+    const handlers = handlersWith(
+      driftingBinding((call) => `${String(call)} ${"w".repeat(3000)}`),
+      { ocrCache: createOcrCache(1), maxPayloadBytes: 800 },
+    );
+    const first = bodyOf(
+      await handlers.read_pages({ filePath: name, maxPages: 1, ocr: true }),
+    );
+    const cursor = String(first["nextCursor"]);
+    await handlers.read_pages({ filePath: name, pages: [2], ocr: true });
+
+    expect(
+      await codeOf(() =>
+        handlers.read_pages({ filePath: name, ocr: true, cursor }),
+      ),
+    ).toBe("stale_cursor");
+  });
+
+  it("refuses a read cursor once the caller turns OCR off", async () => {
+    const name = await scannedPdf("flip-read.pdf", 3);
+    const handlers = handlersWith(fakeBinding(() => "transcribed", recorder()));
+    const first = bodyOf(
+      await handlers.read_pages({ filePath: name, maxPages: 1, ocr: true }),
+    );
+    expect(
+      await codeOf(() =>
+        handlers.read_pages({
+          filePath: name,
+          cursor: String(first["nextCursor"]),
+        }),
+      ),
+    ).toBe("invalid_argument");
+  });
+});
+
+describe("pending pages", () => {
+  /**
+   * The failure this guards: a page outside the requested range whose
+   * transcription left the cache was reported as pending, and a pending page is
+   * one a reader must not walk past or count as unreadable.
+   */
+  it("are only ever pages that were asked for", async () => {
+    const outcome = await applyOcr(
+      fakeBinding(() => "text", recorder(), { maxPagesPerCall: 1 }),
+      createOcrCache(),
+      {
+        bytes: Buffer.alloc(0),
+        stamp: fingerprintFromDigest("pending", Uint8Array.of(1)),
+        pages: Array.from({ length: 5 }, (_unused, index) => ({
+          page: index + 1,
+          markdown: "",
+          needsOcr: true,
+        })),
+        wanted: [3, 4, 5],
+      },
+    );
+    expect(outcome.recognizedPages).toStrictEqual([3]);
+    expect(outcome.pendingPages).toStrictEqual([4, 5]);
   });
 });

@@ -103,6 +103,11 @@ bağımlılık gerektirmez.
 - **Byte'lar süreçten çıkar.** Bir sağlayıcı bağlamak, o sayfaların piksellerinin dışarı gitmesi
   demektir. Bu yüzden varsayılan kapalı ve her çağrıda açıkça isteniyor.
 - **Sayfa başına tekrar ödenmez.** Transkripsiyon belge damgası + sayfa numarasıyla önbelleklenir.
+  Önbellek ilerleme kaydı değildir: arama yalnız cursor'dan sonraki sayfaları OCR'a verir ve
+  kapsamayı cursor içinde taşır, böylece önbellekten büyük bir belge de sonuna kadar gezilir.
+- **Süresi dolan iş slotunu bırakmaz.** Motor da portlar da başlamış işi iptal edemez; slot iş
+  gerçekten bitene kadar dolu kalır. Hiç dönmeyen bir sağlayıcının slotunu yalnız sunucuyu yeniden
+  başlatmak geri alır — zamanla iade, sınırı yalnızca ertelerdi.
 
 ## Bağlayıcı kurallar
 
@@ -126,8 +131,10 @@ bağımlılık gerektirmez.
   olur ve boş bir eşleşme listesi belgenin tamamı için kesin sonuç sayılmaz.
 
 - **Belge bir kez bütün çıkarılır, yanıt sayfalanır.** Ölçüm, tek sayfa istemenin maliyeti 200'de 1
-  değil 3'te 1 düşürdüğünü gösterdi; sabit maliyet baskın. Cursor kimliği belge içeriğine bağlıdır,
-  sayfa boyutuna değil.
+  değil 3'te 1 düşürdüğünü gösterdi; sabit maliyet baskın. Cursor kimliği belge içeriğine ve `ocr`
+  moduna bağlıdır, sayfa boyutuna değil. Açık `pages` seçimi de devam eder: cursor seçimin kalanını
+  taşır, seçilmemiş sayfaya geçmez. Sayfa içinden devam eden cursor o sayfanın metin özetini taşır;
+  metin yeniden transkripsiyonla değiştiyse `stale_cursor` döner, içerik sessizce atlanmaz.
 
 - **Sunucu ağa çıkmaz.** `fetch`, `node:http`, `node:net` ve kardeşleri `src/` içinde lint ile
   yasaklıdır ve yasak her katmana ayrı ayrı dokunmuştur — flat config'de sonraki bir blok
