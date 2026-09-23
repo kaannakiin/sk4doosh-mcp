@@ -445,6 +445,7 @@ export function createHandlers(
             caseSensitive,
             offset,
             maxRows,
+            ...(cursor?.r === undefined ? {} : { resumeFrom: cursor.r }),
             maxChars: limits.maxStringChars,
             maxCellValues: limits.maxCellValues,
             maxItemVisits: limits.maxItemVisits,
@@ -454,9 +455,9 @@ export function createHandlers(
             loaded.mode === "chunked"
               ? await (async () => {
                   const resume =
-                    cursor?.b === undefined
+                    cursor?.r === undefined || cursor.b === undefined
                       ? undefined
-                      : { byte: cursor.b, ordinal: offset + 1 };
+                      : { byte: cursor.b, ordinal: cursor.r };
                   const scan = spans.scan(
                     loaded.stamp,
                     loaded.bytes,
@@ -488,10 +489,11 @@ export function createHandlers(
               mode: loaded.mode,
               optionsHash: hash,
               offset,
+              ...(cursor?.r === undefined ? {} : { resumeFrom: cursor.r }),
               page,
               ...(chunkedPage === undefined
                 ? {}
-                : { resumeBytes: chunkedPage.resumeBytes }),
+                : { byteOf: chunkedPage.byteOf }),
             }),
           );
         }),

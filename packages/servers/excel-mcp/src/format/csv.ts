@@ -1,10 +1,10 @@
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
-import { truncate, type CellSnapshot } from "../grid/cell-value.js";
+import type { CellSnapshot } from "../grid/cell-value.js";
 import { SkMcpExcelError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 import { columnToLetters, type GridBounds } from "../grid/range.js";
-import type { RowView, SheetView } from "../grid/sheet.js";
+import { presentIndices, type RowView, type SheetView } from "../grid/sheet.js";
 import type {
   DocumentMeta,
   WorkbookDescription,
@@ -459,10 +459,12 @@ export function csvSheetView(table: CsvTable): SheetView {
           if (field === undefined) {
             return undefined;
           }
-          return { merged: false, value: truncate(field) };
+          return { merged: false, value: { value: field } };
         },
+        populatedColumns: ({ from, to }) => presentIndices(record, from, to),
       };
     },
+    populatedRows: ({ from, to }) => presentIndices(table.rows, from, to),
   };
 }
 

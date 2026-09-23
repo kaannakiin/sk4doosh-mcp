@@ -685,7 +685,7 @@ describe("cell/header and metadata regressions", () => {
           merged: false,
           value: { value: null },
           formula: "A1",
-          cached: { value: "x", truncatedFrom: 900 },
+          cached: { value: "x".repeat(900) },
         },
         { valueMode, mergePolicy: "master", includeHyperlinks: true },
       );
@@ -699,11 +699,7 @@ describe("cell/header and metadata regressions", () => {
       normalizeCell(
         {
           merged: false,
-          value: {
-            value: "x",
-            href: "https://example.com",
-            truncatedFrom: 900,
-          },
+          value: { value: "x".repeat(900), href: "https://example.com" },
         },
         { valueMode: "values", mergePolicy: "master", includeHyperlinks: true },
       ).note,

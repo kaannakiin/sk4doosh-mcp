@@ -31,6 +31,7 @@ export interface BoundaryScan {
   readonly scanned: number;
   readonly complete: boolean;
   readonly resumedFromHint: boolean;
+  readonly lookahead?: number;
 }
 
 export interface ScanResume {

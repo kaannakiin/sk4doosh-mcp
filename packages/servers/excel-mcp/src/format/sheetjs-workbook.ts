@@ -32,7 +32,13 @@ import {
   type GridBounds,
 } from "../grid/range.js";
 import { sheetjsSnapshot, type SheetJsCell } from "./sheetjs-cell.js";
-import type { DeclaredTable, RowView, SheetView } from "../grid/sheet.js";
+import {
+  presentIndices,
+  type DeclaredTable,
+  type Populated,
+  type RowView,
+  type SheetView,
+} from "../grid/sheet.js";
 import type {
   DocumentMeta,
   SheetSummary,
@@ -325,6 +331,22 @@ export function sheetjsSheetView(
   const rows = denseRows(sheet);
   const cellAt = (row: number, column: number) =>
     (rows[row - 1]?.[column - 1] ?? undefined) as SheetJsCell | undefined;
+  const repeated = (
+    stored: Iterable<number>,
+    ranges: readonly (readonly [number, number])[],
+    { from, to }: Populated,
+  ): Iterable<number> => {
+    if (ranges.length === 0) return stored;
+    const indices = new Set(stored);
+    for (const [first, last] of ranges) {
+      for (let at = Math.max(from, first); at <= Math.min(to, last); at += 1) {
+        indices.add(at);
+      }
+    }
+    return [...indices].sort((a, b) => a - b);
+  };
+  const withMaster = (merge: MergeRange): boolean =>
+    cellAt(merge.top, merge.left) !== undefined;
   return {
     name,
     bounds: boundsOf(sheet),
@@ -356,7 +378,35 @@ export function sheetjsSheetView(
           const cell = cellAt(row, column);
           return cell === undefined ? undefined : sheetjsSnapshot(cell, false);
         },
+        populatedColumns(span) {
+          const stored = presentIndices(
+            rows[row - 1] ?? [],
+            span.from,
+            span.to,
+          );
+          return span.withCovered
+            ? repeated(
+                stored,
+                covering
+                  .filter(withMaster)
+                  .map((merge) => [merge.left, merge.right] as const),
+                span,
+              )
+            : stored;
+        },
       };
+    },
+    populatedRows(span) {
+      const stored = presentIndices(rows, span.from, span.to);
+      return span.withCovered
+        ? repeated(
+            stored,
+            merges
+              .filter(withMaster)
+              .map((merge) => [merge.top, merge.bottom] as const),
+            span,
+          )
+        : stored;
     },
   };
 }

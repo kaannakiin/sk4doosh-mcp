@@ -42,16 +42,22 @@ export interface ItemScan {
   readonly complete: boolean;
 }
 
+/**
+ * Visits at most `maxItems` items starting at occurrence `from`. The siblings
+ * before `from` are walked without being counted, so a page resumed past the
+ * budget still advances instead of re-scanning the same window.
+ */
 export function scanItems(
   root: XmlElement,
   selector: ItemSelector,
-  maxVisits: number,
+  maxItems: number,
+  from = 1,
 ): ItemScan | undefined {
   const parent = resolveAddress(root, selector.ancestors);
   if (parent === undefined) return undefined;
 
   const items: ItemVisit[] = [];
-  let childIndex = 1;
+  let childIndex = 0;
   let occurrence = 0;
   let scanned = 0;
   let complete = true;
@@ -61,27 +67,26 @@ export function scanItems(
     child !== undefined;
     child = nextSibling(child)
   ) {
-    if (child instanceof XmlElement) {
-      scanned += 1;
-      if (
-        sameName(selector.name, {
-          namespaceUri: child.namespaceUri,
-          localName: child.name,
-        })
-      ) {
-        occurrence += 1;
-        items.push({
-          element: child,
-          occurrence,
-          path: [...parent.path, childIndex],
-        });
-      }
-      if (scanned >= maxVisits) {
-        complete = false;
-        break;
-      }
-    }
     childIndex += 1;
+    if (!(child instanceof XmlElement)) continue;
+    const named = sameName(selector.name, {
+      namespaceUri: child.namespaceUri,
+      localName: child.name,
+    });
+    if (named) occurrence += 1;
+    if (occurrence < from) continue;
+    if (named && items.length >= maxItems) {
+      complete = false;
+      break;
+    }
+    scanned += 1;
+    if (named) {
+      items.push({
+        element: child,
+        occurrence,
+        path: [...parent.path, childIndex],
+      });
+    }
   }
 
   return { parentAddress: parent.address, items, scanned, complete };
@@ -205,14 +210,37 @@ function valueFrom(
   }
 }
 
-function presentCell(raw: RawValue, maxChars: number): Cell {
-  const value = clampChars(raw.text, maxChars);
-  const truncated =
-    value.length === raw.text.length ? {} : { truncated: true as const };
+function rawCell(raw: RawValue): Cell {
   const mixed = raw.mixed ? { mixed: true as const } : {};
-  return value === ""
+  return raw.text === ""
     ? { status: "empty", ...mixed }
-    : { status: "present", value, ...truncated, ...mixed };
+    : { status: "present", value: raw.text, ...mixed };
+}
+
+function presentCell(cell: Cell, maxChars: number): Cell {
+  if (cell.status === "present") {
+    const value = clampChars(cell.value, maxChars);
+    return value === cell.value ? cell : { ...cell, value, truncated: true };
+  }
+  if (cell.status === "list") {
+    const values = cell.values.map((value) => clampChars(value, maxChars));
+    return values.every((value, index) => value === cell.values[index])
+      ? cell
+      : { ...cell, values, truncated: true };
+  }
+  return cell;
+}
+
+/**
+ * Clamps cells for the response only. Filters, group keys and metrics read the
+ * cells `cellsOf` returns, so two values that share their first `maxChars`
+ * characters stay distinct; record-paging.spec.ts pins it.
+ */
+export function presentCells(
+  cells: readonly Cell[],
+  maxChars: number,
+): readonly Cell[] {
+  return cells.map((cell) => presentCell(cell, maxChars));
 }
 
 export function cellOf(
@@ -225,9 +253,7 @@ export function cellOf(
 
   if (column.name === undefined) {
     const raw = valueFrom(host, column);
-    return raw === undefined
-      ? { status: "missing" }
-      : presentCell(raw, limits.maxChars);
+    return raw === undefined ? { status: "missing" } : rawCell(raw);
   }
 
   const found = matchingChildren(host, column.name, limits.maxCellValues);
@@ -236,9 +262,7 @@ export function cellOf(
     const only = found[0];
     if (only === undefined) return { status: "missing" };
     const raw = valueFrom(only, column);
-    return raw === undefined
-      ? { status: "missing" }
-      : presentCell(raw, limits.maxChars);
+    return raw === undefined ? { status: "missing" } : rawCell(raw);
   }
 
   if (column.onMultiple === "error") {
@@ -248,26 +272,21 @@ export function cellOf(
     const first = found[0];
     if (first === undefined) return { status: "missing" };
     const raw = valueFrom(first, column);
-    return raw === undefined
-      ? { status: "missing" }
-      : presentCell(raw, limits.maxChars);
+    return raw === undefined ? { status: "missing" } : rawCell(raw);
   }
 
   const values: string[] = [];
-  let truncated = false;
   for (const candidate of found.slice(0, limits.maxCellValues)) {
     const raw = valueFrom(candidate, column);
-    if (raw === undefined) continue;
-    const value = clampChars(raw.text, limits.maxChars);
-    if (value.length !== raw.text.length) truncated = true;
-    values.push(value);
+    if (raw !== undefined) values.push(raw.text);
   }
-  if (found.length > limits.maxCellValues) truncated = true;
   return {
     status: "list",
     values,
     count: found.length,
-    ...(truncated ? { truncated: true as const } : {}),
+    ...(found.length > limits.maxCellValues
+      ? { truncated: true as const }
+      : {}),
   };
 }
 
@@ -380,12 +399,13 @@ export function projectRecords(
   root: XmlElement,
   probe: RecordProbe,
 ): RecordPage | undefined {
-  const scan = scanItems(root, probe.item, probe.maxItemVisits);
+  const from = probe.resumeFrom ?? 1;
+  const scan = scanItems(root, probe.item, probe.maxItemVisits, from);
   if (scan === undefined) return undefined;
 
   const reports = emptyReports(probe.columns);
   const rows: Row[] = [];
-  let matched = 0;
+  let matched = probe.resumeFrom === undefined ? 0 : probe.offset;
   let next: number | undefined;
 
   for (const visit of scan.items) {
@@ -408,7 +428,7 @@ export function projectRecords(
     rows.push({
       nodeId: formatNodeId(visit.path),
       occurrence: visit.occurrence,
-      cells: resolved,
+      cells: presentCells(resolved, probe.maxChars),
     });
   }
 
@@ -419,10 +439,11 @@ export function projectRecords(
     itemName: probe.item.name,
     scannedItems: scan.scanned,
     matchedItems: matched,
-    totalItems: scan.items.length,
+    totalItems: from - 1 + scan.items.length,
     totalItemsExact: scan.complete,
     complete: scan.complete,
     ...(next === undefined ? {} : { next }),
+    resumeOrdinal: from + scan.items.length,
   };
 }
 
@@ -473,7 +494,10 @@ export function projectChunks(
       )
         continue;
       matched += 1;
-      rows.push({ occurrence: firstOccurrence + index, cells });
+      rows.push({
+        occurrence: firstOccurrence + index,
+        cells: presentCells(cells, probe.maxChars),
+      });
     } finally {
       document.dispose();
     }

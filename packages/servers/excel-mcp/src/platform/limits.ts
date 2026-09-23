@@ -26,6 +26,8 @@ export const limits = {
   headerScanRows: 20,
   maxGroupsDefault: 50,
   maxGroupsHard: 500,
+  maxAggregateGroups: 100_000,
+  maxAggregateCellVisits: 20_000_000,
   maxConditions: 16,
   maxMetrics: 8,
   maxInValues: 64,

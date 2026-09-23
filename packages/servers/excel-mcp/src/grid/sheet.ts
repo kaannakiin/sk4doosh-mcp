@@ -10,8 +10,20 @@ export interface DeclaredTable {
   readonly columns: readonly (string | null)[];
 }
 
+/**
+ * `withCovered` adds the cells a merge covers without storing; they read as
+ * the master's value only under the `repeat` policy.
+ */
+export interface Populated {
+  readonly from: number;
+  readonly to: number;
+  readonly withCovered: boolean;
+}
+
 export interface RowView {
   cellAt(column: number): CellSnapshot | undefined;
+  /** @returns the columns in range that can carry a snapshot, ascending. */
+  populatedColumns(span: Populated): Iterable<number>;
 }
 
 export interface SheetView {
@@ -21,6 +33,8 @@ export interface SheetView {
   readonly tables: readonly DeclaredTable[];
   readonly autoFilter: string | undefined;
   rowAt(row: number): RowView | undefined;
+  /** @returns the rows in range that can carry a snapshot, ascending. */
+  populatedRows(span: Populated): Iterable<number>;
 }
 
 export interface SheetSource {
@@ -42,4 +56,15 @@ export function requireSheetBounds(sheet: BoundedSheet): GridBounds {
     );
   }
   return sheet.bounds;
+}
+
+export function* presentIndices(
+  items: readonly unknown[],
+  from: number,
+  to: number,
+): Generator<number> {
+  const last = Math.min(to, items.length);
+  for (let index = Math.max(from, 1); index <= last; index += 1) {
+    if (items[index - 1] != null) yield index;
+  }
 }

@@ -23,3 +23,10 @@ minimumReleaseAgeExclude:
   - "@ai-sdk/react@4.0.100"
   - ai-sdk-ollama@4.3.0
   - ai@7.0.97
+  - '@firecrawl/pdf-inspector-darwin-arm64@1.23.0'
+  - '@firecrawl/pdf-inspector-linux-arm64-gnu@1.23.0'
+  - '@firecrawl/pdf-inspector-linux-arm64-musl@1.23.0'
+  - '@firecrawl/pdf-inspector-linux-x64-gnu@1.23.0'
+  - '@firecrawl/pdf-inspector-linux-x64-musl@1.23.0'
+  - '@firecrawl/pdf-inspector-win32-x64-msvc@1.23.0'
+  - '@firecrawl/pdf-inspector@1.23.0'

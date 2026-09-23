@@ -1,0 +1,7 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": { "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"] },
+    "test": { "dependsOn": ["build"] }
+  }
+}

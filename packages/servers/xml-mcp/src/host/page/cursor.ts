@@ -29,14 +29,18 @@ interface Ordinal extends Bound {
 }
 
 /**
- * `b` is advisory. Every page re-verifies it against the record it claims to
+ * `i` counts matched records and `r` names the physical occurrence the next
+ * page starts at; under a filter the two differ, and deriving one from the
+ * other repeats records (record-paging.spec.ts). `b` is advisory and only
+ * travels with `r`: every page re-verifies it against the record it claims to
  * start and falls back to scanning from zero when it does not hold, so a forged
  * `b` can only cost a pass, never yield a row the hint-free path would not.
  * chunked-cursor.spec.ts fuzzes it.
  */
-interface Scanned extends Ordinal {
-  readonly b?: number;
-}
+type Scanned = Bound & { readonly i: number } & (
+    | { readonly r?: undefined; readonly b?: undefined }
+    | { readonly r: number; readonly b?: number }
+  );
 
 export type XmlPosition =
   | (Walked & { readonly t: "read" })
@@ -77,6 +81,10 @@ function isOrdinal(value: unknown): boolean {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 1;
 }
 
+function isCount(value: unknown): boolean {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 function isWalked(value: Record<string, unknown>): boolean {
   return isPath(value["p"]) && isPath(value["s"]);
 }
@@ -88,11 +96,11 @@ const shapes: {
   find: isWalked,
   xpath: (value) => isOrdinal(value["i"]),
   records: (value) =>
-    isOrdinal(value["i"]) &&
-    (value["b"] === undefined ||
-      (typeof value["b"] === "number" &&
-        Number.isSafeInteger(value["b"]) &&
-        value["b"] >= 0)),
+    isCount(value["i"]) &&
+    (value["r"] === undefined
+      ? value["b"] === undefined
+      : isOrdinal(value["r"]) &&
+        (value["b"] === undefined || isCount(value["b"]))),
 };
 
 function isXmlCursor<K extends CursorTool>(

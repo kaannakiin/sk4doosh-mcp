@@ -14,6 +14,7 @@ import {
 } from "../src/platform/paths.js";
 import { resolveRange, type GridBounds } from "../src/grid/range.js";
 import {
+  presentIndices,
   requireSheetBounds,
   type DeclaredTable,
   type SheetView,
@@ -153,8 +154,10 @@ describe("a table that omits headerRowCount", () => {
           }
           return { merged: false, value: { value } };
         },
+        populatedColumns: ({ from, to }) => presentIndices(row, from, to),
       };
     },
+    populatedRows: ({ from, to }) => (from <= 1 && to >= 1 ? [1] : []),
   });
 
   const named: DeclaredTable = {

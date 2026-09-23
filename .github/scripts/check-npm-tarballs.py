@@ -8,6 +8,10 @@ REQUIRED_ENTRY = "package/dist/index.js"
 EXACT_PINS = {
     "@sk-mcp/xml-mcp": {"libxml2-wasm": "0.7.2"},
     "@sk-mcp/excel-mcp": {"@e965/xlsx": "0.20.3"},
+    "@sk-mcp/pdf-mcp": {"@firecrawl/pdf-inspector": "1.23.0"},
+    # pdf.js 5 and @napi-rs/canvas 1.x fail at ctx.fill(path) the moment a glyph
+    # is drawn, so a caret on either turns every text page into a crash.
+    "@sk-mcp/pdf-raster-pdfjs": {"pdfjs-dist": "4.10.38", "@napi-rs/canvas": "0.1.100"},
 }
 
 

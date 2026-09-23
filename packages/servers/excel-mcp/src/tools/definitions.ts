@@ -279,6 +279,8 @@ export const toolDefinitions = {
         .describe(
           "Maximum groups returned, default 50. matchedRows covers all groups; metric counted/skipped covers returnedMatchedRows.",
         ),
+      delimiter,
+      encoding,
     }),
     annotations: readOnly,
   },
