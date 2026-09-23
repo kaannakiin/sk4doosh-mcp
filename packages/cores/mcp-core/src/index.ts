@@ -17,6 +17,7 @@ export {
   type Fingerprint,
 } from "./cursor.js";
 export {
+  createMcpOutputServer,
   createMcpSourceServer,
   serveMcpSourceStdio,
   toolNamesOf,
@@ -25,14 +26,18 @@ export {
 export {
   guard,
   json,
+  ownOutput,
   readOnly,
   toToolError,
   type ErrorNormalizer,
   type GuardContext,
   type GuardedHandler,
   type HandlersOf,
+  type OwnOutputAnnotations,
+  type OwnOutputToolDefinition,
   type ReadOnlyAnnotations,
   type ReadOnlyToolDefinition,
+  type ToolCatalog,
   type ToolDefinitions,
   type ToolInputOf,
   type ToolNameOf,

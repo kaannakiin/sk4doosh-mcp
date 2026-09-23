@@ -31,24 +31,54 @@ export interface ReadOnlyToolDefinition {
 
 export type ToolDefinitions = Readonly<Record<string, ReadOnlyToolDefinition>>;
 
-export type ToolNameOf<D extends ToolDefinitions> = keyof D & string;
+export interface OwnOutputAnnotations extends ToolAnnotations {
+  readonly readOnlyHint: false;
+  readonly destructiveHint: false;
+  readonly idempotentHint: false;
+  readonly openWorldHint: false;
+}
+
+/**
+ * Guard: these hints tell the client the tool only ever adds a new entry under the server's own
+ * output location, which is why a client may auto-approve it. The core cannot write anything, so
+ * the consumer carries the promise: create-only, a name it chooses itself, never outside that
+ * location (docs/cikti-yazan-tool-karari.md).
+ */
+export const ownOutput: OwnOutputAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+};
+
+export interface OwnOutputToolDefinition {
+  readonly description: string;
+  readonly inputSchema: z.ZodObject;
+  readonly annotations: ToolAnnotations & {
+    readonly readOnlyHint: false;
+    readonly destructiveHint: false;
+  };
+}
+
+export type ToolCatalog = Readonly<
+  Record<string, ReadOnlyToolDefinition | OwnOutputToolDefinition>
+>;
+
+export type ToolNameOf<D extends ToolCatalog> = keyof D & string;
 
 export type ToolInputOf<
-  D extends ToolDefinitions,
+  D extends ToolCatalog,
   K extends ToolNameOf<D>,
 > = z.infer<D[K]["inputSchema"]>;
 
-export type GuardedHandler<
-  D extends ToolDefinitions,
-  K extends ToolNameOf<D>,
-> = ((
+export type GuardedHandler<D extends ToolCatalog, K extends ToolNameOf<D>> = ((
   args: ToolInputOf<D, K>,
   extra?: { readonly signal?: AbortSignal },
 ) => Promise<CallToolResult>) & {
   readonly guardedTool: K;
 };
 
-export type HandlersOf<D extends ToolDefinitions> = {
+export type HandlersOf<D extends ToolCatalog> = {
   readonly [K in ToolNameOf<D>]: GuardedHandler<D, K>;
 };
 
@@ -138,7 +168,7 @@ export interface GuardContext<K extends string> extends ErrorContext {
  * `HandlersOf` accepts nothing else. That is what makes the payload budget
  * unbypassable: a hand-written handler cannot be registered.
  */
-export function guard<D extends ToolDefinitions, K extends ToolNameOf<D>>(
+export function guard<D extends ToolCatalog, K extends ToolNameOf<D>>(
   context: GuardContext<K>,
   handler: (
     args: ToolInputOf<D, K>,
