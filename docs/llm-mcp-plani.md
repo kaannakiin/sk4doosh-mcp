@@ -1,6 +1,6 @@
 # llm-mcp — codex'in yerel modellere iş devretmesi
 
-**Durum:** F0, F1 ve F2 uygulandı — F3'ten itibaren öneri
+**Durum:** F0–F3 uygulandı — F4'ten itibaren öneri
 **Tarih:** 23 Eylül 2026
 **Kapsam:** `packages/servers/llm-mcp` (yeni), `packages/cores/mcp-core` (yazan tool türü), `products/chat/api` (`codex-client.ts` bağlantısı ve workspace'e yazılan `AGENTS.md`)
 **Kaynak:** scratchpad'de prototip sunucu, Ollama ölçümleri, `gpt-5.6-luna` (`low`) ile 8 codex koşusu, 6 açık kaynak reponun incelenmesi
@@ -188,6 +188,16 @@ Codex turu (`gpt-5.6-luna`, `low`): codex bir toplantı notundan katılımcılar
 - Id'li şema, bütçeye göre batch, eksik satırlarda tek yeniden deneme, `.llm-mcp/out/` altına yazma ve yolu dönme, etiket başına örnek.
 
 **Çıkış:** 400 satırlık zor sette etiketler 400/400. Codex `AGENTS.md` ile günlük raporu 14/14 doğru çıkarıyor.
+
+**Durum:** uygulandı. Zor sette `local_map` stdio'dan 400/400 etiketledi: 3 batch, yeniden deneme yok, 106 sn. Codex turu (`gpt-5.6-luna`, `low`) 21 satırlık örnek okudu, `local_map`'i çağırdı, dönen örnekleri kontrol etti ve `rapor.json`'u yazdı: 14/14 gün. Tur 171 sn sürdü, 127,5k input (71,9k cache'li, 55,6k cache'siz) ve 1,8k output token harcadı. Cache'siz token H3'ün (24,5k) üstünde; codex'in okuduğu satır sayısı aynı (~20), fark cache isabetinden geliyor.
+
+Prototipten farklar:
+
+- Çıktı yolunu codex değil sunucu seçiyor (`out` argümanı yok).
+- CSV ayrıştırıcı tırnak içindeki satır sonunu ve ayırıcıyı (`,` `;` tab) tanıyor.
+- Modele satır tek satır gidiyor, dosyaya ham kayıt yazılıyor.
+- 2.000 satır üstü reddediliyor.
+- Etiket sütunu zaten varsa `invalid_argument` dönüyor.
 
 ### F4 — Uzun girdi
 

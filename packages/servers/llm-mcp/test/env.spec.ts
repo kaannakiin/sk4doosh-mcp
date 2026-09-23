@@ -21,6 +21,7 @@ describe("readLlmEnv", () => {
       kind: "config",
       config: {
         root: "/work/space",
+        outputDir: ".llm-mcp/out",
         baseUrl: "http://127.0.0.1:11434",
         model: "qwen3:8b",
         contextTokens: 16_384,
@@ -35,6 +36,7 @@ describe("readLlmEnv", () => {
       {
         ...model,
         SKMCP_LLM_ROOT: "/elsewhere",
+        SKMCP_LLM_OUTPUT_DIR: "out",
         SKMCP_LLM_BASE_URL: "http://10.0.0.5:11434",
         SKMCP_LLM_NUM_CTX: "8192",
         SKMCP_LLM_KEEP_ALIVE: "5m",
@@ -46,6 +48,7 @@ describe("readLlmEnv", () => {
       kind: "config",
       config: {
         root: "/elsewhere",
+        outputDir: "out",
         baseUrl: "http://10.0.0.5:11434",
         model: "qwen3:8b",
         contextTokens: 8192,

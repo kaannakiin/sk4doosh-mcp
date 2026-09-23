@@ -2,14 +2,15 @@
 
 Planlayan bir ajanın (Codex, Claude Code, Cursor) sınırlı dil işlerini yerel bir modele devretmesini sağlayan MCP sunucusu. `@sk-mcp/mcp-core` üzerine kuruludur ve ondan başka hiçbir `@sk-mcp/*` paketi adlandırmaz. Tasarım ve ölçümler: [llm-mcp-plani.md](../../../docs/llm-mcp-plani.md).
 
-İki tool, ikisi de salt-okunur:
+Üç tool. İkisi salt-okunur, `local_map` yalnızca sunucunun kendi çıktı klasörüne yeni dosya ekler:
 
 | Tool                                                        | Ne yapar                                                                                                                                                                                                                                                                                    |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `local_task(kind, instruction, text?, files?, jsonSchema?)` | Tek bir dil işi: `classify`, `extract`, `summarize`, `transform`, `free`. Dosyaları sunucu okur, içerikleri ajanın context'ine girmez. `jsonSchema` verilirse cevap o şemaya uyan JSON'dur (`result`), yoksa metindir (`answer`). Bütçeyi aşan girdi `input_too_large` döner, asla kesilmez |
+| `local_map(file, instruction, labels, labelColumn?)`        | CSV'nin her satırını verilen etiketlerden biriyle etiketler. Ajan satırları görmez: yol verir, sunucu orijinal sütunlar + bir etiket sütunuyla yeni bir dosyayı `.llm-mcp/out/` altına yazar, dosyanın yolunu, etiket başına sayımları ve 4 örnek satırı döner. En çok 2.000 satır          |
 | `local_status()`                                            | Model erişilebilir ve yüklü mü, context penceresi, bir çağrının girdi bütçesi, kuyrukta bekleyen çağrı sayısı                                                                                                                                                                               |
 
-`local_map` ve uzun girdinin parçalanması sonraki fazlarda gelir.
+Uzun girdinin parçalanması sonraki fazda gelir.
 
 ## Kurulum
 
@@ -35,6 +36,7 @@ Codex'te aynı blok `mcp_servers.local` altına yazılır. `approval_policy = "n
 ```text
 SKMCP_LLM_MODEL=qwen3:8b
 SKMCP_LLM_ROOT=.                            # varsayılan: çalışma dizini
+SKMCP_LLM_OUTPUT_DIR=.llm-mcp/out           # varsayılan; köke göreli, kökün içinde olmalı
 SKMCP_LLM_BASE_URL=http://127.0.0.1:11434   # varsayılan
 SKMCP_LLM_NUM_CTX=16384                     # varsayılan; en az 4096
 SKMCP_LLM_KEEP_ALIVE=30m                    # varsayılan
@@ -54,6 +56,8 @@ Yalnızca model zorunlu. Ayrıştırma ölümcül, host'a ulaşmak değil: host 
 - **`process.env` yalnızca `cli.ts`'te okunur** ve her değişken adıyla erişilir.
 - **Dosya yolları workspace'e çözülür.** İstenen yol ve onun `realpath`'i ayrı ayrı kontrol edilir; dışarıyı gösteren bir symlink de reddedilir. `readText` yalnızca bu iki kontrolden geçmiş `WorkspacePath` markalı yolu kabul eder. Hata zarflarında workspace'in mutlak yolu `.` olarak görünür.
 - **Token'ı sunucu sayar.** Girdi `num_ctx × 0,45` bütçesini aşarsa host'a hiç gitmez; bütçeye hiçbir koşulda sığmayacak dosya okunmadan reddedilir. Cevap `num_ctx × 0,4` ile sınırlıdır.
+- **Dosya sistemine yalnızca `src/platform/workspace.ts` dokunur** (lint ile). Tek yazıcı `createOutput`: çıktı klasörü `realpath`'iyle yeniden kontrol edilir; dosya adını sunucu seçer, güvenli alfabeye indirger ve uzantıyı `.csv` sabitler; `wx` ile açar, yani var olan dosyanın ya da symlink'in üzerine yazmaz; hiçbir şey silinmez ([cikti-yazan-tool-karari.md](../../../docs/cikti-yazan-tool-karari.md)).
+- **`local_map` satır numarasını modele ve geri taşır.** Id'siz format sırayı kaybediyordu. Atlanan satır bir kez yeniden sorulur, hâlâ yoksa etiketsiz bırakılır ve sayılır; tahmin edilmez.
 - **Host başına tek istek.** `createSerialBackend` istekleri sıraya koyar: GPU paralel çalışmıyor, codex ise çağrıları aynı anda atıyor. `probe` kuyruğa girmez.
 - **Yeni bir host türü `Backend` arayüzünün başka bir uygulamasıdır.** Sunucunun geri kalanı değişmez.
 

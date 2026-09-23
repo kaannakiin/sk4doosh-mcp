@@ -4,6 +4,7 @@ import { asLlmError, fail } from "../platform/errors.js";
 import { inputBudgetTokens } from "../platform/limits.js";
 import type { Workspace } from "../platform/workspace.js";
 import type { ToolHandlers } from "./definitions.js";
+import { runMap } from "./map.js";
 import { runTask } from "./task.js";
 
 export function createHandlers(
@@ -30,6 +31,12 @@ export function createHandlers(
       { ...context, tool: "local_task" },
       async (args, _tool, signal) =>
         json(await runTask({ backend, workspace }, args, signal)),
+      asLlmError,
+    ),
+    local_map: guard(
+      { ...context, tool: "local_map" },
+      async (args, _tool, signal) =>
+        json(await runMap({ backend, workspace }, args, signal)),
       asLlmError,
     ),
   };

@@ -7,6 +7,11 @@ import { mcpCoreLimits } from "@sk-mcp/mcp-core";
  * of the window is the input budget, leaving the rest for the system prompt and
  * the answer. Turkish text measured ~1.8 characters per token; English runs
  * near 4, so the estimate errs towards refusing, never towards truncating.
+ *
+ * Guard: labelling was measured at ~16 output tokens and ~270 ms per row
+ * (rule 9). 2,000 rows is about nine minutes, inside the 900 s tool timeout
+ * codex is given; a larger file is refused up front rather than timed out
+ * halfway with nothing written.
  */
 export const limits = {
   ...mcpCoreLimits,
@@ -14,6 +19,9 @@ export const limits = {
   charsPerToken: 1.8,
   outputBudgetRatio: 0.4,
   maxBytesPerChar: 4,
+  outputTokensPerRow: 17,
+  maxMapRows: 2_000,
+  maxMapBytes: 8 * 1024 * 1024,
 } as const;
 
 export function inputBudgetTokens(contextTokens: number): number {

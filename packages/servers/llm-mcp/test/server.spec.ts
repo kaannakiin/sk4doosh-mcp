@@ -3,7 +3,7 @@ import type { CallToolResult } from "@modelcontextprotocol/client";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readOnly } from "@sk-mcp/mcp-core";
+import { ownOutput, readOnly } from "@sk-mcp/mcp-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BackendProbe, QueuedBackend } from "../src/backend/port.js";
 import { fail } from "../src/platform/errors.js";
@@ -61,18 +61,22 @@ function body(result: CallToolResult): Record<string, unknown> {
 }
 
 describe("createLlmMcpServer", () => {
-  it("lists its tools as read-only", async () => {
+  it("declares local_map as an own-output tool and the rest read-only", async () => {
     const client = await connect(
       fakeBackend({ reachable: true, loaded: true }),
     );
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name)).toEqual([
+    const hints = Object.fromEntries(
+      tools.map((tool) => [tool.name, tool.annotations]),
+    );
+    expect(Object.keys(hints)).toEqual([
       "local_status",
       "local_task",
+      "local_map",
     ]);
-    for (const tool of tools) {
-      expect(tool.annotations).toMatchObject(readOnly);
-    }
+    expect(hints["local_status"]).toMatchObject(readOnly);
+    expect(hints["local_task"]).toMatchObject(readOnly);
+    expect(hints["local_map"]).toMatchObject(ownOutput);
   });
 
   it("reports the host, the window, the budget and the queue", async () => {

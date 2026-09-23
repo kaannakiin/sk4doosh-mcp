@@ -1,5 +1,6 @@
 export interface LlmConfig {
   readonly root: string;
+  readonly outputDir: string;
   readonly baseUrl: string;
   readonly model: string;
   readonly contextTokens: number;
@@ -78,6 +79,7 @@ export function readLlmEnv(env: EnvRecord, cwd: string): EnvOutcome {
     kind: "config",
     config: {
       root: env["SKMCP_LLM_ROOT"] || cwd,
+      outputDir: env["SKMCP_LLM_OUTPUT_DIR"] || ".llm-mcp/out",
       baseUrl,
       model: env["SKMCP_LLM_MODEL"] ?? "",
       contextTokens,

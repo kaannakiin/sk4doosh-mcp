@@ -1,6 +1,7 @@
 import {
   mkdir,
   mkdtemp,
+  readFile,
   realpath,
   rm,
   symlink,
@@ -102,6 +103,47 @@ describe("redact", () => {
   it("replaces the workspace root with a dot", () => {
     expect(workspace.redact(`${workspace.root}/docs/note.txt`)).toBe(
       "./docs/note.txt",
+    );
+  });
+});
+
+describe("createOutput", () => {
+  it("adds a file under the output directory and returns its relative path", async () => {
+    const path = await workspace.createOutput("report", "a,b\n");
+    expect(path).toBe(".llm-mcp/out/report.csv");
+    expect(await readFile(join(workspace.root, path), "utf8")).toBe("a,b\n");
+  });
+
+  it("never replaces an existing file", async () => {
+    const first = await workspace.createOutput("same", "one");
+    const second = await workspace.createOutput("same", "two");
+    expect(second).not.toBe(first);
+    expect(await readFile(join(workspace.root, first), "utf8")).toBe("one");
+  });
+
+  it.each(["../../escape", "AGENTS.md", "/etc/passwd", ".hidden"])(
+    "keeps the name %s inside the output directory with a csv extension",
+    async (name) => {
+      const path = await workspace.createOutput(name, "x");
+      expect(path.startsWith(".llm-mcp/out/")).toBe(true);
+      expect(path.endsWith(".csv")).toBe(true);
+      expect(path.slice(".llm-mcp/out/".length)).not.toContain("/");
+    },
+  );
+
+  it("refuses an output directory outside the workspace", async () => {
+    expect(
+      await codeOf(openWorkspace(workspace.root, fail, "../elsewhere")),
+    ).toBe("outside_workspace");
+  });
+
+  it("refuses an output directory that is a symlink to outside", async () => {
+    const root = join(base, "linked");
+    await mkdir(root);
+    await symlink(base, join(root, "out"));
+    const linked = await openWorkspace(root, fail, "out");
+    expect(await codeOf(linked.createOutput("x", "y"))).toBe(
+      "outside_workspace",
     );
   });
 });

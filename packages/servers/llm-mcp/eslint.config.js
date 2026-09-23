@@ -9,6 +9,8 @@ const toolsMessage =
   "Tools see a model host only through backend/port.ts; the concrete backend is bound in cli.ts.";
 const networkMessage =
   "Only src/backend/ollama.ts reaches the network, and only through the global fetch.";
+const fsMessage =
+  "Only src/platform/workspace.ts touches the filesystem: it is the one place that checks containment and the only writer.";
 
 const serverPackages = ["@modelcontextprotocol/server"];
 
@@ -27,6 +29,8 @@ const networkModules = [
   "axios",
 ];
 
+const fsModules = ["node:fs", "node:fs/promises", "fs", "fs/promises"];
+
 /**
  * Guard: the entrypoints are listed alongside the folder globs because
  * no-restricted-imports matches the specifier string, not the resolved module.
@@ -36,16 +40,18 @@ const networkModules = [
 const entrypoints = ["**/index.js", "**/server.js", "**/cli.js"];
 
 /**
- * Guard: the network ban is folded into every layer's rule because a later
- * flat-config block replaces no-restricted-imports outright instead of merging
- * with it; a layer block without it would silently lift the ban for its files.
+ * Guard: the network and filesystem bans are folded into every layer's rule
+ * because a later flat-config block replaces no-restricted-imports outright
+ * instead of merging with it; a layer block without them would silently lift
+ * the ban for its files.
  */
-const restrict = (message, { paths = [], folders = [] }) => ({
+const restrict = (message, { paths = [], folders = [], fs = false }) => ({
   "no-restricted-imports": [
     "error",
     {
       paths: [
         ...networkModules.map((name) => ({ name, message: networkMessage })),
+        ...(fs ? [] : fsModules.map((name) => ({ name, message: fsMessage }))),
         ...paths.map((name) => ({ name, message })),
       ],
       ...(folders.length === 0
@@ -79,6 +85,14 @@ export default [
     rules: restrict(platformMessage, {
       paths: serverPackages,
       folders: ["**/backend/**", "**/tools/**"],
+    }),
+  },
+  {
+    files: ["src/platform/workspace.ts"],
+    rules: restrict(platformMessage, {
+      paths: serverPackages,
+      folders: ["**/backend/**", "**/tools/**"],
+      fs: true,
     }),
   },
   {

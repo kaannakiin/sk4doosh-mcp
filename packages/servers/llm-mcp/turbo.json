@@ -9,6 +9,7 @@
       "dependsOn": ["build"],
       "passThroughEnv": [
         "SKMCP_LLM_ROOT",
+        "SKMCP_LLM_OUTPUT_DIR",
         "SKMCP_LLM_BASE_URL",
         "SKMCP_LLM_MODEL",
         "SKMCP_LLM_NUM_CTX",
@@ -24,6 +25,7 @@
     "dev": {
       "passThroughEnv": [
         "SKMCP_LLM_ROOT",
+        "SKMCP_LLM_OUTPUT_DIR",
         "SKMCP_LLM_BASE_URL",
         "SKMCP_LLM_MODEL",
         "SKMCP_LLM_NUM_CTX",

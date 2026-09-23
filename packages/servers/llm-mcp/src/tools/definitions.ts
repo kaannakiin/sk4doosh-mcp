@@ -1,8 +1,9 @@
 import {
+  ownOutput,
   readOnly,
   toolNamesOf,
   type HandlersOf,
-  type ToolDefinitions,
+  type ToolCatalog,
   type ToolInputOf,
   type ToolNameOf,
 } from "@sk-mcp/mcp-core";
@@ -40,7 +41,31 @@ export const toolDefinitions = {
     }),
     annotations: readOnly,
   },
-} as const satisfies ToolDefinitions;
+  local_map: {
+    description:
+      "Label every row of a CSV file with one of the given labels on the free local model, for row-wise judgement that needs language understanding. You never see the rows: pass the path, and the server writes a labelled copy (the original columns plus one label column) as a new file in its output directory and returns that file's path, the counts per label, and up to four sample rows per label. Check the samples before using the output. Rows a simple rule or keyword can decide are faster with a script.",
+    inputSchema: z.object({
+      file: z
+        .string()
+        .min(1)
+        .describe("CSV path relative to the working directory."),
+      instruction: z
+        .string()
+        .min(1)
+        .describe(
+          "How to decide one row's label, naming the cues you saw in a sample.",
+        ),
+      labels: z.array(z.string().min(1).max(64)).min(2).max(50),
+      labelColumn: z
+        .string()
+        .min(1)
+        .max(64)
+        .optional()
+        .describe("Name of the added column; defaults to label."),
+    }),
+    annotations: ownOutput,
+  },
+} as const satisfies ToolCatalog;
 
 export type Definitions = typeof toolDefinitions;
 export type ToolName = ToolNameOf<Definitions>;

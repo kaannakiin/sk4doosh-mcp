@@ -1,6 +1,6 @@
 # Çıktı yazan tool türü — `mcp-core`'da salt-okunur olmayan ilk tür
 
-**Durum:** uygulandı (llm-mcp F0) — tip ve kayıt fonksiyonu `mcp-core`'da, diske yazan kod yok
+**Durum:** uygulandı — tip ve kayıt fonksiyonu `mcp-core`'da (llm-mcp F0); diske yazan kod `llm-mcp`'nin `createOutput`'unda (F3)
 **Tarih:** 23 Eylül 2026
 **Kapsam:** `packages/cores/mcp-core` (`tools.ts`, `server.ts`, `index.ts`). `packages/cores/file-core`, `packages/cores/db-core` ve `packages/servers/*` bu kararın dışındadır ve **tek satır değişmedi**.
 **Kaynak:** [llm-mcp-plani.md](llm-mcp-plani.md), `local_map` tool'u.
@@ -49,7 +49,8 @@ Onların `createFileSourceServer`/`createMcpSourceServer`'ı salt-okunur kısıt
 ### Tüketicinin sözleşmesi
 
 Çekirdek diske yazmıyor: fs bilmiyor ve "file"/"path" literal'i taşıyamıyor. `ownOutput` annotation'ı bir vaat. Vaadi
-tüketici tutuyor, ve llm-mcp F3'te şu dört kural uygulanır:
+tüketici tutuyor. llm-mcp'de dört kural `packages/servers/llm-mcp/src/platform/workspace.ts`'teki `createOutput`'ta uygulandı;
+`node:fs` başka hiçbir dosyada import edilemiyor (lint):
 
 1. **Tek klasör.** Yazma yalnızca sunucunun çıktı klasörüne yapılır (varsayılan `.llm-mcp/out/`, `SKMCP_LLM_OUTPUT_DIR`). Çözülmüş yol
    klasörün dışına çıkarsa istek reddedilir.
@@ -73,7 +74,6 @@ tüketici tutuyor, ve llm-mcp F3'te şu dört kural uygulanır:
 
 ## Bilinçli kapsam dışı
 
-- **Diske yazan kod.** Yukarıdaki dört kural llm-mcp F3'te, sunucunun tek bir klasöründe ve lint ile sınırlı olarak uygulanır.
 - **Var olanı değiştiren ya da silen tür.** `destructiveHint: true` bir tool hiçbir katalog tipine uymuyor. İhtiyaç çıkarsa ayrı karar.
 - **`openWorldHint`.** `ownOutput` `false` diyor. Tanım yalnızca `readOnlyHint` ve `destructiveHint`'i zorunlu tutuyor: arkasında
   açık bir ağ kaynağı olan bir tüketici kendi annotation'ını yazabilir.

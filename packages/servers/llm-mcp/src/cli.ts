@@ -20,6 +20,7 @@ function stop(message: string, code: number): never {
 const outcome = readLlmEnv(
   {
     SKMCP_LLM_ROOT: process.env["SKMCP_LLM_ROOT"],
+    SKMCP_LLM_OUTPUT_DIR: process.env["SKMCP_LLM_OUTPUT_DIR"],
     SKMCP_LLM_BASE_URL: process.env["SKMCP_LLM_BASE_URL"],
     SKMCP_LLM_MODEL: process.env["SKMCP_LLM_MODEL"],
     SKMCP_LLM_NUM_CTX: process.env["SKMCP_LLM_NUM_CTX"],
@@ -42,12 +43,14 @@ if (outcome.kind === "invalid") {
 
 let workspace: Workspace;
 try {
-  workspace = await openWorkspace(outcome.config.root, fail);
-} catch {
-  stop(
-    `The workspace '${outcome.config.root}' is not a readable directory.`,
-    2,
+  workspace = await openWorkspace(
+    outcome.config.root,
+    fail,
+    outcome.config.outputDir,
   );
+} catch (error) {
+  const detail = error instanceof Error ? error.message : String(error);
+  stop(`sk-mcp-llm cannot open its workspace: ${detail}`, 2);
 }
 
 const backend = createSerialBackend(createOllamaBackend(outcome.config));

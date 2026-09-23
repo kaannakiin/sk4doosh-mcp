@@ -41,5 +41,15 @@ export {
   toolNames,
   type ToolName,
 } from "./tools/definitions.js";
+export {
+  csvField,
+  delimiterOf,
+  fieldsOf,
+  parseTable,
+  splitRecords,
+  type CsvTable,
+  type Delimiter,
+} from "./platform/csv.js";
+export { planBatches } from "./tools/map.js";
 export { taskKinds, type TaskKind } from "./tools/prompts.js";
 export { createLlmMcpServer } from "./server.js";
