@@ -1,0 +1,29 @@
+{
+  "kind": "argument-mapping",
+  "description": "kok modda beyan edilmemis alan reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "bodyRoot": "body",
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "note",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "body": {
+        "note": "n",
+        "extra": 1
+      }
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}

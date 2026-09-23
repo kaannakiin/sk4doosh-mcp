@@ -130,6 +130,16 @@
         },
         "description": {
           "type": "string"
+        },
+        "contentType": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$",
+          "description": "The one concrete media type the SDK writes the body as: lowercase, no parameters, no wildcard. Absent means application/json."
+        },
+        "objectNotation": {
+          "type": "string",
+          "enum": ["bracket", "dot"],
+          "description": "How a form or multipart body addresses a member of an object-valued field. The discovering SDK writes it for the backend in front of it; absent means bracket. Only meaningful with a form or multipart contentType."
         }
       }
     },
@@ -352,6 +362,10 @@
         "contentEncoding": {
           "type": "string"
         },
+        "contentMediaType": {
+          "type": "string",
+          "description": "Inside a multipart/form-data body, a property carrying this and no contentEncoding is a file field."
+        },
         "propertyNames": {
           "$ref": "#/$defs/JsonSchemaObject"
         },
@@ -381,6 +395,12 @@
           "type": "string"
         },
         "anyOf": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonSchemaObject"
+          }
+        },
+        "oneOf": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/JsonSchemaObject"

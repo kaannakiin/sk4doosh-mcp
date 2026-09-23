@@ -13,14 +13,20 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { IsBoolean, IsInt, IsOptional, IsString } from "class-validator";
 import {
+  createRequestTemplateFromEndpoint,
   createToolDefinition,
   expandToolProductions,
   SkMcpTemplateError,
   type EndpointDescriptor,
+  type FileOptions,
   type Fixture,
   type ToolDefinition,
 } from "@sk-mcp/core";
@@ -128,6 +134,87 @@ class CancelBody {
 class MessageBody {
   @IsString()
   body!: string;
+}
+
+class TicketBody {
+  @IsString()
+  title!: string;
+}
+
+class NoteBody {
+  @IsString()
+  @IsOptional()
+  text?: string;
+}
+
+class TicketPatchBody {
+  @IsString()
+  @IsOptional()
+  status?: string;
+}
+
+class TicketFormBody {
+  @IsString()
+  title!: string;
+
+  @IsInt()
+  @IsOptional()
+  priority?: number;
+}
+
+@Controller("tickets")
+class TicketsController {
+  @Post()
+  @McpTool({
+    description: "Opens a ticket.",
+    files: {
+      attachment: {
+        mediaType: "text/csv",
+        description: "The ticket's attachment.",
+      },
+    },
+  })
+  @UseInterceptors(FileInterceptor("attachment"))
+  @UseGuards(AuthenticatedGuard)
+  createTicket(
+    @UploadedFile() _attachment: unknown,
+    @Body() _body: TicketBody,
+  ): void {}
+
+  @Post()
+  @McpTool({
+    description: "Opens a ticket.",
+    files: { attachments: { multiple: true } },
+  })
+  @UseInterceptors(FilesInterceptor("attachments"))
+  @UseGuards(AuthenticatedGuard)
+  createTicketWithAttachments(@UploadedFiles() _attachments: unknown): void {}
+
+  @Post()
+  @McpTool({
+    description: "Opens a ticket.",
+    consumes: "application/x-www-form-urlencoded",
+  })
+  @UseGuards(AuthenticatedGuard)
+  createTicketFromForm(@Body() _body: TicketFormBody): void {}
+
+  @Patch()
+  @McpTool({
+    description: "Opens a ticket.",
+    consumes: "application/merge-patch+json",
+  })
+  @UseGuards(AuthenticatedGuard)
+  patchTicket(@Body() _body: TicketPatchBody): void {}
+
+  @Post()
+  @McpTool({ description: "Opens a ticket.", consumes: "text/plain" })
+  @UseGuards(AuthenticatedGuard)
+  addNote(@Body() _body: string): void {}
+
+  @Post()
+  @McpTool({ description: "Opens a ticket.", consumes: "text/plain" })
+  @UseGuards(AuthenticatedGuard)
+  addStructuredNote(@Body() _body: NoteBody): void {}
 }
 
 @Controller("messages")
@@ -490,6 +577,7 @@ interface HostCase {
   readonly controller: NewableFunction;
   readonly handler: string;
   readonly options?: DiscoveryOptions;
+  readonly files?: FileOptions;
 }
 
 const hosts: Record<string, HostCase> = {
@@ -591,6 +679,37 @@ const hosts: Record<string, HostCase> = {
     controller: MessagesController,
     handler: "sendMessage",
   },
+  "multipart-file-field-becomes-file-argument.json": {
+    controller: TicketsController,
+    handler: "createTicket",
+  },
+  "multipart-file-argument-offers-ref-when-a-resolver-is-bound.json": {
+    controller: TicketsController,
+    handler: "createTicket",
+    files: {
+      refDescription: "An attachment id returned by upload_attachment.",
+    },
+  },
+  "multipart-file-array-becomes-array-of-file-arguments.json": {
+    controller: TicketsController,
+    handler: "createTicketWithAttachments",
+  },
+  "form-urlencoded-publishes-fields-like-json.json": {
+    controller: TicketsController,
+    handler: "createTicketFromForm",
+  },
+  "json-family-content-type-does-not-change-the-tool.json": {
+    controller: TicketsController,
+    handler: "patchTicket",
+  },
+  "text-plain-body-is-a-string-argument.json": {
+    controller: TicketsController,
+    handler: "addNote",
+  },
+  "text-plain-object-body-rejected.json": {
+    controller: TicketsController,
+    handler: "addStructuredNote",
+  },
 };
 
 const unproducible: Record<string, string> = {
@@ -628,6 +747,20 @@ const unproducible: Record<string, string> = {
     "The subject is route folding, which is a property of an operation's set of routes and not of one descriptor; this round-trip builds a single descriptor and has nothing to fold.",
   "hidden-argument-defs-are-not-lifted.json":
     "A query parameter whose schema is a $ref beside its own $defs: query parameters are bound from scalar DTO members, so no parameter schema the binder emits carries a bag.",
+  "multipart-root-mode-replaces-file-inside-body.json":
+    "The body collides with a path parameter named 'id'; a Nest DTO member and a route placeholder of one name is exactly the collision, but the binder emits the placeholder as a string without a pipe and the fixture pins an integer path.",
+  "form-file-in-urlencoded-rejected.json":
+    "Nest refuses a file binding under a urlencoded media type at discovery (content_type_not_accepted), before any descriptor exists; the template rule is pinned for hand-written descriptors.",
+  "form-two-level-nesting-rejected.json":
+    "The binder hoists a nested DTO into $defs and discovery inlines one level only, so the descriptor carries a $ref where the fixture pins an inline second level.",
+  "form-array-of-objects-rejected.json":
+    "An array-of-DTO member reaches the descriptor as an items $ref into $defs, not the inline object the fixture pins.",
+  "form-free-form-body-rejected.json":
+    "A decorated DTO never carries additionalProperties beside its properties; only a host-supplied verbatim schema does.",
+  "form-structural-member-name-rejected.json":
+    "A member named 'a.b' is not a legal TypeScript property a class-validator DTO can declare without a verbatim schema.",
+  "unknown-media-type-rejected.json":
+    "Nest refuses a media type it has no writer for at discovery (unsupported_binding), before any descriptor exists; the template rule is pinned for hand-written descriptors.",
 };
 
 function discover(host: HostCase): {
@@ -658,14 +791,36 @@ function discover(host: HostCase): {
   };
 }
 
-function toolOf(descriptor: EndpointDescriptor, name: string): ToolDefinition {
-  return createToolDefinition(descriptor, name);
+function toolOf(
+  descriptor: EndpointDescriptor,
+  name: string,
+  files?: FileOptions,
+): ToolDefinition {
+  return createToolDefinition(descriptor, name, undefined, undefined, files);
 }
 
-function toolsOf(descriptor: EndpointDescriptor): ToolDefinition[] {
-  return expandToolProductions([descriptor], (e) => e).map((production) =>
-    createToolDefinition(production.endpoint, undefined, production.variant),
-  );
+function toolsOf(
+  descriptor: EndpointDescriptor,
+  files?: FileOptions,
+): ToolDefinition[] {
+  return expandToolProductions([descriptor], (e) => e).map((production) => {
+    const tool = createToolDefinition(
+      production.endpoint,
+      undefined,
+      production.variant,
+      undefined,
+      files,
+    );
+    if (production.endpoint.requestBody?.contentType !== undefined) {
+      createRequestTemplateFromEndpoint(
+        production.endpoint,
+        production.variant,
+        undefined,
+        files,
+      );
+    }
+    return tool;
+  });
 }
 
 describe("nest descriptor round-trip against metadata-extraction", () => {
@@ -712,7 +867,7 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
 
       if ("error" in expected) {
         try {
-          toolsOf(descriptor);
+          toolsOf(descriptor, host.files);
           expect.unreachable("expected a template error");
         } catch (error) {
           expect(error).toBeInstanceOf(SkMcpTemplateError);
@@ -722,11 +877,11 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
       }
 
       if ("tools" in expected) {
-        expect(toolsOf(descriptor)).toEqual(expected.tools);
+        expect(toolsOf(descriptor, host.files)).toEqual(expected.tools);
         return;
       }
 
-      expect(toolOf(descriptor, expected.name)).toEqual(expected);
+      expect(toolOf(descriptor, expected.name, host.files)).toEqual(expected);
     });
   }
 });

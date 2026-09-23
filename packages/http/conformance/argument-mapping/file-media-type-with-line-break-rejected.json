@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "satir sonu iceren media type reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": "a",
+        "mediaType": "text/plain\r\nX-Injected: 1"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

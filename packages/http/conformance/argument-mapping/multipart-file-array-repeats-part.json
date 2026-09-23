@@ -1,0 +1,57 @@
+{
+  "kind": "argument-mapping",
+  "description": "dosya dizisi ayni ada tekrarlanan parcalar yazar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["files"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "files",
+            "type": "file",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "files": [
+        {
+          "text": "a",
+          "name": "a.txt"
+        },
+        {
+          "text": "b",
+          "name": "b.txt"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "files",
+        "file": {
+          "text": "a",
+          "filename": "a.txt",
+          "mediaType": "text/plain; charset=utf-8"
+        }
+      },
+      {
+        "name": "files",
+        "file": {
+          "text": "b",
+          "filename": "b.txt",
+          "mediaType": "text/plain; charset=utf-8"
+        }
+      }
+    ]
+  }
+}

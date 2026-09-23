@@ -14,6 +14,7 @@ import {
   normalizeInvokeArguments,
   refuseOversizeResponse,
   refuseTimedOutInvoke,
+  refuseUnresolvedFile,
   sdkError,
   SkMcpArgumentError,
   type ArgumentFill,
@@ -26,7 +27,12 @@ import { Logger } from "@nestjs/common";
 import { z } from "zod";
 import type { CatalogEntry, SkMcpCatalog } from "./catalog.js";
 import type { CallerScopeResolver } from "./cache.js";
-import type { DispatchDeadline, SkMcpDispatcher } from "./dispatcher.js";
+import type {
+  DispatchDeadline,
+  DispatchFiles,
+  SkMcpDispatcher,
+} from "./dispatcher.js";
+import { SkMcpFileRefused } from "./files.js";
 import type { InvokeResultMapper } from "./invoke-result-mapper.js";
 import { callerOf } from "./options.js";
 import type {
@@ -559,21 +565,28 @@ export function registerSkMcpTools(
          * Sources are resolved once per invocation and the same map feeds every composition, so a
          * source that is not constant cannot make validation and dispatch disagree.
          */
+        const target: InvokeTarget = {
+          tool: entry.tool.name,
+          method: entry.descriptor.method,
+          route: entry.descriptor.route,
+        };
+        const files: DispatchFiles = {
+          target,
+          maxInlineFileBytes: deps.options.invoke.maxInlineFileBytes,
+          maxFileBytes: deps.options.invoke.maxFileBytes,
+        };
         let deferred: Readonly<Record<string, unknown>> | undefined;
         try {
           deferred = await resolveDeferred(deps, entry, outer);
-          compose(entry.template, normalized.value, deferred);
+          compose(entry.template, normalized.value, deferred, {
+            maxInlineFileBytes: files.maxInlineFileBytes,
+          });
         } catch (error) {
           if (error instanceof SkMcpArgumentError) {
             return errorResult(error.code, error.message);
           }
           throw error;
         }
-        const target: InvokeTarget = {
-          tool: entry.tool.name,
-          method: entry.descriptor.method,
-          route: entry.descriptor.route,
-        };
         const timeoutMs = timeoutFor(deps, target);
         let result;
         try {
@@ -583,6 +596,7 @@ export function registerSkMcpTools(
             outer,
             deferred,
             { ...deadlineFrom(ctx), timeoutMs },
+            files,
           );
         } catch (error) {
           if (
@@ -590,6 +604,16 @@ export function registerSkMcpTools(
             error.reason === "timeout"
           ) {
             return { payload: refuseTimedOutInvoke(timeoutMs), isError: true };
+          }
+          if (error instanceof SkMcpFileRefused) {
+            return {
+              payload: refuseUnresolvedFile(
+                error.field,
+                error.reason,
+                error.limit,
+              ),
+              isError: true,
+            };
           }
           throw error;
         }

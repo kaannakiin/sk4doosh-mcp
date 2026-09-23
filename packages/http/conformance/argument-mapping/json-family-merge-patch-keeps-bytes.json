@@ -1,0 +1,32 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON ailesinden bir tip ayni baytlari tasir; yalniz media type degisir",
+  "input": {
+    "template": {
+      "method": "PATCH",
+      "route": "/orders/{id}",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "integer"
+        }
+      ],
+      "body": {
+        "properties": ["status"]
+      },
+      "contentType": "application/merge-patch+json"
+    },
+    "arguments": {
+      "id": 7,
+      "status": "closed"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/orders/7",
+    "contentType": "application/merge-patch+json",
+    "bodyJson": {
+      "status": "closed"
+    }
+  }
+}

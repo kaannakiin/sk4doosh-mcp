@@ -21,6 +21,14 @@ function expectError(
   return expect.unreachable(`expected ${code}`);
 }
 
+function jsonBody(value: unknown): {
+  kind: "json";
+  contentType: string;
+  value: unknown;
+} {
+  return { kind: "json", contentType: "application/json", value };
+}
+
 const orderRoute: RequestTemplate = createRequestTemplate({
   method: "GET",
   route: "/orders/{id}",
@@ -128,7 +136,7 @@ describe("compose", () => {
     });
     const composed = compose(template, { id: 5, notify: true, text: "hello" });
     expect(composed.pathAndQuery).toBe("/orders/5/notes?notify=true");
-    expect(composed.bodyJson).toEqual({ text: "hello" });
+    expect(composed.body).toEqual(jsonBody({ text: "hello" }));
   });
 
   it("collects undeclared fields when additional properties are allowed", () => {
@@ -137,9 +145,9 @@ describe("compose", () => {
       route: "/orders",
       bodyAllowsAdditionalProperties: true,
     });
-    expect(compose(template, { anything: 1 }).bodyJson).toEqual({
-      anything: 1,
-    });
+    expect(compose(template, { anything: 1 }).body).toEqual(
+      jsonBody({ anything: 1 }),
+    );
   });
 
   it("treats undefined values as absent", () => {
@@ -157,7 +165,7 @@ describe("compose", () => {
       route: "/orders",
       bodyProperties: ["text"],
     });
-    expect(compose(template, {}).bodyJson).toEqual({});
+    expect(compose(template, {}).body).toEqual(jsonBody({}));
   });
 });
 

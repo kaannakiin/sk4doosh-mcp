@@ -21,9 +21,7 @@
         }
       }
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "get_ping",

@@ -60,6 +60,63 @@ export interface ObjectParameterBinding extends BindingCommon {
 
 export type ParameterBinding = ScalarParameterBinding | ObjectParameterBinding;
 
+export type FileSource = "text" | "base64" | "ref";
+
+export type FormFieldBinding =
+  | {
+      readonly name: string;
+      readonly kind: ParameterKind;
+      readonly isArray?: boolean;
+    }
+  | {
+      readonly name: string;
+      readonly kind: "object";
+      readonly members: readonly ObjectMemberBinding[];
+    }
+  | {
+      readonly name: string;
+      readonly kind: "file";
+      readonly isArray?: boolean;
+      /** The descriptor's `contentMediaType`, the last default before `application/octet-stream`. */
+      readonly mediaType?: string;
+    };
+
+/**
+ * The typed fields of a form or multipart body.
+ *
+ * `fields` is in the order the composer writes them. In field mode the names are the body's wire
+ * fields; with a body root they are the members of the root object.
+ */
+export interface FormBinding {
+  readonly notation: ObjectNotation;
+  readonly fields: readonly FormFieldBinding[];
+}
+
+export const jsonMediaType = "application/json";
+export const urlEncodedMediaType = "application/x-www-form-urlencoded";
+export const multipartMediaType = "multipart/form-data";
+export const textMediaType = "text/plain";
+
+/** `application/json`, `text/json`, and every `+json` structured-syntax suffix type. */
+export function isJsonMediaType(mediaType: string): boolean {
+  return (
+    mediaType === jsonMediaType ||
+    mediaType === "text/json" ||
+    /^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*\+json$/.test(
+      mediaType,
+    )
+  );
+}
+
+export function isFormMediaType(mediaType: string): boolean {
+  return mediaType === urlEncodedMediaType || mediaType === multipartMediaType;
+}
+
+export const defaultFileSources: ReadonlySet<FileSource> = new Set([
+  "text",
+  "base64",
+]);
+
 type ArrayStyle = Exclude<ParameterStyle, "deepObject">;
 
 const delimiters: Readonly<Record<ArrayStyle, string>> = {
@@ -119,6 +176,12 @@ export interface RequestTemplate {
    * the schema declared required.
    */
   readonly requiredFills?: ReadonlySet<string>;
+  /** Absent means `application/json`, so a JSON template stays deeply equal to one built before media types existed. */
+  readonly contentType?: string;
+  /** Present exactly when {@link contentType} is a form or multipart type. */
+  readonly form?: FormBinding;
+  /** Present exactly when {@link form} declares a file field. */
+  readonly fileSources?: ReadonlySet<FileSource>;
 }
 
 export interface RequestTemplateInput {
@@ -132,6 +195,130 @@ export interface RequestTemplateInput {
   readonly bodyFills?: ReadonlyMap<string, ArgumentFill>;
   readonly rootFill?: ArgumentFill;
   readonly requiredFills?: ReadonlySet<string>;
+  readonly contentType?: string;
+  readonly form?: FormBinding;
+  readonly fileSources?: ReadonlySet<FileSource>;
+}
+
+function bodyShapeError(message: string): SkMcpTemplateError {
+  return new SkMcpTemplateError("unsupported_body_shape", message);
+}
+
+function assertFormMembers(
+  owner: string,
+  members: readonly ObjectMemberBinding[],
+): void {
+  const seen = new Set<string>();
+  for (const member of members) {
+    if (structuralMemberName.test(member.name)) {
+      throw bodyShapeError(
+        `Member '${owner}.${member.name}' carries a name the notation reads as structure; rename it.`,
+      );
+    }
+    if (seen.has(member.name)) {
+      throw bodyShapeError(
+        `Field '${owner}' declares two members named '${member.name}'.`,
+      );
+    }
+    seen.add(member.name);
+  }
+}
+
+/**
+ * Every rejection a non-JSON body can carry that the binding types cannot already express.
+ *
+ * A form body is closed and typed: a free-form one has no field list to encode from, and a hidden
+ * value in a file or object field would need a second type gate for a shape no fill is declared
+ * for. A file in a urlencoded body has no wire form at all.
+ */
+function assertBodyEncoding(
+  input: RequestTemplateInput,
+  hasBody: boolean,
+): void {
+  const contentType = input.contentType ?? jsonMediaType;
+  if (!hasBody) {
+    if (input.form !== undefined) {
+      throw bodyShapeError(
+        "A template without a body cannot declare form fields.",
+      );
+    }
+    return;
+  }
+  if (isJsonMediaType(contentType)) {
+    if (input.form !== undefined) {
+      throw bodyShapeError(`A ${contentType} body cannot declare form fields.`);
+    }
+    return;
+  }
+  if (contentType === textMediaType) {
+    if (input.bodyRoot === undefined || input.form !== undefined) {
+      throw bodyShapeError(
+        "A text/plain body is a single string and takes the body root argument.",
+      );
+    }
+    return;
+  }
+  if (!isFormMediaType(contentType)) {
+    throw bodyShapeError(`No writer exists for a ${contentType} body.`);
+  }
+  const form = input.form;
+  if (form === undefined || form.fields.length === 0) {
+    throw bodyShapeError(`A ${contentType} body declares no typed fields.`);
+  }
+  if (input.bodyAllowsAdditionalProperties === true) {
+    throw bodyShapeError(
+      `A ${contentType} body cannot be free-form; declare its fields.`,
+    );
+  }
+  const names = new Set<string>();
+  for (const field of form.fields) {
+    if (names.has(field.name)) {
+      throw bodyShapeError(
+        `The body declares two fields named '${field.name}'.`,
+      );
+    }
+    names.add(field.name);
+    if (field.kind === "object") {
+      if (field.members.length === 0) {
+        throw bodyShapeError(
+          `Field '${field.name}' is an object but declares no members.`,
+        );
+      }
+      assertFormMembers(field.name, field.members);
+    }
+    if (field.kind === "file" && contentType === urlEncodedMediaType) {
+      throw bodyShapeError(
+        `Field '${field.name}' is a file, which only a multipart/form-data body can carry.`,
+      );
+    }
+    if (
+      (field.kind === "file" || field.kind === "object") &&
+      input.bodyFills?.has(field.name) === true
+    ) {
+      throw bodyShapeError(
+        `Field '${field.name}' is a ${field.kind} and cannot be hidden or filled.`,
+      );
+    }
+  }
+  if (input.bodyRoot === undefined) {
+    const declared = new Set(input.bodyProperties ?? []);
+    const matches =
+      declared.size === names.size &&
+      [...names].every((name) => declared.has(name));
+    if (!matches) {
+      throw bodyShapeError(
+        "The form fields do not name the body's properties.",
+      );
+    }
+  }
+  const hasFile = form.fields.some((field) => field.kind === "file");
+  if (
+    hasFile &&
+    input.fileSources !== undefined &&
+    input.fileSources.size === 0
+  ) {
+    throw bodyShapeError("A file field needs at least one file source.");
+  }
 }
 
 function fitsKind(value: unknown, kind: ParameterKind): boolean {
@@ -410,6 +597,18 @@ export function createRequestTemplate(
     agentNames.add(agentName);
   }
 
+  assertBodyEncoding(input, hasBody);
+  const contentType =
+    hasBody &&
+    input.contentType !== undefined &&
+    input.contentType !== jsonMediaType
+      ? input.contentType
+      : undefined;
+  const form = contentType === undefined ? undefined : input.form;
+  const fileSources = form?.fields.some((field) => field.kind === "file")
+    ? (input.fileSources ?? defaultFileSources)
+    : undefined;
+
   return {
     method,
     routeTemplate: normalizedRoute,
@@ -428,5 +627,8 @@ export function createRequestTemplate(
     ...(input.requiredFills === undefined || input.requiredFills.size === 0
       ? {}
       : { requiredFills: input.requiredFills }),
+    ...(contentType === undefined ? {} : { contentType }),
+    ...(form === undefined ? {} : { form }),
+    ...(fileSources === undefined ? {} : { fileSources }),
   };
 }

@@ -1,0 +1,30 @@
+{
+  "kind": "metadata-extraction",
+  "description": "serbest bicimli form govdesi kodlanamaz; alanlar beyan edilmeli",
+  "input": {
+    "operationId": "CreateTicket",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "contentType": "application/x-www-form-urlencoded"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_body_shape"
+  }
+}

@@ -15,9 +15,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "reason"
-        ]
+        "required": ["reason"]
       }
     },
     "auth": {
@@ -39,9 +37,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "reason"
-          ]
+          "required": ["reason"]
         }
       },
       "required": [],

@@ -148,18 +148,22 @@ public sealed class CatalogFixtureTests
                 .Deserialize<EndpointDescriptor>(Neutral)!;
             JsonElement expectation = root.GetProperty("expected");
             CurationRelief? relief = ReliefOf(root, endpoint);
+            string? refDescription = root.TryGetProperty("files", out JsonElement files)
+                && files.TryGetProperty("refDescription", out JsonElement described)
+                    ? described.GetString()
+                    : null;
 
             if (expectation.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpTemplateException failure = Assert.Throws<SkMcpTemplateException>(
-                    () => ToolsOf(endpoint, relief));
+                    () => ToolsOf(endpoint, relief, refDescription));
                 Assert.Equal(error.GetString(), failure.Code);
                 continue;
             }
 
             if (expectation.TryGetProperty("tools", out JsonElement expectedTools))
             {
-                JsonNode producedTools = JsonSerializer.SerializeToNode(ToolsOf(endpoint, relief), Neutral)!;
+                JsonNode producedTools = JsonSerializer.SerializeToNode(ToolsOf(endpoint, relief, refDescription), Neutral)!;
                 JsonNode expectedNode = JsonNode.Parse(expectedTools.GetRawText())!;
                 Assert.True(
                     JsonNode.DeepEquals(expectedNode, producedTools),
@@ -168,7 +172,7 @@ public sealed class CatalogFixtureTests
             }
 
             JsonNode produced = JsonSerializer.SerializeToNode(
-                ToolDefinitionFactory.Create(endpoint, null, null, relief), Neutral)!;
+                ToolsOf(endpoint, relief, refDescription).Single(), Neutral)!;
             JsonNode expected = JsonNode.Parse(expectation.GetRawText())!;
 
             Assert.True(
@@ -177,11 +181,30 @@ public sealed class CatalogFixtureTests
         }
     }
 
+    /// <remarks>
+    /// Builds the request template too whenever the body is not JSON, because every body-shape
+    /// rejection lives there: a definition alone would publish a form tool whose template can
+    /// never be built.
+    /// </remarks>
     private static IReadOnlyList<ToolDefinition> ToolsOf(
-        EndpointDescriptor endpoint, CurationRelief? relief) =>
+        EndpointDescriptor endpoint, CurationRelief? relief, string? refDescription = null) =>
         [.. ToolNameFactory.ExpandProductions([endpoint], e => e)
-            .Select(production => ToolDefinitionFactory.Create(
-                production.Endpoint, null, production.Variant, relief))];
+            .Select(production =>
+            {
+                ToolDefinition tool = ToolDefinitionFactory.Create(
+                    production.Endpoint, null, production.Variant, relief, refDescription);
+                if (production.Endpoint.RequestBody?.ContentType is not null)
+                {
+                    List<CatalogDiagnostic> diagnostics = [];
+                    (_, string? failure) = EndpointCatalog.BuildTemplate(
+                        production.Endpoint, diagnostics, production.Variant, relief, refDescription);
+                    if (failure is not null)
+                    {
+                        throw new SkMcpTemplateException(failure, diagnostics[^1].Message);
+                    }
+                }
+                return tool;
+            })];
 
     private static CurationRelief? ReliefOf(JsonElement root, EndpointDescriptor endpoint)
     {

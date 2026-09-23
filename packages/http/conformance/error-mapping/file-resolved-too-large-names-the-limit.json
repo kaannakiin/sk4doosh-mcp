@@ -1,0 +1,15 @@
+{
+  "kind": "error-mapping",
+  "description": "cozulen dosya limiti asarsa limit sayi olarak soylenir",
+  "input": {
+    "sdkError": "file_too_large",
+    "field": "attachment",
+    "reason": "too_large",
+    "limit": 16777216
+  },
+  "expected": {
+    "error": "file_too_large",
+    "message": "File argument 'attachment' is over the limit of 16777216 bytes and was not sent.",
+    "retryable": false
+  }
+}

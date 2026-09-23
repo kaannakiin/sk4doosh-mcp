@@ -6,7 +6,14 @@
       "method": "GET",
       "route": "/items",
       "parameters": [
-        { "name": "x-tag", "in": "header", "type": "string", "array": true, "style": "form", "explode": false }
+        {
+          "name": "x-tag",
+          "in": "header",
+          "type": "string",
+          "array": true,
+          "style": "form",
+          "explode": false
+        }
       ]
     },
     "arguments": { "x-tag": ["a", "b"] }

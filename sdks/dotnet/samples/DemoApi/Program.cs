@@ -41,6 +41,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("BusinessHours", policy => policy.RequireAssertion(_ => DateTime.UtcNow.Hour is >= 6 and < 22));
 });
 
+builder.Services.AddSingleton<SkMcp.AspNetCore.Files.ISkMcpFileResolver, DemoApi.DemoAttachmentResolver>();
 builder.Services.AddSkMcp(options =>
 {
     options.Visibility.Tier = VisibilityTier.Probe;

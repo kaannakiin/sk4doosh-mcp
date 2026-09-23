@@ -1,0 +1,36 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos dizi anahtar yazmaz",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title", "tags"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "tags",
+            "type": "string",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "title": "t",
+      "tags": []
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "title=t"
+  }
+}

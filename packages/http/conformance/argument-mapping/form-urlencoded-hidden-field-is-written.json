@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "gizlenen form alani sabitiyle beyan sirasinda yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["tenant", "title"],
+        "curation": [
+          {
+            "name": "tenant",
+            "fill": {
+              "kind": "constant",
+              "value": "acme"
+            }
+          }
+        ]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "tenant",
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "title": "t"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "tenant=acme&title=t"
+  }
+}

@@ -49,15 +49,18 @@ Three codes are fatal by default: `name_collision`, `ambiguous_selection` and `i
 three mean two declarations disagree in a way sk-mcp will not silently resolve — a conflict is an
 error here, never a coin flip.
 
-Ten are `endpointDropped` by default and are the ones to expect when a single endpoint vanishes:
+These are `endpointDropped` by default and are the ones to expect when a single endpoint vanishes:
 `argument_collision`, `duplicate_argument`, `schema_def_conflict`, `unsupported_method`,
-`unsupported_binding`, `multiple_body_bindings`, `unsupported_object_style`,
-`unsupported_object_nesting`, `template_rejected` and — on ASP.NET Core — `missing_http_method`.
+`unsupported_binding`, `unsupported_body_shape`, `content_type_not_accepted`,
+`multiple_body_bindings`, `unsupported_object_style`, `unsupported_object_nesting`,
+`template_rejected`, and — on ASP.NET Core — `missing_http_method` and `form_antiforgery_required`,
+and — on NestJS — `unresolved_file_field` and `body_parser_missing`.
 
 In practice the two you will actually hit are `argument_collision` (a path or query parameter and a
 body property share a name, so the flat argument object cannot represent both) and
-`unsupported_binding` (a form-encoded body, an `IFormFile`, a wildcard route — bindings with no
-JSON-argument equivalent). Its close relative `duplicate_argument` is the same problem one step
+`unsupported_binding` (a body media type sk-mcp has no writer for, a raw-body binding, a wildcard
+route). Form bodies and file uploads are supported; when one is still dropped, the body-specific
+codes are explained in [how to accept form bodies and file uploads](/docs/http-catalog/accept-form-and-file-uploads). Its close relative `duplicate_argument` is the same problem one step
 earlier: two parameters, not a parameter and a body field, claim one name — most often two query
 DTOs that each declare a member called `field` or `status`.
 

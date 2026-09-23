@@ -1,0 +1,36 @@
+{
+  "kind": "argument-mapping",
+  "description": "yeniden adlandirilan form alani tel adiyla yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["q"],
+        "curation": [
+          {
+            "name": "q",
+            "as": "keyword"
+          }
+        ]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "q",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "keyword": "kalem"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "q=kalem"
+  }
+}

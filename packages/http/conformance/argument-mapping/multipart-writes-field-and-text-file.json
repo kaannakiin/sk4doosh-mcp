@@ -1,0 +1,52 @@
+{
+  "kind": "argument-mapping",
+  "description": "multipart skaler alani ve metin dosyasini parca olarak yazar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title", "attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "attachment",
+            "type": "file",
+            "mediaType": "text/csv"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "title": "t",
+      "attachment": {
+        "text": "a,b\n1,2",
+        "name": "report.csv"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "title",
+        "value": "t"
+      },
+      {
+        "name": "attachment",
+        "file": {
+          "text": "a,b\n1,2",
+          "filename": "report.csv",
+          "mediaType": "text/csv"
+        }
+      }
+    ]
+  }
+}

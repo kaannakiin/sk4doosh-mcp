@@ -32,11 +32,24 @@
     <ProjectReference Include="..\..\samples\DemoAuthServer\DemoAuthServer.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <ConformanceRoot>$(MSBuildThisFileDirectory)..\..\..\..\packages\http\conformance\</ConformanceRoot>
+  </PropertyGroup>
+
   <ItemGroup>
-    <None Include="..\..\..\..\packages\conformance\**\*.json"
-          Exclude="..\..\..\..\packages\conformance\*.json"
+    <None Include="$(ConformanceRoot)**\*.json"
+          Exclude="$(ConformanceRoot)*.json;$(ConformanceRoot)node_modules\**"
           Link="Fixtures\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="RequireConformanceCorpus" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('$(ConformanceRoot)argument-mapping')"
+           Text="Conformance corpus not found at $(ConformanceRoot). Update ConformanceRoot in SkMcp.Tests.csproj." />
+  </Target>
+
+  <Target Name="PruneStaleFixtures" BeforeTargets="BeforeBuild" DependsOnTargets="RequireConformanceCorpus">
+    <RemoveDir Directories="$(OutDir)Fixtures" Condition="'$(OutDir)' != ''" />
+  </Target>
 
 </Project>

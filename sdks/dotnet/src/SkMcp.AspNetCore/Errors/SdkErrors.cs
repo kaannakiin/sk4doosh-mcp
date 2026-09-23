@@ -12,6 +12,7 @@ internal static class SdkErrors
 {
     public const int DefaultMaxResponseBytes = 262_144;
     public const int DefaultInvokeTimeoutMs = 30_000;
+    public const int DefaultMaxFileBytes = 16_777_216;
 
     public const string NarrowingFallback = "Constrains the result set.";
 
@@ -111,6 +112,38 @@ internal static class SdkErrors
             "The backend did not answer within {0} ms and the call was abandoned. The operation may already have been applied; re-read before retrying.",
             limitMs),
         Retryable = true,
+    };
+
+    /// <summary>Refuses a call whose <c>ref</c> file argument the resolver did not deliver.</summary>
+    /// <remarks>
+    /// Guard: <c>not_found</c> and <c>forbidden</c> produce one message. A ref is a string the agent
+    /// wrote, and a refusal that told the two apart would let it probe which refs exist for other
+    /// callers. The twin is <c>refuseUnresolvedFile</c> in packages/http/core/src/invoke-guard.ts.
+    /// </remarks>
+    public static SdkError RefuseUnresolvedFile(string field, string reason, int limit) => reason switch
+    {
+        "too_large" => new SdkError
+        {
+            Error = SdkErrorCode.FileTooLarge,
+            Message = string.Format(
+                CultureInfo.InvariantCulture,
+                "File argument '{0}' is over the limit of {1} bytes and was not sent.",
+                field,
+                limit),
+            Retryable = false,
+        },
+        "unavailable" => new SdkError
+        {
+            Error = SdkErrorCode.FileUnresolved,
+            Message = $"File argument '{field}' could not be resolved right now. Retry the call.",
+            Retryable = true,
+        },
+        _ => new SdkError
+        {
+            Error = SdkErrorCode.FileUnresolved,
+            Message = $"File argument '{field}' names a ref that could not be resolved. Retrying with the same ref will not help.",
+            Retryable = false,
+        },
     };
 
     private static string ShapeSentence(PayloadShape shape)

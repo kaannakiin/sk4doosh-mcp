@@ -26,6 +26,7 @@ import {
   type McpToolOptions,
   type McpVariantOptions,
 } from "../decorators.js";
+import { bodyEncodingOf, type FileBinding } from "./body-encoding.js";
 import { atLeast, severityOf, type CatalogSeverity } from "./diagnostics.js";
 import {
   NestTypeShapeBinder,
@@ -326,6 +327,7 @@ function describe(
   let bodyFields: Record<string, JsonSchemaObject> | undefined;
   let unsupported = false;
   let unresolvedQuery = false;
+  const files: FileBinding[] = [];
 
   for (const [key, entry] of Object.entries(args)) {
     const kind = Number(key.split(":")[0]);
@@ -392,7 +394,11 @@ function describe(
         }
         break;
       case FILE:
+        files.push("single");
+        break;
       case FILES:
+        files.push("multiple");
+        break;
       case RAW_BODY:
         unsupported = true;
         break;
@@ -404,7 +410,7 @@ function describe(
   if (unsupported) {
     options.report?.({
       code: "unsupported_binding",
-      message: `${controller.name}.${handlerName} binds a file or raw body; endpoint skipped.`,
+      message: `${controller.name}.${handlerName} binds the raw body, which sk-mcp has no writer for; endpoint skipped.`,
     });
     return undefined;
   }
@@ -427,6 +433,19 @@ function describe(
   if (bodyFields !== undefined) {
     bodySchema = { type: "object", properties: bodyFields };
   }
+  const encoding = bodyEncodingOf({
+    where: `${controller.name}.${handlerName}`,
+    controller,
+    handler,
+    hints,
+    files,
+    schema: bodySchema,
+    report: options.report,
+  });
+  if (encoding === undefined) {
+    return undefined;
+  }
+  bodySchema = encoding.schema;
 
   const pathParameters = placeholdersOf(route).map((placeholder) => ({
     name: placeholder,
@@ -481,6 +500,9 @@ function describe(
             ...(hints.bodyRequired === undefined
               ? {}
               : { required: hints.bodyRequired }),
+            ...(encoding.contentType === undefined
+              ? {}
+              : { contentType: encoding.contentType }),
           },
         }),
     ...(responses === undefined ? {} : { responses }),

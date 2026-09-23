@@ -1,0 +1,30 @@
+{
+  "kind": "metadata-extraction",
+  "description": "urlencoded govde dosya tasiyamaz; endpoint duser",
+  "input": {
+    "operationId": "CreateTicket",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "attachment": {
+            "type": "string",
+            "contentMediaType": "text/csv"
+          }
+        }
+      },
+      "contentType": "application/x-www-form-urlencoded"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_body_shape"
+  }
+}

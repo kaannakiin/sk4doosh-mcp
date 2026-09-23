@@ -26,8 +26,17 @@ export type {
 export {
   arraySeparatorFor,
   createRequestTemplate,
+  isFormMediaType,
+  isJsonMediaType,
+  jsonMediaType,
+  multipartMediaType,
+  textMediaType,
+  urlEncodedMediaType,
 } from "./request-template.js";
 export type {
+  FileSource,
+  FormBinding,
+  FormFieldBinding,
   ParameterBinding,
   ParameterKind,
   ParameterLocation,
@@ -36,7 +45,14 @@ export type {
   RequestTemplateInput,
 } from "./request-template.js";
 export { compose } from "./request-composer.js";
-export type { BodyValue, ComposedRequest } from "./request-composer.js";
+export type { ComposedRequest } from "./request-composer.js";
+export type {
+  BodyValue,
+  ComposeLimits,
+  ComposedBody,
+  ComposedPart,
+  FileContent,
+} from "./request-body.js";
 export {
   createToolName,
   createToolNames,
@@ -63,6 +79,13 @@ export {
 } from "./tool-definition.js";
 export type { BodyRootReason } from "./tool-definition.js";
 export { assertUniqueArgumentNames } from "./argument-names.js";
+export {
+  fileArgumentSchema,
+  fileSourcesOf,
+  isFileArraySchema,
+  isFileSchema,
+} from "./file-argument.js";
+export type { FileOptions } from "./file-argument.js";
 export {
   additionalPropertiesOf,
   allowsAdditional,
@@ -175,9 +198,10 @@ export {
   narrowingFallback,
   refuseOversizeResponse,
   refuseTimedOutInvoke,
+  refuseUnresolvedFile,
   sdkError,
 } from "./invoke-guard.js";
-export type { OversizeResponse } from "./invoke-guard.js";
+export type { FileRefusalReason, OversizeResponse } from "./invoke-guard.js";
 export { normalizeInvokeArguments } from "./invoke-arguments.js";
 export type { NormalizedInvokeArguments } from "./invoke-arguments.js";
 export { forwardable, inspect } from "./leak-filter.js";

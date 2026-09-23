@@ -1,0 +1,96 @@
+{
+  "kind": "metadata-extraction",
+  "description": "resolver bagliysa dosya argumani ref'i resolver'in aciklamasiyla sunar",
+  "input": {
+    "operationId": "CreateTicket",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "attachment": {
+            "type": "string",
+            "contentMediaType": "text/csv",
+            "description": "The ticket's attachment."
+          }
+        },
+        "required": ["title"]
+      },
+      "contentType": "multipart/form-data"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "files": {
+    "refDescription": "An attachment id returned by upload_attachment."
+  },
+  "expected": {
+    "name": "create_ticket",
+    "description": "Opens a ticket.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "attachment": {
+          "type": "object",
+          "description": "The ticket's attachment.",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "The file's content as text, sent as is."
+            },
+            "base64": {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "The file's bytes as standard base64 with padding and no line breaks."
+            },
+            "ref": {
+              "type": "string",
+              "description": "An attachment id returned by upload_attachment."
+            },
+            "name": {
+              "type": "string",
+              "description": "The filename the backend receives. Defaults to 'attachment'."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "The file's media type. Defaults to text/csv."
+            }
+          },
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": ["text"]
+            },
+            {
+              "required": ["base64"]
+            },
+            {
+              "required": ["ref"]
+            }
+          ]
+        }
+      },
+      "required": ["title"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

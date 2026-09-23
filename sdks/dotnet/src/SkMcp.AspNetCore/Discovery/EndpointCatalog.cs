@@ -56,7 +56,8 @@ internal static partial class EndpointCatalog
         Func<string, CatalogSeverity>? severityOf = null,
         ArgumentCurationOptions? curation = null,
         IReadOnlyList<SelectionRule>? selectionRules = null,
-        bool groupQueryObjects = false)
+        bool groupQueryObjects = false,
+        string? refDescription = null)
     {
         ArgumentNullException.ThrowIfNull(apiDescriptions);
         severityOf ??= DiagnosticCodes.SeverityOf;
@@ -224,7 +225,7 @@ internal static partial class EndpointCatalog
                 CurationRelief? relief = ReliefFor(
                     descriptor, alternates.GetValueOrDefault(FoldKey(descriptor)), diagnostics);
                 (RequestTemplate? template, string? failure) = BuildTemplate(
-                    descriptor, diagnostics, variant, relief);
+                    descriptor, diagnostics, variant, relief, refDescription);
                 if (failure is not null && severityOf(failure) >= CatalogSeverity.EndpointDropped)
                 {
                     dropped += 1;
@@ -232,7 +233,7 @@ internal static partial class EndpointCatalog
                 }
 
                 ToolDefinition tool = Apply(
-                    ToolDefinitionFactory.Create(descriptor, name, variant, relief), overrides);
+                    ToolDefinitionFactory.Create(descriptor, name, variant, relief, refDescription), overrides);
                 if (template is not null)
                 {
                     ReportCurationLeaks(
@@ -319,6 +320,7 @@ internal static partial class EndpointCatalog
     {
         List<Parameter> parameters = [];
         RequestBody? body = null;
+        List<ApiParameterDescription> formLeaves = [];
         int reportedBefore = diagnostics.Count;
         SchemaMapperOptions schema = (mapper ?? new SchemaMapperOptions
         {
@@ -362,10 +364,7 @@ internal static partial class EndpointCatalog
                 else if (parameter.Source == BindingSource.Form
                     || parameter.Source == BindingSource.FormFile)
                 {
-                    diagnostics.Add(new CatalogDiagnostic(
-                        DiagnosticCodes.UnsupportedBinding,
-                        $"{api.HttpMethod} {route} binds '{parameter.Name}' from a form; form bodies are out of scope, endpoint skipped."));
-                    return null;
+                    formLeaves.Add(parameter);
                 }
                 continue;
             }
@@ -379,6 +378,35 @@ internal static partial class EndpointCatalog
             });
         }
         parameters.AddRange(grouped.Groups);
+
+        string where = $"{api.HttpMethod} {route}";
+        if (formLeaves.Count > 0)
+        {
+            if (body is not null)
+            {
+                diagnostics.Add(new CatalogDiagnostic(
+                    DiagnosticCodes.MultipleBodyBindings,
+                    $"{where} binds both a request body and form fields; endpoint skipped."));
+                return null;
+            }
+            body = BodyEncoding.FormBodyOf(api, metadata, formLeaves, schema, where, diagnostics);
+            if (body is null)
+            {
+                return null;
+            }
+        }
+        else if (body is not null)
+        {
+            bool isString = RequestBodyShape.TypeOf(body.Schema["type"]) == "string";
+            if (!BodyEncoding.TryChooseJson(api, metadata, isString, where, diagnostics, out string? contentType))
+            {
+                return null;
+            }
+            if (contentType is not null)
+            {
+                body = body with { ContentType = contentType };
+            }
+        }
 
         if (body is not null
             && RequestBodyShape.BodyRootReasonOf(body, parameters.Select(parameter => parameter.Name)) is { } reason)
@@ -930,9 +958,9 @@ internal static partial class EndpointCatalog
         return RoutePlaceholder().Replace(route, m => "{" + m.Groups[1].Value.TrimStart('*') + "}");
     }
 
-    private static (RequestTemplate? Template, string? FailureCode) BuildTemplate(
+    internal static (RequestTemplate? Template, string? FailureCode) BuildTemplate(
         EndpointDescriptor descriptor, List<CatalogDiagnostic> diagnostics,
-        ToolVariant? variant = null, CurationRelief? relief = null)
+        ToolVariant? variant = null, CurationRelief? relief = null, string? refDescription = null)
     {
         try
         {
@@ -1041,9 +1069,22 @@ internal static partial class EndpointCatalog
                 }
             }
 
+            string? contentType = descriptor.RequestBody?.ContentType;
+            FormBinding? form = null;
+            if (contentType is not null && MediaTypes.IsForm(contentType) && descriptor.RequestBody is { } requestBody)
+            {
+                JsonObject? formProperties = bodyRoot is null
+                    ? flattened
+                    : RequestBodyShape.TypeOf(requestBody.Schema["type"]) == "object"
+                        ? requestBody.Schema["properties"] as JsonObject
+                        : null;
+                form = FormBindingFor(requestBody, formProperties);
+            }
+
             return (RequestTemplate.Create(
                 new HttpMethod(descriptor.Method), descriptor.Route, bindings, bodyProperties,
-                allowsAdditional, bodyRoot, bodyAliases, bodyFills, rootFill, requiredFills), null);
+                allowsAdditional, bodyRoot, bodyAliases, bodyFills, rootFill, requiredFills,
+                contentType, form, FileSourcesOf(refDescription)), null);
         }
         catch (Exception ex) when (ex is SkMcpTemplateException or ArgumentException or FormatException)
         {

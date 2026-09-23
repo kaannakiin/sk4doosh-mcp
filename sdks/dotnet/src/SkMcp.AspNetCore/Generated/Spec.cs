@@ -52,6 +52,8 @@ public sealed record RequestBody
     public required JsonObject Schema { get; init; }
     public bool? Required { get; init; }
     public string? Description { get; init; }
+    public string? ContentType { get; init; }
+    public string? ObjectNotation { get; init; }
 }
 
 public sealed record ResponseBody
@@ -137,7 +139,7 @@ public sealed record InvokeSuccess
     public string? Location { get; init; }
 }
 
-public enum SdkErrorCode { UnknownTool, NotInvocable, UnknownArgument, InvalidPathType, MissingPathParameter, HeaderInjection, NullNotAllowed, InvalidType, DeferredValueMissing, DeferredValueInvalid, ResponseTooLarge, InvokeTimeout, InternalError }
+public enum SdkErrorCode { UnknownTool, NotInvocable, UnknownArgument, InvalidPathType, MissingPathParameter, HeaderInjection, NullNotAllowed, InvalidType, DeferredValueMissing, DeferredValueInvalid, InvalidFileArgument, FileTooLarge, FileUnresolved, ResponseTooLarge, InvokeTimeout, InternalError }
 
 public enum PayloadShapeKind { Array, Object, Text }
 

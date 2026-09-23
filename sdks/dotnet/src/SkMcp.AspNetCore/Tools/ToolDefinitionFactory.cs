@@ -8,9 +8,10 @@ namespace SkMcp.AspNetCore.Tools;
 
 internal static class ToolDefinitionFactory
 {
+    /// <param name="refDescription">Non-null means a file resolver is bound: file arguments offer <c>ref</c>, described by this text.</param>
     public static ToolDefinition Create(
         EndpointDescriptor endpoint, string? name = null, ToolVariant? variant = null,
-        CurationRelief? relief = null)
+        CurationRelief? relief = null, string? refDescription = null)
     {
         ArgumentNullException.ThrowIfNull(endpoint);
 
@@ -21,11 +22,85 @@ internal static class ToolDefinitionFactory
             Description = string.IsNullOrWhiteSpace(declared)
                 ? $"{endpoint.Method} {endpoint.Route}"
                 : declared,
-            InputSchema = BuildInputSchema(endpoint, variant, relief),
+            InputSchema = BuildInputSchema(endpoint, variant, relief, refDescription),
             OutputSchema = BuildOutputSchema(endpoint),
             Annotations = Annotate(endpoint.Method),
             Auth = endpoint.Auth,
         };
+    }
+
+    private static string MediaTypeDefault(string? declared) =>
+        declared is not null && !declared.Contains('*') && declared != "application/octet-stream"
+            ? $"Defaults to {declared}."
+            : "Defaults to text/plain; charset=utf-8 for text and application/octet-stream otherwise.";
+
+    /// <summary>The argument an agent sends for one file part.</summary>
+    /// <remarks>
+    /// The byte limit is deliberately absent, so the definition does not change with the host's
+    /// budget; the refusal names it instead. The twin is <c>fileArgumentSchema</c> in
+    /// packages/http/core/src/file-argument.ts, and every description is compared verbatim by the
+    /// metadata-extraction corpus.
+    /// </remarks>
+    private static JsonObject FileArgumentSchema(JsonObject fileSchema, string wireName, string? refDescription)
+    {
+        JsonObject properties = new()
+        {
+            ["text"] = new JsonObject { ["type"] = "string", ["description"] = "The file's content as text, sent as is." },
+            ["base64"] = new JsonObject
+            {
+                ["type"] = "string",
+                ["contentEncoding"] = "base64",
+                ["description"] = "The file's bytes as standard base64 with padding and no line breaks.",
+            },
+        };
+        if (refDescription is not null)
+        {
+            properties["ref"] = new JsonObject { ["type"] = "string", ["description"] = refDescription };
+        }
+        properties["name"] = new JsonObject
+        {
+            ["type"] = "string",
+            ["description"] = $"The filename the backend receives. Defaults to '{wireName}'.",
+        };
+        properties["mediaType"] = new JsonObject
+        {
+            ["type"] = "string",
+            ["description"] = $"The file's media type. {MediaTypeDefault(fileSchema["contentMediaType"]?.GetValue<string>())}",
+        };
+        JsonArray oneOf =
+        [
+            new JsonObject { ["required"] = new JsonArray("text") },
+            new JsonObject { ["required"] = new JsonArray("base64") },
+        ];
+        if (refDescription is not null)
+        {
+            oneOf.Add(new JsonObject { ["required"] = new JsonArray("ref") });
+        }
+        JsonObject argument = new() { ["type"] = "object" };
+        if (fileSchema["description"] is JsonNode description)
+        {
+            argument["description"] = description.DeepClone();
+        }
+        argument["properties"] = properties;
+        argument["additionalProperties"] = false;
+        argument["oneOf"] = oneOf;
+        return argument;
+    }
+
+    /// <summary>Replaces a file property's schema with the file argument, leaving every other schema alone.</summary>
+    private static JsonNode? PublishFileSchema(JsonNode? schema, string wireName, string? refDescription)
+    {
+        if (EndpointCatalog.IsFileSchema(schema))
+        {
+            return FileArgumentSchema((JsonObject)schema!, wireName, refDescription);
+        }
+        if (EndpointCatalog.IsFileArraySchema(schema))
+        {
+            JsonObject array = (JsonObject)schema!.DeepClone();
+            array["items"] = FileArgumentSchema((JsonObject)schema!["items"]!, wireName, refDescription);
+            return array;
+        }
+        return schema;
     }
 
     /// <summary>Produces the published argument schema, with curation applied.</summary>
@@ -38,8 +113,11 @@ internal static class ToolDefinitionFactory
     /// field optional.
     /// </remarks>
     private static JsonObject BuildInputSchema(
-        EndpointDescriptor endpoint, ToolVariant? variant, CurationRelief? relief)
+        EndpointDescriptor endpoint, ToolVariant? variant, CurationRelief? relief, string? refDescription)
     {
+        bool multipart = endpoint.RequestBody?.ContentType == MediaTypes.Multipart;
+        JsonNode? FileAware(string wireName, JsonNode? schema) =>
+            multipart ? PublishFileSchema(schema, wireName, refDescription) : schema;
         JsonObject properties = [];
         JsonArray required = [];
         HashSet<string> claimed = new(StringComparer.Ordinal);
@@ -114,7 +192,15 @@ internal static class ToolDefinitionFactory
                     SkMcpTemplateException.ArgumentCollision,
                     $"Body root argument '{bodyRoot}' collides with a parameter name on {endpoint.Method} {endpoint.Route}; rename the parameter.");
             }
-            if (Publish(bodyRoot, endpoint.RequestBody.Schema.DeepClone()) is { } key
+            JsonNode rootSchema = endpoint.RequestBody.Schema.DeepClone();
+            if (multipart && rootSchema["properties"] is JsonObject rootProperties)
+            {
+                foreach (string field in rootProperties.Select(entry => entry.Key).ToArray())
+                {
+                    rootProperties[field] = PublishFileSchema(rootProperties[field]?.DeepClone(), field, refDescription);
+                }
+            }
+            if (Publish(bodyRoot, rootSchema) is { } key
                 && endpoint.RequestBody.Required != false)
             {
                 Require(key);
@@ -128,7 +214,7 @@ internal static class ToolDefinitionFactory
 
             foreach ((string name, JsonNode? schema) in flattened ?? [])
             {
-                Publish(name, schema?.DeepClone());
+                Publish(name, FileAware(name, schema?.DeepClone()));
             }
             foreach (string entry in requiredBodyFields)
             {

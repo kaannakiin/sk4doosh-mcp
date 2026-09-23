@@ -13,7 +13,7 @@ Nothing normatively described what an invocation costs. A tool response was unbo
 Every meta-tool answer passes five stages, in order:
 
 1. **Compose** — flat agent arguments become an HTTP request ([argument-mapping.md](argument-mapping.md)).
-2. **Dispatch under a deadline** — the request runs through the backend's own pipeline.
+2. **Dispatch under a deadline** — every `ref` file argument is resolved, then the request runs through the backend's own pipeline. Resolution is inside the deadline, so a resolver that hangs is bounded the way a backend that hangs is ([request-bodies.md](request-bodies.md)).
 3. **Map** — the backend response becomes an `InvokeSuccess` or a `MappedError` ([error-mapping.md](error-mapping.md)).
 4. **Gate** — the serialized answer is measured against the payload budget.
 5. **Emit** — the answer becomes a `CallToolResult`.
@@ -96,12 +96,14 @@ Exactly one result is emitted per call. A result that arrives after the call was
 
 ## Configuration
 
-| Setting                      | Default  | Meaning                                     |
-| ---------------------------- | -------- | ------------------------------------------- |
-| `invoke.maxResponseBytes`    | `262144` | The largest answer, in UTF-8 bytes          |
-| `invoke.timeoutMs`           | `30000`  | The invoke deadline; zero means no deadline |
-| `invoke.maxResponseBytesFor` | unset    | Per-endpoint override, consulted first      |
-| `invoke.timeoutMsFor`        | unset    | Per-endpoint override, consulted first      |
+| Setting                      | Default    | Meaning                                     |
+| ---------------------------- | ---------- | ------------------------------------------- |
+| `invoke.maxResponseBytes`    | `262144`   | The largest answer, in UTF-8 bytes          |
+| `invoke.timeoutMs`           | `30000`    | The invoke deadline; zero means no deadline |
+| `invoke.maxResponseBytesFor` | unset      | Per-endpoint override, consulted first      |
+| `invoke.timeoutMsFor`        | unset      | Per-endpoint override, consulted first      |
+| `invoke.maxInlineFileBytes`  | `1048576`  | Decoded `base64` file bytes per call        |
+| `invoke.maxFileBytes`        | `16777216` | The bytes of one resolved `ref` file        |
 
 A host lowers either; neither is negotiable by the agent. The overrides are delegates over the invoked endpoint, not fields on `EndpointDescriptor`: how many bytes a deployment's answer may occupy is a property of **that deployment**, not of the endpoint, and two hosts serving the same descriptor must be free to disagree.
 

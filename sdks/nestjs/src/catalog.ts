@@ -11,6 +11,9 @@ import {
   collidingBodyField,
   combineMarkers,
   createRequestTemplateFromEndpoint,
+  textMediaType,
+  urlEncodedMediaType,
+  type FileOptions,
   createToolDefinition,
   createToolNames,
   curatedDescriptions,
@@ -175,6 +178,38 @@ export class SkMcpCatalog {
     });
   }
 
+  /**
+   * Guard: Express parses a body only for the media types a registered parser declares, and an
+   * unparsed body reaches the handler as `req.body === undefined` with no error (form-body-probe
+   * N6) — a tool the backend answers as if every field were absent. The default parsers are
+   * `jsonParser` and `urlencodedParser`, visible by name on the router stack (N7); a text body
+   * needs `app.useBodyParser('text')`. Only Express is checked, for `reportUnparsedBrackets`'s
+   * reason.
+   */
+  private lacksBodyParser(descriptor: EndpointDescriptor): string | undefined {
+    const contentType = descriptor.requestBody?.contentType;
+    const needed =
+      contentType === textMediaType
+        ? "textParser"
+        : contentType === urlEncodedMediaType
+          ? "urlencodedParser"
+          : undefined;
+    const adapter = this.adapterHost?.httpAdapter;
+    if (
+      needed === undefined ||
+      adapter === undefined ||
+      adapter.getType() !== "express"
+    ) {
+      return undefined;
+    }
+    const instance = adapter.getInstance<{
+      router?: { stack?: readonly { name?: string }[] };
+      _router?: { stack?: readonly { name?: string }[] };
+    }>();
+    const stack = instance.router?.stack ?? instance._router?.stack ?? [];
+    return stack.some((layer) => layer.name === needed) ? undefined : needed;
+  }
+
   private build(): CatalogSnapshot {
     const diagnostics: CatalogDiagnostic[] = [];
     const report = (diagnostic: CatalogDiagnostic): void => {
@@ -186,6 +221,9 @@ export class SkMcpCatalog {
     const versioningOptions = this.applicationConfig.getVersioning();
     const mcpPath = this.options.resourceServer?.mcpPath ?? "/mcp";
     this.checkMetadataPath(globalPrefix, mcpPath, routePaths, report);
+    const refDescription = this.options.files.resolver?.refDescription;
+    const files: FileOptions | undefined =
+      refDescription === undefined ? undefined : { refDescription };
 
     const applicationId = this.modules.applicationId;
     const controllers = this.discovery
@@ -328,16 +366,25 @@ export class SkMcpCatalog {
           message: `Tool name '${name}' is ${String(name.length)} characters; long names cost agent context and weaken search.`,
         });
       }
+      const missingParser = this.lacksBodyParser(descriptor);
+      if (missingParser !== undefined) {
+        report({
+          code: "body_parser_missing",
+          message: `Tool '${name}' sends a ${descriptor.requestBody?.contentType ?? ""} body, but this application registers no ${missingParser}; the handler would receive no body. Register the parser with app.useBodyParser(), or declare another media type.`,
+        });
+        continue;
+      }
       reportBodyRoot(descriptor, report);
       const relief = reliefFor(descriptor, alternates.get(endpoint), report);
       let tool: ToolDefinition;
       let template: RequestTemplate | undefined;
       try {
-        tool = createToolDefinition(descriptor, name, variant, relief);
+        tool = createToolDefinition(descriptor, name, variant, relief, files);
         template = createRequestTemplateFromEndpoint(
           descriptor,
           variant,
           relief,
+          files,
         );
       } catch (error) {
         const code =

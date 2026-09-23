@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "wildcard contentMediaType varsayilan olamaz",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["avatar"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "avatar",
+            "type": "file",
+            "mediaType": "image/*"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "avatar": {
+        "base64": "AA=="
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "avatar",
+        "file": {
+          "base64": "AA==",
+          "byteLength": 1,
+          "filename": "avatar",
+          "mediaType": "application/octet-stream"
+        }
+      }
+    ]
+  }
+}

@@ -151,6 +151,16 @@
           "items": {
             "$ref": "invoke-result.schema.json#/$defs/FieldError"
           }
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The file argument a file_unresolved or file_too_large refusal names."
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["not_found", "forbidden", "unavailable", "too_large"],
+          "description": "What the file resolver answered."
         }
       }
     },
@@ -293,6 +303,18 @@
           },
           "description": "Routes folded away from input.route. A declaration that resolves only on one of these is spared with curation_unused_on_kept_route rather than dropping the endpoint."
         },
+        "files": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "refDescription": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Present means a file resolver is bound: file arguments offer 'ref', described by this text."
+            }
+          },
+          "description": "The host's file configuration. Absent means no resolver is bound."
+        },
         "expected": {
           "oneOf": [
             {
@@ -329,7 +351,8 @@
                     "curation_unresolved",
                     "invalid_fill_constant",
                     "hidden_required_omitted",
-                    "variant_declaration_conflict"
+                    "variant_declaration_conflict",
+                    "unsupported_body_shape"
                   ]
                 }
               }
@@ -365,6 +388,11 @@
             "deferred": {
               "type": "object",
               "description": "Resolved deferred values keyed by source name. The runner builds the provider from this map, the way naming fixtures build Naming.Prefix from hostPrefixes."
+            },
+            "maxInlineFileBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The invoke.maxInlineFileBytes budget the composer enforces; absent means the default of 1048576."
             }
           }
         },
@@ -385,6 +413,11 @@
                     "type": "string"
                   }
                 },
+                "contentType": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The media type the composed body carries, without a boundary. Absent means application/json whenever a body is expected."
+                },
                 "bodyJson": {
                   "oneOf": [
                     {
@@ -403,6 +436,21 @@
                       "type": "boolean"
                     }
                   ]
+                },
+                "bodyText": {
+                  "type": "string",
+                  "description": "A text/plain body."
+                },
+                "bodyForm": {
+                  "type": "string",
+                  "description": "An application/x-www-form-urlencoded body, byte for byte."
+                },
+                "bodyParts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/ExpectedPart"
+                  },
+                  "description": "A multipart/form-data body as its parts, in order. The boundary and part headers are written by the SDK and are not part of the expectation."
                 }
               }
             },
@@ -422,7 +470,9 @@
                     "null_not_allowed",
                     "invalid_type",
                     "deferred_value_missing",
-                    "deferred_value_invalid"
+                    "deferred_value_invalid",
+                    "invalid_file_argument",
+                    "file_too_large"
                   ]
                 }
               }
@@ -480,8 +530,172 @@
         "rootFill": {
           "$ref": "endpoint-descriptor.schema.json#/$defs/ArgumentFill",
           "description": "Fills the body root argument; only meaningful with bodyRoot."
+        },
+        "contentType": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$",
+          "description": "The body's media type; absent means application/json."
+        },
+        "form": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fields"],
+          "properties": {
+            "notation": {
+              "type": "string",
+              "enum": ["bracket", "dot"],
+              "description": "Absent means bracket."
+            },
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/TemplateFormField"
+              }
+            }
+          },
+          "description": "The typed fields of a form or multipart body, in the order the composer writes them. In field mode they name body.properties; with bodyRoot they are the root object's members."
+        },
+        "fileSources": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["text", "base64", "ref"]
+          },
+          "description": "The sources a file argument may use; absent means text and base64, the set with no resolver bound."
         }
       }
+    },
+    "TemplateFormField": {
+      "title": "TemplateFormField",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean", "object", "file"]
+        },
+        "array": {
+          "type": "boolean"
+        },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/TemplateObjectMember"
+          },
+          "description": "Only meaningful with type 'object'."
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The descriptor's contentMediaType for a file field; only meaningful with type 'file'."
+        }
+      }
+    },
+    "ExpectedPart": {
+      "title": "ExpectedPart",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "value"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "file"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "file": {
+              "$ref": "#/$defs/ExpectedFile"
+            }
+          }
+        }
+      ]
+    },
+    "ExpectedFile": {
+      "title": "ExpectedFile",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text", "filename", "mediaType"],
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "filename": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mediaType": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["base64", "byteLength", "filename", "mediaType"],
+          "properties": {
+            "base64": {
+              "type": "string"
+            },
+            "byteLength": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "filename": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mediaType": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ref"],
+          "properties": {
+            "ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "filename": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mediaType": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
     },
     "TemplateParameter": {
       "title": "TemplateParameter",

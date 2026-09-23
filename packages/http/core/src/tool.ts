@@ -7,13 +7,23 @@ import type {
 } from "./generated/endpoint-descriptor.js";
 import type { ToolDefinition } from "./generated/tool-definition.js";
 import { SkMcpTemplateError } from "./errors.js";
+import {
+  fileSourcesOf,
+  isFileArraySchema,
+  isFileSchema,
+} from "./file-argument.js";
+import type { FileOptions } from "./file-argument.js";
+import type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
 import { allowsAdditional, flattenableBody, typeOf } from "./json-schema.js";
 import type { JsonSchemaType } from "./json-schema.js";
 import {
   arraySeparatorFor,
   createRequestTemplate,
+  isFormMediaType,
 } from "./request-template.js";
 import type {
+  FormBinding,
+  FormFieldBinding,
   ObjectMemberBinding,
   ObjectParameterBinding,
   ParameterBinding,
@@ -104,10 +114,99 @@ function objectBindingFor(
   };
 }
 
+function isQueryScalar(schema: JsonSchemaObject | undefined): boolean {
+  return (
+    queryScalars.has(typeOf(schema) as JsonSchemaType) &&
+    schema?.$ref === undefined &&
+    schema?.$defs === undefined
+  );
+}
+
+function formFieldFor(
+  name: string,
+  schema: JsonSchemaObject,
+): FormFieldBinding {
+  if (isFileSchema(schema)) {
+    return {
+      name,
+      kind: "file",
+      ...(schema.contentMediaType === undefined
+        ? {}
+        : { mediaType: schema.contentMediaType }),
+    };
+  }
+  if (isFileArraySchema(schema)) {
+    const mediaType = schema.items?.contentMediaType;
+    return {
+      name,
+      kind: "file",
+      isArray: true,
+      ...(mediaType === undefined ? {} : { mediaType }),
+    };
+  }
+  if (isQueryScalar(schema)) {
+    return { name, kind: kindOf(typeOf(schema)) };
+  }
+  if (typeOf(schema) === "array" && isQueryScalar(schema.items)) {
+    return { name, kind: kindOf(typeOf(schema.items)), isArray: true };
+  }
+  if (
+    typeOf(schema) === "object" &&
+    schema.$ref === undefined &&
+    schema.properties !== undefined
+  ) {
+    const members: ObjectMemberBinding[] = [];
+    for (const [member, memberSchema] of Object.entries(schema.properties)) {
+      const isArray = typeOf(memberSchema) === "array";
+      const scalar = isArray ? memberSchema.items : memberSchema;
+      if (!isQueryScalar(scalar)) {
+        throw new SkMcpTemplateError(
+          "unsupported_body_shape",
+          `Member '${name}.${member}' is not a form scalar or an array of them; a form body carries one level of nesting.`,
+        );
+      }
+      members.push({
+        name: member,
+        kind: kindOf(typeOf(scalar)),
+        ...(isArray ? { isArray: true } : {}),
+      });
+    }
+    return { name, kind: "object", members };
+  }
+  throw new SkMcpTemplateError(
+    "unsupported_body_shape",
+    `Field '${name}' is not a form scalar, an array of them, a one-level object or a file.`,
+  );
+}
+
+/**
+ * Freezes a form or multipart body's field list from the descriptor.
+ *
+ * @param properties the flattened body's properties, or the body root's own in root mode.
+ */
+function formBindingFor(
+  endpoint: EndpointDescriptor,
+  properties: Readonly<Record<string, JsonSchemaObject>> | undefined,
+): FormBinding {
+  if (properties === undefined) {
+    throw new SkMcpTemplateError(
+      "unsupported_body_shape",
+      `A ${endpoint.requestBody?.contentType ?? ""} body must be an object with declared properties.`,
+    );
+  }
+  return {
+    notation: endpoint.requestBody?.objectNotation ?? "bracket",
+    fields: Object.entries(properties).map(([name, schema]) =>
+      formFieldFor(name, schema),
+    ),
+  };
+}
+
 export function createRequestTemplateFromEndpoint(
   endpoint: EndpointDescriptor,
   variant?: ToolVariant,
   relief?: CurationRelief,
+  files?: FileOptions,
 ): RequestTemplate {
   const declared = endpoint.parameters ?? [];
   const parameterNames = declared.map((parameter) => parameter.name);
@@ -162,6 +261,13 @@ export function createRequestTemplateFromEndpoint(
     };
   });
 
+  const contentType = endpoint.requestBody?.contentType;
+  const isForm = contentType !== undefined && isFormMediaType(contentType);
+  const encoding = {
+    ...(contentType === undefined ? {} : { contentType }),
+    fileSources: fileSourcesOf(files),
+  };
+
   if (root !== undefined) {
     const resolved = curation.byWireName.get(root);
     if (resolved?.fill !== undefined && bodyRequired !== false) {
@@ -174,6 +280,15 @@ export function createRequestTemplateFromEndpoint(
       bodyRoot: root,
       ...(resolved?.fill === undefined ? {} : { rootFill: resolved.fill }),
       ...(requiredFills.size === 0 ? {} : { requiredFills }),
+      ...encoding,
+      ...(isForm
+        ? {
+            form: formBindingFor(
+              endpoint,
+              typeOf(body) === "object" ? body?.properties : undefined,
+            ),
+          }
+        : {}),
     });
   }
 
@@ -203,6 +318,10 @@ export function createRequestTemplateFromEndpoint(
     ...(bodyAliases.size === 0 ? {} : { bodyAliases }),
     ...(bodyFills.size === 0 ? {} : { bodyFills }),
     ...(requiredFills.size === 0 ? {} : { requiredFills }),
+    ...encoding,
+    ...(isForm
+      ? { form: formBindingFor(endpoint, flattened?.properties) }
+      : {}),
   });
 }
 
@@ -211,9 +330,15 @@ export function createTool(
   name?: string,
   variant?: ToolVariant,
   relief?: CurationRelief,
+  files?: FileOptions,
 ): Tool {
   return {
-    definition: createToolDefinition(endpoint, name, variant, relief),
-    template: createRequestTemplateFromEndpoint(endpoint, variant, relief),
+    definition: createToolDefinition(endpoint, name, variant, relief, files),
+    template: createRequestTemplateFromEndpoint(
+      endpoint,
+      variant,
+      relief,
+      files,
+    ),
   };
 }

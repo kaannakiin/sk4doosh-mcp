@@ -1,0 +1,86 @@
+{
+  "kind": "metadata-extraction",
+  "description": "multipart govdede contentMediaType tasiyan alan dosya argumanina doner: text ya da base64, tam olarak biri; resolver yoksa ref yok",
+  "input": {
+    "operationId": "CreateTicket",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "attachment": {
+            "type": "string",
+            "contentMediaType": "text/csv",
+            "description": "The ticket's attachment."
+          }
+        },
+        "required": ["title"]
+      },
+      "contentType": "multipart/form-data"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "create_ticket",
+    "description": "Opens a ticket.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "attachment": {
+          "type": "object",
+          "description": "The ticket's attachment.",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "The file's content as text, sent as is."
+            },
+            "base64": {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "The file's bytes as standard base64 with padding and no line breaks."
+            },
+            "name": {
+              "type": "string",
+              "description": "The filename the backend receives. Defaults to 'attachment'."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "The file's media type. Defaults to text/csv."
+            }
+          },
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": ["text"]
+            },
+            {
+              "required": ["base64"]
+            }
+          ]
+        }
+      },
+      "required": ["title"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

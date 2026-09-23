@@ -217,17 +217,25 @@ internal sealed class SkMcpMetaTools(
                 cancellationToken);
             InvokeTarget target = new(entry.Tool.Name, entry.Descriptor.Method, entry.Descriptor.Route);
             TimeSpan deadline = TimeoutFor(target);
+            InvokeOptions invoke = options.Value.Invoke;
+            DispatchFiles files = new(target, invoke.MaxInlineFileBytes, invoke.MaxFileBytes);
             DispatchResult result;
             try
             {
                 result = await dispatcher.DispatchAsync(
                     template, normalized.Value, httpContextAccessor.HttpContext?.Request, cancellationToken,
-                    deferred, deadline);
+                    deferred, deadline, files);
             }
             catch (SkMcpDispatchTimeout)
             {
                 return Respond(
                     SdkErrors.RefuseTimedOut((int)deadline.TotalMilliseconds),
+                    isError: true);
+            }
+            catch (SkMcpFileRefused refused)
+            {
+                return Respond(
+                    SdkErrors.RefuseUnresolvedFile(refused.Field, refused.Reason, refused.Limit),
                     isError: true);
             }
             InvokeOutcome outcome = mapper.Map(result.ToBackendResponse(), VocabularyOf(entry, template));

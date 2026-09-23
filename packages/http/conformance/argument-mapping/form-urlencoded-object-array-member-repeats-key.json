@@ -1,0 +1,39 @@
+{
+  "kind": "argument-mapping",
+  "description": "nesne uyesindeki dizi uye anahtarini tekrarlar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["filter"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "filter",
+            "type": "object",
+            "members": [
+              {
+                "name": "tags",
+                "type": "string",
+                "array": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "filter": {
+        "tags": ["a", "b"]
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "filter[tags]=a&filter[tags]=b"
+  }
+}

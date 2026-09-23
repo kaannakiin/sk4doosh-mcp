@@ -17,7 +17,8 @@ export type SkMcpTemplateErrorCode =
   | "hidden_required_omitted"
   | "variant_declaration_conflict"
   | "sealed_curation_overridden"
-  | "ambiguous_curation";
+  | "ambiguous_curation"
+  | "unsupported_body_shape";
 
 export class SkMcpTemplateError extends Error {
   constructor(
@@ -37,7 +38,9 @@ export type SkMcpArgumentErrorCode =
   | "null_not_allowed"
   | "invalid_type"
   | "deferred_value_missing"
-  | "deferred_value_invalid";
+  | "deferred_value_invalid"
+  | "invalid_file_argument"
+  | "file_too_large";
 
 export class SkMcpArgumentError extends Error {
   constructor(

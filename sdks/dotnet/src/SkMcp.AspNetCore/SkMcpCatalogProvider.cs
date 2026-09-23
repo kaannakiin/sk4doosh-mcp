@@ -23,7 +23,8 @@ internal sealed class SkMcpCatalogProvider(
     IOptions<MvcOptions> mvcOptions,
     ISkMcpCache cache,
     ILogger<SkMcpCatalogProvider> logger,
-    IAuthorizationPolicyProvider? policyProvider = null) : ISkMcpCatalogChangeSource
+    IAuthorizationPolicyProvider? policyProvider = null,
+    Files.ISkMcpFileResolver? fileResolver = null) : ISkMcpCatalogChangeSource
 {
     private const string NewtonsoftInputFormatter =
         "Microsoft.AspNetCore.Mvc.Formatters.NewtonsoftJsonInputFormatter";
@@ -158,7 +159,8 @@ internal sealed class SkMcpCatalogProvider(
             severityOf: options.Value.Diagnostics.SeverityOf,
             curation: options.Value.Arguments,
             selectionRules: options.Value.Selection.Rules,
-            groupQueryObjects: options.Value.Query.Grouping == QueryObjectGrouping.Group);
+            groupQueryObjects: options.Value.Query.Grouping == QueryObjectGrouping.Group,
+            refDescription: fileResolver?.RefDescription);
         if (schemaNotes.Count > 0)
         {
             result = result with { Diagnostics = [.. schemaNotes, .. result.Diagnostics] };

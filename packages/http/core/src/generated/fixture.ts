@@ -75,6 +75,32 @@ export type ArgumentFill2 = (
   value?: unknown;
   source?: string;
 };
+export type ExpectedPart =
+  | {
+      name: string;
+      value: string;
+    }
+  | {
+      name: string;
+      file: ExpectedFile;
+    };
+export type ExpectedFile =
+  | {
+      text: string;
+      filename: string;
+      mediaType: string;
+    }
+  | {
+      base64: string;
+      byteLength: number;
+      filename: string;
+      mediaType: string;
+    }
+  | {
+      ref: string;
+      filename?: string;
+      mediaType?: string;
+    };
 export type SdkErrorCode =
   | "unknown_tool"
   | "not_invocable"
@@ -86,6 +112,9 @@ export type SdkErrorCode =
   | "invalid_type"
   | "deferred_value_missing"
   | "deferred_value_invalid"
+  | "invalid_file_argument"
+  | "file_too_large"
+  | "file_unresolved"
   | "response_too_large"
   | "invoke_timeout"
   | "internal_error";
@@ -161,6 +190,9 @@ export interface MetadataExtractionFixture {
   description: string;
   input: EndpointDescriptor;
   foldedRoutes?: [string, ...string[]];
+  files?: {
+    refDescription?: string;
+  };
   expected:
     | ToolDefinition
     | MetadataExtractionExpectedTools
@@ -224,6 +256,7 @@ export interface JsonSchemaObject {
   enum?: unknown[];
   additionalProperties?: boolean | JsonSchemaObject;
   contentEncoding?: string;
+  contentMediaType?: string;
   propertyNames?: JsonSchemaObject;
   minLength?: number;
   maxLength?: number;
@@ -233,6 +266,7 @@ export interface JsonSchemaObject {
   maximum?: number;
   pattern?: string;
   anyOf?: JsonSchemaObject[];
+  oneOf?: JsonSchemaObject[];
   $ref?: string;
   $defs?: {
     [k: string]: JsonSchemaObject;
@@ -243,6 +277,8 @@ export interface RequestBody {
   schema: JsonSchemaObject;
   required?: boolean;
   description?: string;
+  contentType?: string;
+  objectNotation?: "bracket" | "dot";
 }
 export interface ResponseBody {
   schema?: JsonSchemaObject;
@@ -277,7 +313,8 @@ export interface MetadataExtractionExpectedError {
     | "curation_unresolved"
     | "invalid_fill_constant"
     | "hidden_required_omitted"
-    | "variant_declaration_conflict";
+    | "variant_declaration_conflict"
+    | "unsupported_body_shape";
 }
 export interface ArgumentMappingFixture {
   kind: "argument-mapping";
@@ -286,6 +323,7 @@ export interface ArgumentMappingFixture {
     template: RequestTemplateSpec;
     arguments: {};
     deferred?: {};
+    maxInlineFileBytes?: number;
   };
   expected: ComposedRequestExpectation | ArgumentMappingError;
 }
@@ -300,6 +338,12 @@ export interface RequestTemplateSpec {
   };
   bodyRoot?: string;
   rootFill?: ArgumentFill2;
+  contentType?: string;
+  form?: {
+    notation?: "bracket" | "dot";
+    fields: [TemplateFormField, ...TemplateFormField[]];
+  };
+  fileSources?: ["text" | "base64" | "ref", ...("text" | "base64" | "ref")[]];
 }
 export interface TemplateParameter {
   name: string;
@@ -323,12 +367,23 @@ export interface TemplateBodyCuration {
   as?: string;
   fill?: ArgumentFill;
 }
+export interface TemplateFormField {
+  name: string;
+  type: "string" | "integer" | "number" | "boolean" | "object" | "file";
+  array?: boolean;
+  members?: [TemplateObjectMember, ...TemplateObjectMember[]];
+  mediaType?: string;
+}
 export interface ComposedRequestExpectation {
   pathAndQuery: string;
   headers?: {
     [k: string]: string;
   };
+  contentType?: string;
   bodyJson?: {} | unknown[] | string | number | boolean;
+  bodyText?: string;
+  bodyForm?: string;
+  bodyParts?: ExpectedPart[];
 }
 export interface ArgumentMappingError {
   error:
@@ -339,7 +394,9 @@ export interface ArgumentMappingError {
     | "null_not_allowed"
     | "invalid_type"
     | "deferred_value_missing"
-    | "deferred_value_invalid";
+    | "deferred_value_invalid"
+    | "invalid_file_argument"
+    | "file_too_large";
 }
 export interface SelectionFixture {
   kind: "selection";
@@ -437,6 +494,8 @@ export interface SdkErrorSpec {
   payload?: unknown;
   limitMs?: number;
   narrowing?: FieldError[];
+  field?: string;
+  reason?: "not_found" | "forbidden" | "unavailable" | "too_large";
 }
 export interface FieldError {
   name?: string;

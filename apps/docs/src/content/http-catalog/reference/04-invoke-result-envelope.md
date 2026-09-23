@@ -15,7 +15,7 @@ for.
 | Layer          | Produced                              | Has `status` | Codes                                         |
 | -------------- | ------------------------------------- | ------------ | --------------------------------------------- |
 | Backend-mapped | After your pipeline ran and responded | Yes          | Nine `BackendErrorCode` values, in the schema |
-| SDK-side       | Without a usable backend response     | **No**       | Thirteen `SdkErrorCode` values, in the schema |
+| SDK-side       | Without a usable backend response     | **No**       | Sixteen `SdkErrorCode` values, in the schema  |
 
 The presence or absence of `status` is the discriminator. It is the one thing to branch on: an
 envelope with a `status` describes what your backend did; an envelope without one describes what
@@ -94,10 +94,14 @@ These either never reached your backend, or reached it and got an answer sk-mcp 
 }
 ```
 
-The thirteen codes are `unknown_argument`, `invalid_path_type`, `missing_path_parameter`,
+The sixteen codes are `unknown_argument`, `invalid_path_type`, `missing_path_parameter`,
 `header_injection`, `null_not_allowed`, `invalid_type`, `deferred_value_missing`,
-`deferred_value_invalid`, `unknown_tool`, `not_invocable`, `response_too_large`, `invoke_timeout`
-and `internal_error`.
+`deferred_value_invalid`, `invalid_file_argument`, `file_too_large`, `file_unresolved`,
+`unknown_tool`, `not_invocable`, `response_too_large`, `invoke_timeout` and `internal_error`.
+
+The three file codes are described in
+[how to accept form bodies and file uploads](/docs/http-catalog/accept-form-and-file-uploads);
+`file_unresolved` is retryable only when the resolver reported its store unavailable.
 
 The last three come from the invoke guards rather than from argument composition, and two of them
 carry more than the envelope above: `response_too_large` adds a `payload` block and a `fields` list

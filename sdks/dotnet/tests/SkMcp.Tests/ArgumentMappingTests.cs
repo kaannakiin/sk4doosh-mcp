@@ -325,6 +325,9 @@ public class ArgumentMappingTests
         // ones. Two flags, because a single one is satisfied by the bracket family alone.
         bool grouped = false;
         bool dotted = false;
+        bool formEncoded = false;
+        bool multipart = false;
+        bool referenced = false;
 
         foreach (string file in files)
         {
@@ -333,6 +336,12 @@ public class ArgumentMappingTests
             Assert.Equal("argument-mapping", root.GetProperty("kind").GetString());
             RequestTemplate template = BuildTemplate(
                 root.GetProperty("input").GetProperty("template"), ref grouped, ref dotted);
+            formEncoded |= template.ContentType == MediaTypes.UrlEncoded;
+            multipart |= template.ContentType == MediaTypes.Multipart;
+            referenced |= template.FileSources?.Contains(FileSource.Ref) == true;
+            ComposeLimits? limits = root.GetProperty("input").TryGetProperty("maxInlineFileBytes", out JsonElement budget)
+                ? new ComposeLimits(budget.GetInt32())
+                : null;
             JsonElement arguments = root.GetProperty("input").GetProperty("arguments");
             Dictionary<string, JsonElement>? deferred = null;
             if (root.GetProperty("input").TryGetProperty("deferred", out JsonElement deferredSpec))
@@ -348,12 +357,12 @@ public class ArgumentMappingTests
             if (expected.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpArgumentException ex = Assert.Throws<SkMcpArgumentException>(
-                    () => RequestComposer.Compose(template, arguments, deferred));
+                    () => RequestComposer.Compose(template, arguments, deferred, limits));
                 Assert.Equal(error.GetString(), ex.Code);
             }
             else
             {
-                ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred);
+                ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred, limits);
                 Assert.Equal(expected.GetProperty("pathAndQuery").GetString(), composed.PathAndQuery);
                 if (expected.TryGetProperty("headers", out JsonElement headers))
                 {
@@ -362,22 +371,98 @@ public class ArgumentMappingTests
                         Assert.Equal(header.Value.GetString(), composed.Headers[header.Name]);
                     }
                 }
-                if (expected.TryGetProperty("bodyJson", out JsonElement bodyJson))
-                {
-                    Assert.NotNull(composed.Body);
-                    Assert.True(JsonNode.DeepEquals(
-                        JsonNode.Parse(bodyJson.GetRawText()),
-                        JsonNode.Parse(composed.Body)));
-                }
-                else
-                {
-                    Assert.Null(composed.Body);
-                }
+                AssertBody(expected, composed.Content, file);
             }
         }
 
         Assert.True(grouped, "no argument-mapping fixture carried an object parameter");
         Assert.True(dotted, "no argument-mapping fixture carried dot notation");
+        Assert.True(formEncoded, "no argument-mapping fixture carried a urlencoded body");
+        Assert.True(multipart, "no argument-mapping fixture carried a multipart body");
+        Assert.True(referenced, "no argument-mapping fixture offered a ref file source");
+    }
+
+    /// <remarks>
+    /// <c>contentType</c> is compared only when the fixture states it, and a JSON body's default is
+    /// written by no fixture, so every fixture that predates media types compares exactly what it
+    /// compared before. The ref fallbacks are the SDK's last rung and stay out of the corpus.
+    /// </remarks>
+    private static void AssertBody(JsonElement expected, ComposedBody? body, string file)
+    {
+        string[] keys = ["bodyJson", "bodyText", "bodyForm", "bodyParts"];
+        if (!keys.Any(key => expected.TryGetProperty(key, out JsonElement _)))
+        {
+            Assert.Null(body);
+            return;
+        }
+        Assert.NotNull(body);
+        string contentType = expected.TryGetProperty("contentType", out JsonElement declared)
+            ? declared.GetString()!
+            : MediaTypes.Json;
+        Assert.Equal(contentType, body!.ContentType);
+        switch (body)
+        {
+            case JsonBody json:
+                Assert.True(
+                    JsonNode.DeepEquals(
+                        JsonNode.Parse(expected.GetProperty("bodyJson").GetRawText()),
+                        JsonNode.Parse(json.Utf8)),
+                    file);
+                break;
+            case TextBody text:
+                Assert.Equal(expected.GetProperty("bodyText").GetString(), text.Value);
+                break;
+            case UrlEncodedBody form:
+                Assert.Equal(expected.GetProperty("bodyForm").GetString(), form.Encoded);
+                break;
+            case MultipartBody multipartBody:
+                JsonArray parts = [.. multipartBody.Parts.Select(PartNode)];
+                Assert.True(
+                    JsonNode.DeepEquals(JsonNode.Parse(expected.GetProperty("bodyParts").GetRawText()), parts),
+                    $"{file}: {parts.ToJsonString()}");
+                break;
+        }
+    }
+
+    private static JsonNode PartNode(ComposedPart part) => part switch
+    {
+        FieldPart field => new JsonObject { ["name"] = field.Name, ["value"] = field.Value },
+        FilePart { File: TextFile text } filePart => new JsonObject
+        {
+            ["name"] = filePart.Name,
+            ["file"] = new JsonObject { ["text"] = text.Text, ["filename"] = text.FileName, ["mediaType"] = text.MediaType },
+        },
+        FilePart { File: InlineFile inline } filePart => new JsonObject
+        {
+            ["name"] = filePart.Name,
+            ["file"] = new JsonObject
+            {
+                ["base64"] = inline.Base64,
+                ["byteLength"] = inline.ByteLength,
+                ["filename"] = inline.FileName,
+                ["mediaType"] = inline.MediaType,
+            },
+        },
+        FilePart { File: RefFile reference } filePart => new JsonObject
+        {
+            ["name"] = filePart.Name,
+            ["file"] = RefNode(reference),
+        },
+        _ => throw new InvalidOperationException($"Unknown part {part.GetType().Name}."),
+    };
+
+    private static JsonObject RefNode(RefFile reference)
+    {
+        JsonObject node = new() { ["ref"] = reference.Ref };
+        if (reference.FileName is not null)
+        {
+            node["filename"] = reference.FileName;
+        }
+        if (reference.MediaType is not null)
+        {
+            node["mediaType"] = reference.MediaType;
+        }
+        return node;
     }
 
     private static RequestTemplate BuildTemplate(
@@ -463,6 +548,24 @@ public class ArgumentMappingTests
             }
         }
 
+        FormBinding? form = null;
+        if (spec.TryGetProperty("form", out JsonElement formSpec))
+        {
+            form = new FormBinding(
+                formSpec.TryGetProperty("notation", out JsonElement formNotation) && formNotation.GetString() == "dot"
+                    ? ObjectNotation.Dot
+                    : ObjectNotation.Bracket,
+                [.. formSpec.GetProperty("fields").EnumerateArray().Select(FormFieldOf)]);
+        }
+        HashSet<FileSource>? fileSources = spec.TryGetProperty("fileSources", out JsonElement sources)
+            ? [.. sources.EnumerateArray().Select(source => source.GetString() switch
+            {
+                "text" => FileSource.Text,
+                "base64" => FileSource.Base64,
+                _ => FileSource.Ref,
+            })]
+            : null;
+
         return RequestTemplate.Create(
             new HttpMethod(spec.GetProperty("method").GetString()!),
             spec.GetProperty("route").GetString()!,
@@ -474,7 +577,32 @@ public class ArgumentMappingTests
             bodyFills,
             spec.TryGetProperty("rootFill", out JsonElement rootFill)
                 ? rootFill.Deserialize<ArgumentFill>(FixtureJson)
-                : null);
+                : null,
+            contentType: spec.TryGetProperty("contentType", out JsonElement contentType)
+                ? contentType.GetString()
+                : null,
+            form: form,
+            fileSources: fileSources);
+    }
+
+    private static FormField FormFieldOf(JsonElement field)
+    {
+        string name = field.GetProperty("name").GetString()!;
+        bool isArray = field.TryGetProperty("array", out JsonElement array) && array.GetBoolean();
+        return field.GetProperty("type").GetString() switch
+        {
+            "object" => new FormField(name, FormFieldKind.Object, Members: [.. field.GetProperty("members").EnumerateArray()
+                .Select(member => new ObjectMember(
+                    member.GetProperty("name").GetString()!,
+                    KindOf(member.GetProperty("type").GetString()),
+                    member.TryGetProperty("array", out JsonElement memberArray) && memberArray.GetBoolean()))]),
+            "file" => new FormField(name, FormFieldKind.File, isArray,
+                MediaType: field.TryGetProperty("mediaType", out JsonElement mediaType) ? mediaType.GetString() : null),
+            "integer" => new FormField(name, FormFieldKind.Integer, isArray),
+            "number" => new FormField(name, FormFieldKind.Number, isArray),
+            "boolean" => new FormField(name, FormFieldKind.Boolean, isArray),
+            _ => new FormField(name, FormFieldKind.String, isArray),
+        };
     }
 
     private static ParameterKind KindOf(string? type) => type switch

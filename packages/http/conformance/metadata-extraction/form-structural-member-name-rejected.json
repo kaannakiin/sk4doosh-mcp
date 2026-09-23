@@ -1,0 +1,34 @@
+{
+  "kind": "metadata-extraction",
+  "description": "notation'in yapi olarak okudugu uye adi reddedilir",
+  "input": {
+    "operationId": "CreateTicket",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "object",
+            "properties": {
+              "a.b": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "contentType": "application/x-www-form-urlencoded"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_body_shape"
+  }
+}

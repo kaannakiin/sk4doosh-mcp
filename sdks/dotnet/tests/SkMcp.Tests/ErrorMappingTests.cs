@@ -184,6 +184,10 @@ public sealed class ErrorMappingTests
                     : null)),
             "invoke_timeout" => SdkErrors.RefuseTimedOut(
                 input.TryGetProperty("limitMs", out JsonElement limitMs) ? limitMs.GetInt32() : 0),
+            _ when input.TryGetProperty("reason", out JsonElement reason) => SdkErrors.RefuseUnresolvedFile(
+                input.TryGetProperty("field", out JsonElement field) ? field.GetString()! : string.Empty,
+                reason.GetString()!,
+                input.TryGetProperty("limit", out JsonElement fileLimit) ? fileLimit.GetInt32() : 1),
             _ => SdkErrors.Create(
                 JsonSerializer.Deserialize<SdkErrorCode>($"\"{code}\"", SkMcpJson.Wire),
                 input.TryGetProperty("message", out JsonElement message) ? message.GetString()! : string.Empty),

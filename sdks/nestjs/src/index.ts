@@ -14,10 +14,18 @@ export type {
   ArgumentRule,
   ArgumentRules,
   JsonValue,
+  McpFileFieldOptions,
   McpResponseDeclaration,
   McpToolOptions,
   McpVariantOptions,
 } from "./decorators.js";
+export { SkMcpFileRefused } from "./files.js";
+export type {
+  FileResolution,
+  FileResolveRequest,
+  FileResolver,
+  SkMcpFileOptions,
+} from "./files.js";
 export { ArgumentCurationOptions, callerOf } from "./options.js";
 export type {
   ArgumentValueProvider,

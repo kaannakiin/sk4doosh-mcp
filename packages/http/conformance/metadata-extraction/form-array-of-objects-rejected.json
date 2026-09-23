@@ -1,0 +1,37 @@
+{
+  "kind": "metadata-extraction",
+  "description": "nesne dizisinin form tel bicimi yok; endpoint duser",
+  "input": {
+    "operationId": "CreateTicket",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "contentType": "multipart/form-data"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_body_shape"
+  }
+}

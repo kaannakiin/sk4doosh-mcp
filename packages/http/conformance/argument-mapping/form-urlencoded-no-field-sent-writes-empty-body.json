@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "alan modu her zaman govde yazar; hic alan gonderilmezse bos form gider",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": ""
+  }
+}

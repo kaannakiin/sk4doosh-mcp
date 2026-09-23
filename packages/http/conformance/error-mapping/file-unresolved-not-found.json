@@ -1,0 +1,14 @@
+{
+  "kind": "error-mapping",
+  "description": "bulunamayan ref yeniden denenemez",
+  "input": {
+    "sdkError": "file_unresolved",
+    "field": "attachment",
+    "reason": "not_found"
+  },
+  "expected": {
+    "error": "file_unresolved",
+    "message": "File argument 'attachment' names a ref that could not be resolved. Retrying with the same ref will not help.",
+    "retryable": false
+  }
+}

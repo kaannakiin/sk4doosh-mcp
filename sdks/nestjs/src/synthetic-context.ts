@@ -86,6 +86,13 @@ export function createSyntheticContext(
     req.push(body);
   }
   req.push(null);
+  /**
+   * Node's HTTP parser sets `complete`; nothing does for a hand-built message. Left false, the
+   * stream's auto-destroy emits `aborted` as soon as the body is consumed, so every dispatch looked
+   * like a client disconnect — multer answers it with a 500. Pinned by N2 in
+   * test/form-body-probe.spec.ts.
+   */
+  req.complete = true;
 
   const res = new ServerResponse(req);
   const chunks: Buffer[] = [];

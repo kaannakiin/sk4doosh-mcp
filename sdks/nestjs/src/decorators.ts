@@ -73,6 +73,15 @@ export type McpResponseDeclaration =
   | { readonly schema: JsonSchemaObject }
   | Record<string, never>;
 
+export interface McpFileFieldOptions {
+  /** A `FilesInterceptor` field, sent as repeated parts. */
+  readonly multiple?: boolean;
+  readonly required?: boolean;
+  readonly description?: string;
+  /** The media type the backend expects; it becomes the part's default. */
+  readonly mediaType?: string;
+}
+
 export interface McpToolOptions {
   readonly name?: string;
   readonly prefix?: string;
@@ -112,6 +121,17 @@ export interface McpToolOptions {
    * filter keys and search index vocabulary at once ([search-semantics.md]).
    */
   readonly tags?: readonly string[];
+  /**
+   * The body's media type, replacing the one discovery chooses. It is the host's own claim that a
+   * parser for it is registered; when `@ApiConsumes` also lists types, it must be one of them.
+   */
+  readonly consumes?: string;
+  /**
+   * The multipart file fields, keyed by the name the file interceptor reads. `FileInterceptor`
+   * keeps that name in a closure, so without a declaration here or an `@ApiBody` schema marking
+   * the field `format: "binary"` the endpoint is dropped rather than guessed at.
+   */
+  readonly files?: Readonly<Record<string, McpFileFieldOptions>>;
   readonly readOnly?: boolean;
   readonly destructive?: boolean;
   readonly idempotent?: boolean;

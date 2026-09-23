@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "null form alani reddedilir; gondermemek gerekir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "title": null
+    }
+  },
+  "expected": {
+    "error": "null_not_allowed"
+  }
+}

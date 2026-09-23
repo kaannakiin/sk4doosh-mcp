@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "base64 dosya cozulmus bayt sayisini tasir; octet-stream beyani varsayilani degistirmez",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file",
+            "mediaType": "application/octet-stream"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "base64": "AQID"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "attachment",
+        "file": {
+          "base64": "AQID",
+          "byteLength": 3,
+          "filename": "attachment",
+          "mediaType": "application/octet-stream"
+        }
+      }
+    ]
+  }
+}

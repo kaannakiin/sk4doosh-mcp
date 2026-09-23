@@ -77,14 +77,68 @@ for (const dir of expectedKinds.filter((kind) => presentKinds.includes(kind))) {
   for (const file of files) {
     const rel = path.join(dir, file);
     checked += 1;
-    if (!validate(readJson(path.join(here, rel)))) {
+    const fixture = readJson(path.join(here, rel));
+    if (!validate(fixture)) {
       failed += 1;
       console.error(`FAIL ${rel}`);
       for (const err of validate.errors ?? []) {
         console.error(`  ${err.instancePath || "/"} ${err.message}`);
       }
+      continue;
+    }
+    for (const problem of bodyProblems(fixture)) {
+      failed += 1;
+      console.error(`FAIL ${rel}\n  ${problem}`);
     }
   }
+}
+
+/**
+ * The body rules the schema cannot say: one body expectation per fixture, the one that matches the
+ * template's media type, and form fields that name exactly the body's properties. A fixture that
+ * broke one would pin a combination the composer can never produce, and pass or fail for the
+ * wrong reason.
+ */
+function bodyProblems(fixture) {
+  if (fixture.kind !== "argument-mapping") {
+    return [];
+  }
+  const problems = [];
+  const template = fixture.input.template;
+  const contentType = template.contentType ?? "application/json";
+  const expected = fixture.expected;
+  const bodies = ["bodyJson", "bodyText", "bodyForm", "bodyParts"].filter(
+    (key) => key in expected,
+  );
+  if (bodies.length > 1) {
+    problems.push(`expects more than one body: ${bodies.join(", ")}`);
+  }
+  const wanted =
+    contentType === "multipart/form-data"
+      ? "bodyParts"
+      : contentType === "application/x-www-form-urlencoded"
+        ? "bodyForm"
+        : contentType === "text/plain"
+          ? "bodyText"
+          : "bodyJson";
+  if (bodies.length === 1 && bodies[0] !== wanted) {
+    problems.push(
+      `a ${contentType} body is expected as ${wanted}, not ${bodies[0]}`,
+    );
+  }
+  if ("contentType" in expected && expected.contentType !== contentType) {
+    problems.push(
+      `expected contentType ${expected.contentType} differs from the template's ${contentType}`,
+    );
+  }
+  if (template.form !== undefined && template.bodyRoot === undefined) {
+    const fields = template.form.fields.map((field) => field.name).sort();
+    const properties = [...(template.body?.properties ?? [])].sort();
+    if (JSON.stringify(fields) !== JSON.stringify(properties)) {
+      problems.push("form fields do not name body.properties");
+    }
+  }
+  return problems;
 }
 
 console.log(`${checked} fixture(s) checked, ${failed} failed`);

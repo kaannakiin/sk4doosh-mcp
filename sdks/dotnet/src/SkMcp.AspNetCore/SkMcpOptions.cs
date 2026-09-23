@@ -51,6 +51,12 @@ public sealed class InvokeOptions
 
     public Func<InvokeTarget, int?>? MaxResponseBytesFor { get; set; }
     public Func<InvokeTarget, TimeSpan?>? TimeoutFor { get; set; }
+
+    /// <summary>Decoded base64 file bytes one call may carry inline.</summary>
+    public int MaxInlineFileBytes { get; set; } = Requests.RequestBodyEncoder.DefaultMaxInlineFileBytes;
+
+    /// <summary>The bytes one resolved <c>ref</c> file may carry.</summary>
+    public int MaxFileBytes { get; set; } = SdkErrors.DefaultMaxFileBytes;
 }
 
 public sealed class DiagnosticsOptions

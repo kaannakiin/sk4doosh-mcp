@@ -24,9 +24,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "item"
-        ]
+        "required": ["item"]
       }
     },
     "responses": {
@@ -56,14 +54,10 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersWrite"
-      ],
+      "policies": ["OrdersWrite"],
       "imperative": false
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "upsert_order",
@@ -78,10 +72,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "id",
-        "item"
-      ],
+      "required": ["id", "item"],
       "additionalProperties": false
     },
     "outputSchema": {
@@ -101,9 +92,7 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersWrite"
-      ],
+      "policies": ["OrdersWrite"],
       "imperative": false
     }
   }

@@ -1,0 +1,16 @@
+{
+  "kind": "argument-mapping",
+  "description": "gonderilmeyen kok govde yazmaz; media type yalniz govdeyle birlikte gider",
+  "input": {
+    "template": {
+      "method": "PATCH",
+      "route": "/orders",
+      "bodyRoot": "body",
+      "contentType": "application/merge-patch+json"
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/orders"
+  }
+}

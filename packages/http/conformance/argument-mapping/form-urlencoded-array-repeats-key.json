@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "dizi alan anahtari tekrarlar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["tags"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "tags",
+            "type": "string",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "tags": ["x", "y"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "tags=x&tags=y"
+  }
+}

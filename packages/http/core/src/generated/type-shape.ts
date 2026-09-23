@@ -69,6 +69,7 @@ export interface JsonSchemaObject {
   enum?: unknown[];
   additionalProperties?: boolean | JsonSchemaObject;
   contentEncoding?: string;
+  contentMediaType?: string;
   propertyNames?: JsonSchemaObject;
   minLength?: number;
   maxLength?: number;
@@ -78,6 +79,7 @@ export interface JsonSchemaObject {
   maximum?: number;
   pattern?: string;
   anyOf?: JsonSchemaObject[];
+  oneOf?: JsonSchemaObject[];
   $ref?: string;
   $defs?: {
     [k: string]: JsonSchemaObject;
