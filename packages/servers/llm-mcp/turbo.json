@@ -1,0 +1,37 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "passThroughEnv": [
+        "SKMCP_LLM_ROOT",
+        "SKMCP_LLM_OUTPUT_DIR",
+        "SKMCP_LLM_BASE_URL",
+        "SKMCP_LLM_MODEL",
+        "SKMCP_LLM_NUM_CTX",
+        "SKMCP_LLM_KEEP_ALIVE",
+        "SKMCP_LLM_TIMEOUT_MS",
+        "SKMCP_LLM_LIVE"
+      ]
+    },
+    "test:coverage": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"]
+    },
+    "dev": {
+      "passThroughEnv": [
+        "SKMCP_LLM_ROOT",
+        "SKMCP_LLM_OUTPUT_DIR",
+        "SKMCP_LLM_BASE_URL",
+        "SKMCP_LLM_MODEL",
+        "SKMCP_LLM_NUM_CTX",
+        "SKMCP_LLM_KEEP_ALIVE",
+        "SKMCP_LLM_TIMEOUT_MS"
+      ]
+    }
+  }
+}

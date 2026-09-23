@@ -48,6 +48,8 @@ function activityOf(item: ThreadItem): string | undefined {
       );
     case "web_search":
       return clamp(item.query, CODEX_ACTIVITY_MAX_CHARS);
+    case "mcp_tool_call":
+      return clamp(`${item.server}.${item.tool}`, CODEX_ACTIVITY_MAX_CHARS);
     case "agent_message":
     case "reasoning":
       return clamp(item.text, CODEX_ACTIVITY_MAX_CHARS);

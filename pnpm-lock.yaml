@@ -416,6 +416,43 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sugarss@5.0.1(postcss@8.5.26))(supports-color@7.2.0)(yaml@2.9.1)
 
+  packages/servers/llm-mcp:
+    dependencies:
+      '@modelcontextprotocol/server':
+        specifier: ^2.0.0
+        version: 2.0.0
+      '@sk-mcp/mcp-core':
+        specifier: workspace:^
+        version: link:../../cores/mcp-core
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
+    devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: ^2.0.0
+        version: 2.0.0
+      '@sk-mcp/eslint-config':
+        specifier: workspace:*
+        version: link:../../toolchain/eslint-config
+      '@sk-mcp/typescript-config':
+        specifier: workspace:*
+        version: link:../../toolchain/typescript-config
+      '@types/node':
+        specifier: ^24.3.0
+        version: 24.13.3
+      '@vitest/coverage-v8':
+        specifier: 3.2.7
+        version: 3.2.7(supports-color@7.2.0)(vitest@3.2.7(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sugarss@5.0.1(postcss@8.5.26))(supports-color@7.2.0)(yaml@2.9.1))
+      eslint:
+        specifier: 10.9.1
+        version: 10.9.1(jiti@2.7.0)(supports-color@7.2.0)
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(sugarss@5.0.1(postcss@8.5.26))(supports-color@7.2.0)(yaml@2.9.1)
+
   packages/servers/mssql-mcp:
     dependencies:
       '@modelcontextprotocol/server':

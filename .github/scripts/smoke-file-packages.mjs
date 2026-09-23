@@ -44,6 +44,7 @@ try {
         "@sk-mcp/mcp-core": archive("sk-mcp-mcp-core-"),
         "@sk-mcp/db-core": archive("sk-mcp-db-core-"),
         "@sk-mcp/mssql-mcp": archive("sk-mcp-mssql-mcp-"),
+        "@sk-mcp/llm-mcp": archive("sk-mcp-llm-mcp-"),
         "@sk-mcp/file-core": archive("sk-mcp-file-core-0"),
         "@sk-mcp/ooxml-core": archive("sk-mcp-ooxml-core-"),
         "@sk-mcp/excel-mcp": archive("sk-mcp-excel-mcp-"),

@@ -94,6 +94,7 @@ export interface CodexConfig {
   root: string;
   timeoutMs: number;
   maxWorkspaces: number;
+  localWorker?: string;
 }
 
 export interface AppConfig {
@@ -242,6 +243,15 @@ export function loadConfig(): AppConfig {
       root: env.CHAT_CODEX_ROOT ?? join(tmpdir(), "chat-codex"),
       timeoutMs: env.CHAT_CODEX_TIMEOUT_MS,
       maxWorkspaces: env.CHAT_CODEX_MAX_WORKSPACES,
+      /**
+       * Guard: resolved here for the same reason as `home`, and more so — codex
+       * starts this server with the conversation's workspace as its working
+       * directory, where a relative path points at nothing.
+       */
+      localWorker:
+        env.CHAT_CODEX_LLM_MCP_ENTRY === undefined
+          ? undefined
+          : resolve(env.CHAT_CODEX_LLM_MCP_ENTRY),
     },
     toolApprovalSecret: env.CHAT_TOOL_APPROVAL_SECRET,
   };

@@ -1,26 +1,14 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "extends": [
-    "//"
-  ],
-  "tags": [
-    "chat",
-    "chat-server"
-  ],
+  "extends": ["//"],
+  "tags": ["chat", "chat-server"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
     "dev": {
-      "dependsOn": [
-        "^build",
-        "build"
-      ],
+      "dependsOn": ["^build", "build"],
       "passThroughEnv": [
         "PATH",
         "CHAT_API_PORT",
@@ -43,6 +31,7 @@
         "CHAT_CODEX_MODEL",
         "CHAT_CODEX_TIMEOUT_MS",
         "CHAT_CODEX_MAX_WORKSPACES",
+        "CHAT_CODEX_LLM_MCP_ENTRY",
         "CHAT_TOOL_APPROVAL_SECRET",
         "CHAT_CONNECTIONS_WEB_REDIRECT_URL",
         "CHAT_DATABASE_URL",
@@ -63,9 +52,7 @@
       ]
     },
     "start": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "cache": false,
       "persistent": true,
       "passThroughEnv": [
@@ -90,6 +77,7 @@
         "CHAT_CODEX_MODEL",
         "CHAT_CODEX_TIMEOUT_MS",
         "CHAT_CODEX_MAX_WORKSPACES",
+        "CHAT_CODEX_LLM_MCP_ENTRY",
         "CHAT_TOOL_APPROVAL_SECRET",
         "CHAT_CONNECTIONS_WEB_REDIRECT_URL",
         "CHAT_DATABASE_URL",
@@ -112,14 +100,10 @@
     "dev:types": {
       "cache": false,
       "persistent": true,
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "db:seed": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "cache": false,
       "passThroughEnv": [
         "CHAT_DATABASE_URL",
