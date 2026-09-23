@@ -41,8 +41,7 @@ add one `{ id, label, tagline }` entry to `src/content/products.json`. No route 
 slugs, a `# Title` on every page, the how-to/reference title patterns, and that every internal
 `/docs/...` link points at a page that exists. It runs inside `pnpm lint` and in CI's node job.
 
-**ESLint cannot enforce anything here** — the shared config includes `eslint-plugin-only-warn`, so
-every rule is a warning. Neither can `vite build`: `content.ts` runs at request time, not build
+**Oxlint cannot enforce anything here** — it reads source code, not the content registry. Neither can `vite build`: `content.ts` runs at request time, not build
 time, so a `throw` in it fails `dev` but not `build`. The `validate` script is the only gate.
 
 ## Language

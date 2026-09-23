@@ -242,7 +242,7 @@ describe("nest meta-tools", () => {
     const search = listed.tools.find((tool) => tool.name === "search_tools");
     const detail = (
       search?.inputSchema.properties as Record<string, Record<string, unknown>>
-    )["detail"];
+    )?.["detail"];
     expect(detail?.["type"]).toBe("string");
     expect(detail?.["enum"]).toEqual(["card", "schema"]);
     expect(detail?.["default"]).toBe("card");
@@ -260,7 +260,7 @@ describe("nest meta-tools", () => {
     const search = listed.tools.find((tool) => tool.name === "search_tools");
     const tags = (
       search?.inputSchema.properties as Record<string, Record<string, unknown>>
-    )["tags"];
+    )?.["tags"];
     expect(tags?.["type"]).toBe("array");
     expect(tags?.["items"]).toEqual({ type: "string" });
     expect(tags?.["default"]).toBeNull();

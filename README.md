@@ -41,7 +41,7 @@ so parity is a test result rather than a claim.
 | [products/chat/api](products/chat/api)                               | NestJS 12 chat backend, localized (`en`, `tr`)                                                                     |
 | [products/chat/web](products/chat/web)                               | TanStack Start + Mantine + Tailwind chat frontend, localized (`en`, `tr`)                                          |
 
-`packages/toolchain/eslint-config` and `packages/toolchain/typescript-config` are internal configuration packages.
+`packages/toolchain/oxlint-config` and `packages/toolchain/typescript-config` are internal configuration packages.
 `packages/lab/xml-lab` is an evidence harness with no shipping surface.
 
 The HTTP catalog (`packages/http/core`, both SDKs) and the local-source servers (`packages/cores/mcp-core`,

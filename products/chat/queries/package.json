@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "oxlint --deny-warnings",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,12 +27,12 @@
   },
   "devDependencies": {
     "@ai-sdk/react": "^4.0.100",
-    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/oxlint-config": "workspace:*",
     "@sk-mcp/typescript-config": "workspace:*",
     "@tanstack/react-query": "^5.96.5",
     "@types/react": "^19.2.18",
     "ai": "^7.0.97",
-    "eslint": "10.9.1",
+    "oxlint": "1.85.0",
     "react": "^19.2.8",
     "typescript": "7.0.2"
   }

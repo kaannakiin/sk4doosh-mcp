@@ -1,5 +1,6 @@
-import { config } from "@sk-mcp/eslint-config/base";
-import { casing } from "@sk-mcp/eslint-config/casing";
+import { defineConfig } from "oxlint";
+import { config } from "@sk-mcp/oxlint-config/base";
+import { casing } from "@sk-mcp/oxlint-config/casing";
 
 const platformMessage =
   "The platform layer is the @sk-mcp/file-core and node boundary; it may not import a layer above it.";
@@ -36,7 +37,10 @@ const serverPackages = [
  */
 const entrypoints = ["**/index.js", "**/server.js", "**/cli.js"];
 
-const restrict = (message, { paths = [], folders = [] }) => ({
+const restrict = (
+  message: string,
+  { paths = [], folders = [] }: { paths?: string[]; folders?: string[] },
+) => ({
   "no-restricted-imports": [
     "error",
     {
@@ -46,13 +50,13 @@ const restrict = (message, { paths = [], folders = [] }) => ({
   ],
 });
 
-export default [
-  ...config,
-  ...casing,
-  { ignores: ["dist/**"] },
-  {
-    files: ["test/fixtures/*.mjs"],
-    languageOptions: {
+export default defineConfig({
+  extends: [config],
+  ignorePatterns: ["dist/**"],
+  overrides: [
+    ...casing,
+    {
+      files: ["test/fixtures/*.mjs"],
       globals: {
         process: "readonly",
         console: "readonly",
@@ -60,39 +64,11 @@ export default [
         AbortController: "readonly",
       },
     },
-  },
-  {
-    files: ["src/platform/**/*.ts"],
-    rules: restrict(platformMessage, {
-      paths: parserPackages,
-      folders: ["**/grid/**", "**/metadata/**", "**/format/**", "**/tools/**"],
-    }),
-  },
-  {
-    files: ["src/grid/**/*.ts"],
-    rules: restrict(gridMessage, {
-      paths: formatPackages,
-      folders: ["**/metadata/**", "**/format/**", "**/tools/**"],
-    }),
-  },
-  {
-    files: ["src/metadata/**/*.ts"],
-    rules: restrict(metadataMessage, {
-      folders: ["**/format/**", "**/tools/**"],
-    }),
-  },
-  {
-    files: ["src/format/**/*.ts"],
-    rules: restrict(formatMessage, { folders: ["**/tools/**"] }),
-  },
-  {
-    files: ["src/regex-worker.ts"],
-    rules: {
-      "no-console": "error",
-      ...restrict(workerMessage, {
-        paths: [...serverPackages, ...formatPackages],
+    {
+      files: ["src/platform/**/*.ts"],
+      rules: restrict(platformMessage, {
+        paths: parserPackages,
         folders: [
-          "**/platform/**",
           "**/grid/**",
           "**/metadata/**",
           "**/format/**",
@@ -100,5 +76,38 @@ export default [
         ],
       }),
     },
-  },
-];
+    {
+      files: ["src/grid/**/*.ts"],
+      rules: restrict(gridMessage, {
+        paths: formatPackages,
+        folders: ["**/metadata/**", "**/format/**", "**/tools/**"],
+      }),
+    },
+    {
+      files: ["src/metadata/**/*.ts"],
+      rules: restrict(metadataMessage, {
+        folders: ["**/format/**", "**/tools/**"],
+      }),
+    },
+    {
+      files: ["src/format/**/*.ts"],
+      rules: restrict(formatMessage, { folders: ["**/tools/**"] }),
+    },
+    {
+      files: ["src/regex-worker.ts"],
+      rules: {
+        "no-console": "error",
+        ...restrict(workerMessage, {
+          paths: [...serverPackages, ...formatPackages],
+          folders: [
+            "**/platform/**",
+            "**/grid/**",
+            "**/metadata/**",
+            "**/format/**",
+            "**/tools/**",
+          ],
+        }),
+      },
+    },
+  ],
+});

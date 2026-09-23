@@ -19,7 +19,7 @@ export type QuotedIdentifier = string & { readonly [identifierBrand]: true };
 /**
  * Guard: the only sanctioned way to mint `SqlText`. It belongs to the dialect
  * layer alone — a product package must keep it out of its tool surface, which
- * `@sk-mcp/eslint-config` enforces per package with `importNames`.
+ * each product package's `oxlint.config.ts` enforces with `importNames`.
  */
 export function sqlText(text: string): SqlText {
   return text as SqlText;

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "start": "node dist/main.js",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -14,10 +14,10 @@
   },
   "devDependencies": {
     "@sk-mcp/core": "workspace:*",
-    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/oxlint-config": "workspace:*",
     "@sk-mcp/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
-    "eslint": "10.9.1",
+    "oxlint": "1.85.0",
     "typescript": "7.0.2"
   }
 }

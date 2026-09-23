@@ -1,11 +1,12 @@
-import { config } from "@sk-mcp/eslint-config/base";
+import { defineConfig } from "oxlint";
+import { config } from "@sk-mcp/oxlint-config/base";
 
-export default [
-  ...config,
-  { ignores: ["local/**"] },
-  {
-    files: ["test/probes/**/*.mjs", "src/**/*.mjs", "collect-evidence.mjs"],
-    languageOptions: {
+export default defineConfig({
+  extends: [config],
+  ignorePatterns: ["dist/**", "local/**"],
+  overrides: [
+    {
+      files: ["test/probes/**/*.mjs", "src/**/*.mjs", "collect-evidence.mjs"],
       globals: {
         AbortController: "readonly",
         Buffer: "readonly",
@@ -21,5 +22,5 @@ export default [
         setTimeout: "readonly",
       },
     },
-  },
-];
+  ],
+});

@@ -9,6 +9,6 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "vite.config.ts", "eslint.config.js"],
+  "include": ["src", "vite.config.ts", "oxlint.config.ts"],
   "exclude": ["node_modules", "dist", ".tanstack"]
 }

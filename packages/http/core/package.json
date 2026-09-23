@@ -14,18 +14,18 @@
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "bench:search": "pnpm run build && node --expose-gc bench/search.mjs",
     "dev": "tsc --watch",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "oxlint --deny-warnings",
     "check-types": "tsc -p tsconfig.test.json",
     "test": "vitest run"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^16.0.1",
-    "@sk-mcp/eslint-config": "workspace:*",
+    "@sk-mcp/oxlint-config": "workspace:*",
     "@sk-mcp/spec": "workspace:*",
     "@sk-mcp/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
-    "eslint": "10.9.1",
     "json-schema-to-typescript": "^16.0.0",
+    "oxlint": "1.85.0",
     "prettier": "3.9.6",
     "typescript": "7.0.2",
     "vitest": "^3.2.4"

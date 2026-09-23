@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "products/**"
-      - "packages/toolchain/eslint-config/**"
+      - "packages/toolchain/oxlint-config/**"
       - "packages/toolchain/typescript-config/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -14,7 +14,7 @@ on:
   pull_request:
     paths:
       - "products/**"
-      - "packages/toolchain/eslint-config/**"
+      - "packages/toolchain/oxlint-config/**"
       - "packages/toolchain/typescript-config/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"

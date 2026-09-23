@@ -137,7 +137,7 @@ bağımlılık gerektirmez.
   metin yeniden transkripsiyonla değiştiyse `stale_cursor` döner, içerik sessizce atlanmaz.
 
 - **Sunucu ağa çıkmaz.** `fetch`, `node:http`, `node:net` ve kardeşleri `src/` içinde lint ile
-  yasaklıdır ve yasak her katmana ayrı ayrı dokunmuştur — flat config'de sonraki bir blok
+  yasaklıdır ve yasak her katmana ayrı ayrı dokunmuştur — oxlint'te sonraki bir override
   `no-restricted-imports`'u birleştirmeden eziyor, tek bir blok sessizce uygulanmaz hale gelirdi.
 
 - **Platform desteği dar.** Motor `darwin-x64` binary'si yayımlamıyor ve wasm fallback'i yayımlanmamış.

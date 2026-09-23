@@ -1,3 +1,5 @@
+import type { OxlintOverride } from "oxlint";
+
 const skMcpPattern = {
   group: ["@sk-mcp/*"],
   message:
@@ -8,17 +10,14 @@ const skMcpPattern = {
  * Guard: blocks the chat product line from importing sk-mcp product packages.
  * `@sk-mcp/sdk-nestjs` is on zod 3 while `@chat/contracts` is on zod 4; two zod
  * majors in one process make `instanceof ZodError` and schema identity fail
- * silently. Scoped to `src/**` so `eslint.config.js` and `tsconfig.json` can
+ * silently. Scoped to `src/**` so `oxlint.config.ts` and `tsconfig.json` can
  * still consume the shared toolchain packages.
  */
-export const chat = [
+export const chat: OxlintOverride[] = [
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-restricted-imports": [
-        "error",
-        { patterns: [skMcpPattern] },
-      ],
+      "no-restricted-imports": ["error", { patterns: [skMcpPattern] }],
     },
   },
 ];
@@ -34,11 +33,11 @@ export const chat = [
  * subpaths only: the barrel would pull every domain into the module graph,
  * which `@chat/api` pays for at runtime since it ships unbundled.
  */
-export const chatApp = [
+export const chatApp: OxlintOverride[] = [
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-restricted-imports": [
+      "no-restricted-imports": [
         "error",
         {
           paths: [
@@ -117,12 +116,12 @@ const fetchGlobal = {
  * `node:https`. The rule covers the directories named here and nothing else: an
  * outbound client added elsewhere is outside it until its directory is added.
  */
-export const chatUntrustedHttp = [
+export const chatUntrustedHttp: OxlintOverride[] = [
   {
     files: ["src/connections/**/*.ts"],
     rules: {
       "no-restricted-globals": ["error", fetchGlobal],
-      "@typescript-eslint/no-restricted-imports": [
+      "no-restricted-imports": [
         "error",
         { paths: [undiciPath, oauthPath], patterns: socketPatterns },
       ],
@@ -131,7 +130,7 @@ export const chatUntrustedHttp = [
   {
     files: ["src/connections/oauth-client.ts"],
     rules: {
-      "@typescript-eslint/no-restricted-imports": [
+      "no-restricted-imports": [
         "error",
         { paths: [undiciPath], patterns: socketPatterns },
       ],
@@ -141,7 +140,7 @@ export const chatUntrustedHttp = [
     files: ["src/connections/guarded-http.ts"],
     rules: {
       "no-restricted-globals": "off",
-      "@typescript-eslint/no-restricted-imports": "off",
+      "no-restricted-imports": "off",
     },
   },
 ];
