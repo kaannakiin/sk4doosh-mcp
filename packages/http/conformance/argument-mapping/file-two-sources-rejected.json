@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "iki kaynak birden reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": "a",
+        "base64": "AA=="
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

@@ -28,14 +28,10 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersRead"
-      ],
+      "policies": ["OrdersRead"],
       "imperative": false
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "search_orders",
@@ -56,9 +52,7 @@
           }
         }
       },
-      "required": [
-        "result"
-      ],
+      "required": ["result"],
       "$defs": {
         "Order": {
           "type": "object",
@@ -76,9 +70,7 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersRead"
-      ],
+      "policies": ["OrdersRead"],
       "imperative": false
     }
   }

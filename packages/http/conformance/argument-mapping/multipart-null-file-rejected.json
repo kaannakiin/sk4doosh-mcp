@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "null dosya alani reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": null
+    }
+  },
+  "expected": {
+    "error": "null_not_allowed"
+  }
+}

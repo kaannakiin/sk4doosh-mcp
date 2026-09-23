@@ -1,0 +1,14 @@
+{
+  "kind": "error-mapping",
+  "description": "yetkisiz ref bulunamayanla ayni mesaji verir; hangi ref'in var oldugu yoklanamaz",
+  "input": {
+    "sdkError": "file_unresolved",
+    "field": "attachment",
+    "reason": "forbidden"
+  },
+  "expected": {
+    "error": "file_unresolved",
+    "message": "File argument 'attachment' names a ref that could not be resolved. Retrying with the same ref will not help.",
+    "retryable": false
+  }
+}

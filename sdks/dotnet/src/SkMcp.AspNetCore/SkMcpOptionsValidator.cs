@@ -26,6 +26,14 @@ internal sealed class SkMcpOptionsValidator : IValidateOptions<SkMcpOptions>
         {
             failures.Add("Visibility.ProbeConcurrency must be at least 1.");
         }
+        if (options.Invoke.MaxInlineFileBytes < 0)
+        {
+            failures.Add("Invoke.MaxInlineFileBytes must be zero or positive.");
+        }
+        if (options.Invoke.MaxFileBytes < 1)
+        {
+            failures.Add("Invoke.MaxFileBytes must be at least 1.");
+        }
         if (options.Invoke.MaxResponseBytes < 1)
         {
             failures.Add("Invoke.MaxResponseBytes must be at least 1.");

@@ -1,0 +1,20 @@
+{
+  "kind": "argument-mapping",
+  "description": "text/plain govde kok dizeyi oldugu gibi tasir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/notes",
+      "bodyRoot": "body",
+      "contentType": "text/plain"
+    },
+    "arguments": {
+      "body": "satir 1\nsatır 2"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/notes",
+    "contentType": "text/plain",
+    "bodyText": "satir 1\nsatır 2"
+  }
+}

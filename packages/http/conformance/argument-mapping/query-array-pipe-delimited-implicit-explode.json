@@ -6,7 +6,13 @@
       "method": "GET",
       "route": "/items",
       "parameters": [
-        { "name": "tag", "in": "query", "type": "string", "array": true, "style": "pipeDelimited" }
+        {
+          "name": "tag",
+          "in": "query",
+          "type": "string",
+          "array": true,
+          "style": "pipeDelimited"
+        }
       ]
     },
     "arguments": { "tag": ["a", "b"] }

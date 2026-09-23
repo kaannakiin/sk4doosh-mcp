@@ -1,0 +1,41 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos dosya dizisi parca yazmaz",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title", "files"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "files",
+            "type": "file",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "title": "t",
+      "files": []
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "title",
+        "value": "t"
+      }
+    ]
+  }
+}

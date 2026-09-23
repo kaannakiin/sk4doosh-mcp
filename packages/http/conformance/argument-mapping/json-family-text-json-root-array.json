@@ -1,0 +1,20 @@
+{
+  "kind": "argument-mapping",
+  "description": "text/json govde kokunde dizi tasir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/batch",
+      "bodyRoot": "body",
+      "contentType": "text/json"
+    },
+    "arguments": {
+      "body": [1, 2]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/batch",
+    "contentType": "text/json",
+    "bodyJson": [1, 2]
+  }
+}

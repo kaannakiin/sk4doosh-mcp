@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "resolver bagli degilse ref bilinmeyen anahtardir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "ref": "att-1"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

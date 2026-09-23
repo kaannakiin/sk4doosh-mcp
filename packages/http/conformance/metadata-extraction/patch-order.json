@@ -30,9 +30,7 @@
           "type": "integer"
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "additionalProperties": false
     },
     "annotations": {

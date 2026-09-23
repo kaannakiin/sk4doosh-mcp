@@ -6,12 +6,14 @@ import type {
 } from "@sk-mcp/core";
 import { callTool } from "./mcp.js";
 
-export type ScenarioName = "smoke" | "validation-retry" | "error-envelope";
+export type ScenarioName =
+  "smoke" | "validation-retry" | "error-envelope" | "upload";
 
 export interface ScenarioOptions {
   readonly tool?: string;
   readonly query?: string;
   readonly argumentsJson: string;
+  readonly user?: string;
 }
 
 export class SetupFailure extends Error {}
@@ -31,6 +33,8 @@ interface SearchResponse {
 
 interface InputSchemaProperty {
   readonly type?: string;
+  readonly properties?: Readonly<Record<string, unknown>>;
+  readonly oneOf?: readonly unknown[];
 }
 
 interface InputSchema {
@@ -116,6 +120,9 @@ const sdkErrorCodes: ReadonlySet<string> = new Set([
   "invalid_type",
   "unknown_tool",
   "not_invocable",
+  "invalid_file_argument",
+  "file_too_large",
+  "file_unresolved",
 ]);
 
 interface ChecklistRow {
@@ -443,6 +450,129 @@ export async function runErrorEnvelope(
   }
 }
 
+function fileFieldOf(schema: InputSchema): string | undefined {
+  return Object.entries(schema.properties ?? {}).find(
+    ([, property]) =>
+      property.type === "object" &&
+      property.oneOf !== undefined &&
+      property.properties?.["text"] !== undefined,
+  )?.[0];
+}
+
+interface UploadEcho {
+  readonly file?: { readonly name?: string; readonly size?: number } | null;
+}
+
+/**
+ * Drives one upload tool end to end: a text file, the caller's own ref when the schema offers
+ * one, a ref that resolves to nothing, and a malformed file argument. The last two must come back
+ * as SDK-side envelopes, never as a backend error the handler produced from an empty part.
+ */
+export async function runUpload(
+  client: Client,
+  options: ScenarioOptions,
+): Promise<void> {
+  const rows: ChecklistRow[] = [];
+  const query = options.query ?? "attach file";
+  const search = await callTool<SearchResponse>(client, "search_tools", {
+    query,
+  });
+  let picked: { name: string; loaded: LoadSuccess; field: string } | undefined;
+  for (const result of options.tool === undefined
+    ? search.parsed.results
+    : [{ name: options.tool }]) {
+    const loaded = await callTool<LoadResult>(client, "load_tool", {
+      name: result.name,
+    });
+    if (loaded.isError || isErrorEnvelope(loaded.parsed)) {
+      continue;
+    }
+    const field = fileFieldOf(loaded.parsed.inputSchema);
+    if (field !== undefined) {
+      picked = { name: result.name, loaded: loaded.parsed, field };
+      break;
+    }
+  }
+  if (picked === undefined) {
+    throw new SetupFailure(
+      `no tool with a file argument matched query "${query}"`,
+    );
+  }
+  const { name, loaded, field } = picked;
+  const base = fillMissingRequired(loaded.inputSchema, {
+    ...parseArguments(options.argumentsJson),
+    [field]: { text: "line,amount\n1,120\n", name: "rapor-ğ.csv" },
+  });
+
+  const text = await callTool<InvokeResult>(client, "invoke_tool", {
+    name,
+    arguments: base,
+  });
+  const textOk =
+    !text.isError &&
+    !isErrorEnvelope(text.parsed) &&
+    text.parsed.status < 300 &&
+    (text.parsed.body as UploadEcho | undefined)?.file?.name === "rapor-ğ.csv";
+  rows.push({
+    step: `${name} text file`,
+    ok: textOk,
+    detail: JSON.stringify(text.parsed),
+  });
+
+  const offersRef =
+    loaded.inputSchema.properties?.[field]?.properties?.["ref"] !== undefined;
+  if (offersRef && options.user !== undefined) {
+    const own = await callTool<InvokeResult>(client, "invoke_tool", {
+      name,
+      arguments: { ...base, [field]: { ref: `att-${options.user}-1` } },
+    });
+    const ownOk =
+      !own.isError && !isErrorEnvelope(own.parsed) && own.parsed.status < 300;
+    rows.push({
+      step: `${name} own ref`,
+      ok: ownOk,
+      detail: JSON.stringify(own.parsed),
+    });
+
+    const missing = await callTool<InvokeResult>(client, "invoke_tool", {
+      name,
+      arguments: { ...base, [field]: { ref: "att-nope" } },
+    });
+    const missingOk =
+      missing.isError &&
+      isErrorEnvelope(missing.parsed) &&
+      !isBackendMappedError(missing.parsed) &&
+      missing.parsed.error === "file_unresolved" &&
+      !missing.parsed.retryable;
+    rows.push({
+      step: `${name} unknown ref`,
+      ok: missingOk,
+      detail: JSON.stringify(missing.parsed),
+    });
+  }
+
+  const malformed = await callTool<InvokeResult>(client, "invoke_tool", {
+    name,
+    arguments: { ...base, [field]: { text: "a", base64: "AA==" } },
+  });
+  const malformedOk =
+    malformed.isError &&
+    isErrorEnvelope(malformed.parsed) &&
+    !isBackendMappedError(malformed.parsed) &&
+    malformed.parsed.error === "invalid_file_argument" &&
+    !containsLeak(malformed.parsed.message);
+  rows.push({
+    step: `${name} two sources`,
+    ok: malformedOk,
+    detail: JSON.stringify(malformed.parsed),
+  });
+
+  printChecklist(rows);
+  if (!rows.every((row) => row.ok)) {
+    throw new AssertionFailure(`upload scenario failed for "${name}"`);
+  }
+}
+
 export const scenarios: Readonly<
   Record<
     ScenarioName,
@@ -452,4 +582,5 @@ export const scenarios: Readonly<
   smoke: runSmoke,
   "validation-retry": runValidationRetry,
   "error-envelope": runErrorEnvelope,
+  upload: runUpload,
 };

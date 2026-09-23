@@ -1,0 +1,43 @@
+{
+  "kind": "metadata-extraction",
+  "description": "text/plain govde tek dize olarak body argumanina gider",
+  "input": {
+    "operationId": "AddNote",
+    "method": "POST",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "string"
+      },
+      "contentType": "text/plain"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "add_note",
+    "description": "Opens a ticket.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": ["body"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "error-mapping",
+  "description": "depolama gecici olarak erisilemezse cagri yeniden denenebilir",
+  "input": {
+    "sdkError": "file_unresolved",
+    "field": "attachment",
+    "reason": "unavailable"
+  },
+  "expected": {
+    "error": "file_unresolved",
+    "message": "File argument 'attachment' could not be resolved right now. Retry the call.",
+    "retryable": true
+  }
+}

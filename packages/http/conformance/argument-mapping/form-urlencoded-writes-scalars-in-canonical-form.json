@@ -1,0 +1,45 @@
+{
+  "kind": "argument-mapping",
+  "description": "urlencoded skalerleri query ile ayni kanonik bicimde yazar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title", "priority", "urgent", "ratio"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "priority",
+            "type": "integer"
+          },
+          {
+            "name": "urgent",
+            "type": "boolean"
+          },
+          {
+            "name": "ratio",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "title": "a b",
+      "priority": 3,
+      "urgent": true,
+      "ratio": 1.5
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "title=a%20b&priority=3&urgent=true&ratio=1.5"
+  }
+}

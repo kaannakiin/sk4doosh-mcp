@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "url-safe alfabe reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "base64": "-_8="
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

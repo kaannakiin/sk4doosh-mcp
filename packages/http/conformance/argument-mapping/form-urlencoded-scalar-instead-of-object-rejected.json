@@ -1,0 +1,38 @@
+{
+  "kind": "argument-mapping",
+  "description": "nesne alana skaler reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["address"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "address",
+            "type": "object",
+            "members": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "zip",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "address": "Izmir"
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

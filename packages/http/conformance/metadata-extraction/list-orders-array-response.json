@@ -23,14 +23,10 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersRead"
-      ],
+      "policies": ["OrdersRead"],
       "imperative": false
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "list_orders",
@@ -56,9 +52,7 @@
           }
         }
       },
-      "required": [
-        "result"
-      ]
+      "required": ["result"]
     },
     "annotations": {
       "readOnlyHint": true,
@@ -66,9 +60,7 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersRead"
-      ],
+      "policies": ["OrdersRead"],
       "imperative": false
     }
   }

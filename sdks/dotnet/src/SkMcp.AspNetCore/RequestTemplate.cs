@@ -38,6 +38,40 @@ public sealed record ParameterBinding(
     IReadOnlyList<ObjectMember>? Members = null,
     ObjectNotation Notation = ObjectNotation.Bracket);
 
+public enum FileSource { Text, Base64, Ref }
+
+public enum FormFieldKind { String, Integer, Number, Boolean, Object, File }
+
+/// <param name="Members">Non-null exactly when <paramref name="Kind"/> is <c>Object</c>.</param>
+/// <param name="MediaType">
+/// The descriptor's <c>contentMediaType</c> for a file field, the last default before
+/// <c>application/octet-stream</c>.
+/// </param>
+public sealed record FormField(
+    string Name, FormFieldKind Kind, bool IsArray = false,
+    IReadOnlyList<ObjectMember>? Members = null, string? MediaType = null);
+
+/// <summary>The typed fields of a form or multipart body, in the order the composer writes them.</summary>
+/// <remarks>In field mode the names are the body's wire fields; with a body root they are the root object's members.</remarks>
+public sealed record FormBinding(ObjectNotation Notation, IReadOnlyList<FormField> Fields);
+
+public static partial class MediaTypes
+{
+    public const string Json = "application/json";
+    public const string UrlEncoded = "application/x-www-form-urlencoded";
+    public const string Multipart = "multipart/form-data";
+    public const string Text = "text/plain";
+
+    [GeneratedRegex(@"^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*\+json$")]
+    private static partial Regex JsonSuffix();
+
+    /// <summary><c>application/json</c>, <c>text/json</c>, and every <c>+json</c> structured-syntax suffix type.</summary>
+    public static bool IsJson(string mediaType) =>
+        mediaType == Json || mediaType == "text/json" || JsonSuffix().IsMatch(mediaType);
+
+    public static bool IsForm(string mediaType) => mediaType is UrlEncoded or Multipart;
+}
+
 public sealed partial class RequestTemplate
 {
     private static readonly HashSet<string> ReservedHeaderNames =
@@ -108,13 +142,29 @@ public sealed partial class RequestTemplate
     /// </summary>
     public IReadOnlySet<string> RequiredFills { get; }
 
+    /// <summary><c>null</c> means <c>application/json</c>.</summary>
+    public string? ContentType { get; }
+
+    /// <summary>Non-null exactly when <see cref="ContentType"/> is a form or multipart type.</summary>
+    public FormBinding? Form { get; }
+
+    /// <summary>Non-null exactly when <see cref="Form"/> declares a file field.</summary>
+    public IReadOnlySet<FileSource>? FileSources { get; }
+
+    public static readonly IReadOnlySet<FileSource> DefaultFileSources =
+        new HashSet<FileSource> { FileSource.Text, FileSource.Base64 };
+
     private RequestTemplate(
         HttpMethod method, string routeTemplate, IReadOnlyList<ParameterBinding> parameters,
         bool hasBody, IReadOnlySet<string> bodyProperties, bool bodyAllowsAdditionalProperties,
         string? bodyRoot, IReadOnlyDictionary<string, string> bodyAliases,
         IReadOnlyDictionary<string, ArgumentFill> bodyFills, ArgumentFill? rootFill,
-        IReadOnlySet<string> requiredFills)
+        IReadOnlySet<string> requiredFills, string? contentType, FormBinding? form,
+        IReadOnlySet<FileSource>? fileSources)
     {
+        ContentType = contentType;
+        Form = form;
+        FileSources = fileSources;
         BodyRoot = bodyRoot;
         Method = method;
         RouteTemplate = routeTemplate;
@@ -317,7 +367,10 @@ public sealed partial class RequestTemplate
         IReadOnlyDictionary<string, string>? bodyAliases = null,
         IReadOnlyDictionary<string, ArgumentFill>? bodyFills = null,
         ArgumentFill? rootFill = null,
-        IReadOnlySet<string>? requiredFills = null)
+        IReadOnlySet<string>? requiredFills = null,
+        string? contentType = null,
+        FormBinding? form = null,
+        IReadOnlySet<FileSource>? fileSources = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(routeTemplate);
         parameters ??= [];
@@ -432,13 +485,131 @@ public sealed partial class RequestTemplate
             }
         }
 
+        AssertBodyEncoding(
+            hasBody, contentType, form, bodyRoot, bodyProperties, bodyAllowsAdditionalProperties,
+            bodyFills, fileSources);
+        string? effective = hasBody && contentType is not null && contentType != MediaTypes.Json
+            ? contentType
+            : null;
+        FormBinding? keptForm = effective is null ? null : form;
+        IReadOnlySet<FileSource>? keptSources =
+            keptForm?.Fields.Any(field => field.Kind == FormFieldKind.File) == true
+                ? fileSources ?? DefaultFileSources
+                : null;
+
         return new RequestTemplate(
             method, normalizedRoute, parameters.ToArray(), hasBody, body,
             bodyAllowsAdditionalProperties, bodyRoot,
             bodyAliases ?? new Dictionary<string, string>(StringComparer.Ordinal),
             bodyFills ?? new Dictionary<string, ArgumentFill>(StringComparer.Ordinal),
             rootFill,
-            requiredFills ?? new HashSet<string>(StringComparer.Ordinal));
+            requiredFills ?? new HashSet<string>(StringComparer.Ordinal),
+            effective, keptForm, keptSources);
+    }
+
+    private static SkMcpTemplateException BodyShape(string message) =>
+        new(SkMcpTemplateException.UnsupportedBodyShape, message);
+
+    /// <summary>Every rejection a non-JSON body can carry that the binding types cannot already express.</summary>
+    /// <remarks>
+    /// A form body is closed and typed: a free-form one has no field list to encode from, and a
+    /// hidden value in a file or object field would need a second type gate for a shape no fill is
+    /// declared for. A file in a urlencoded body has no wire form at all. The twin is
+    /// <c>assertBodyEncoding</c> in packages/http/core/src/request-template.ts.
+    /// </remarks>
+    private static void AssertBodyEncoding(
+        bool hasBody, string? contentType, FormBinding? form, string? bodyRoot,
+        IReadOnlyCollection<string>? bodyProperties, bool bodyAllowsAdditionalProperties,
+        IReadOnlyDictionary<string, ArgumentFill>? bodyFills, IReadOnlySet<FileSource>? fileSources)
+    {
+        string type = contentType ?? MediaTypes.Json;
+        if (!hasBody)
+        {
+            if (form is not null)
+            {
+                throw BodyShape("A template without a body cannot declare form fields.");
+            }
+            return;
+        }
+        if (MediaTypes.IsJson(type))
+        {
+            if (form is not null)
+            {
+                throw BodyShape($"A {type} body cannot declare form fields.");
+            }
+            return;
+        }
+        if (type == MediaTypes.Text)
+        {
+            if (bodyRoot is null || form is not null)
+            {
+                throw BodyShape("A text/plain body is a single string and takes the body root argument.");
+            }
+            return;
+        }
+        if (!MediaTypes.IsForm(type))
+        {
+            throw BodyShape($"No writer exists for a {type} body.");
+        }
+        if (form is null || form.Fields.Count == 0)
+        {
+            throw BodyShape($"A {type} body declares no typed fields.");
+        }
+        if (bodyAllowsAdditionalProperties)
+        {
+            throw BodyShape($"A {type} body cannot be free-form; declare its fields.");
+        }
+        HashSet<string> names = new(StringComparer.Ordinal);
+        foreach (FormField field in form.Fields)
+        {
+            if (!names.Add(field.Name))
+            {
+                throw BodyShape($"The body declares two fields named '{field.Name}'.");
+            }
+            if (field.Kind == FormFieldKind.Object)
+            {
+                if (field.Members is not { Count: > 0 } members)
+                {
+                    throw BodyShape($"Field '{field.Name}' is an object but declares no members.");
+                }
+                HashSet<string> seen = new(StringComparer.Ordinal);
+                foreach (ObjectMember member in members)
+                {
+                    if (StructuralMemberName().IsMatch(member.Name))
+                    {
+                        throw BodyShape(
+                            $"Member '{field.Name}.{member.Name}' carries a name the notation reads as structure; rename it.");
+                    }
+                    if (!seen.Add(member.Name))
+                    {
+                        throw BodyShape($"Field '{field.Name}' declares two members named '{member.Name}'.");
+                    }
+                }
+            }
+            if (field.Kind == FormFieldKind.File && type == MediaTypes.UrlEncoded)
+            {
+                throw BodyShape(
+                    $"Field '{field.Name}' is a file, which only a multipart/form-data body can carry.");
+            }
+            if (field.Kind is FormFieldKind.File or FormFieldKind.Object
+                && bodyFills?.ContainsKey(field.Name) == true)
+            {
+                throw BodyShape(
+                    $"Field '{field.Name}' is a {field.Kind.ToString().ToLowerInvariant()} and cannot be hidden or filled.");
+            }
+        }
+        if (bodyRoot is null)
+        {
+            HashSet<string> declared = new(bodyProperties ?? [], StringComparer.Ordinal);
+            if (!declared.SetEquals(names))
+            {
+                throw BodyShape("The form fields do not name the body's properties.");
+            }
+        }
+        if (form.Fields.Any(field => field.Kind == FormFieldKind.File) && fileSources is { Count: 0 })
+        {
+            throw BodyShape("A file field needs at least one file source.");
+        }
     }
 
     [GeneratedRegex(@"\{([^}:?*]+)[^}]*\}")]

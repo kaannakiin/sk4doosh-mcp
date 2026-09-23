@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "kok modda nesne olmayan govde reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "bodyRoot": "body",
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "note",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "body": "n"
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

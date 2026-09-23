@@ -21,14 +21,10 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersWrite"
-      ],
+      "policies": ["OrdersWrite"],
       "imperative": false
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "rebuild_index",
@@ -44,9 +40,7 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersWrite"
-      ],
+      "policies": ["OrdersWrite"],
       "imperative": false
     }
   }

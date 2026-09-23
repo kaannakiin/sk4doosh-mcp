@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "kaynaksiz dosya argumani reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "name": "a.txt"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

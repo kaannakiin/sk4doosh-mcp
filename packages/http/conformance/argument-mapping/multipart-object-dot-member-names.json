@@ -1,0 +1,53 @@
+{
+  "kind": "argument-mapping",
+  "description": "dot notation multipart parca adinda da gecerlidir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["address"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "address",
+            "type": "object",
+            "members": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "zip",
+                "type": "string"
+              }
+            ]
+          }
+        ],
+        "notation": "dot"
+      }
+    },
+    "arguments": {
+      "address": {
+        "city": "Izmir",
+        "zip": "35"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "address.city",
+        "value": "Izmir"
+      },
+      {
+        "name": "address.zip",
+        "value": "35"
+      }
+    ]
+  }
+}

@@ -15,18 +15,13 @@
           "type": "object",
           "properties": {
             "name": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": ["string", "null"]
             }
           }
         }
       }
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "get_me",
@@ -41,10 +36,7 @@
       "type": "object",
       "properties": {
         "name": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         }
       }
     },

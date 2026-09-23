@@ -94,6 +94,9 @@ export const demoVerifier: OAuthTokenVerifier = {
       scopes: scope.length > 0 ? scope.split(" ") : [],
       expiresAt: payload.exp,
       resource: new URL(audience),
+      ...(typeof payload.sub === "string"
+        ? { extra: { sub: payload.sub } }
+        : {}),
     };
   },
 };

@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "skaler dizi ayni ada tekrarlanan parcalar yazar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["tags"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "tags",
+            "type": "string",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "tags": ["x", "y"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "tags",
+        "value": "x"
+      },
+      {
+        "name": "tags",
+        "value": "y"
+      }
+    ]
+  }
+}

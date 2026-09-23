@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
+using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Errors;
 using SkMcp.AspNetCore.Requests;
 using SkMcp.AspNetCore.Visibility.Probe;
@@ -18,7 +19,20 @@ internal sealed record ProbeOutcome(int Status, bool ShortCircuited);
 internal sealed class SkMcpDispatchTimeout()
     : Exception("sk-mcp: the backend did not answer within the invoke deadline.");
 
-internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFactory requests)
+/// <summary>Raised when a <c>ref</c> was not delivered; the meta-tool layer turns it into an envelope.</summary>
+internal sealed class SkMcpFileRefused(string field, string reason, int limit)
+    : Exception($"sk-mcp: file argument '{field}' was refused ({reason}).")
+{
+    public string Field { get; } = field;
+    public string Reason { get; } = reason;
+    public int Limit { get; } = limit;
+}
+
+/// <summary>What an invocation's body needs beyond its arguments: the budgets and whom a <c>ref</c> is resolved for.</summary>
+internal sealed record DispatchFiles(InvokeTarget Target, int MaxInlineFileBytes, int MaxFileBytes);
+
+internal sealed class SkMcpDispatcher(
+    PipelineHolder holder, SyntheticRequestFactory requests, IServiceProvider services)
 {
     private static readonly IReadOnlyDictionary<string, string> NoHeaders =
         new Dictionary<string, string>();
@@ -26,17 +40,20 @@ internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFac
     public Task<DispatchResult> DispatchAsync(
         HttpMethod method, string path, HttpRequest? outerRequest, CancellationToken cancellationToken)
     {
-        return DispatchAsync(method, new ComposedRequest(path, NoHeaders, null), outerRequest, cancellationToken, default);
+        return DispatchAsync(method, new ComposedRequest(path, NoHeaders, null), outerRequest, cancellationToken, default, null);
     }
 
     public Task<DispatchResult> DispatchAsync(
         RequestTemplate template, JsonElement arguments, HttpRequest? outerRequest,
         CancellationToken cancellationToken,
         IReadOnlyDictionary<string, JsonElement>? deferred = null,
-        TimeSpan deadline = default)
+        TimeSpan deadline = default,
+        DispatchFiles? files = null)
     {
-        ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred);
-        return DispatchAsync(template.Method, composed, outerRequest, cancellationToken, deadline);
+        ComposedRequest composed = RequestComposer.Compose(
+            template, arguments, deferred,
+            files is null ? null : new ComposeLimits(files.MaxInlineFileBytes));
+        return DispatchAsync(template.Method, composed, outerRequest, cancellationToken, deadline, files);
     }
 
     public async Task<ProbeOutcome> ProbeAsync(
@@ -59,9 +76,58 @@ internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFac
         ?? throw new InvalidOperationException(
             "sk-mcp pipeline is not captured. Call app.UseSkMcpCapture() before routing and start the host first.");
 
+    private Func<RefFile, string, ValueTask<ResolvedFile>> RefResolver(
+        HttpRequest? outerRequest, DispatchFiles? files, CancellationToken cancellationToken)
+    {
+        return async (file, field) =>
+        {
+            Files.ISkMcpFileResolver resolver = services.GetService(typeof(Files.ISkMcpFileResolver))
+                as Files.ISkMcpFileResolver
+                ?? throw new InvalidOperationException(
+                    $"sk-mcp: file argument '{field}' is a ref but no file resolver is registered.");
+            if (files is null)
+            {
+                throw new InvalidOperationException(
+                    $"sk-mcp: file argument '{field}' is a ref but the call carries no file budget.");
+            }
+            int limit = files.MaxFileBytes;
+            Files.FileResolution outcome = await resolver.ResolveAsync(
+                new Files.FileResolveRequest(
+                    file.Ref, field, files.Target, CallerFactory.From(outerRequest?.HttpContext), limit),
+                cancellationToken).ConfigureAwait(false);
+            switch (outcome)
+            {
+                case Files.FileResolution.Refused refused:
+                    throw new SkMcpFileRefused(field, refused.Reason switch
+                    {
+                        Files.FileRefusal.NotFound => "not_found",
+                        Files.FileRefusal.Forbidden => "forbidden",
+                        Files.FileRefusal.TooLarge => "too_large",
+                        _ => "unavailable",
+                    }, limit);
+                case Files.FileResolution.Resolved resolved:
+                    if (resolved.Bytes.Length > limit)
+                    {
+                        throw new SkMcpFileRefused(field, "too_large", limit);
+                    }
+                    return new ResolvedFile(
+                        resolved.Bytes,
+                        file.FileName ?? (RequestBodyEncoder.IsUsableFileName(resolved.FileName) ? resolved.FileName! : file.FallbackFileName),
+                        file.MediaType ?? (resolved.MediaType is { } type && RequestBodyEncoder.MediaTypeGrammar().IsMatch(type) ? type : file.FallbackMediaType));
+                default:
+                    throw new InvalidOperationException("sk-mcp: the file resolver returned an unknown resolution.");
+            }
+        };
+    }
+
+    /// <remarks>
+    /// Guard: the deadline is armed before any <c>ref</c> is resolved, so a resolver that hangs is
+    /// bounded exactly like a backend that hangs. Resolving during the validating composition would
+    /// let it outlive the call it serves.
+    /// </remarks>
     private async Task<DispatchResult> DispatchAsync(
         HttpMethod method, ComposedRequest composed, HttpRequest? outerRequest,
-        CancellationToken cancellationToken, TimeSpan deadline)
+        CancellationToken cancellationToken, TimeSpan deadline, DispatchFiles? files)
     {
         RequestDelegate pipeline = Pipeline();
 
@@ -70,6 +136,21 @@ internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFac
         if (deadline > TimeSpan.Zero)
         {
             linked.CancelAfter(deadline);
+        }
+
+        WrittenBody? written = null;
+        if (composed.Content is { } content)
+        {
+            try
+            {
+                written = await BodyWriter.WriteAsync(content, RefResolver(outerRequest, files, linked.Token))
+                    .AsTask().WaitAsync(linked.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (linked.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw new SkMcpDispatchTimeout();
+            }
         }
 
         SyntheticRequest synthetic = requests.Create(outerRequest, linked.Token);
@@ -94,11 +175,11 @@ internal sealed class SkMcpDispatcher(PipelineHolder holder, SyntheticRequestFac
             {
                 context.Request.Headers[name] = value;
             }
-            if (composed.Body is not null)
+            if (written is not null)
             {
-                context.Request.Body = new MemoryStream(composed.Body);
-                context.Request.ContentLength = composed.Body.Length;
-                context.Request.ContentType = "application/json; charset=utf-8";
+                context.Request.Body = new MemoryStream(written.Bytes);
+                context.Request.ContentLength = written.Bytes.Length;
+                context.Request.ContentType = written.ContentType;
             }
 
             MemoryStream responseBody = new();

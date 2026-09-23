@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "kaynak degeri dize olmak zorundadir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": 5
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "dosya dizisine tek dosya reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["files"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "files",
+            "type": "file",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "files": {
+        "text": "a"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

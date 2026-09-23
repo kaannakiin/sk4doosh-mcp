@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "nesne alan bracket notation ile uye anahtari yazar; yapi karakteri ham kalir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["address"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "address",
+            "type": "object",
+            "members": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "zip",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "address": {
+        "zip": "35",
+        "city": "İzmir"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "address[city]=%C4%B0zmir&address[zip]=35"
+  }
+}

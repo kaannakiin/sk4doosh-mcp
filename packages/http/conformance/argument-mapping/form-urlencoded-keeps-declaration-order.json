@@ -1,0 +1,35 @@
+{
+  "kind": "argument-mapping",
+  "description": "alanlar ajanin anahtar sirasiyla degil beyan sirasiyla yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["title", "priority"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "priority",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "priority": 1,
+      "title": "t"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "title=t&priority=1"
+  }
+}

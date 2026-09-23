@@ -41,6 +41,10 @@ public sealed class McpToolAttribute : Attribute, IMcpSelectionMetadata
     /// </remarks>
     public string[]? Tags { get; set; }
 
+    /// <summary>The body's media type, replacing the one discovery chooses.</summary>
+    /// <remarks>It must be one the endpoint accepts; a declaration the backend would answer with 415 drops the endpoint.</remarks>
+    public string? Consumes { get; set; }
+
     public bool ReadOnly
     {
         get => _readOnly ?? false;

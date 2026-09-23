@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 import { SkMcpModule } from "@sk-mcp/sdk-nestjs";
+import { AttachmentsController } from "./attachments.controller.js";
+import { DemoAttachmentResolver } from "./attachments.js";
 import { AuthController } from "./auth.controller.js";
 import {
   AdminRoleGuard,
@@ -26,12 +28,18 @@ import { OrdersController } from "./orders.controller.js";
         verifier: demoVerifier,
       };
       options.visibility.tier = "probe";
+      options.files.resolver = new DemoAttachmentResolver();
       if (process.env["DEMOAPI_QUERY_GROUPING"] === "group") {
         options.query.grouping = "group";
       }
     }),
   ],
-  controllers: [AuthController, OrdersController, McpController],
+  controllers: [
+    AuthController,
+    OrdersController,
+    AttachmentsController,
+    McpController,
+  ],
   providers: [
     DemoOAuthProvider,
     AdminRoleGuard,

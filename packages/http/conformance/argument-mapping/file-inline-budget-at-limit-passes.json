@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "limite esit bayt kabul edilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "base64": "AQID"
+      }
+    },
+    "maxInlineFileBytes": 3
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "attachment",
+        "file": {
+          "base64": "AQID",
+          "byteLength": 3,
+          "filename": "attachment",
+          "mediaType": "application/octet-stream"
+        }
+      }
+    ]
+  }
+}

@@ -7,7 +7,18 @@ using SkMcp.AspNetCore.Spec;
 namespace SkMcp.AspNetCore.Requests;
 
 internal sealed record ComposedRequest(
-    string PathAndQuery, IReadOnlyDictionary<string, string> Headers, byte[]? Body);
+    string PathAndQuery, IReadOnlyDictionary<string, string> Headers, ComposedBody? Content)
+{
+    /// <summary>The body bytes of a body that needs no resolution; a multipart body is written by the dispatcher.</summary>
+    public byte[]? Body => Content switch
+    {
+        null => null,
+        JsonBody json => json.Utf8,
+        TextBody text => Encoding.UTF8.GetBytes(text.Value),
+        UrlEncodedBody form => Encoding.ASCII.GetBytes(form.Encoded),
+        _ => throw new InvalidOperationException("A multipart body has no bytes until its parts are written."),
+    };
+}
 
 internal static class RequestComposer
 {
@@ -18,10 +29,12 @@ internal static class RequestComposer
     /// that invocation, so a source that is not constant cannot make validation and dispatch
     /// disagree.
     /// </param>
+    /// <param name="limits">The invoke budgets the composer enforces itself.</param>
     public static ComposedRequest Compose(
         RequestTemplate template,
         JsonElement arguments,
-        IReadOnlyDictionary<string, JsonElement>? deferred = null)
+        IReadOnlyDictionary<string, JsonElement>? deferred = null,
+        ComposeLimits? limits = null)
     {
         Dictionary<string, JsonElement> args = new(StringComparer.Ordinal);
         if (arguments.ValueKind == JsonValueKind.Object)
@@ -150,21 +163,17 @@ internal static class RequestComposer
             headers[p.Name] = value;
         }
 
-        byte[]? body = null;
+        JsonElement? bodyValue = null;
         if (template.BodyRoot is { } root)
         {
             if (template.RootFill is { } rootFill)
             {
-                JsonElement? filled = ResolveFill(
+                bodyValue = ResolveFill(
                     rootFill, root, template.RequiredFills.Contains(root), deferred, true);
-                if (filled is { } value)
-                {
-                    body = Encoding.UTF8.GetBytes(value.GetRawText());
-                }
             }
             else if (wire.TryGetValue(root, out JsonElement rootValue))
             {
-                body = Encoding.UTF8.GetBytes(rootValue.GetRawText());
+                bodyValue = rootValue;
             }
         }
         else if (template.HasBody)
@@ -178,11 +187,12 @@ internal static class RequestComposer
                     bodyObject[name] = JsonNode.Parse(element.GetRawText());
                 }
             }
-            body = Encoding.UTF8.GetBytes(bodyObject.ToJsonString());
+            bodyValue = JsonSerializer.Deserialize<JsonElement>(bodyObject.ToJsonString());
         }
 
         string pathAndQuery = query.Length > 0 ? $"{path}?{query}" : path;
-        return new ComposedRequest(pathAndQuery, headers, body);
+        return new ComposedRequest(
+            pathAndQuery, headers, RequestBodyEncoder.Encode(template, bodyValue, limits));
     }
 
     /// <summary>
@@ -475,7 +485,7 @@ internal static class RequestComposer
         _ => "a value that is not an object",
     };
 
-    private static string FormatScalar(JsonElement element, ParameterBinding parameter, string errorCode)
+    internal static string FormatScalar(JsonElement element, ParameterBinding parameter, string errorCode)
     {
         switch (parameter.Kind)
         {

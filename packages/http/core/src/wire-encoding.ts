@@ -1,0 +1,71 @@
+import { SkMcpArgumentError } from "./errors.js";
+import type { ObjectNotation, ParameterKind } from "./request-template.js";
+
+/**
+ * Renders a delimiter for the query string. The caller appends the result raw,
+ * never through {@link percentEncode}: the two languages' encoders disagree on
+ * `,` (`encodeURIComponent` leaves it, `Uri.EscapeDataString` escapes it to
+ * `%2C`), so encoding the delimiter would make the two SDKs emit different byte
+ * strings for the same input. A literal space is illegal in a URL, hence `%20`.
+ */
+export function separatorFor(delimiter: string): string {
+  return delimiter === " " ? "%20" : delimiter;
+}
+
+export function percentEncode(value: string): string {
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
+/**
+ * Guard: the structural character is appended raw, never through
+ * {@link percentEncode}, for {@link separatorFor}'s reason — both languages'
+ * encoders escape `[` and `]`, so encoding it would change what the backend's
+ * parser reads. The group name and the member name each go through `encode`
+ * on their own.
+ */
+export function memberKey(
+  group: string,
+  member: string,
+  notation: ObjectNotation,
+  encode: (value: string) => string,
+): string {
+  return notation === "dot"
+    ? `${encode(group)}.${encode(member)}`
+    : `${encode(group)}[${encode(member)}]`;
+}
+
+export function formatScalar(
+  value: unknown,
+  parameter: { readonly name: string; readonly kind: ParameterKind },
+  errorCode: "invalid_path_type" | "invalid_type",
+): string {
+  switch (parameter.kind) {
+    case "string":
+      if (typeof value === "string") {
+        return value;
+      }
+      break;
+    case "integer":
+      if (typeof value === "number" && Number.isSafeInteger(value)) {
+        return String(value);
+      }
+      break;
+    case "number":
+      if (typeof value === "number") {
+        return String(value);
+      }
+      break;
+    case "boolean":
+      if (typeof value === "boolean") {
+        return String(value);
+      }
+      break;
+  }
+  throw new SkMcpArgumentError(
+    errorCode,
+    `Argument '${parameter.name}' must be of type ${parameter.kind}.`,
+  );
+}

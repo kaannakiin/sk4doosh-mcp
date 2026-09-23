@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "satir sonu iceren base64 reddedilir; iki dilin gevsek cozuculeri esitlenir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "base64": "AQID\nAQID"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

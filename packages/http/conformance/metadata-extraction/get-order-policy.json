@@ -41,14 +41,10 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersRead"
-      ],
+      "policies": ["OrdersRead"],
       "imperative": false
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "get_order",
@@ -61,9 +57,7 @@
           "description": "Sipariş id'si"
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "additionalProperties": false
     },
     "outputSchema": {
@@ -89,9 +83,7 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersRead"
-      ],
+      "policies": ["OrdersRead"],
       "imperative": false
     }
   }

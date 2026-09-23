@@ -37,6 +37,11 @@ interface IMcpSelectionMetadata { bool Include { get; } }
 ```
 
 `IMcpSelectionMetadata` is public, so a host can attach selection through its own metadata type.
+`[McpTool(Consumes = "...")]` names a body media type discovery would not choose.
+
+File resolution is a service, not an option: register an `ISkMcpFileResolver` and file arguments
+offer `ref`. The budgets are `Invoke.MaxInlineFileBytes` and `Invoke.MaxFileBytes`; see
+[how to accept form bodies and file uploads](/docs/http-catalog/accept-form-and-file-uploads).
 
 Response types are read from ApiExplorer — `[ProducesResponseType(typeof(T), 200)]`, `Produces<T>()`
 or an action return type MVC can infer — so there is no `[McpTool]` field for them. NestJS has no
@@ -130,6 +135,8 @@ Selection markers:
   name?: string; prefix?: string; description?: string;
   body?: JsonSchemaObject;
   responses?: Record<string, NewableFunction | [NewableFunction] | { schema } | {}>;
+  consumes?: string;
+  files?: Record<string, { multiple?; required?; description?; mediaType? }>;
   readOnly?: boolean; destructive?: boolean; idempotent?: boolean;
 })
 @McpIgnore()
@@ -143,6 +150,9 @@ interface VisibilityDeclaration {
   readonly policies?: readonly string[];
 }
 ```
+
+`options.files.resolver` binds the file resolver, and `options.invoke.maxInlineFileBytes` and
+`options.invoke.maxFileBytes` are the budgets.
 
 Option fields and defaults are in
 [`options.ts`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/nestjs/src/options.ts).

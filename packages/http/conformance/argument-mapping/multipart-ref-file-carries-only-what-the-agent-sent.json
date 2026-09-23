@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "ref dosya yalniz ajanin gonderdigini tasir; ad ve tip cozumlemede belirlenir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      },
+      "fileSources": ["text", "base64", "ref"]
+    },
+    "arguments": {
+      "attachment": {
+        "ref": "att-1"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "attachment",
+        "file": {
+          "ref": "att-1"
+        }
+      }
+    ]
+  }
+}

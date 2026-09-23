@@ -17,6 +17,9 @@ import {
   type ObjectSchema,
 } from "./json-schema.js";
 import { createToolName } from "./naming.js";
+import { publishFileSchema } from "./file-argument.js";
+import type { FileOptions } from "./file-argument.js";
+import { multipartMediaType } from "./request-template.js";
 
 function describe(
   schema: JsonSchemaObject,
@@ -192,11 +195,27 @@ type InputSchema = Omit<ObjectSchema, "additionalProperties"> & {
   additionalProperties: boolean | JsonSchemaObject;
 };
 
+function withFileArguments(
+  body: JsonSchemaObject,
+  files: FileOptions | undefined,
+): JsonSchemaObject {
+  if (body.properties === undefined) {
+    return body;
+  }
+  const properties: Record<string, JsonSchemaObject> = {};
+  for (const [name, schema] of Object.entries(body.properties)) {
+    properties[name] = publishFileSchema(schema, name, files);
+  }
+  return { ...body, properties };
+}
+
 function buildInputSchema(
   endpoint: EndpointDescriptor,
   variant: ToolVariant | undefined,
   relief: CurationRelief | undefined,
+  files: FileOptions | undefined,
 ): InputSchema {
+  const multipart = endpoint.requestBody?.contentType === multipartMediaType;
   const parameters = endpoint.parameters ?? [];
   const body = endpoint.requestBody?.schema;
   const bodyRequired = endpoint.requestBody?.required;
@@ -269,7 +288,11 @@ function buildInputSchema(
   }
 
   if (root !== undefined && body !== undefined) {
-    const key = publish(root, structuredClone(body));
+    const cloned = structuredClone(body);
+    const key = publish(
+      root,
+      multipart ? withFileArguments(cloned, files) : cloned,
+    );
     if (key !== undefined && bodyRequired !== false) {
       require(key);
     }
@@ -277,7 +300,11 @@ function buildInputSchema(
 
   if (flattened !== undefined) {
     for (const [name, schema] of Object.entries(flattened.properties)) {
-      publish(name, structuredClone(schema));
+      const cloned = structuredClone(schema);
+      publish(
+        name,
+        multipart ? publishFileSchema(cloned, name, files) : cloned,
+      );
     }
     for (const name of flattened.required) {
       /**
@@ -490,6 +517,7 @@ export function createToolDefinition(
   name?: string,
   variant?: ToolVariant,
   relief?: CurationRelief,
+  files?: FileOptions,
 ): ToolDefinition {
   const declared = variant?.description ?? endpoint.description;
   const description =
@@ -500,7 +528,7 @@ export function createToolDefinition(
   return {
     name: name ?? variant?.name ?? createToolName(endpoint),
     description,
-    inputSchema: buildInputSchema(endpoint, variant, relief),
+    inputSchema: buildInputSchema(endpoint, variant, relief, files),
     ...(outputSchema === undefined ? {} : { outputSchema }),
     annotations: annotate(endpoint.method),
     auth: endpoint.auth,

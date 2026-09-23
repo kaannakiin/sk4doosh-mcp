@@ -5,6 +5,7 @@ import type { Recognizer, SelectionDefault, SelectionRule } from "@sk-mcp/core";
 import type { ArgumentRule, JsonValue } from "./decorators.js";
 import type { CatalogSeverity } from "./discovery/diagnostics.js";
 import type { TypeShapeBinderOptions } from "./discovery/type-shape.js";
+import type { SkMcpFileOptions } from "./files.js";
 import type { OuterConnection } from "./outer-connection.js";
 
 export interface OuterRequest {
@@ -211,6 +212,10 @@ export interface SkMcpInvokeOptions {
   timeoutMs: number;
   maxResponseBytesFor?: (target: InvokeTarget) => number | undefined;
   timeoutMsFor?: (target: InvokeTarget) => number | undefined;
+  /** Decoded `base64` file bytes one call may carry inline. */
+  maxInlineFileBytes: number;
+  /** The bytes one resolved `ref` file may carry. */
+  maxFileBytes: number;
 }
 
 export class ErrorMappingOptions {
@@ -303,7 +308,11 @@ export class SkMcpOptions {
   readonly invoke: SkMcpInvokeOptions = {
     maxResponseBytes: invokeLimits.maxResponseBytes,
     timeoutMs: invokeLimits.invokeTimeoutMs,
+    maxInlineFileBytes: invokeLimits.maxInlineFileBytes,
+    maxFileBytes: invokeLimits.maxFileBytes,
   };
+  /** Binding `files.resolver` is what makes `ref` appear in a file argument's schema. */
+  readonly files: SkMcpFileOptions = {};
   /**
    * Grouping labels for a container the host cannot decorate. It sits below a `@McpTool({ tags })`
    * declaration and above the container-derived default, and like a declaration it replaces that

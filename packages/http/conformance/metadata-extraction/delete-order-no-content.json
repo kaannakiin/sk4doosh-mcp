@@ -22,14 +22,10 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersWrite"
-      ],
+      "policies": ["OrdersWrite"],
       "imperative": false
     },
-    "tags": [
-      "orders"
-    ]
+    "tags": ["orders"]
   },
   "expected": {
     "name": "delete_order",
@@ -41,9 +37,7 @@
           "type": "integer"
         }
       },
-      "required": [
-        "id"
-      ],
+      "required": ["id"],
       "additionalProperties": false
     },
     "annotations": {
@@ -52,9 +46,7 @@
     },
     "auth": {
       "anonymous": "no",
-      "policies": [
-        "OrdersWrite"
-      ],
+      "policies": ["OrdersWrite"],
       "imperative": false
     }
   }

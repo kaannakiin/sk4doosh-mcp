@@ -391,7 +391,12 @@ own freedom is carried by the schema of that property.
 | `unsupported_object_style`      | an object-valued parameter's declaration has no wire form                             | the endpoint is dropped        |
 | `unsupported_object_nesting`    | an object-valued parameter's member cannot be addressed one level deep                | the endpoint is dropped        |
 | `multiple_body_bindings`        | more than one body declaration                                                        | the endpoint is dropped        |
-| `unsupported_binding`           | a form or file binding                                                                | the endpoint is dropped        |
+| `unsupported_binding`           | a body media type no writer exists for ([request-bodies.md](request-bodies.md))       | the endpoint is dropped        |
+| `unsupported_body_shape`        | a form, multipart or text body whose shape has no wire form                           | the endpoint is dropped        |
+| `content_type_not_accepted`     | the host declared a body media type the backend does not accept                       | the endpoint is dropped        |
+| `form_antiforgery_required`     | a form endpoint requires antiforgery validation (ASP.NET)                             | the endpoint is dropped        |
+| `unresolved_file_field`         | a file binding whose multipart field name cannot be read (Nest)                       | the endpoint is dropped        |
+| `body_parser_missing`           | a body media type the host registered no parser for (Nest)                            | the endpoint is dropped        |
 | `unsupported_method`            | the HTTP method has no counterpart in the neutral model                               | the endpoint is dropped        |
 | `schema_def_conflict`           | the same `$defs` key is defined twice with different bodies                           | the endpoint is dropped        |
 | `unresolved_query_shape`        | a whole-object query binding whose members cannot be read at all                      | the endpoint is dropped        |

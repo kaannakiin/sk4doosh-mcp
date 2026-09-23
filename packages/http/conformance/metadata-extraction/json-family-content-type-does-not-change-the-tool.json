@@ -1,0 +1,48 @@
+{
+  "kind": "metadata-extraction",
+  "description": "JSON ailesinden bir tip ajanin gordugunu degistirmez",
+  "input": {
+    "operationId": "PatchTicket",
+    "method": "PATCH",
+    "route": "/tickets",
+    "description": "Opens a ticket.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "contentType": "application/merge-patch+json"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "patch_ticket",
+    "description": "Opens a ticket.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

@@ -12,6 +12,8 @@ import { tokenize } from "./search.js";
 export const invokeLimits = {
   maxResponseBytes: 262_144,
   invokeTimeoutMs: 30_000,
+  maxInlineFileBytes: 1_048_576,
+  maxFileBytes: 16_777_216,
 } as const;
 
 export const narrowingFallback = "Constrains the result set.";
@@ -146,6 +148,45 @@ export function refuseOversizeResponse(refusal: OversizeResponse): SdkError {
  *
  * @param limitMs the deadline in whole milliseconds
  */
+export type FileRefusalReason =
+  "not_found" | "forbidden" | "unavailable" | "too_large";
+
+/**
+ * Refuses a call whose `ref` file argument the resolver did not deliver.
+ *
+ * Guard: `not_found` and `forbidden` produce one message. A ref is a string the agent wrote, and
+ * a refusal that told the two apart would let it probe which refs exist for other callers.
+ *
+ * @param field the file argument, as the agent named it
+ * @param limit the per-file byte limit, named when the file was too large
+ */
+export function refuseUnresolvedFile(
+  field: string,
+  reason: FileRefusalReason,
+  limit: number,
+): SdkError {
+  switch (reason) {
+    case "too_large":
+      return {
+        error: "file_too_large",
+        message: `File argument '${field}' is over the limit of ${limit} bytes and was not sent.`,
+        retryable: false,
+      };
+    case "unavailable":
+      return {
+        error: "file_unresolved",
+        message: `File argument '${field}' could not be resolved right now. Retry the call.`,
+        retryable: true,
+      };
+    default:
+      return {
+        error: "file_unresolved",
+        message: `File argument '${field}' names a ref that could not be resolved. Retrying with the same ref will not help.`,
+        retryable: false,
+      };
+  }
+}
+
 export function refuseTimedOutInvoke(limitMs: number): SdkError {
   return {
     error: "invoke_timeout",

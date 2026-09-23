@@ -1,0 +1,44 @@
+{
+  "kind": "argument-mapping",
+  "description": "somut contentMediaType varsayilan media type olur",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["avatar"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "avatar",
+            "type": "file",
+            "mediaType": "image/png"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "avatar": {
+        "base64": "iVBORw==",
+        "name": "me.png"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "avatar",
+        "file": {
+          "base64": "iVBORw==",
+          "byteLength": 4,
+          "filename": "me.png",
+          "mediaType": "image/png"
+        }
+      }
+    ]
+  }
+}

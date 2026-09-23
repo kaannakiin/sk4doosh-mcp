@@ -1,0 +1,30 @@
+{
+  "kind": "argument-mapping",
+  "description": "deger ve anahtar RFC 3986 ile kodlanir; bosluk + degil %20 olur",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["q&x"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "q&x",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "q&x": "a&b=c+d/é!'()*"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "q%26x=a%26b%3Dc%2Bd%2F%C3%A9%21%27%28%29%2A"
+  }
+}

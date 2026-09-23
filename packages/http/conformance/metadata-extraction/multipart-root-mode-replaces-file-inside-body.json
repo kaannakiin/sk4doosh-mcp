@@ -1,0 +1,102 @@
+{
+  "kind": "metadata-extraction",
+  "description": "cakisma yuzunden kok moda giden multipart govdede dosya alani govde argumaninin icinde doner",
+  "input": {
+    "operationId": "ReplaceTicket",
+    "method": "PUT",
+    "route": "/tickets/{id}",
+    "description": "Opens a ticket.",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "attachment": {
+            "type": "string",
+            "contentMediaType": "image/png"
+          }
+        }
+      },
+      "contentType": "multipart/form-data"
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "replace_ticket",
+    "description": "Opens a ticket.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "attachment": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The file's content as text, sent as is."
+                },
+                "base64": {
+                  "type": "string",
+                  "contentEncoding": "base64",
+                  "description": "The file's bytes as standard base64 with padding and no line breaks."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The filename the backend receives. Defaults to 'attachment'."
+                },
+                "mediaType": {
+                  "type": "string",
+                  "description": "The file's media type. Defaults to image/png."
+                }
+              },
+              "additionalProperties": false,
+              "oneOf": [
+                {
+                  "required": ["text"]
+                },
+                {
+                  "required": ["base64"]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "required": ["id", "body"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "no",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

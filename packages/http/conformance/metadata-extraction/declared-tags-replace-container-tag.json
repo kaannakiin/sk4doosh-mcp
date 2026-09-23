@@ -6,10 +6,7 @@
     "method": "GET",
     "route": "/orders",
     "description": "Lists orders.",
-    "tags": [
-      "billing",
-      "orders"
-    ],
+    "tags": ["billing", "orders"],
     "auth": {
       "anonymous": "yes",
       "policies": [],

@@ -1,0 +1,47 @@
+{
+  "kind": "argument-mapping",
+  "description": "multipart parca adi yuzde kodlanmaz; uye anahtari notation ile yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["address"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "address",
+            "type": "object",
+            "members": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "zip",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "address": {
+        "city": "İzmir"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "address[city]",
+        "value": "İzmir"
+      }
+    ]
+  }
+}

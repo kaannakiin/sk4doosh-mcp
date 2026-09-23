@@ -1,0 +1,42 @@
+{
+  "kind": "argument-mapping",
+  "description": "metin kaynagi satir ici limite sayilmaz",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": "merhaba"
+      }
+    },
+    "maxInlineFileBytes": 0
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "attachment",
+        "file": {
+          "text": "merhaba",
+          "filename": "attachment",
+          "mediaType": "text/plain; charset=utf-8"
+        }
+      }
+    ]
+  }
+}

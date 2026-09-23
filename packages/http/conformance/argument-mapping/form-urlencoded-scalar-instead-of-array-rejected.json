@@ -1,0 +1,29 @@
+{
+  "kind": "argument-mapping",
+  "description": "dizi alana skaler reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["tags"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "tags",
+            "type": "string",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "tags": "x"
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

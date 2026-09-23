@@ -1,24 +1,27 @@
 import { SkMcpArgumentError } from "./errors.js";
+import { encodeBody } from "./request-body.js";
+import type { BodyValue, ComposeLimits, ComposedBody } from "./request-body.js";
 import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
 import type {
-  ObjectMemberBinding,
   ObjectParameterBinding,
-  ParameterKind,
   RequestTemplate,
   ScalarParameterBinding,
 } from "./request-template.js";
+import {
+  formatScalar,
+  memberKey,
+  percentEncode,
+  separatorFor,
+} from "./wire-encoding.js";
 import {
   allowedArgumentNames,
   deniedArgumentNames,
 } from "./request-template.js";
 
-export type BodyValue =
-  Record<string, unknown> | readonly unknown[] | string | number | boolean;
-
 export interface ComposedRequest {
   readonly pathAndQuery: string;
   readonly headers: Readonly<Record<string, string>>;
-  readonly bodyJson?: BodyValue;
+  readonly body?: ComposedBody;
 }
 
 /**
@@ -28,11 +31,13 @@ export interface ComposedRequest {
  * invokes a provider: the SDK resolves every source once per invocation and
  * hands the same map to every composition of that invocation, so a source that
  * is not constant cannot make validation and dispatch disagree.
+ * @param limits the invoke budgets the composer enforces itself.
  */
 export function compose(
   template: RequestTemplate,
   args: unknown,
   deferred?: Readonly<Record<string, unknown>>,
+  limits?: ComposeLimits,
 ): ComposedRequest {
   const entries = toArgumentMap(args);
   rejectUnknown(template, entries);
@@ -142,7 +147,7 @@ export function compose(
     headers[p.name] = formatted;
   }
 
-  let bodyJson: BodyValue | undefined;
+  let bodyValue: BodyValue | undefined;
   if (template.bodyRoot !== undefined) {
     const filled =
       template.rootFill === undefined
@@ -155,9 +160,9 @@ export function compose(
             true,
           );
     if (filled !== absent) {
-      bodyJson = filled as BodyValue;
+      bodyValue = filled as BodyValue;
     } else if (template.rootFill === undefined && wire.has(template.bodyRoot)) {
-      bodyJson = wire.get(template.bodyRoot) as BodyValue;
+      bodyValue = wire.get(template.bodyRoot) as BodyValue;
     }
   } else if (template.hasBody) {
     const fields: Record<string, unknown> = {};
@@ -171,13 +176,14 @@ export function compose(
         fields[name] = value;
       }
     }
-    bodyJson = fields;
+    bodyValue = fields;
   }
 
   const pathAndQuery = query.length > 0 ? `${path}?${query.join("&")}` : path;
-  return bodyJson === undefined
+  const body = encodeBody(template, bodyValue, limits);
+  return body === undefined
     ? { pathAndQuery, headers }
-    : { pathAndQuery, headers, bodyJson };
+    : { pathAndQuery, headers, body };
 }
 
 const absent = Symbol("absent");
@@ -415,24 +421,6 @@ function rejectUnknownMembers(
   }
 }
 
-/**
- * Guard: the structural character is appended raw, never through
- * {@link percentEncode}, for {@link separatorFor}'s reason — both languages'
- * encoders escape `[` and `]`, so encoding it would change what the backend's
- * parser reads. The parameter name and the member name each go through the
- * encoder on their own.
- */
-function memberKey(
-  parameter: ObjectParameterBinding,
-  member: ObjectMemberBinding,
-): string {
-  const group = percentEncode(parameter.name);
-  const name = percentEncode(member.name);
-  return parameter.notation === "dot"
-    ? `${group}.${name}`
-    : `${group}[${name}]`;
-}
-
 function objectQueryEntries(
   parameter: ObjectParameterBinding,
   value: unknown,
@@ -459,7 +447,12 @@ function objectQueryEntries(
         `Query argument '${slot.name}' cannot be null; omit it instead.`,
       );
     }
-    const key = memberKey(parameter, member);
+    const key = memberKey(
+      parameter.name,
+      member.name,
+      parameter.notation,
+      percentEncode,
+    );
     if (member.isArray !== true) {
       return [
         `${key}=${percentEncode(formatScalar(item, slot, "invalid_type"))}`,
@@ -476,55 +469,4 @@ function objectQueryEntries(
         `${key}=${percentEncode(formatScalar(element, slot, "invalid_type"))}`,
     );
   });
-}
-
-/**
- * Renders a delimiter for the query string. The caller appends the result raw,
- * never through {@link percentEncode}: the two languages' encoders disagree on
- * `,` (`encodeURIComponent` leaves it, `Uri.EscapeDataString` escapes it to
- * `%2C`), so encoding the delimiter would make the two SDKs emit different byte
- * strings for the same input. A literal space is illegal in a URL, hence `%20`.
- */
-function separatorFor(delimiter: string): string {
-  return delimiter === " " ? "%20" : delimiter;
-}
-
-function percentEncode(value: string): string {
-  return encodeURIComponent(value).replace(
-    /[!'()*]/g,
-    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
-  );
-}
-
-function formatScalar(
-  value: unknown,
-  parameter: { readonly name: string; readonly kind: ParameterKind },
-  errorCode: "invalid_path_type" | "invalid_type",
-): string {
-  switch (parameter.kind) {
-    case "string":
-      if (typeof value === "string") {
-        return value;
-      }
-      break;
-    case "integer":
-      if (typeof value === "number" && Number.isSafeInteger(value)) {
-        return String(value);
-      }
-      break;
-    case "number":
-      if (typeof value === "number") {
-        return String(value);
-      }
-      break;
-    case "boolean":
-      if (typeof value === "boolean") {
-        return String(value);
-      }
-      break;
-  }
-  throw new SkMcpArgumentError(
-    errorCode,
-    `Argument '${parameter.name}' must be of type ${parameter.kind}.`,
-  );
 }

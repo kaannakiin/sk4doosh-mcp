@@ -1,0 +1,37 @@
+{
+  "kind": "argument-mapping",
+  "description": "satir ici limit cagri basina toplamdir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["files"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "files",
+            "type": "file",
+            "array": true
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "files": [
+        {
+          "base64": "AQID"
+        },
+        {
+          "base64": "AQID"
+        }
+      ]
+    },
+    "maxInlineFileBytes": 5
+  },
+  "expected": {
+    "error": "file_too_large"
+  }
+}

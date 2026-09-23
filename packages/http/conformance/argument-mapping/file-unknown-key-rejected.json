@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "dosya argumaninin bilinmeyen anahtari reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": "a",
+        "size": 1
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

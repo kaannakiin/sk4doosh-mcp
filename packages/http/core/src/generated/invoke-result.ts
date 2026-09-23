@@ -20,6 +20,9 @@ export type SdkErrorCode =
   | "invalid_type"
   | "deferred_value_missing"
   | "deferred_value_invalid"
+  | "invalid_file_argument"
+  | "file_too_large"
+  | "file_unresolved"
   | "response_too_large"
   | "invoke_timeout"
   | "internal_error";

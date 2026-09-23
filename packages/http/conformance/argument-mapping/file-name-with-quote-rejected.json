@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "tirnak iceren dosya adi reddedilir; Content-Disposition bozulmaz",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": "a",
+        "name": "a\".txt"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

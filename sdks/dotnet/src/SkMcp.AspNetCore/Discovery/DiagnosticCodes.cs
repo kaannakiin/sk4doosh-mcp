@@ -5,6 +5,9 @@ public enum CatalogSeverity { Warning, EndpointDropped, Fatal }
 public static class DiagnosticCodes
 {
     public const string AmbiguousSelection = "ambiguous_selection";
+    public const string ContentTypeNotAccepted = "content_type_not_accepted";
+    public const string FormAntiforgeryRequired = "form_antiforgery_required";
+    public const string UnsupportedBodyShape = "unsupported_body_shape";
     public const string ArgumentCollision = "argument_collision";
     public const string BodyFieldCollision = "body_field_collision";
     public const string CuratedOpenBody = "curated_open_body";
@@ -49,6 +52,9 @@ public static class DiagnosticCodes
             [UnsupportedMethod] = CatalogSeverity.EndpointDropped,
             [MultipleBodyBindings] = CatalogSeverity.EndpointDropped,
             [UnsupportedBinding] = CatalogSeverity.EndpointDropped,
+            [UnsupportedBodyShape] = CatalogSeverity.EndpointDropped,
+            [ContentTypeNotAccepted] = CatalogSeverity.EndpointDropped,
+            [FormAntiforgeryRequired] = CatalogSeverity.EndpointDropped,
             [MissingHttpMethod] = CatalogSeverity.EndpointDropped,
             [TemplateRejected] = CatalogSeverity.EndpointDropped,
         };

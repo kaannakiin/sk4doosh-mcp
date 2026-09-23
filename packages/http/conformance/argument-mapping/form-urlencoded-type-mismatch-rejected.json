@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "form alani tip kapisindan gecer",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["priority"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "priority",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "priority": "3"
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

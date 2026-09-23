@@ -8,6 +8,7 @@ import {
   createDetail,
   arraySeparatorFor,
   createRequestTemplate,
+  createRequestTemplateFromEndpoint,
   createToolDefinition,
   createToolNames,
   expandToolProductions,
@@ -19,6 +20,7 @@ import {
   mapInvokeResult,
   refuseOversizeResponse,
   refuseTimedOutInvoke,
+  refuseUnresolvedFile,
   searchParameters,
   sdkError,
   simplifySchema,
@@ -30,8 +32,12 @@ import {
   type BackendResponse,
   type InvokeResult,
   type CurationRelief,
+  type ComposedBody,
   type EndpointDescriptor,
+  type FileOptions,
+  type FileSource,
   type Fixture,
+  type FormFieldBinding,
   type ParameterBinding,
   type RequestTemplate,
   type ToolDefinition,
@@ -134,7 +140,127 @@ function templateFrom(
             ? {}
             : { rootFill: spec.rootFill as ArgumentFill }),
         }),
+    ...(spec.contentType === undefined
+      ? {}
+      : { contentType: spec.contentType }),
+    ...(spec.form === undefined
+      ? {}
+      : {
+          form: {
+            notation: spec.form.notation ?? "bracket",
+            fields: spec.form.fields.map((field): FormFieldBinding => {
+              if (field.type === "object") {
+                return {
+                  name: field.name,
+                  kind: "object",
+                  members: (field.members ?? []).map((member) => ({
+                    name: member.name,
+                    kind: member.type,
+                    ...(member.array === true ? { isArray: true } : {}),
+                  })),
+                };
+              }
+              if (field.type === "file") {
+                return {
+                  name: field.name,
+                  kind: "file",
+                  ...(field.array === true ? { isArray: true } : {}),
+                  ...(field.mediaType === undefined
+                    ? {}
+                    : { mediaType: field.mediaType }),
+                };
+              }
+              return {
+                name: field.name,
+                kind: field.type,
+                ...(field.array === true ? { isArray: true } : {}),
+              };
+            }),
+          },
+        }),
+    ...(spec.fileSources === undefined
+      ? {}
+      : { fileSources: new Set<FileSource>(spec.fileSources) }),
   });
+}
+
+type ComposedExpectation = Extract<
+  FixtureOf<"argument-mapping">["expected"],
+  { pathAndQuery: string }
+>;
+
+/**
+ * Projects a composed body onto the fixture's expectation keys.
+ *
+ * `contentType` is written only when it is not the JSON default, so every fixture that predates
+ * media types keeps comparing exactly what it compared before. The ref fallbacks are the SDK's
+ * last rung and stay out of the corpus.
+ */
+function bodyExpectationOf(
+  body: ComposedBody | undefined,
+): Omit<ComposedExpectation, "pathAndQuery" | "headers"> {
+  if (body === undefined) {
+    return {};
+  }
+  const contentType =
+    body.contentType === "application/json"
+      ? {}
+      : { contentType: body.contentType };
+  switch (body.kind) {
+    case "json":
+      return {
+        ...contentType,
+        bodyJson: body.value as ComposedExpectation["bodyJson"],
+      };
+    case "text":
+      return { ...contentType, bodyText: body.value };
+    case "urlencoded":
+      return { ...contentType, bodyForm: body.encoded };
+    case "multipart":
+      return {
+        ...contentType,
+        bodyParts: body.parts.map((part) => {
+          if ("value" in part) {
+            return { name: part.name, value: part.value };
+          }
+          const file = part.file;
+          switch (file.source) {
+            case "text":
+              return {
+                name: part.name,
+                file: {
+                  text: file.text,
+                  filename: file.filename,
+                  mediaType: file.mediaType,
+                },
+              };
+            case "base64":
+              return {
+                name: part.name,
+                file: {
+                  base64: file.base64,
+                  byteLength: file.byteLength,
+                  filename: file.filename,
+                  mediaType: file.mediaType,
+                },
+              };
+            case "ref":
+              return {
+                name: part.name,
+                file: {
+                  ref: file.ref,
+                  ...(file.filename === undefined
+                    ? {}
+                    : { filename: file.filename }),
+                  ...(file.mediaType === undefined
+                    ? {}
+                    : { mediaType: file.mediaType }),
+                },
+              };
+          }
+        }),
+      };
+  }
 }
 
 describe("conformance: argument-mapping", () => {
@@ -143,8 +269,17 @@ describe("conformance: argument-mapping", () => {
       const template = templateFrom(fixture.input.template);
       if ("error" in fixture.expected) {
         const expected = fixture.expected.error;
+        const limits =
+          fixture.input.maxInlineFileBytes === undefined
+            ? undefined
+            : { maxInlineFileBytes: fixture.input.maxInlineFileBytes };
         try {
-          compose(template, fixture.input.arguments, fixture.input.deferred);
+          compose(
+            template,
+            fixture.input.arguments,
+            fixture.input.deferred,
+            limits,
+          );
           expect.unreachable(`expected error ${expected}`);
         } catch (error) {
           expect(error).toBeInstanceOf(SkMcpArgumentError);
@@ -155,10 +290,18 @@ describe("conformance: argument-mapping", () => {
           template,
           fixture.input.arguments,
           fixture.input.deferred,
+          fixture.input.maxInlineFileBytes === undefined
+            ? undefined
+            : { maxInlineFileBytes: fixture.input.maxInlineFileBytes },
         );
         expect(composed.pathAndQuery).toBe(fixture.expected.pathAndQuery);
         expect(composed.headers).toEqual(fixture.expected.headers ?? {});
-        expect(composed.bodyJson).toEqual(fixture.expected.bodyJson);
+        const {
+          pathAndQuery: _path,
+          headers: _headers,
+          ...body
+        } = fixture.expected;
+        expect(bodyExpectationOf(composed.body)).toEqual(body);
       }
     });
   }
@@ -258,18 +401,42 @@ function reliefOf(
   return { foldedNames, onUnused: () => {} };
 }
 
+function filesOf(
+  fixture: FixtureOf<"metadata-extraction">,
+): FileOptions | undefined {
+  return fixture.files?.refDescription === undefined
+    ? undefined
+    : { refDescription: fixture.files.refDescription };
+}
+
+/**
+ * Builds the request template too whenever the body is not JSON, because every body-shape
+ * rejection lives there: a definition alone would publish a form tool whose template can never
+ * be built.
+ */
 function toolsOf(
   endpoint: EndpointDescriptor,
   relief: CurationRelief | undefined,
+  files: FileOptions | undefined,
 ): ToolDefinition[] {
-  return expandToolProductions([endpoint], (e) => e).map((production) =>
-    createToolDefinition(
+  return expandToolProductions([endpoint], (e) => e).map((production) => {
+    const definition = createToolDefinition(
       production.endpoint,
       undefined,
       production.variant,
       relief,
-    ),
-  );
+      files,
+    );
+    if (production.endpoint.requestBody?.contentType !== undefined) {
+      createRequestTemplateFromEndpoint(
+        production.endpoint,
+        production.variant,
+        relief,
+        files,
+      );
+    }
+    return definition;
+  });
 }
 
 describe("conformance: metadata-extraction", () => {
@@ -277,19 +444,18 @@ describe("conformance: metadata-extraction", () => {
     it(file, () => {
       const expected = fixture.expected;
       const relief = reliefOf(fixture);
+      const files = filesOf(fixture);
       if ("error" in expected) {
-        expect(templateErrorCode(() => toolsOf(fixture.input, relief))).toBe(
-          expected.error,
-        );
+        expect(
+          templateErrorCode(() => toolsOf(fixture.input, relief, files)),
+        ).toBe(expected.error);
         return;
       }
       if ("tools" in expected) {
-        expect(toolsOf(fixture.input, relief)).toEqual(expected.tools);
+        expect(toolsOf(fixture.input, relief, files)).toEqual(expected.tools);
         return;
       }
-      expect(
-        createToolDefinition(fixture.input, undefined, undefined, relief),
-      ).toEqual(expected);
+      expect(toolsOf(fixture.input, relief, files)).toEqual([expected]);
     });
   }
 });
@@ -340,6 +506,13 @@ function sdkResultFrom(input: SdkInput): InvokeResult {
   }
   if (input.sdkError === "invoke_timeout") {
     return refuseTimedOutInvoke(input.limitMs ?? 0);
+  }
+  if (input.reason !== undefined) {
+    return refuseUnresolvedFile(
+      input.field ?? "",
+      input.reason,
+      input.limit ?? 1,
+    );
   }
   return sdkError(input.sdkError, input.message ?? "");
 }

@@ -1,0 +1,16 @@
+{
+  "kind": "argument-mapping",
+  "description": "gonderilmeyen text/plain kok govde yazmaz",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/notes",
+      "bodyRoot": "body",
+      "contentType": "text/plain"
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/notes"
+  }
+}

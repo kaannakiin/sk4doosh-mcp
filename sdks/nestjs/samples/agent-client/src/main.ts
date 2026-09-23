@@ -24,6 +24,7 @@ const scenarioNames: ReadonlySet<string> = new Set<ScenarioName>([
   "smoke",
   "validation-retry",
   "error-envelope",
+  "upload",
 ]);
 
 function isScenarioName(value: string): value is ScenarioName {
@@ -145,6 +146,7 @@ async function main(): Promise<number> {
       tool: args.tool,
       query: args.query,
       argumentsJson: args.argumentsJson,
+      user: env.user,
     });
     return 0;
   } catch (error) {

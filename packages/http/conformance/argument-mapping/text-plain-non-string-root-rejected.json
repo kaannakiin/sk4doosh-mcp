@@ -1,0 +1,20 @@
+{
+  "kind": "argument-mapping",
+  "description": "text/plain govdeye dize olmayan kok reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/notes",
+      "bodyRoot": "body",
+      "contentType": "text/plain"
+    },
+    "arguments": {
+      "body": {
+        "text": "x"
+      }
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

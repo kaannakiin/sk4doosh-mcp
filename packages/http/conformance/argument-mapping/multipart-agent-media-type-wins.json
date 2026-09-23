@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "ajanin verdigi media type varsayilani ezer",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file",
+            "mediaType": "text/csv"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "text": "{}",
+        "mediaType": "application/json"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "multipart/form-data",
+    "bodyParts": [
+      {
+        "name": "attachment",
+        "file": {
+          "text": "{}",
+          "filename": "attachment",
+          "mediaType": "application/json"
+        }
+      }
+    ]
+  }
+}

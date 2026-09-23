@@ -1,0 +1,31 @@
+{
+  "kind": "argument-mapping",
+  "description": "cozulmus base64 bayti satir ici limiti asarsa reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": {
+        "base64": "AQID"
+      }
+    },
+    "maxInlineFileBytes": 2
+  },
+  "expected": {
+    "error": "file_too_large"
+  }
+}

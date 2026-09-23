@@ -1,0 +1,43 @@
+{
+  "kind": "argument-mapping",
+  "description": "nesne alan dot notation ile uye anahtari yazar",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["address"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "address",
+            "type": "object",
+            "members": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "zip",
+                "type": "string"
+              }
+            ]
+          }
+        ],
+        "notation": "dot"
+      }
+    },
+    "arguments": {
+      "address": {
+        "city": "Izmir"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/tickets",
+    "contentType": "application/x-www-form-urlencoded",
+    "bodyForm": "address.city=Izmir"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "dosya argumani nesne olmak zorundadir; duz dize reddedilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["attachment"]
+      },
+      "contentType": "multipart/form-data",
+      "form": {
+        "fields": [
+          {
+            "name": "attachment",
+            "type": "file"
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "attachment": "merhaba"
+    }
+  },
+  "expected": {
+    "error": "invalid_file_argument"
+  }
+}

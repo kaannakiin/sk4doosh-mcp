@@ -35,6 +35,18 @@ export function collectConfigurationFailures(
   if (options.invoke.timeoutMs < 0) {
     failures.push("invoke.timeoutMs must be zero or positive.");
   }
+  if (options.invoke.maxInlineFileBytes < 0) {
+    failures.push("invoke.maxInlineFileBytes must be zero or positive.");
+  }
+  if (options.invoke.maxFileBytes < 1) {
+    failures.push("invoke.maxFileBytes must be at least 1.");
+  }
+  const refDescription = options.files.resolver?.refDescription;
+  if (refDescription !== undefined && refDescription.trim() === "") {
+    failures.push(
+      "files.resolver.refDescription must say what a ref is; an agent reads it to find one.",
+    );
+  }
   /**
    * A blank field is not the catch-all: the catch-all omits the field, while `route: ""` matches
    * only the empty string and no composed route is empty, so the rule would decide nothing.

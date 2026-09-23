@@ -1,0 +1,40 @@
+{
+  "kind": "argument-mapping",
+  "description": "nesne alanin beyan edilmemis uyesi sessizce dusmez",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/tickets",
+      "body": {
+        "properties": ["address"]
+      },
+      "contentType": "application/x-www-form-urlencoded",
+      "form": {
+        "fields": [
+          {
+            "name": "address",
+            "type": "object",
+            "members": [
+              {
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "name": "zip",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "arguments": {
+      "address": {
+        "country": "TR"
+      }
+    }
+  },
+  "expected": {
+    "error": "unknown_argument"
+  }
+}
