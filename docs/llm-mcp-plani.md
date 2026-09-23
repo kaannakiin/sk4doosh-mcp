@@ -1,6 +1,6 @@
 # llm-mcp — codex'in yerel modellere iş devretmesi
 
-**Durum:** F0 ve F1 uygulandı — F2'den itibaren öneri
+**Durum:** F0, F1 ve F2 uygulandı — F3'ten itibaren öneri
 **Tarih:** 23 Eylül 2026
 **Kapsam:** `packages/servers/llm-mcp` (yeni), `packages/cores/mcp-core` (yazan tool türü), `products/chat/api` (`codex-client.ts` bağlantısı ve workspace'e yazılan `AGENTS.md`)
 **Kaynak:** scratchpad'de prototip sunucu, Ollama ölçümleri, `gpt-5.6-luna` (`low`) ile 8 codex koşusu, 6 açık kaynak reponun incelenmesi
@@ -60,11 +60,11 @@ Tasarımdaki her kural bir ölçüme dayanıyor.
 
 ### Tool'lar (v1)
 
-| Tool                                                         | Ne yapar                                                                                                                                                                                                              | Annotation                                      |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `local_task(kind, instruction, text?, files?, json_schema?)` | Tek bir dil işi. `kind`: `classify`, `extract`, `summarize`, `transform`, `free`. Her kind'ın içinde kısa ve katı bir system prompt var. Dosyaları sunucu okur. Bütçeyi aşan `summarize`/`extract` girdisini parçalar | `readOnlyHint: true`                            |
-| `local_map(file, instruction, labels)`                       | CSV'nin her satırını etiketler. Sonucu yeni bir sütunla `.llm-mcp/out/` altına yazar. Codex'e dosyanın yolunu, sayımları ve etiket başına 4 örnek satır döner                                                         | `readOnlyHint: false`, `destructiveHint: false` |
-| `local_status()`                                             | Model yüklü mü, bütçe, kuyruk derinliği, hız                                                                                                                                                                          | `readOnlyHint: true`                            |
+| Tool                                                        | Ne yapar                                                                                                                                                                                                              | Annotation                                      |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `local_task(kind, instruction, text?, files?, jsonSchema?)` | Tek bir dil işi. `kind`: `classify`, `extract`, `summarize`, `transform`, `free`. Her kind'ın içinde kısa ve katı bir system prompt var. Dosyaları sunucu okur. Bütçeyi aşan `summarize`/`extract` girdisini parçalar | `readOnlyHint: true`                            |
+| `local_map(file, instruction, labels)`                      | CSV'nin her satırını etiketler. Sonucu yeni bir sütunla `.llm-mcp/out/` altına yazar. Codex'e dosyanın yolunu, sayımları ve etiket başına 4 örnek satır döner                                                         | `readOnlyHint: false`, `destructiveHint: false` |
+| `local_status()`                                            | Model yüklü mü, bütçe, kuyruk derinliği, hız                                                                                                                                                                          | `readOnlyHint: true`                            |
 
 Tek bir `local_task` ve bir `kind` enum'u, her iş için ayrı tool açmaktan iyi: codex'e tek şema gidiyor, hazır prompt'lar yine de işe özel kalıyor.
 
@@ -174,10 +174,14 @@ Her faz bir öncekinin üstüne kurulur ve kendi çıkış kriteriyle kapanır.
 
 ### F2 — `local_task`
 
-- `kind` başına hazır prompt'lar, `json_schema` desteği, `files` okuma, workspace sınırı.
+- `kind` başına hazır prompt'lar, `jsonSchema` desteği, `files` okuma, workspace sınırı.
 - Bütçe koruması: aşan girdi `input_too_large` döner.
 
 **Çıkış:** kısa bir metinde `extract` doğru JSON dönüyor. Workspace dışı yol reddediliyor. Büyük dosya kesilmeden reddediliyor.
+
+**Durum:** uygulandı. stdio'da gerçek host'a karşı: Türkçe bir metinden `extract` + şema `{"people":["Ayşe Demir","Mehmet Kaya"],"nextMeeting":"2026-10-14"}` döndü (101 prompt token). `../../../../etc/passwd` → `outside_workspace`. 63 KB dosya okunmadan `input_too_large` (tavan 53.078 bayt = bütçe × 1,8 × 4). Argüman adı repo kalıbına uyarak `jsonSchema` oldu. Kök `SKMCP_LLM_ROOT`, varsayılanı çalışma dizini. Symlink ile dışarı kaçış da reddediliyor.
+
+Codex turu (`gpt-5.6-luna`, `low`): codex bir toplantı notundan katılımcıları ve tarihleri `local.local_task` ile çıkardı ve dosyayı kendisi hiç okumadı. İlk koşuda `.codex-home`'da kurulu `superpowers` plugin'i codex'e 240 satırlık bir skill dosyası okuttu (46,9k input, 13,1k cache'siz). `codexConfigFor` artık `features.plugins=false` ve `features.apps=false` gönderiyor. Aynı tur sonra 28,5k input ve 10,6k cache'siz token harcadı, shell komutu çalışmadı. F1'deki "`.codex-home` temiz tutulur" maddesi böylece dağıtıma değil koda bağlandı.
 
 ### F3 — `local_map`
 

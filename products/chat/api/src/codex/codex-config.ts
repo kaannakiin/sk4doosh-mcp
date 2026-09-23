@@ -20,6 +20,12 @@ const LOCAL_WORKER_TIMEOUT_SEC = 900;
  * local calls (rule 6). `num_ctx` is left to the server's default on purpose:
  * `CHAT_LLM_CONTEXT_TOKENS` is what the orchestrator requests, not the window
  * the GPU was measured to deliver.
+ *
+ * Guard: plugins and apps are switched off here rather than trusted to be
+ * absent from `CODEX_HOME`. A curated plugin installed there was measured
+ * making the agent read its 240-line skill file before a one-line task, and
+ * whatever an operator installs for their own use would otherwise ride along
+ * on every conversation.
  */
 export function codexConfigFor(
   codex: Pick<CodexConfig, "localWorker">,
@@ -27,6 +33,7 @@ export function codexConfigFor(
 ): CodexConfigObject {
   return {
     sandbox_workspace_write: { network_access: false },
+    features: { plugins: false, apps: false },
     ...(codex.localWorker === undefined
       ? {}
       : {

@@ -12,7 +12,17 @@ export {
   type SkMcpLlmErrorCode,
 } from "./platform/errors.js";
 export { inputBudgetTokens, limits } from "./platform/limits.js";
+export {
+  estimateTokens,
+  maxReadableBytes,
+  outputBudgetTokens,
+} from "./platform/limits.js";
 export { vocabulary } from "./platform/vocabulary.js";
+export {
+  openWorkspace,
+  type Workspace,
+  type WorkspacePath,
+} from "./platform/workspace.js";
 export type {
   Backend,
   BackendProbe,
@@ -31,4 +41,5 @@ export {
   toolNames,
   type ToolName,
 } from "./tools/definitions.js";
+export { taskKinds, type TaskKind } from "./tools/prompts.js";
 export { createLlmMcpServer } from "./server.js";

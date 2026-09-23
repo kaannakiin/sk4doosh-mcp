@@ -1,4 +1,5 @@
 export interface LlmConfig {
+  readonly root: string;
   readonly baseUrl: string;
   readonly model: string;
   readonly contextTokens: number;
@@ -43,8 +44,10 @@ function httpUrl(raw: string | undefined): string | undefined {
  * Guard: pure, and the record is a parameter — the process environment is read
  * once in `cli.ts` and nowhere else, so every variable is named explicitly and
  * `turbo/no-undeclared-env-vars` forces it into `turbo.json`'s `passThroughEnv`.
+ *
+ * @param cwd the working directory, the root when `SKMCP_LLM_ROOT` is unset
  */
-export function readLlmEnv(env: EnvRecord): EnvOutcome {
+export function readLlmEnv(env: EnvRecord, cwd: string): EnvOutcome {
   const missing = requiredNames.filter((name) => (env[name] ?? "") === "");
   if (missing.length > 0) {
     return { kind: "usage", missing };
@@ -74,6 +77,7 @@ export function readLlmEnv(env: EnvRecord): EnvOutcome {
   return {
     kind: "config",
     config: {
+      root: env["SKMCP_LLM_ROOT"] || cwd,
       baseUrl,
       model: env["SKMCP_LLM_MODEL"] ?? "",
       contextTokens,

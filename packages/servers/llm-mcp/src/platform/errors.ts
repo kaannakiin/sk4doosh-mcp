@@ -9,7 +9,14 @@ import {
 import { vocabulary } from "./vocabulary.js";
 
 export type SkMcpLlmErrorCode =
-  SourceErrorCode | "backend_unavailable" | "backend_refused";
+  | SourceErrorCode
+  | "backend_unavailable"
+  | "backend_refused"
+  | "outside_workspace"
+  | "file_not_found"
+  | "not_text"
+  | "input_too_large"
+  | "unparsable_output";
 
 export class SkMcpLlmError extends McpSourceError {
   declare readonly code: SkMcpLlmErrorCode;

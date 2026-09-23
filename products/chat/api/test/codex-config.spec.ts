@@ -8,9 +8,10 @@ import {
 const llm = { baseUrl: "http://10.0.0.5:11434", model: "qwen3:8b" };
 
 describe("codexConfigFor", () => {
-  it("keeps the sandbox offline and binds no MCP server without a worker", () => {
+  it("keeps the sandbox offline, plugins off, and binds no MCP server without a worker", () => {
     expect(codexConfigFor({}, llm)).toEqual({
       sandbox_workspace_write: { network_access: false },
+      features: { plugins: false, apps: false },
     });
   });
 
@@ -21,6 +22,7 @@ describe("codexConfigFor", () => {
     );
     expect(config).toEqual({
       sandbox_workspace_write: { network_access: false },
+      features: { plugins: false, apps: false },
       mcp_servers: {
         [LOCAL_WORKER_SERVER]: {
           command: process.execPath,

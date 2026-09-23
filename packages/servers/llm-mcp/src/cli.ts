@@ -3,6 +3,8 @@ import { serveMcpSourceStdio } from "@sk-mcp/mcp-core";
 import { createOllamaBackend } from "./backend/ollama.js";
 import { createSerialBackend } from "./backend/serial.js";
 import { readLlmEnv, requiredNames } from "./platform/env.js";
+import { fail } from "./platform/errors.js";
+import { openWorkspace, type Workspace } from "./platform/workspace.js";
 import { createLlmMcpServer } from "./server.js";
 
 function stop(message: string, code: number): never {
@@ -15,13 +17,17 @@ function stop(message: string, code: number): never {
  * environment to the parser. `turbo/no-undeclared-env-vars` only sees a named
  * access, and that is what forces each one into this package's `passThroughEnv`.
  */
-const outcome = readLlmEnv({
-  SKMCP_LLM_BASE_URL: process.env["SKMCP_LLM_BASE_URL"],
-  SKMCP_LLM_MODEL: process.env["SKMCP_LLM_MODEL"],
-  SKMCP_LLM_NUM_CTX: process.env["SKMCP_LLM_NUM_CTX"],
-  SKMCP_LLM_KEEP_ALIVE: process.env["SKMCP_LLM_KEEP_ALIVE"],
-  SKMCP_LLM_TIMEOUT_MS: process.env["SKMCP_LLM_TIMEOUT_MS"],
-});
+const outcome = readLlmEnv(
+  {
+    SKMCP_LLM_ROOT: process.env["SKMCP_LLM_ROOT"],
+    SKMCP_LLM_BASE_URL: process.env["SKMCP_LLM_BASE_URL"],
+    SKMCP_LLM_MODEL: process.env["SKMCP_LLM_MODEL"],
+    SKMCP_LLM_NUM_CTX: process.env["SKMCP_LLM_NUM_CTX"],
+    SKMCP_LLM_KEEP_ALIVE: process.env["SKMCP_LLM_KEEP_ALIVE"],
+    SKMCP_LLM_TIMEOUT_MS: process.env["SKMCP_LLM_TIMEOUT_MS"],
+  },
+  process.cwd(),
+);
 
 if (outcome.kind === "usage") {
   stop(
@@ -34,8 +40,18 @@ if (outcome.kind === "invalid") {
   stop(outcome.reason, 2);
 }
 
+let workspace: Workspace;
+try {
+  workspace = await openWorkspace(outcome.config.root, fail);
+} catch {
+  stop(
+    `The workspace '${outcome.config.root}' is not a readable directory.`,
+    2,
+  );
+}
+
 const backend = createSerialBackend(createOllamaBackend(outcome.config));
-const server = createLlmMcpServer(backend);
+const server = createLlmMcpServer(backend, workspace);
 serveMcpSourceStdio(() => server);
 
 /**

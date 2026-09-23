@@ -1,23 +1,47 @@
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import type { CallToolResult } from "@modelcontextprotocol/client";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { readOnly } from "@sk-mcp/mcp-core";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BackendProbe, QueuedBackend } from "../src/backend/port.js";
+import { fail } from "../src/platform/errors.js";
+import { openWorkspace, type Workspace } from "../src/platform/workspace.js";
 import { createLlmMcpServer } from "../src/server.js";
+
+let base: string;
+let workspace: Workspace;
+
+beforeAll(async () => {
+  base = await realpath(await mkdtemp(join(tmpdir(), "llm-mcp-server-")));
+  await writeFile(join(base, "note.txt"), "Ayşe geldi.");
+  workspace = await openWorkspace(base, fail);
+});
+
+afterAll(async () => {
+  await rm(base, { recursive: true, force: true });
+});
 
 function fakeBackend(probe: BackendProbe, pending = 0): QueuedBackend {
   return {
     model: "qwen3:8b",
     contextTokens: 16_384,
     pending,
-    complete: () => Promise.reject(new Error("not used")),
+    complete: () =>
+      Promise.resolve({
+        text: '{"people":["Ayşe"]}',
+        promptTokens: 30,
+        outputTokens: 6,
+        durationMs: 9,
+      }),
     probe: () => Promise.resolve(probe),
     warm: () => Promise.resolve(),
   };
 }
 
 async function connect(backend: QueuedBackend): Promise<Client> {
-  const server = createLlmMcpServer(backend);
+  const server = createLlmMcpServer(backend, workspace);
   const client = new Client({ name: "llm-spec", version: "0.0.0" });
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
@@ -37,13 +61,18 @@ function body(result: CallToolResult): Record<string, unknown> {
 }
 
 describe("createLlmMcpServer", () => {
-  it("lists local_status as a read-only tool", async () => {
+  it("lists its tools as read-only", async () => {
     const client = await connect(
       fakeBackend({ reachable: true, loaded: true }),
     );
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name)).toEqual(["local_status"]);
-    expect(tools[0]?.annotations).toMatchObject(readOnly);
+    expect(tools.map((tool) => tool.name)).toEqual([
+      "local_status",
+      "local_task",
+    ]);
+    for (const tool of tools) {
+      expect(tool.annotations).toMatchObject(readOnly);
+    }
   });
 
   it("reports the host, the window, the budget and the queue", async () => {
@@ -78,5 +107,42 @@ describe("createLlmMcpServer", () => {
       reachable: false,
       detail: "fetch failed",
     });
+  });
+
+  it("runs a local task over the transport", async () => {
+    const client = await connect(
+      fakeBackend({ reachable: true, loaded: true }),
+    );
+    const result = (await client.callTool({
+      name: "local_task",
+      arguments: {
+        kind: "extract",
+        instruction: "List the people.",
+        files: ["note.txt"],
+        jsonSchema: { type: "object" },
+      },
+    })) as CallToolResult;
+    expect(result.isError).toBeUndefined();
+    expect(body(result)).toMatchObject({
+      kind: "extract",
+      result: { people: ["Ayşe"] },
+    });
+  });
+
+  it("keeps the absolute workspace root out of an error", async () => {
+    const client = await connect(
+      fakeBackend({ reachable: true, loaded: true }),
+    );
+    const result = (await client.callTool({
+      name: "local_task",
+      arguments: {
+        kind: "extract",
+        instruction: "x",
+        files: [join(base, "..", "outside.txt")],
+      },
+    })) as CallToolResult;
+    expect(result.isError).toBe(true);
+    expect(body(result)["error"]).toBe("outside_workspace");
+    expect(JSON.stringify(body(result))).not.toContain(base);
   });
 });

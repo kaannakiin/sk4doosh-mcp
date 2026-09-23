@@ -8,8 +8,11 @@
  */
 export const DELEGATION_INSTRUCTIONS = `# Delegation
 
-You plan and verify. A free local model is available through the \`local\` MCP server.
+You plan and verify. A free local model is available through the \`local\` MCP server; delegate bounded language work to it.
 
-- Call \`local_status\` to learn whether it is reachable and loaded, which model it runs, and how large an input one call may carry.
+- One bounded language task (classify, extract, summarize, transform): call \`local_task\`. Pass file paths in \`files\`; never paste file contents. Pass \`jsonSchema\` when you need structured output.
+- If \`local_task\` answers \`input_too_large\`, split the input into sections and call it once per section, or do the work yourself.
+- Call \`local_status\` when you are unsure the local model is reachable.
 - Keep for yourself: planning, arithmetic, aggregation, writing output files, the final answer.
+- If a local call fails, retry once, then do the work yourself.
 `;
