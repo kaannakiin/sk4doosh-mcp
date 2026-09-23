@@ -1,6 +1,6 @@
 # llm-mcp — codex'in yerel modellere iş devretmesi
 
-**Durum:** öneri — deneylerle doğrulandı, üründe kod yok
+**Durum:** F0 ve F1 uygulandı — F2'den itibaren öneri
 **Tarih:** 23 Eylül 2026
 **Kapsam:** `packages/servers/llm-mcp` (yeni), `packages/cores/mcp-core` (yazan tool türü), `products/chat/api` (`codex-client.ts` bağlantısı ve workspace'e yazılan `AGENTS.md`)
 **Kaynak:** scratchpad'de prototip sunucu, Ollama ölçümleri, `gpt-5.6-luna` (`low`) ile 8 codex koşusu, 6 açık kaynak reponun incelenmesi
@@ -93,12 +93,12 @@ Sunucu tek bir kuruluma göre değil, herkesin kullanabileceği şekilde yazıl�
 
 **Ayar — dağıtıma göre değişir, varsayılanı güvenli. Yalnızca `cli.ts`'te okunur:**
 
-- `LLM_MCP_OUTPUT_DIR` — varsayılan `.llm-mcp/out`. `.` verilirse workspace'in her yerine yazılır, üzerine yazma yine yasak.
-- `LLM_MCP_NUM_CTX` — varsayılan `16384`. Bütçe ve batch boyutu buradan türetilir.
-- `LLM_MCP_BASE_URL` — virgülle ayrılmış host listesi olabilir (F6).
-- `LLM_MCP_MODEL` — varsayılan model. Kind başına model eşlemesi opsiyonel.
-- `LLM_MCP_TOOLS` — açık tool'lar, varsayılan üçü.
-- `LLM_MCP_PROMPTS` — kind prompt'larını değiştiren dosya, opsiyonel.
+- `SKMCP_LLM_OUTPUT_DIR` — varsayılan `.llm-mcp/out`. `.` verilirse workspace'in her yerine yazılır, üzerine yazma yine yasak.
+- `SKMCP_LLM_NUM_CTX` — varsayılan `16384`. Bütçe ve batch boyutu buradan türetilir.
+- `SKMCP_LLM_BASE_URL` — virgülle ayrılmış host listesi olabilir (F6).
+- `SKMCP_LLM_MODEL` — varsayılan model. Kind başına model eşlemesi opsiyonel.
+- `SKMCP_LLM_TOOLS` — açık tool'lar, varsayılan üçü.
+- `SKMCP_LLM_PROMPTS` — kind prompt'larını değiştiren dosya, opsiyonel.
 
 **Arayüz — v1'de tek uygulama, sonrası PR ile:**
 
@@ -118,7 +118,7 @@ config: {
       args: [workerEntry],
       default_tools_approval_mode: "auto",
       tool_timeout_sec: 900,
-      env: { LLM_MCP_BASE_URL: llmBaseUrl, LLM_MCP_MODEL: llmModel },
+      env: { SKMCP_LLM_BASE_URL: llmBaseUrl, SKMCP_LLM_MODEL: llmModel },
     },
   },
 },
@@ -169,6 +169,8 @@ Her faz bir öncekinin üstüne kurulur ve kendi çıkış kriteriyle kapanır.
 - `.codex-home` temiz tutulur: ilk ölçümde bir plugin'in skill'i her tura eklenip taban maliyeti şişiriyordu.
 
 **Çıkış:** chat'ten açılan bir codex turu `local_status`'u çağırıyor ve cevabı görüyor.
+
+**Durum:** uygulandı. `gpt-5.6-luna` (`low`) ile tek tur: codex `local.local_status`'u çağırdı (`completed`), modeli ve 7.372 token'lık bütçeyi cevabında kullandı. 12,6 sn, 12,0k cache'siz input. Env adları repo kalıbına uyarak `SKMCP_LLM_*` oldu. Sunucu yolu chat'e `CHAT_CODEX_LLM_MCP_ENTRY` ile veriliyor. `AGENTS.md` F1'de yalnızca `local_status`'u anıyor, çünkü var olmayan bir tool'u anmak codex'i onu aramaya yollar.
 
 ### F2 — `local_task`
 
@@ -224,7 +226,7 @@ Her faz bir öncekinin üstüne kurulur ve kendi çıkış kriteriyle kapanır.
 ## 8. Verilen kararlar
 
 1. **Konum ve ad:** `packages/servers/llm-mcp`, paket adı `@sk-mcp/llm-mcp`, yayınlanabilir biçimde. Ürün olarak yayınlanmasa bile katkıya açık kalır.
-2. **Yazma sınırı:** varsayılan olarak sunucu yalnızca `.llm-mcp/out/` altına yazar ve yolu kendisi döner. `LLM_MCP_OUTPUT_DIR` ile genişletilebilir.
+2. **Yazma sınırı:** varsayılan olarak sunucu yalnızca `.llm-mcp/out/` altına yazar ve yolu kendisi döner. `SKMCP_LLM_OUTPUT_DIR` ile genişletilebilir.
 3. **Tablo politikası:** sunucuda değil, dağıtımda. Varsayılan hız: codex tablo verisinde script yazabilir. Verisi hassas olan kurulum şablonu değiştirir ya da planlayıcıyı kendi modeline taşır.
 
 ## Ek — Deney kayıtları

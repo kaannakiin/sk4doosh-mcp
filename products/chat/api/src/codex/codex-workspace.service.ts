@@ -1,12 +1,13 @@
 import type { SessionId } from "@chat/contracts/chat/session";
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { copyFile, mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
 
 import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
 import { errorMessage } from "../common/utils/error.utils.ts";
 import type { AppConfig, CodexConfig } from "../config/configuration.ts";
+import { DELEGATION_INSTRUCTIONS } from "./delegation-instructions.ts";
 
 const SWEEP_INTERVAL_MS = 60_000;
 
@@ -75,6 +76,9 @@ export class CodexWorkspaceService implements OnModuleDestroy {
     const files = join(directory, "files");
     await mkdir(files, { recursive: true });
     this.touched.set(session, Date.now());
+    if (this.settings.localWorker !== undefined) {
+      await writeFile(join(directory, "AGENTS.md"), DELEGATION_INSTRUCTIONS);
+    }
 
     if (staged.length === 0) {
       return { directory, copied: [] };

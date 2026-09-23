@@ -2,7 +2,12 @@ import { Codex, type Thread } from "@openai/codex-sdk";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
-import type { AppConfig, CodexConfig } from "../config/configuration.ts";
+import type {
+  AppConfig,
+  CodexConfig,
+  LlmConfig,
+} from "../config/configuration.ts";
+import { codexConfigFor } from "./codex-config.ts";
 
 export interface ThreadRequest {
   readonly workingDirectory: string;
@@ -13,10 +18,13 @@ export interface ThreadRequest {
 export class CodexClientService {
   private readonly settings: CodexConfig;
 
+  private readonly llm: LlmConfig;
+
   private client: Codex | undefined;
 
   constructor(config: ConfigService<AppConfig, true>) {
     this.settings = config.get("codex", { infer: true });
+    this.llm = config.get("llm", { infer: true });
   }
 
   get configured(): boolean {
@@ -75,7 +83,7 @@ export class CodexClientService {
         HOME: this.settings.home ?? "",
         CODEX_HOME: this.settings.home ?? "",
       },
-      config: { sandbox_workspace_write: { network_access: false } },
+      config: codexConfigFor(this.settings, this.llm),
     });
 
     return this.client;

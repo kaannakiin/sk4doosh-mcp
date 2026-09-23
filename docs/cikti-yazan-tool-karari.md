@@ -51,7 +51,7 @@ Onların `createFileSourceServer`/`createMcpSourceServer`'ı salt-okunur kısıt
 Çekirdek diske yazmıyor: fs bilmiyor ve "file"/"path" literal'i taşıyamıyor. `ownOutput` annotation'ı bir vaat. Vaadi
 tüketici tutuyor, ve llm-mcp F3'te şu dört kural uygulanır:
 
-1. **Tek klasör.** Yazma yalnızca sunucunun çıktı klasörüne yapılır (varsayılan `.llm-mcp/out/`, `LLM_MCP_OUTPUT_DIR`). Çözülmüş yol
+1. **Tek klasör.** Yazma yalnızca sunucunun çıktı klasörüne yapılır (varsayılan `.llm-mcp/out/`, `SKMCP_LLM_OUTPUT_DIR`). Çözülmüş yol
    klasörün dışına çıkarsa istek reddedilir.
 2. **Yalnızca yeni dosya.** Açma `wx` bayrağıyla yapılır. Var olan dosyanın üzerine yazılmaz, hiçbir dosya silinmez.
 3. **Adı sunucu seçer.** Tool girdisinde hedef yol yok. Model çıktısı veya kullanıcı verisi dosya adına ya da konumuna karar veremez.

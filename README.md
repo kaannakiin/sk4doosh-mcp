@@ -19,26 +19,27 @@ so parity is a test result rather than a claim.
 
 ## Repository map
 
-| Path                                                                 | Role                                                                                                             |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [packages/http/spec](packages/http/spec)                             | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages               |
-| [packages/http/conformance](packages/http/conformance)               | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                |
-| [packages/http/core](packages/http/core)                             | TS reference implementation; spec types are generated, never hand-written. Internal                              |
-| [sdks/dotnet](sdks/dotnet)                                           | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                                      |
-| [sdks/nestjs](sdks/nestjs)                                           | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md)) |
-| [sdks/nestjs/samples/agent-client](sdks/nestjs/samples/agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                             |
-| [packages/cores/mcp-core](packages/cores/mcp-core)                   | Published source-agnostic machinery for read-only MCP servers: tools, budget, errors, cursors                    |
-| [packages/cores/file-core](packages/cores/file-core)                 | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                     |
-| [packages/cores/db-core](packages/cores/db-core)                     | Published shared machinery for read-only, dialect-agnostic, database-backed MCP servers                          |
-| [packages/servers/mssql-mcp](packages/servers/mssql-mcp)             | Standalone published product: a read-only MCP server for Microsoft SQL Server                                    |
-| [packages/cores/ooxml-core](packages/cores/ooxml-core)               | Published shared reader for OOXML containers: zip, OPC, relationships, content types                             |
-| [packages/servers/excel-mcp](packages/servers/excel-mcp)             | Standalone published product: an MCP server that reads local Excel workbooks                                     |
-| [packages/servers/xml-mcp](packages/servers/xml-mcp)                 | Standalone published product: an MCP server that reads local XML documents                                       |
-| [packages/servers/pdf-mcp](packages/servers/pdf-mcp)                 | Standalone published product: an MCP server that reads local PDF documents                                       |
-| [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                   |
-| [products/chat/contracts](products/chat/contracts)                   | Shared zod schemas of the chat product, consumed by both its api and its web app                                 |
-| [products/chat/api](products/chat/api)                               | NestJS 12 chat backend, localized (`en`, `tr`)                                                                   |
-| [products/chat/web](products/chat/web)                               | TanStack Start + Mantine + Tailwind chat frontend, localized (`en`, `tr`)                                        |
+| Path                                                                 | Role                                                                                                               |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [packages/http/spec](packages/http/spec)                             | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages                 |
+| [packages/http/conformance](packages/http/conformance)               | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                  |
+| [packages/http/core](packages/http/core)                             | TS reference implementation; spec types are generated, never hand-written. Internal                                |
+| [sdks/dotnet](sdks/dotnet)                                           | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                                        |
+| [sdks/nestjs](sdks/nestjs)                                           | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md))   |
+| [sdks/nestjs/samples/agent-client](sdks/nestjs/samples/agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                               |
+| [packages/cores/mcp-core](packages/cores/mcp-core)                   | Published source-agnostic machinery for read-only MCP servers: tools, budget, errors, cursors                      |
+| [packages/cores/file-core](packages/cores/file-core)                 | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                       |
+| [packages/cores/db-core](packages/cores/db-core)                     | Published shared machinery for read-only, dialect-agnostic, database-backed MCP servers                            |
+| [packages/servers/mssql-mcp](packages/servers/mssql-mcp)             | Standalone published product: a read-only MCP server for Microsoft SQL Server                                      |
+| [packages/cores/ooxml-core](packages/cores/ooxml-core)               | Published shared reader for OOXML containers: zip, OPC, relationships, content types                               |
+| [packages/servers/excel-mcp](packages/servers/excel-mcp)             | Standalone published product: an MCP server that reads local Excel workbooks                                       |
+| [packages/servers/xml-mcp](packages/servers/xml-mcp)                 | Standalone published product: an MCP server that reads local XML documents                                         |
+| [packages/servers/pdf-mcp](packages/servers/pdf-mcp)                 | Standalone published product: an MCP server that reads local PDF documents                                         |
+| [packages/servers/llm-mcp](packages/servers/llm-mcp)                 | Standalone published product: an MCP server that lets a planning agent hand bounded language work to a local model |
+| [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                     |
+| [products/chat/contracts](products/chat/contracts)                   | Shared zod schemas of the chat product, consumed by both its api and its web app                                   |
+| [products/chat/api](products/chat/api)                               | NestJS 12 chat backend, localized (`en`, `tr`)                                                                     |
+| [products/chat/web](products/chat/web)                               | TanStack Start + Mantine + Tailwind chat frontend, localized (`en`, `tr`)                                          |
 
 `packages/toolchain/eslint-config` and `packages/toolchain/typescript-config` are internal configuration packages.
 `packages/lab/xml-lab` is an evidence harness with no shipping surface.

@@ -283,6 +283,7 @@ export const apiEnvSchema = z.preprocess(
         .int()
         .positive()
         .default(CODEX_MAX_WORKSPACES_DEFAULT),
+      CHAT_CODEX_LLM_MCP_ENTRY: z.string().trim().min(1).optional(),
 
       CHAT_TOOL_APPROVAL_SECRET: z.string().min(32).optional(),
     })
