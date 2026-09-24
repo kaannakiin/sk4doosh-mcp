@@ -14,8 +14,6 @@ spec, a guard comment or the package README.
   name, location, required-ness and body media type between the SDK catalog and the document
   catalog of the .NET test controllers. It does not compare argument schemas, and it does not yet run
   against a real backend that embeds the SDK.
-- **An extensible cookie deny-list.** `cookieDenyList` in `@sk-mcp/openapi` replaces the default
-  rather than extending it, and the gateway's config exposes neither.
 - **Tests for the gateway's config refusals.** Plain HTTP without token exchange bound to a
   non-loopback host, token exchange on stdio (`token_exchange_requires_http`), and the choice
   between security alternatives have no tests.

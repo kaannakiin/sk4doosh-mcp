@@ -16,6 +16,7 @@ import { upgradeSwagger2 } from "./parse/swagger2.js";
  * @param loader reads external references; without one, a document that has any is refused
  * @param strict makes a document that fails validation fatal
  * @param cookieDenyList cookie names treated as identity even when no security scheme declares them
+ * @param identityCookies further cookie names treated as identity, on top of the deny-list
  * @param outputSchema `omit` for a backend whose responses do not match its document
  * @param hoistPathPrefix a leading path segment moved from every route into the base URL
  * @param requestBodyRequired `always` treats an undeclared `requestBody.required` as true, for a
@@ -28,6 +29,7 @@ export interface IngestOptions {
   readonly loader?: DocumentLoader;
   readonly strict?: boolean;
   readonly cookieDenyList?: RegExp;
+  readonly identityCookies?: readonly string[];
   readonly outputSchema?: "document" | "omit";
   readonly hoistPathPrefix?: string;
   readonly requestBodyRequired?: "document" | "always";
@@ -93,7 +95,10 @@ export async function ingest(
     ...(options.serverVariables === undefined
       ? {}
       : { variables: options.serverVariables }),
-    cookieDenyList: options.cookieDenyList ?? defaultCookieDenyList,
+    cookieDenyList: withIdentityCookies(
+      options.cookieDenyList ?? defaultCookieDenyList,
+      options.identityCookies ?? [],
+    ),
     outputSchema: options.outputSchema ?? "document",
     requestBodyRequired: options.requestBodyRequired ?? "document",
     ...(options.hoistPathPrefix === undefined
@@ -114,4 +119,23 @@ export async function ingest(
     diagnostics: diagnostics.all,
     fatal: diagnostics.fatal,
   };
+}
+
+/**
+ * Guard: the names extend the deny-list and never replace it. An operator adding
+ * the one session cookie their backend uses must not thereby switch off the
+ * default names that catch every other one.
+ */
+function withIdentityCookies(
+  denyList: RegExp,
+  names: readonly string[],
+): RegExp {
+  if (names.length === 0) {
+    return denyList;
+  }
+  const exact = names.map((name) =>
+    name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  );
+
+  return new RegExp(`${denyList.source}|^(?:${exact.join("|")})$`, "i");
 }

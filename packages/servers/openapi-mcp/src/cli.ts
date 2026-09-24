@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import type { DocumentLoader } from "@sk-mcp/openapi";
 import { buildGatewayCatalog, summarize } from "./catalog/build.js";
-import { createBoundedFetch } from "./net/fetch.js";
+import { createBoundedFetch, HostNotAllowed } from "./net/fetch.js";
 import { asciiLower } from "./platform/ascii.js";
 import { readConfig } from "./platform/config.js";
 import { directoryOf, readText, readWithin } from "./platform/files.js";
@@ -54,7 +54,10 @@ const documentHost = isUrl
   ? asciiLower(new URL(config.source).host)
   : undefined;
 const documentFetch = createBoundedFetch(
-  new Set(documentHost === undefined ? [] : [documentHost]),
+  new Set([
+    ...(documentHost === undefined ? [] : [documentHost]),
+    ...config.refHosts.map((host) => asciiLower(host)),
+  ]),
 );
 const documentLimit = 64 * 1024 * 1024;
 
@@ -102,6 +105,13 @@ const gateway = await buildGatewayCatalog(
   config.allowHosts,
   documentUrl,
   loader,
+).catch((error: unknown) =>
+  stop(
+    error instanceof HostNotAllowed
+      ? `sk-mcp-openapi: the document references a schema on '${error.host}', which is not a reference host; add it to "refHosts" in the config to allow it.`
+      : `sk-mcp-openapi cannot resolve the document: ${(error as Error).message}`,
+    2,
+  ),
 );
 for (const line of summarize(gateway.ingestion, gateway.catalog.diagnostics)) {
   process.stderr.write(`${line}\n`);

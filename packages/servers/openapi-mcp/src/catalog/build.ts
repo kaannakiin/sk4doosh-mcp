@@ -53,6 +53,7 @@ export async function buildGatewayCatalog(
       : { serverVariables: config.serverVariables }),
     ...(loader === undefined ? {} : { loader }),
     strict: config.strict,
+    identityCookies: config.identityCookies,
     outputSchema: config.outputSchema,
     requestBodyRequired: config.requestBodyRequired,
     ...(config.hoistPathPrefix === undefined

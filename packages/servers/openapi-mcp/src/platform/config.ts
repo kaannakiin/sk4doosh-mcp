@@ -67,6 +67,13 @@ export const configSchema = z
       .default({}),
     credentials: z.record(z.string(), credential).default({}),
     allowHosts: z.array(z.string().min(1)).default([]),
+    /**
+     * Guard: kept apart from `allowHosts`. That list is where calls and their
+     * credentials may go; this one is where the document's author may make the
+     * gateway fetch schemas from. Merging them would let one entry widen both.
+     */
+    refHosts: z.array(z.string().min(1)).default([]),
+    identityCookies: z.array(z.string().min(1)).default([]),
     limits: z
       .object({
         timeoutMs: z

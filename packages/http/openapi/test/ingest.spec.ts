@@ -195,6 +195,22 @@ describe("ingest: OpenAPI 3.0", () => {
     expect(composed.headers).toEqual({ cookie: "lang=tr" });
   });
 
+  it("extends the cookie deny-list with named identity cookies", async () => {
+    const result = await ingest(petstore, { identityCookies: ["LANG"] });
+    const list = endpointAt(result, "GET /pets");
+
+    expect(
+      list?.descriptor.parameters?.map((p) => `${p.in}:${p.name}`),
+    ).toEqual(["query:limit", "query:status", "query:tags"]);
+    expect(list?.descriptor.auth.carriers).toEqual(
+      expect.arrayContaining([
+        { in: "cookie", name: "lang" },
+        { in: "cookie", name: "ssb_at" },
+        { in: "cookie", name: "JSESSIONID" },
+      ]),
+    );
+  });
+
   it("refuses an external reference without a loader", async () => {
     const result = await ingest({
       openapi: "3.1.0",
