@@ -470,7 +470,9 @@ public class ArgumentMappingTests
     {
         TextFile text => new JsonObject
         {
-            ["text"] = text.Text, ["filename"] = text.FileName, ["mediaType"] = text.MediaType,
+            ["text"] = text.Text,
+            ["filename"] = text.FileName,
+            ["mediaType"] = text.MediaType,
         },
         InlineFile inline => new JsonObject
         {
