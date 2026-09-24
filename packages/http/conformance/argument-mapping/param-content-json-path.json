@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerikli path parametresi tek segment olarak kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items/{key}",
+      "parameters": [
+        {
+          "name": "key",
+          "in": "path",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "key": ["a", "b"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items/%5B%22a%22%2C%22b%22%5D"
+  }
+}

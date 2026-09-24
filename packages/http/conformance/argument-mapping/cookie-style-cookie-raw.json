@@ -1,0 +1,27 @@
+{
+  "kind": "argument-mapping",
+  "description": "cookie stili degeri kodlamadan yazar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "v",
+          "in": "cookie",
+          "type": "string",
+          "style": "cookie"
+        }
+      ]
+    },
+    "arguments": {
+      "v": "a.b-c%20"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "v=a.b-c%20"
+    }
+  }
+}

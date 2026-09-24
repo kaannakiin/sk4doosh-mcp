@@ -1,0 +1,49 @@
+{
+  "kind": "detail",
+  "description": "deprecated aracin yuklenmis tanimi deprecated tasir",
+  "input": {
+    "tool": {
+      "name": "old_op",
+      "description": "Old listing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "deprecated": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      },
+      "auth": {
+        "anonymous": "yes",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "old_op",
+    "description": "Old listing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "deprecated": true
+  }
+}

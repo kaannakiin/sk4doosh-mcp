@@ -1,0 +1,25 @@
+{
+  "kind": "argument-mapping",
+  "description": "matrix stili dizide elemanlari tek anahtarda virgulle katlar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items/{id}",
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "integer",
+          "array": true,
+          "style": "matrix"
+        }
+      ]
+    },
+    "arguments": {
+      "id": [1, 2]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items/;id=1,2"
+  }
+}

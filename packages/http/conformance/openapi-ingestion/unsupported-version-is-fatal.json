@@ -1,0 +1,23 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "desteklenmeyen surum katalogu durdurur",
+  "input": {
+    "document": {
+      "openapi": "4.0.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "paths": {}
+    }
+  },
+  "expected": {
+    "endpoints": [],
+    "diagnostics": [
+      {
+        "code": "openapi_version_unsupported",
+        "at": "/openapi"
+      }
+    ]
+  }
+}

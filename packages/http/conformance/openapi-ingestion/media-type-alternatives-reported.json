@@ -1,0 +1,99 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "JSON secilir, diger govde media turleri bildirilir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "post": {
+            "operationId": "createItem",
+            "requestBody": {
+              "required": true,
+              "content": {
+                "application/xml": {
+                  "schema": {
+                    "type": "object"
+                  }
+                },
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "a": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "application/octet-stream": {
+                  "schema": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "POST /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "createItem",
+          "method": "POST",
+          "route": "/items",
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "request_media_type_alternative_ignored",
+        "at": "/paths/~1items/post/requestBody/content/application~1xml"
+      },
+      {
+        "code": "request_media_type_alternative_ignored",
+        "at": "/paths/~1items/post/requestBody/content/application~1octet-stream"
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerikli querystring tum sorgu dizesidir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/search",
+      "parameters": [
+        {
+          "name": "q",
+          "in": "querystring",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "q": {
+        "a": 1
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/search?%7B%22a%22%3A1%7D"
+  }
+}

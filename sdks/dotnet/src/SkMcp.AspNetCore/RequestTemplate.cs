@@ -5,11 +5,13 @@ using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Requests;
 
-public enum ParameterLocation { Path, Query, Header }
+public enum ParameterLocation { Path, Query, Header, Cookie, Querystring }
 
 public enum ParameterKind { String, Integer, Number, Boolean }
 
 public enum ObjectNotation { Bracket, Dot }
+
+public enum PathStyle { Label, Matrix }
 
 /// <param name="Name">
 /// The member's wire name; the full query key is the parameter name, the notation's structural
@@ -32,11 +34,30 @@ public sealed record ObjectMember(string Name, ParameterKind Kind, bool IsArray 
 /// in this order. Frozen at template-build time so the composer never reads a schema and the
 /// agent's own key order cannot change the composed string.
 /// </param>
+/// <param name="PathStyle"><c>null</c> means simple. Only a path parameter carries this.</param>
+/// <param name="Explode">Only a path parameter's <c>label</c>/<c>matrix</c> style reads this.</param>
+/// <param name="RawCookie">
+/// A cookie parameter declaring style <c>cookie</c>: its value is written without percent-encoding,
+/// gated to <see cref="RequestTemplate.IsCookieOctets"/> instead.
+/// </param>
+/// <param name="AllowReserved">Only a query parameter carries this; writes RFC 3986 reserved characters raw.</param>
+/// <param name="ContentType">
+/// Non-null means the parameter is serialized as this media type rather than by style: the value is
+/// written as JSON or text, or — for a querystring — as urlencoded pairs of <see cref="Members"/>.
+/// Mutually exclusive with the object-valued reading of <see cref="Members"/>.
+/// </param>
 public sealed record ParameterBinding(
     string Name, ParameterLocation Location, ParameterKind Kind, bool IsArray = false,
     string? ArraySeparator = null, string? Argument = null, ArgumentFill? Fill = null,
     IReadOnlyList<ObjectMember>? Members = null,
-    ObjectNotation Notation = ObjectNotation.Bracket);
+    ObjectNotation Notation = ObjectNotation.Bracket,
+    PathStyle? PathStyle = null, bool Explode = false, bool RawCookie = false,
+    bool AllowReserved = false, string? ContentType = null);
+
+/// <summary>The normalised style/explode outcome for one scalar or array parameter.</summary>
+public sealed record ScalarSerialization(
+    string? ArraySeparator = null, PathStyle? PathStyle = null,
+    bool Explode = false, bool RawCookie = false, bool AllowReserved = false);
 
 public enum FileSource { Text, Base64, Ref }
 
@@ -70,6 +91,9 @@ public static partial class MediaTypes
         mediaType == Json || mediaType == "text/json" || JsonSuffix().IsMatch(mediaType);
 
     public static bool IsForm(string mediaType) => mediaType is UrlEncoded or Multipart;
+
+    /// <summary>A media type the body is written as the raw bytes of one file.</summary>
+    public static bool IsBinary(string mediaType) => !IsJson(mediaType) && mediaType != Text && !IsForm(mediaType);
 }
 
 public sealed partial class RequestTemplate
@@ -90,7 +114,8 @@ public sealed partial class RequestTemplate
     /// </param>
     /// <returns>The delimiter to join array items with, or <c>null</c> to repeat the key.</returns>
     /// <exception cref="SkMcpTemplateException">
-    /// <c>unsupported_array_style</c> for a pairing that has no wire form.
+    /// <c>unsupported_array_style</c> for a pairing that has no wire form, and
+    /// <c>unsupported_parameter_style</c> for a style no query parameter carries.
     /// </exception>
     public static string? ArraySeparatorFor(string? style, bool? explode, string parameterName)
     {
@@ -103,9 +128,7 @@ public sealed partial class RequestTemplate
         }
         if (!Delimiters.TryGetValue(resolved, out string? delimiter))
         {
-            throw new SkMcpTemplateException(
-                SkMcpTemplateException.UnsupportedArrayStyle,
-                $"Parameter '{parameterName}' declares an unknown style '{resolved}'.");
+            throw UnsupportedStyle(parameterName, resolved, ParameterLocation.Query);
         }
         if (explode ?? resolved == "form")
         {
@@ -119,6 +142,93 @@ public sealed partial class RequestTemplate
         }
         return delimiter;
     }
+
+    private static readonly Dictionary<ParameterLocation, HashSet<string>> StylesByLocation = new()
+    {
+        [ParameterLocation.Path] = new HashSet<string>(StringComparer.Ordinal) { "simple", "label", "matrix" },
+        [ParameterLocation.Query] = new HashSet<string>(StringComparer.Ordinal)
+            { "form", "spaceDelimited", "pipeDelimited", "deepObject" },
+        [ParameterLocation.Header] = new HashSet<string>(StringComparer.Ordinal) { "simple", "form" },
+        [ParameterLocation.Cookie] = new HashSet<string>(StringComparer.Ordinal) { "form", "cookie" },
+        [ParameterLocation.Querystring] = new HashSet<string>(StringComparer.Ordinal),
+    };
+
+    private static SkMcpTemplateException UnsupportedStyle(
+        string parameterName, string style, ParameterLocation location) =>
+        new(SkMcpTemplateException.UnsupportedParameterStyle,
+            $"Parameter '{parameterName}' declares style '{style}', which a {location.ToString().ToLowerInvariant()} parameter cannot carry.");
+
+    /// <summary>Normalises a scalar or array parameter's OpenAPI style/explode for its location.</summary>
+    /// <exception cref="SkMcpTemplateException">
+    /// <c>unsupported_parameter_style</c> for a style the location has no wire form for, and every
+    /// error <see cref="ArraySeparatorFor"/> raises.
+    /// </exception>
+    public static ScalarSerialization SerializationFor(
+        ParameterLocation location, string? style, bool? explode, bool isArray, string parameterName,
+        bool? allowReserved = null)
+    {
+        if (style is not null && !StylesByLocation[location].Contains(style))
+        {
+            throw UnsupportedStyle(parameterName, style, location);
+        }
+        if (allowReserved == true && location != ParameterLocation.Query)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedParameterStyle,
+                $"Parameter '{parameterName}' declares allowReserved, which only a query parameter can carry.");
+        }
+        switch (location)
+        {
+            case ParameterLocation.Path:
+                return new ScalarSerialization(
+                    PathStyle: style switch
+                    {
+                        "label" => Requests.PathStyle.Label,
+                        "matrix" => Requests.PathStyle.Matrix,
+                        _ => null,
+                    },
+                    Explode: explode == true);
+            case ParameterLocation.Query:
+                return new ScalarSerialization(
+                    ArraySeparator: isArray ? ArraySeparatorFor(style, explode, parameterName) : null,
+                    AllowReserved: allowReserved == true);
+            case ParameterLocation.Querystring:
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.UnsupportedParameterContent,
+                    $"Parameter '{parameterName}' is a querystring, which is serialized from content, never by style.");
+            case ParameterLocation.Header:
+                if (!isArray)
+                {
+                    return new ScalarSerialization();
+                }
+                return new ScalarSerialization(
+                    ArraySeparator: style == "simple" ? "," : ArraySeparatorFor(style, explode, parameterName));
+            case ParameterLocation.Cookie:
+                // Guard: an exploded cookie array repeats the cookie name, and a server keeps one
+                // of the repeats — which one is not specified — so the other values are lost
+                // without an error.
+                if (explode == true)
+                {
+                    throw new SkMcpTemplateException(
+                        SkMcpTemplateException.UnsupportedParameterStyle,
+                        $"Cookie parameter '{parameterName}' declares explode true, which repeats the cookie name; set explode false.");
+                }
+                return new ScalarSerialization(
+                    ArraySeparator: isArray ? "," : null,
+                    RawCookie: style == "cookie");
+            default:
+                throw new ArgumentOutOfRangeException(nameof(location));
+        }
+    }
+
+    [GeneratedRegex(@"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")]
+    private static partial Regex CookieNamePattern();
+
+    [GeneratedRegex(@"^[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*$")]
+    private static partial Regex CookieOctetPattern();
+
+    /// <summary>RFC 6265 <c>cookie-octet</c>: printable US-ASCII without space, <c>"</c>, <c>,</c>, <c>;</c> and <c>\</c>.</summary>
+    public static bool IsCookieOctets(string value) => CookieOctetPattern().IsMatch(value);
 
     public HttpMethod Method { get; }
     public string RouteTemplate { get; }
@@ -265,7 +375,12 @@ public sealed partial class RequestTemplate
             ? element.ValueKind == JsonValueKind.Array
                 && element.EnumerateArray().All(item => FitsKind(item, binding.Kind))
             : FitsKind(element, binding.Kind);
-        if (!ok)
+        IEnumerable<JsonElement> items = element.ValueKind == JsonValueKind.Array
+            ? element.EnumerateArray()
+            : [element];
+        bool cookieSafe = !binding.RawCookie
+            || items.All(item => item.ValueKind != JsonValueKind.String || IsCookieOctets(item.GetString()!));
+        if (!ok || !cookieSafe)
         {
             throw new SkMcpTemplateException(
                 SkMcpTemplateException.InvalidFillConstant,
@@ -317,7 +432,7 @@ public sealed partial class RequestTemplate
     /// </remarks>
     private static void AssertObjectBinding(ParameterBinding binding)
     {
-        if (binding.Members is not { } members)
+        if (binding.ContentType is not null || binding.Members is not { } members)
         {
             return;
         }
@@ -357,6 +472,106 @@ public sealed partial class RequestTemplate
         }
     }
 
+    /// <summary>Gates a parameter against the slots the endpoint's identity carriers occupy.</summary>
+    /// <remarks>
+    /// Guard: identity is never an argument. A data parameter in a slot an identity carrier uses
+    /// would let the agent write the caller's credential, or collide with it on the wire. Header
+    /// names compare case-insensitively, as HTTP defines them; query and cookie names are
+    /// case-sensitive.
+    /// </remarks>
+    private static void AssertNoCarrierSlot(
+        IReadOnlyList<ParameterBinding> parameters, IReadOnlyList<IdentityCarrier> carriers)
+    {
+        foreach (ParameterBinding parameter in parameters)
+        {
+            string location = parameter.Location.ToString().ToLowerInvariant();
+            bool occupied = carriers.Any(carrier =>
+                carrier.In == location
+                && (location == "header"
+                    ? string.Equals(carrier.Name, parameter.Name, StringComparison.OrdinalIgnoreCase)
+                    : carrier.Name == parameter.Name));
+            if (occupied)
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.IdentityCarrierParameter,
+                    $"{location} parameter '{parameter.Name}' occupies the slot an identity carrier uses; identity is never an argument.");
+            }
+        }
+    }
+
+    /// <summary>Gates a content-serialized binding at tool-production time.</summary>
+    /// <remarks>The twin is <c>assertContentBinding</c> in packages/http/core/src/request-template.ts.</remarks>
+    private static void AssertContentBinding(ParameterBinding binding)
+    {
+        if (binding.ContentType is not { } contentType)
+        {
+            return;
+        }
+        if (contentType == MediaTypes.UrlEncoded && binding.Location != ParameterLocation.Querystring)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedParameterContent,
+                $"Parameter '{binding.Name}' is urlencoded content, which only a querystring can carry.");
+        }
+        if (binding.Location == ParameterLocation.Querystring && contentType == MediaTypes.Text)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedParameterContent,
+                $"Querystring '{binding.Name}' is text/plain, which has no query-string form; use JSON or urlencoded content.");
+        }
+        bool urlencoded = contentType == MediaTypes.UrlEncoded;
+        if (binding.Location == ParameterLocation.Header && ReservedHeaderNames.Contains(binding.Name))
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.IdentityCarrierArgument,
+                $"Header parameter '{binding.Name}' collides with an identity carrier; identity is never an argument.");
+        }
+        if (binding.Location == ParameterLocation.Cookie && !CookieNamePattern().IsMatch(binding.Name))
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.InvalidCookieName,
+                $"Cookie parameter '{binding.Name}' is not an RFC 6265 cookie name.");
+        }
+        if (urlencoded && (binding.Members?.Count ?? 0) == 0)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedParameterContent,
+                $"Querystring '{binding.Name}' is urlencoded but declares no members to write.");
+        }
+        foreach (ObjectMember member in binding.Members ?? [])
+        {
+            if (StructuralMemberName().IsMatch(member.Name))
+            {
+                throw new SkMcpTemplateException(
+                    SkMcpTemplateException.UnsupportedObjectNesting,
+                    $"Member '{binding.Name}.{member.Name}' carries a name the query string reads as structure; rename it.");
+            }
+        }
+    }
+
+    /// <summary>Gates the endpoint's querystring parameter against every other parameter.</summary>
+    /// <remarks>
+    /// Guard: a querystring parameter is the whole query string, so a second one or any query
+    /// parameter beside it would have to be merged into it by a rule OpenAPI does not define. The
+    /// twin is <c>assertQuerystring</c> in packages/http/core/src/request-template.ts.
+    /// </remarks>
+    private static void AssertQuerystring(IReadOnlyList<ParameterBinding> parameters)
+    {
+        int querystrings = parameters.Count(p => p.Location == ParameterLocation.Querystring);
+        if (querystrings > 1)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.MultipleQuerystring,
+                "An operation declares more than one querystring parameter.");
+        }
+        if (querystrings == 1 && parameters.Any(p => p.Location == ParameterLocation.Query))
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.QuerystringWithQuery,
+                "An operation declares a querystring parameter beside query parameters.");
+        }
+    }
+
     public static RequestTemplate Create(
         HttpMethod method,
         string routeTemplate,
@@ -370,7 +585,9 @@ public sealed partial class RequestTemplate
         IReadOnlySet<string>? requiredFills = null,
         string? contentType = null,
         FormBinding? form = null,
-        IReadOnlySet<FileSource>? fileSources = null)
+        IReadOnlySet<FileSource>? fileSources = null,
+        IReadOnlyList<IdentityCarrier>? carriers = null,
+        bool binaryBody = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(routeTemplate);
         parameters ??= [];
@@ -395,7 +612,11 @@ public sealed partial class RequestTemplate
         foreach (ParameterBinding parameter in parameters)
         {
             AssertObjectBinding(parameter);
-            AssertConstantFits(parameter);
+            AssertContentBinding(parameter);
+            if (parameter.ContentType is null)
+            {
+                AssertConstantFits(parameter);
+            }
             if (parameter.Fill is null && !agentNames.Add(parameter.Argument ?? parameter.Name))
             {
                 throw new SkMcpTemplateException(
@@ -408,6 +629,10 @@ public sealed partial class RequestTemplate
                     SkMcpTemplateException.DuplicateArgument,
                     $"Duplicate argument name '{parameter.Name}'.");
             }
+            if (parameter.ContentType is not null)
+            {
+                continue;
+            }
             if (parameter.Location == ParameterLocation.Header
                 && ReservedHeaderNames.Contains(parameter.Name))
             {
@@ -415,12 +640,17 @@ public sealed partial class RequestTemplate
                     SkMcpTemplateException.IdentityCarrierArgument,
                     $"Header parameter '{parameter.Name}' collides with an identity carrier; identity is never an argument.");
             }
-            if (parameter.Location == ParameterLocation.Path && parameter.IsArray)
+            if (parameter.Location == ParameterLocation.Cookie
+                && !CookieNamePattern().IsMatch(parameter.Name))
             {
                 throw new SkMcpTemplateException(
-                    SkMcpTemplateException.PathParameterArray,
-                    $"Path parameter '{parameter.Name}' cannot be an array.");
+                    SkMcpTemplateException.InvalidCookieName,
+                    $"Cookie parameter '{parameter.Name}' is not an RFC 6265 cookie name.");
             }
+            // A repeated header is unrepresentable: ComposedRequest.Headers is a
+            // Dictionary<string, string>, so the second write would overwrite the first. Folding
+            // into one comma-separated value (RFC 9110 §5.3) is the only shape that survives, and
+            // it has to be asked for explicitly.
             if (parameter.Location == ParameterLocation.Header
                 && parameter.IsArray && parameter.ArraySeparator is null)
             {
@@ -429,6 +659,9 @@ public sealed partial class RequestTemplate
                     $"Header parameter '{parameter.Name}' is an array but repeats the key, which a header cannot carry; declare explode false.");
             }
         }
+
+        AssertNoCarrierSlot(parameters, carriers ?? []);
+        AssertQuerystring(parameters);
 
         if (bodyRoot is not null && !names.Add(bodyRoot))
         {
@@ -487,13 +720,14 @@ public sealed partial class RequestTemplate
 
         AssertBodyEncoding(
             hasBody, contentType, form, bodyRoot, bodyProperties, bodyAllowsAdditionalProperties,
-            bodyFills, fileSources);
+            bodyFills, fileSources, binaryBody);
         string? effective = hasBody && contentType is not null && contentType != MediaTypes.Json
             ? contentType
             : null;
         FormBinding? keptForm = effective is null ? null : form;
         IReadOnlySet<FileSource>? keptSources =
             keptForm?.Fields.Any(field => field.Kind == FormFieldKind.File) == true
+                || (effective is not null && MediaTypes.IsBinary(effective))
                 ? fileSources ?? DefaultFileSources
                 : null;
 
@@ -520,7 +754,8 @@ public sealed partial class RequestTemplate
     private static void AssertBodyEncoding(
         bool hasBody, string? contentType, FormBinding? form, string? bodyRoot,
         IReadOnlyCollection<string>? bodyProperties, bool bodyAllowsAdditionalProperties,
-        IReadOnlyDictionary<string, ArgumentFill>? bodyFills, IReadOnlySet<FileSource>? fileSources)
+        IReadOnlyDictionary<string, ArgumentFill>? bodyFills, IReadOnlySet<FileSource>? fileSources,
+        bool binaryBody)
     {
         string type = contentType ?? MediaTypes.Json;
         if (!hasBody)
@@ -544,6 +779,19 @@ public sealed partial class RequestTemplate
             if (bodyRoot is null || form is not null)
             {
                 throw BodyShape("A text/plain body is a single string and takes the body root argument.");
+            }
+            return;
+        }
+        if (MediaTypes.IsBinary(type))
+        {
+            if (!binaryBody || bodyRoot is null || form is not null)
+            {
+                throw BodyShape(
+                    $"A {type} body is written as one file's bytes and takes a file as the body root argument.");
+            }
+            if (fileSources is { Count: 0 })
+            {
+                throw BodyShape("A file body needs at least one file source.");
             }
             return;
         }

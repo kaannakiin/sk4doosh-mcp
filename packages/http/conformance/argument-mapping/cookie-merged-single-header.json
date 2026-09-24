@@ -1,0 +1,32 @@
+{
+  "kind": "argument-mapping",
+  "description": "birden fazla cerez tek header'da bildirim sirasiyla birlesir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        },
+        {
+          "name": "currency",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "currency": "TRY",
+      "lang": "tr"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "lang=tr; currency=TRY"
+    }
+  }
+}

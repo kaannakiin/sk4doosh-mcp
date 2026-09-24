@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "cookie stilinde cerez-oktet olmayan karakter reddedilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "v",
+          "in": "cookie",
+          "type": "string",
+          "style": "cookie"
+        }
+      ]
+    },
+    "arguments": {
+      "v": "a b"
+    }
+  },
+  "expected": {
+    "error": "invalid_cookie_value"
+  }
+}

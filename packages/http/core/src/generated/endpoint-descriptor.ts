@@ -27,9 +27,11 @@ export interface EndpointDescriptor {
   container?: string;
   containerPrefix?: string;
   toolName?: string;
-  method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method:
+    "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "QUERY";
   route: string;
   description?: string;
+  deprecated?: boolean;
   parameters?: Parameter[];
   requestBody?: RequestBody;
   responses?: {
@@ -42,13 +44,24 @@ export interface EndpointDescriptor {
 }
 export interface Parameter {
   name: string;
-  in: "path" | "query" | "header";
+  in: "path" | "query" | "header" | "cookie" | "querystring";
   required: boolean;
   schema: JsonSchemaObject;
-  style?: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
+  style?:
+    | "form"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject"
+    | "simple"
+    | "label"
+    | "matrix"
+    | "cookie";
   explode?: boolean;
   objectNotation?: "bracket" | "dot";
   description?: string;
+  contentType?:
+    "application/json" | "text/plain" | "application/x-www-form-urlencoded";
+  allowReserved?: boolean;
 }
 export interface JsonSchemaObject {
   type?:
@@ -112,6 +125,11 @@ export interface Auth {
   anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
+  carriers?: IdentityCarrier[];
+}
+export interface IdentityCarrier {
+  in: "header" | "query" | "cookie";
+  name: string;
 }
 export interface ArgumentCuration {
   name: string;

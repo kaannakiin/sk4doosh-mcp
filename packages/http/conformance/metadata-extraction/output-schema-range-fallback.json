@@ -1,0 +1,54 @@
+{
+  "kind": "metadata-extraction",
+  "description": "tam 2xx kodu yoksa 2XX yaniti cikti semasi olur",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/r",
+    "description": "R.",
+    "responses": {
+      "2XX": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "op",
+    "description": "R.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "3.2 querystring parametresi urlencoded icerik olarak indirilir",
+  "input": {
+    "document": {
+      "openapi": "3.2.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/search": {
+          "get": {
+            "operationId": "search",
+            "parameters": [
+              {
+                "name": "q",
+                "in": "querystring",
+                "content": {
+                  "application/x-www-form-urlencoded": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "term": {
+                          "type": "string"
+                        },
+                        "page": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /search",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "search",
+          "method": "GET",
+          "route": "/search",
+          "parameters": [
+            {
+              "name": "q",
+              "in": "querystring",
+              "required": false,
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "term": {
+                    "type": "string"
+                  },
+                  "page": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "contentType": "application/x-www-form-urlencoded"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "kind": "metadata-extraction",
+  "description": "kimlik cereziyle ayni adi tasiyan cerez parametresi reddedilir",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items",
+    "parameters": [
+      {
+        "name": "sid",
+        "in": "cookie",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false,
+      "carriers": [
+        {
+          "in": "cookie",
+          "name": "sid"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "error": "identity_carrier_parameter"
+  }
+}

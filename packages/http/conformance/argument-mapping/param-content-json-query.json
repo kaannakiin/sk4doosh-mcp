@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerikli query parametresi JSON olarak serilestirilip tek deger olarak kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "filter": {
+        "a": 1,
+        "b": [1, 2],
+        "c": "x y"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?filter=%7B%22a%22%3A1%2C%22b%22%3A%5B1%2C2%5D%2C%22c%22%3A%22x%20y%22%7D"
+  }
+}

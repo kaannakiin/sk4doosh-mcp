@@ -1,0 +1,28 @@
+{
+  "kind": "metadata-extraction",
+  "description": "text/plain querystring'in sorgu dizesi bicimi yoktur",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/s",
+    "parameters": [
+      {
+        "name": "q",
+        "in": "querystring",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "contentType": "text/plain"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_parameter_content"
+  }
+}

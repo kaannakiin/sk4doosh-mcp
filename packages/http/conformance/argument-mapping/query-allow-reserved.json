@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "allowReserved ayrilmis karakterleri ham yazar; sorguyu bolen & = # + % kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "q",
+          "in": "query",
+          "type": "string",
+          "allowReserved": true
+        }
+      ]
+    },
+    "arguments": {
+      "q": "a/b?c:d@e!f$g'(h)*,;[i]&j=k#l+m%n o"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?q=a/b?c:d@e!f$g'(h)*,;[i]%26j%3Dk%23l%2Bm%25n%20o"
+  }
+}

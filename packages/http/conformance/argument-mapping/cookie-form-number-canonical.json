@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "cerez sayisi kanonik bicimde yazilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "page",
+          "in": "cookie",
+          "type": "number"
+        }
+      ]
+    },
+    "arguments": {
+      "page": 1.5
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "page=1.5"
+    }
+  }
+}

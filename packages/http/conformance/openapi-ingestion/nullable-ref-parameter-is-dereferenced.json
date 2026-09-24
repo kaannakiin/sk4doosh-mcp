@@ -1,0 +1,87 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "nullable $ref parametresi ust seviyede acilir ve null enum'a eklenir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "parameters": [
+              {
+                "name": "status",
+                "in": "query",
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Status"
+                    }
+                  ],
+                  "nullable": true
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "Status": {
+            "type": "string",
+            "enum": ["open", "closed"]
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/items",
+          "parameters": [
+            {
+              "name": "status",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": ["string", "null"],
+                "enum": ["open", "closed", null]
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

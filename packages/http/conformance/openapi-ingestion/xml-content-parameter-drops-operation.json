@@ -1,0 +1,52 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "yazicisi olmayan icerikli parametre operasyonu dusurur",
+  "input": {
+    "document": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "parameters": [
+              {
+                "name": "f",
+                "in": "query",
+                "content": {
+                  "application/xml": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [],
+    "diagnostics": [
+      {
+        "code": "unsupported_parameter_content",
+        "at": "/paths/~1items/get/parameters/0/content"
+      }
+    ]
+  }
+}

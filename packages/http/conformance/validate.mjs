@@ -31,6 +31,7 @@ const expectedKinds = [
   "error-mapping",
   "metadata-extraction",
   "naming",
+  "openapi-ingestion",
   "schema-simplification",
   "search",
   "selection",

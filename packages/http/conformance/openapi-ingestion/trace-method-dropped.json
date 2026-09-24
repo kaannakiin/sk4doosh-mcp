@@ -1,0 +1,66 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "TRACE descriptor'da temsil edilemez ve dusurulur",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "trace": {
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          },
+          "get": {
+            "operationId": "listItems",
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/items",
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "unsupported_method",
+        "at": "/paths/~1items/trace"
+      }
+    ]
+  }
+}

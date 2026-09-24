@@ -26,6 +26,7 @@ public sealed record EndpointDescriptor
     public required string Method { get; init; }
     public required string Route { get; init; }
     public string? Description { get; init; }
+    public bool? Deprecated { get; init; }
     public IReadOnlyList<Parameter>? Parameters { get; init; }
     public RequestBody? RequestBody { get; init; }
     public IReadOnlyDictionary<string, ResponseBody>? Responses { get; init; }
@@ -45,6 +46,8 @@ public sealed record Parameter
     public bool? Explode { get; init; }
     public string? ObjectNotation { get; init; }
     public string? Description { get; init; }
+    public string? ContentType { get; init; }
+    public bool? AllowReserved { get; init; }
 }
 
 public sealed record RequestBody
@@ -91,14 +94,22 @@ public sealed record Auth
     public required Anonymity Anonymous { get; init; }
     public required IReadOnlyList<string> Policies { get; init; }
     public required bool Imperative { get; init; }
+    public IReadOnlyList<IdentityCarrier>? Carriers { get; init; }
 }
 
 public enum Anonymity { Yes, No, Unknown }
+
+public sealed record IdentityCarrier
+{
+    public required string In { get; init; }
+    public required string Name { get; init; }
+}
 
 public sealed record ToolDefinition
 {
     public required string Name { get; init; }
     public required string Description { get; init; }
+    public bool? Deprecated { get; init; }
     public required JsonObject InputSchema { get; init; }
     public JsonObject? OutputSchema { get; init; }
     public required ToolAnnotations Annotations { get; init; }
@@ -139,7 +150,7 @@ public sealed record InvokeSuccess
     public string? Location { get; init; }
 }
 
-public enum SdkErrorCode { UnknownTool, NotInvocable, UnknownArgument, InvalidPathType, MissingPathParameter, HeaderInjection, NullNotAllowed, InvalidType, DeferredValueMissing, DeferredValueInvalid, InvalidFileArgument, FileTooLarge, FileUnresolved, ResponseTooLarge, InvokeTimeout, InternalError }
+public enum SdkErrorCode { UnknownTool, NotInvocable, UnknownArgument, InvalidPathType, MissingPathParameter, HeaderInjection, NullNotAllowed, InvalidType, DeferredValueMissing, DeferredValueInvalid, InvalidCookieValue, CookieCarrierCollision, InvalidFileArgument, FileTooLarge, FileUnresolved, ResponseTooLarge, InvokeTimeout, InternalError }
 
 public enum PayloadShapeKind { Array, Object, Text }
 

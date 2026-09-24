@@ -19,7 +19,7 @@ import {
 import { createToolName } from "./naming.js";
 import { publishFileSchema } from "./file-argument.js";
 import type { FileOptions } from "./file-argument.js";
-import { multipartMediaType } from "./request-template.js";
+import { isBinaryMediaType, multipartMediaType } from "./request-template.js";
 
 function describe(
   schema: JsonSchemaObject,
@@ -216,6 +216,8 @@ function buildInputSchema(
   files: FileOptions | undefined,
 ): InputSchema {
   const multipart = endpoint.requestBody?.contentType === multipartMediaType;
+  const bodyType = endpoint.requestBody?.contentType;
+  const binary = bodyType !== undefined && isBinaryMediaType(bodyType);
   const parameters = endpoint.parameters ?? [];
   const body = endpoint.requestBody?.schema;
   const bodyRequired = endpoint.requestBody?.required;
@@ -291,7 +293,11 @@ function buildInputSchema(
     const cloned = structuredClone(body);
     const key = publish(
       root,
-      multipart ? withFileArguments(cloned, files) : cloned,
+      multipart
+        ? withFileArguments(cloned, files)
+        : binary
+          ? publishFileSchema(cloned, root, files)
+          : cloned,
     );
     if (key !== undefined && bodyRequired !== false) {
       require(key);
@@ -348,11 +354,12 @@ function primaryResponseOf(
   responses: NonNullable<EndpointDescriptor["responses"]>,
 ): JsonSchemaObject | undefined {
   const successes = Object.keys(responses).filter((status) =>
-    status.startsWith("2"),
+    /^2[0-9]{2}$/.test(status),
   );
   const chosen =
     preferredStatuses.find((status) => successes.includes(status)) ??
-    successes.sort((left, right) => Number(left) - Number(right))[0];
+    successes.sort((left, right) => Number(left) - Number(right))[0] ??
+    (responses["2XX"] === undefined ? undefined : "2XX");
   return chosen === undefined ? undefined : responses[chosen]?.schema;
 }
 
@@ -498,6 +505,8 @@ function annotate(method: string): ToolAnnotations {
   switch (method.toUpperCase()) {
     case "GET":
     case "HEAD":
+    case "OPTIONS":
+    case "QUERY":
       return { readOnlyHint: true, idempotentHint: true };
     case "POST":
       return { destructiveHint: false };
@@ -530,6 +539,7 @@ export function createToolDefinition(
     description,
     inputSchema: buildInputSchema(endpoint, variant, relief, files),
     ...(outputSchema === undefined ? {} : { outputSchema }),
+    ...(endpoint.deprecated === true ? { deprecated: true } : {}),
     annotations: annotate(endpoint.method),
     auth: endpoint.auth,
   };

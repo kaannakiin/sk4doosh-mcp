@@ -1,0 +1,96 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "Accept, Content-Type ve Authorization header parametreleri yok sayilir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "parameters": [
+              {
+                "name": "Accept",
+                "in": "header",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "Authorization",
+                "in": "header",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "q",
+                "in": "query",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/items",
+          "parameters": [
+            {
+              "name": "q",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "reserved_header_parameter_ignored",
+        "at": "/paths/~1items/get/parameters/0"
+      },
+      {
+        "code": "reserved_header_parameter_ignored",
+        "at": "/paths/~1items/get/parameters/1"
+      }
+    ]
+  }
+}

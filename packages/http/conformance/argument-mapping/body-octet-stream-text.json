@@ -1,0 +1,27 @@
+{
+  "kind": "argument-mapping",
+  "description": "octet-stream govdesi tek dosyanin baytlaridir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/upload",
+      "parameters": [],
+      "bodyRoot": "file",
+      "contentType": "application/octet-stream"
+    },
+    "arguments": {
+      "file": {
+        "text": "hello"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/upload",
+    "contentType": "application/octet-stream",
+    "bodyFile": {
+      "text": "hello",
+      "filename": "file",
+      "mediaType": "text/plain; charset=utf-8"
+    }
+  }
+}

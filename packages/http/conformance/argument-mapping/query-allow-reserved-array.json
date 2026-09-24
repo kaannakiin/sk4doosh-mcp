@@ -1,0 +1,27 @@
+{
+  "kind": "argument-mapping",
+  "description": "allowReserved dizide her elemani ayri ayri isler, ayraci ham yazar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "q",
+          "in": "query",
+          "type": "string",
+          "array": true,
+          "style": "form",
+          "explode": false,
+          "allowReserved": true
+        }
+      ]
+    },
+    "arguments": {
+      "q": ["a/b", "c,d"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?q=a/b,c%2Cd"
+  }
+}

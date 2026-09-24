@@ -1,0 +1,48 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "yazicisi olmayan govde operasyonu dusurur",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "post": {
+            "operationId": "createItem",
+            "requestBody": {
+              "content": {
+                "application/xml": {
+                  "schema": {
+                    "type": "object"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [],
+    "diagnostics": [
+      {
+        "code": "unsupported_media_type",
+        "at": "/paths/~1items/post/requestBody/content"
+      }
+    ]
+  }
+}

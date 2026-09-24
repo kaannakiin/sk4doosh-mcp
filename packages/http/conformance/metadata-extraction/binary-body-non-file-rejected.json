@@ -1,0 +1,29 @@
+{
+  "kind": "metadata-extraction",
+  "description": "dosya semasi olmayan binary govdenin yazicisi yoktur",
+  "input": {
+    "operationId": "Op",
+    "method": "POST",
+    "route": "/upload",
+    "description": "Upload.",
+    "requestBody": {
+      "contentType": "application/octet-stream",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_body_shape"
+  }
+}

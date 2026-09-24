@@ -1,0 +1,84 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "bos security listesi anonim demektir; bildirilmemis security bilinmiyor",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/open": {
+          "get": {
+            "operationId": "open",
+            "security": [],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        },
+        "/closed": {
+          "get": {
+            "operationId": "closed",
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /open",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "open",
+          "method": "GET",
+          "route": "/open",
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "yes",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      },
+      {
+        "key": "GET /closed",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "closed",
+          "method": "GET",
+          "route": "/closed",
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

@@ -1,15 +1,21 @@
 import { assertUniqueArgumentNames } from "./argument-names.js";
 import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
 import { SkMcpTemplateError } from "./errors.js";
-import type { Parameter } from "./generated/endpoint-descriptor.js";
+import type {
+  IdentityCarrier,
+  Parameter,
+} from "./generated/endpoint-descriptor.js";
 
-export type ParameterLocation = "path" | "query" | "header";
+export type ParameterLocation =
+  "path" | "query" | "header" | "cookie" | "querystring";
 
 export type ParameterKind = "string" | "integer" | "number" | "boolean";
 
 export type ParameterStyle = NonNullable<Parameter["style"]>;
 
 export type ObjectNotation = NonNullable<Parameter["objectNotation"]>;
+
+export type PathStyle = "label" | "matrix";
 
 /**
  * One member of an object-valued query parameter.
@@ -45,6 +51,22 @@ export interface ScalarParameterBinding extends BindingCommon {
    * {@link arraySeparatorFor} so the invalid pairings cannot be represented.
    */
   readonly arraySeparator?: string;
+  readonly pathStyle?: PathStyle;
+  readonly explode?: boolean;
+  readonly rawCookie?: boolean;
+  readonly allowReserved?: boolean;
+}
+
+export type ContentMediaType = NonNullable<Parameter["contentType"]>;
+
+/**
+ * A parameter serialized as a media type rather than by style: the value is written as JSON or
+ * text, or — for a querystring — as urlencoded pairs of the members declared here.
+ */
+export interface ContentParameterBinding extends BindingCommon {
+  readonly kind: "content";
+  readonly mediaType: ContentMediaType;
+  readonly members?: readonly ObjectMemberBinding[];
 }
 
 export interface ObjectParameterBinding extends BindingCommon {
@@ -58,7 +80,8 @@ export interface ObjectParameterBinding extends BindingCommon {
   readonly members: readonly ObjectMemberBinding[];
 }
 
-export type ParameterBinding = ScalarParameterBinding | ObjectParameterBinding;
+export type ParameterBinding =
+  ScalarParameterBinding | ObjectParameterBinding | ContentParameterBinding;
 
 export type FileSource = "text" | "base64" | "ref";
 
@@ -112,12 +135,21 @@ export function isFormMediaType(mediaType: string): boolean {
   return mediaType === urlEncodedMediaType || mediaType === multipartMediaType;
 }
 
+/** A media type the body is written as the raw bytes of one file. */
+export function isBinaryMediaType(mediaType: string): boolean {
+  return (
+    !isJsonMediaType(mediaType) &&
+    mediaType !== textMediaType &&
+    !isFormMediaType(mediaType)
+  );
+}
+
 export const defaultFileSources: ReadonlySet<FileSource> = new Set([
   "text",
   "base64",
 ]);
 
-type ArrayStyle = Exclude<ParameterStyle, "deepObject">;
+type ArrayStyle = "form" | "spaceDelimited" | "pipeDelimited";
 
 const delimiters: Readonly<Record<ArrayStyle, string>> = {
   form: ",",
@@ -144,6 +176,9 @@ export function arraySeparatorFor(
       `Parameter '${parameterName}' is an array and declares style 'deepObject', which addresses object members and has no array form.`,
     );
   }
+  if (!(resolved in delimiters)) {
+    throw unsupportedStyle(parameterName, resolved, "query");
+  }
   if (explode ?? resolved === "form") {
     if (resolved !== "form") {
       throw new SkMcpTemplateError(
@@ -153,7 +188,118 @@ export function arraySeparatorFor(
     }
     return undefined;
   }
-  return delimiters[resolved];
+  return delimiters[resolved as ArrayStyle];
+}
+
+export type ScalarSerialization = Pick<
+  ScalarParameterBinding,
+  "arraySeparator" | "pathStyle" | "explode" | "rawCookie" | "allowReserved"
+>;
+
+const stylesByLocation: Readonly<
+  Record<ParameterLocation, ReadonlySet<ParameterStyle>>
+> = {
+  path: new Set(["simple", "label", "matrix"]),
+  query: new Set(["form", "spaceDelimited", "pipeDelimited", "deepObject"]),
+  header: new Set(["simple", "form"]),
+  cookie: new Set(["form", "cookie"]),
+  querystring: new Set(),
+};
+
+function unsupportedStyle(
+  parameterName: string,
+  style: string,
+  location: ParameterLocation,
+): SkMcpTemplateError {
+  return new SkMcpTemplateError(
+    "unsupported_parameter_style",
+    `Parameter '${parameterName}' declares style '${style}', which a ${location} parameter cannot carry.`,
+  );
+}
+
+/**
+ * Normalises a scalar or array parameter's OpenAPI `style`/`explode` for its location.
+ *
+ * @throws SkMcpTemplateError `unsupported_parameter_style` for a style the location has no wire
+ * form for, and every error {@link arraySeparatorFor} raises.
+ */
+export function serializationFor(
+  location: ParameterLocation,
+  style: ParameterStyle | undefined,
+  explode: boolean | undefined,
+  isArray: boolean,
+  parameterName: string,
+  allowReserved?: boolean,
+): ScalarSerialization {
+  if (style !== undefined && !stylesByLocation[location].has(style)) {
+    throw unsupportedStyle(parameterName, style, location);
+  }
+  if (allowReserved === true && location !== "query") {
+    throw new SkMcpTemplateError(
+      "unsupported_parameter_style",
+      `Parameter '${parameterName}' declares allowReserved, which only a query parameter can carry.`,
+    );
+  }
+  switch (location) {
+    case "path":
+      return {
+        ...(style === "label" || style === "matrix"
+          ? { pathStyle: style }
+          : {}),
+        ...(explode === true ? { explode: true } : {}),
+      };
+    case "query":
+      return {
+        ...separated(
+          isArray
+            ? arraySeparatorFor(style, explode, parameterName)
+            : undefined,
+        ),
+        ...(allowReserved === true ? { allowReserved: true } : {}),
+      };
+    case "querystring":
+      throw new SkMcpTemplateError(
+        "unsupported_parameter_content",
+        `Parameter '${parameterName}' is a querystring, which is serialized from content, never by style.`,
+      );
+    case "header":
+      if (!isArray) {
+        return {};
+      }
+      return separated(
+        style === "simple"
+          ? ","
+          : arraySeparatorFor(style, explode, parameterName),
+      );
+    case "cookie":
+      /**
+       * Guard: an exploded cookie array repeats the cookie name, and a server keeps one of the
+       * repeats — which one is not specified — so the other values are lost without an error.
+       */
+      if (explode === true) {
+        throw new SkMcpTemplateError(
+          "unsupported_parameter_style",
+          `Cookie parameter '${parameterName}' declares explode true, which repeats the cookie name; set explode false.`,
+        );
+      }
+      return {
+        ...(isArray ? { arraySeparator: "," } : {}),
+        ...(style === "cookie" ? { rawCookie: true } : {}),
+      };
+  }
+}
+
+function separated(separator: string | undefined): ScalarSerialization {
+  return separator === undefined ? {} : { arraySeparator: separator };
+}
+
+const cookieName = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+
+const cookieOctets = /^[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*$/;
+
+/** RFC 6265 `cookie-octet`: printable US-ASCII without space, `"`, `,`, `;` and `\`. */
+export function isCookieOctets(value: string): boolean {
+  return cookieOctets.test(value);
 }
 
 export interface RequestTemplate {
@@ -198,6 +344,9 @@ export interface RequestTemplateInput {
   readonly contentType?: string;
   readonly form?: FormBinding;
   readonly fileSources?: ReadonlySet<FileSource>;
+  readonly carriers?: readonly IdentityCarrier[];
+  /** The body root is one file, written as the body's raw bytes. */
+  readonly binaryBody?: boolean;
 }
 
 function bodyShapeError(message: string): SkMcpTemplateError {
@@ -255,6 +404,21 @@ function assertBodyEncoding(
       throw bodyShapeError(
         "A text/plain body is a single string and takes the body root argument.",
       );
+    }
+    return;
+  }
+  if (isBinaryMediaType(contentType)) {
+    if (
+      input.binaryBody !== true ||
+      input.bodyRoot === undefined ||
+      input.form !== undefined
+    ) {
+      throw bodyShapeError(
+        `A ${contentType} body is written as one file's bytes and takes a file as the body root argument.`,
+      );
+    }
+    if (input.fileSources !== undefined && input.fileSources.size === 0) {
+      throw bodyShapeError("A file body needs at least one file source.");
     }
     return;
   }
@@ -352,7 +516,11 @@ function assertConstantFits(binding: ScalarParameterBinding): void {
       ? Array.isArray(value) &&
         value.every((item) => fitsKind(item, binding.kind))
       : fitsKind(value, binding.kind);
-  if (!ok) {
+  const items: readonly unknown[] = Array.isArray(value) ? value : [value];
+  const cookieSafe =
+    binding.rawCookie !== true ||
+    items.every((item) => typeof item !== "string" || isCookieOctets(item));
+  if (!ok || !cookieSafe) {
     throw new SkMcpTemplateError(
       "invalid_fill_constant",
       `The constant filling '${binding.name}' does not fit a ${binding.isArray === true ? "array of " : ""}${binding.kind} ${binding.location} parameter.`,
@@ -402,6 +570,108 @@ function assertObjectBinding(binding: ObjectParameterBinding): void {
       );
     }
     seen.add(member.name);
+  }
+}
+
+/**
+ * Guard: identity is never an argument. A data parameter in a slot an identity carrier uses would
+ * let the agent write the caller's credential, or collide with it on the wire. Header names compare
+ * case-insensitively, as HTTP defines them; query and cookie names are case-sensitive.
+ */
+function assertNoCarrierSlot(
+  parameters: readonly ParameterBinding[],
+  carriers: readonly IdentityCarrier[],
+): void {
+  for (const parameter of parameters) {
+    const occupied = carriers.some(
+      (carrier) =>
+        carrier.in === parameter.location &&
+        (carrier.in === "header"
+          ? carrier.name.toLowerCase() === parameter.name.toLowerCase()
+          : carrier.name === parameter.name),
+    );
+    if (occupied) {
+      throw new SkMcpTemplateError(
+        "identity_carrier_parameter",
+        `${parameter.location} parameter '${parameter.name}' occupies the slot an identity carrier uses; identity is never an argument.`,
+      );
+    }
+  }
+}
+
+function assertContentBinding(binding: ContentParameterBinding): void {
+  if (
+    binding.mediaType === urlEncodedMediaType &&
+    binding.location !== "querystring"
+  ) {
+    throw new SkMcpTemplateError(
+      "unsupported_parameter_content",
+      `Parameter '${binding.name}' is urlencoded content, which only a querystring can carry.`,
+    );
+  }
+  if (
+    binding.location === "querystring" &&
+    binding.mediaType === textMediaType
+  ) {
+    throw new SkMcpTemplateError(
+      "unsupported_parameter_content",
+      `Querystring '${binding.name}' is text/plain, which has no query-string form; use JSON or urlencoded content.`,
+    );
+  }
+  const urlencoded = binding.mediaType === urlEncodedMediaType;
+  if (
+    binding.location === "header" &&
+    reservedHeaderNames.has(binding.name.toLowerCase())
+  ) {
+    throw new SkMcpTemplateError(
+      "identity_carrier_argument",
+      `Header parameter '${binding.name}' collides with an identity carrier; identity is never an argument.`,
+    );
+  }
+  if (binding.location === "cookie" && !cookieName.test(binding.name)) {
+    throw new SkMcpTemplateError(
+      "invalid_cookie_name",
+      `Cookie parameter '${binding.name}' is not an RFC 6265 cookie name.`,
+    );
+  }
+  if (urlencoded && (binding.members ?? []).length === 0) {
+    throw new SkMcpTemplateError(
+      "unsupported_parameter_content",
+      `Querystring '${binding.name}' is urlencoded but declares no members to write.`,
+    );
+  }
+  for (const member of binding.members ?? []) {
+    if (structuralMemberName.test(member.name)) {
+      throw new SkMcpTemplateError(
+        "unsupported_object_nesting",
+        `Member '${binding.name}.${member.name}' carries a name the query string reads as structure; rename it.`,
+      );
+    }
+  }
+}
+
+/**
+ * Guard: a querystring parameter is the whole query string, so a second one or any query
+ * parameter beside it would have to be merged into it by a rule OpenAPI does not define.
+ */
+function assertQuerystring(parameters: readonly ParameterBinding[]): void {
+  const querystrings = parameters.filter(
+    (parameter) => parameter.location === "querystring",
+  );
+  if (querystrings.length > 1) {
+    throw new SkMcpTemplateError(
+      "multiple_querystring",
+      "An operation declares more than one querystring parameter.",
+    );
+  }
+  if (
+    querystrings.length === 1 &&
+    parameters.some((parameter) => parameter.location === "query")
+  ) {
+    throw new SkMcpTemplateError(
+      "querystring_with_query",
+      "An operation declares a querystring parameter beside query parameters.",
+    );
   }
 }
 
@@ -529,6 +799,10 @@ export function createRequestTemplate(
       assertObjectBinding(parameter);
       continue;
     }
+    if (parameter.kind === "content") {
+      assertContentBinding(parameter);
+      continue;
+    }
     assertConstantFits(parameter);
     if (
       parameter.location === "header" &&
@@ -539,10 +813,10 @@ export function createRequestTemplate(
         `Header parameter '${parameter.name}' collides with an identity carrier; identity is never an argument.`,
       );
     }
-    if (parameter.location === "path" && parameter.isArray) {
+    if (parameter.location === "cookie" && !cookieName.test(parameter.name)) {
       throw new SkMcpTemplateError(
-        "path_parameter_array",
-        `Path parameter '${parameter.name}' cannot be an array.`,
+        "invalid_cookie_name",
+        `Cookie parameter '${parameter.name}' is not an RFC 6265 cookie name.`,
       );
     }
     /**
@@ -562,6 +836,9 @@ export function createRequestTemplate(
       );
     }
   }
+
+  assertNoCarrierSlot(parameters, input.carriers ?? []);
+  assertQuerystring(parameters);
 
   const normalizedRoute = input.route.replace(
     routePlaceholder,
@@ -605,9 +882,11 @@ export function createRequestTemplate(
       ? input.contentType
       : undefined;
   const form = contentType === undefined ? undefined : input.form;
-  const fileSources = form?.fields.some((field) => field.kind === "file")
-    ? (input.fileSources ?? defaultFileSources)
-    : undefined;
+  const fileSources =
+    form?.fields.some((field) => field.kind === "file") === true ||
+    (contentType !== undefined && isBinaryMediaType(contentType))
+      ? (input.fileSources ?? defaultFileSources)
+      : undefined;
 
   return {
     method,

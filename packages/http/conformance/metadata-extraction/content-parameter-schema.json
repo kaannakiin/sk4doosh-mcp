@@ -1,0 +1,59 @@
+{
+  "kind": "metadata-extraction",
+  "description": "JSON icerikli parametre ajana semasiyla birlikte siradan bir arguman olarak gorunur",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/items",
+    "description": "Lists items.",
+    "parameters": [
+      {
+        "name": "filter",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          }
+        },
+        "contentType": "application/json"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "op",
+    "description": "Lists items.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["filter"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

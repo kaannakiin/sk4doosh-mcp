@@ -17,11 +17,13 @@ import type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
 import { allowsAdditional, flattenableBody, typeOf } from "./json-schema.js";
 import type { JsonSchemaType } from "./json-schema.js";
 import {
-  arraySeparatorFor,
   createRequestTemplate,
+  isBinaryMediaType,
   isFormMediaType,
+  serializationFor,
 } from "./request-template.js";
 import type {
+  ContentParameterBinding,
   FormBinding,
   FormFieldBinding,
   ObjectMemberBinding,
@@ -111,6 +113,56 @@ function objectBindingFor(
     notation: parameter.objectNotation ?? "bracket",
     members,
     ...(argument === undefined ? {} : { argument }),
+  };
+}
+
+/**
+ * Builds the binding of a content-serialized parameter. A urlencoded querystring freezes its
+ * members from the schema, as an object query parameter does, so the agent's own key order cannot
+ * change the composed string.
+ */
+function contentBindingFor(
+  parameter: NonNullable<EndpointDescriptor["parameters"]>[number],
+  argument: string | undefined,
+  fill: ArgumentFill | undefined,
+): ContentParameterBinding {
+  if (parameter.style !== undefined || parameter.explode !== undefined) {
+    throw new SkMcpTemplateError(
+      "unsupported_parameter_content",
+      `Parameter '${parameter.name}' is serialized as ${String(parameter.contentType)} and cannot also declare a style.`,
+    );
+  }
+  const mediaType =
+    parameter.contentType as ContentParameterBinding["mediaType"];
+  const members: ObjectMemberBinding[] = [];
+  if (mediaType === "application/x-www-form-urlencoded") {
+    for (const [name, schema] of Object.entries(
+      parameter.schema.properties ?? {},
+    )) {
+      const type = typeOf(schema);
+      const isArray = type === "array";
+      const scalar = isArray ? typeOf(schema.items) : type;
+      if (!queryScalars.has(scalar as JsonSchemaType)) {
+        throw new SkMcpTemplateError(
+          "unsupported_object_nesting",
+          `Member '${parameter.name}.${name}' is not a query scalar or an array of them.`,
+        );
+      }
+      members.push({
+        name,
+        kind: kindOf(scalar),
+        ...(isArray ? { isArray: true } : {}),
+      });
+    }
+  }
+  return {
+    name: parameter.name,
+    location: parameter.in,
+    kind: "content",
+    mediaType,
+    ...(members.length === 0 ? {} : { members }),
+    ...(argument === undefined ? {} : { argument }),
+    ...(fill === undefined ? {} : { fill }),
   };
 }
 
@@ -230,6 +282,13 @@ export function createRequestTemplateFromEndpoint(
 
   const requiredFills = new Set<string>();
   const parameters = declared.map((parameter): ParameterBinding => {
+    if (parameter.contentType !== undefined) {
+      const resolved = curation.byWireName.get(parameter.name);
+      if (resolved?.fill !== undefined && parameter.required) {
+        requiredFills.add(parameter.name);
+      }
+      return contentBindingFor(parameter, resolved?.argument, resolved?.fill);
+    }
     if (
       parameter.style === "deepObject" ||
       typeOf(parameter.schema) === "object"
@@ -241,9 +300,14 @@ export function createRequestTemplateFromEndpoint(
     const scalar = isArray
       ? typeOf(parameter.schema.items)
       : typeOf(parameter.schema);
-    const arraySeparator = isArray
-      ? arraySeparatorFor(parameter.style, parameter.explode, parameter.name)
-      : undefined;
+    const serialization = serializationFor(
+      parameter.in,
+      parameter.style,
+      parameter.explode,
+      isArray,
+      parameter.name,
+      parameter.allowReserved,
+    );
     const resolved = curation.byWireName.get(parameter.name);
     if (resolved?.fill !== undefined && parameter.required) {
       requiredFills.add(parameter.name);
@@ -253,7 +317,7 @@ export function createRequestTemplateFromEndpoint(
       location: parameter.in,
       kind: kindOf(scalar),
       isArray,
-      ...(arraySeparator === undefined ? {} : { arraySeparator }),
+      ...serialization,
       ...(resolved?.argument === undefined
         ? {}
         : { argument: resolved.argument }),
@@ -263,9 +327,16 @@ export function createRequestTemplateFromEndpoint(
 
   const contentType = endpoint.requestBody?.contentType;
   const isForm = contentType !== undefined && isFormMediaType(contentType);
+  const binaryBody =
+    contentType !== undefined &&
+    isBinaryMediaType(contentType) &&
+    isFileSchema(body);
+  const carriers = endpoint.auth.carriers;
   const encoding = {
     ...(contentType === undefined ? {} : { contentType }),
     fileSources: fileSourcesOf(files),
+    ...(carriers === undefined ? {} : { carriers }),
+    ...(binaryBody ? { binaryBody: true } : {}),
   };
 
   if (root !== undefined) {

@@ -1,0 +1,75 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "2.0 securityDefinitions apiKey'i tasiyici olur",
+  "input": {
+    "document": {
+      "swagger": "2.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "host": "api.test",
+      "schemes": ["https"],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      },
+      "securityDefinitions": {
+        "Key": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "X-Key"
+        },
+        "Basic": {
+          "type": "basic"
+        }
+      },
+      "security": [
+        {
+          "Key": []
+        },
+        {
+          "Basic": []
+        }
+      ]
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/items",
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false,
+            "carriers": [
+              {
+                "in": "header",
+                "name": "X-Key"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

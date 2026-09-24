@@ -1,0 +1,87 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "multipart dosya alani encoding.contentType'i alir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/upload": {
+          "post": {
+            "operationId": "upload",
+            "requestBody": {
+              "required": true,
+              "content": {
+                "multipart/form-data": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "photo": {
+                        "type": "string",
+                        "format": "binary"
+                      }
+                    }
+                  },
+                  "encoding": {
+                    "photo": {
+                      "contentType": "image/png"
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "POST /upload",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "upload",
+          "method": "POST",
+          "route": "/upload",
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "photo": {
+                  "type": "string",
+                  "contentMediaType": "image/png"
+                }
+              }
+            },
+            "contentType": "multipart/form-data"
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

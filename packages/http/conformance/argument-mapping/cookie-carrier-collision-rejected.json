@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "kimlik cereziyle ayni adi tasiyan arguman cerezi ezmez, reddedilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "lang": "tr"
+    },
+    "carrierCookies": "sid=abc; lang=en"
+  },
+  "expected": {
+    "error": "cookie_carrier_collision"
+  }
+}

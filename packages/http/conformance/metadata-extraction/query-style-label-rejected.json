@@ -1,0 +1,28 @@
+{
+  "kind": "metadata-extraction",
+  "description": "query parametresi path stili tasiyamaz",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items",
+    "parameters": [
+      {
+        "name": "q",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "style": "label"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_parameter_style"
+  }
+}

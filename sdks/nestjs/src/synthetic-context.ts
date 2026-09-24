@@ -1,28 +1,11 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
+import { SkMcpDispatchAborted, type DispatchAbortReason } from "@sk-mcp/core";
 import type { DispatchResult } from "./dispatcher.js";
 import type { OuterConnection } from "./outer-connection.js";
 
-export type DispatchAbortReason = "timeout" | "caller" | "pipeline";
-
-/** Raised when a dispatch is abandoned before the Nest pipeline ended the response. */
-export class SkMcpDispatchAborted extends Error {
-  constructor(readonly reason: DispatchAbortReason) {
-    super(messageFor(reason));
-    this.name = "SkMcpDispatchAborted";
-  }
-}
-
-function messageFor(reason: DispatchAbortReason): string {
-  switch (reason) {
-    case "timeout":
-      return "sk-mcp: the backend did not answer within the invoke deadline.";
-    case "caller":
-      return "sk-mcp: the caller cancelled the request.";
-    case "pipeline":
-      return "sk-mcp: the Nest pipeline threw before it produced a response.";
-  }
-}
+export { SkMcpDispatchAborted };
+export type { DispatchAbortReason };
 
 export interface SyntheticContext {
   req: IncomingMessage;

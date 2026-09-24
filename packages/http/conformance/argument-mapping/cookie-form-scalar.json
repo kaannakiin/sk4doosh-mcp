@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "cerez parametresi tek Cookie header'ina yazilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "lang": "tr"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "lang=tr"
+    }
+  }
+}

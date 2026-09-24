@@ -211,6 +211,18 @@ internal sealed class SkMcpDispatcher(
 
             foreach ((string name, string value) in composed.Headers)
             {
+                if (string.Equals(name, "cookie", StringComparison.OrdinalIgnoreCase))
+                {
+                    string? carried = context.Request.Headers.TryGetValue("Cookie", out StringValues existing)
+                        ? existing.ToString()
+                        : null;
+                    string? merged = RequestComposer.MergeCookieHeader(carried, value);
+                    if (merged is not null)
+                    {
+                        context.Request.Headers["Cookie"] = merged;
+                    }
+                    continue;
+                }
                 context.Request.Headers[name] = value;
             }
             context.Features.Set<IHttpRequestBodyDetectionFeature>(new SyntheticBodyDetection(written is not null));

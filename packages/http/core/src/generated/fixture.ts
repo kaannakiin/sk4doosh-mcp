@@ -8,7 +8,8 @@ export type Fixture =
   | ErrorMappingFixture
   | SchemaSimplificationFixture
   | CardFixture
-  | DetailFixture;
+  | DetailFixture
+  | OpenApiIngestionFixture;
 export type ArgumentFill = (
   | {
       kind: "constant";
@@ -101,6 +102,23 @@ export type ExpectedFile =
       filename?: string;
       mediaType?: string;
     };
+export type ExpectedFile1 =
+  | {
+      text: string;
+      filename: string;
+      mediaType: string;
+    }
+  | {
+      base64: string;
+      byteLength: number;
+      filename: string;
+      mediaType: string;
+    }
+  | {
+      ref: string;
+      filename?: string;
+      mediaType?: string;
+    };
 export type SdkErrorCode =
   | "unknown_tool"
   | "not_invocable"
@@ -112,6 +130,8 @@ export type SdkErrorCode =
   | "invalid_type"
   | "deferred_value_missing"
   | "deferred_value_invalid"
+  | "invalid_cookie_value"
+  | "cookie_carrier_collision"
   | "invalid_file_argument"
   | "file_too_large"
   | "file_unresolved"
@@ -203,9 +223,11 @@ export interface EndpointDescriptor {
   container?: string;
   containerPrefix?: string;
   toolName?: string;
-  method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method:
+    "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "QUERY";
   route: string;
   description?: string;
+  deprecated?: boolean;
   parameters?: Parameter[];
   requestBody?: RequestBody;
   responses?: {
@@ -218,13 +240,24 @@ export interface EndpointDescriptor {
 }
 export interface Parameter {
   name: string;
-  in: "path" | "query" | "header";
+  in: "path" | "query" | "header" | "cookie" | "querystring";
   required: boolean;
   schema: JsonSchemaObject;
-  style?: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
+  style?:
+    | "form"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject"
+    | "simple"
+    | "label"
+    | "matrix"
+    | "cookie";
   explode?: boolean;
   objectNotation?: "bracket" | "dot";
   description?: string;
+  contentType?:
+    "application/json" | "text/plain" | "application/x-www-form-urlencoded";
+  allowReserved?: boolean;
 }
 export interface JsonSchemaObject {
   type?:
@@ -288,10 +321,16 @@ export interface Auth {
   anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
+  carriers?: IdentityCarrier[];
+}
+export interface IdentityCarrier {
+  in: "header" | "query" | "cookie";
+  name: string;
 }
 export interface ToolDefinition {
   name: string;
   description: string;
+  deprecated?: boolean;
   inputSchema: JsonSchemaObject;
   outputSchema?: JsonSchemaObject;
   annotations: ToolAnnotations;
@@ -314,7 +353,13 @@ export interface MetadataExtractionExpectedError {
     | "invalid_fill_constant"
     | "hidden_required_omitted"
     | "variant_declaration_conflict"
-    | "unsupported_body_shape";
+    | "unsupported_body_shape"
+    | "unsupported_parameter_style"
+    | "invalid_cookie_name"
+    | "identity_carrier_parameter"
+    | "unsupported_parameter_content"
+    | "multiple_querystring"
+    | "querystring_with_query";
 }
 export interface ArgumentMappingFixture {
   kind: "argument-mapping";
@@ -324,11 +369,13 @@ export interface ArgumentMappingFixture {
     arguments: {};
     deferred?: {};
     maxInlineFileBytes?: number;
+    carrierCookies?: string;
   };
   expected: ComposedRequestExpectation | ArgumentMappingError;
 }
 export interface RequestTemplateSpec {
-  method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method:
+    "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "QUERY";
   route: string;
   parameters?: TemplateParameter[];
   body?: {
@@ -347,15 +394,26 @@ export interface RequestTemplateSpec {
 }
 export interface TemplateParameter {
   name: string;
-  in: "path" | "query" | "header";
-  type: "string" | "integer" | "number" | "boolean" | "object";
+  in: "path" | "query" | "header" | "cookie" | "querystring";
+  type: "string" | "integer" | "number" | "boolean" | "object" | "json";
   array?: boolean;
-  style?: "form" | "spaceDelimited" | "pipeDelimited" | "deepObject";
+  style?:
+    | "form"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject"
+    | "simple"
+    | "label"
+    | "matrix"
+    | "cookie";
   explode?: boolean;
   notation?: "bracket" | "dot";
   members?: [TemplateObjectMember, ...TemplateObjectMember[]];
   as?: string;
   fill?: ArgumentFill1;
+  contentType?:
+    "application/json" | "text/plain" | "application/x-www-form-urlencoded";
+  allowReserved?: boolean;
 }
 export interface TemplateObjectMember {
   name: string;
@@ -384,6 +442,7 @@ export interface ComposedRequestExpectation {
   bodyText?: string;
   bodyForm?: string;
   bodyParts?: ExpectedPart[];
+  bodyFile?: ExpectedFile1;
 }
 export interface ArgumentMappingError {
   error:
@@ -395,6 +454,8 @@ export interface ArgumentMappingError {
     | "invalid_type"
     | "deferred_value_missing"
     | "deferred_value_invalid"
+    | "invalid_cookie_value"
+    | "cookie_carrier_collision"
     | "invalid_file_argument"
     | "file_too_large";
 }
@@ -616,6 +677,7 @@ export interface CardExpectation {
   description: string;
   parameters: string;
   authUncertain?: boolean;
+  deprecated?: boolean;
 }
 export interface DetailFixture {
   kind: "detail";
@@ -633,4 +695,31 @@ export interface DetailExpectation {
   outputSchema?: JsonSchemaObject;
   annotations: ToolAnnotations;
   authUncertain?: boolean;
+  deprecated?: boolean;
+}
+export interface OpenApiIngestionFixture {
+  kind: "openapi-ingestion";
+  description: string;
+  input: {
+    document: {};
+    options?: {
+      documentUrl?: string;
+      baseUrl?: string;
+      strict?: boolean;
+      outputSchema?: "document" | "omit";
+      hoistPathPrefix?: string;
+      requestBodyRequired?: "document" | "always";
+    };
+  };
+  expected: {
+    endpoints: {
+      key: string;
+      baseUrl?: string;
+      descriptor: EndpointDescriptor;
+    }[];
+    diagnostics: {
+      code: string;
+      at: string;
+    }[];
+  };
 }

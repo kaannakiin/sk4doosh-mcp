@@ -1,0 +1,65 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "form yazicisinin uretmedigi encoding operasyonu dusurur",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/upload": {
+          "post": {
+            "operationId": "upload",
+            "requestBody": {
+              "content": {
+                "multipart/form-data": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "meta": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "encoding": {
+                    "meta": {
+                      "contentType": "application/json",
+                      "headers": {
+                        "X-Part": {
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [],
+    "diagnostics": [
+      {
+        "code": "unsupported_encoding",
+        "at": "/paths/~1upload/post/requestBody/content/multipart~1form-data/encoding/meta"
+      }
+    ]
+  }
+}

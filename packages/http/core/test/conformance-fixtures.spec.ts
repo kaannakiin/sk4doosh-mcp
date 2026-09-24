@@ -6,7 +6,6 @@ import {
   compose,
   createCard,
   createDetail,
-  arraySeparatorFor,
   createRequestTemplate,
   createRequestTemplateFromEndpoint,
   createToolDefinition,
@@ -15,6 +14,9 @@ import {
   routePlaceholderNames,
   evaluateVisibility,
   isSelected,
+  isBinaryMediaType,
+  mergeCookieHeader,
+  serializationFor,
   resolveRules,
   describePayload,
   mapInvokeResult,
@@ -102,6 +104,23 @@ function templateFrom(
         location: p.in,
         ...(p.as === undefined ? {} : { argument: p.as }),
       };
+      if (p.contentType !== undefined) {
+        return {
+          ...named,
+          kind: "content",
+          mediaType: p.contentType,
+          ...(p.members === undefined
+            ? {}
+            : {
+                members: p.members.map((member) => ({
+                  name: member.name,
+                  kind: member.type,
+                  ...(member.array === true ? { isArray: true } : {}),
+                })),
+              }),
+          ...(p.fill === undefined ? {} : { fill: p.fill as ArgumentFill }),
+        };
+      }
       if (p.type === "object") {
         return {
           ...named,
@@ -115,14 +134,18 @@ function templateFrom(
         };
       }
       const isArray = p.array === true;
-      const arraySeparator = isArray
-        ? arraySeparatorFor(p.style, p.explode, p.name)
-        : undefined;
       return {
         ...named,
-        kind: p.type,
+        kind: p.type as Exclude<typeof p.type, "object" | "json">,
         isArray,
-        ...(arraySeparator === undefined ? {} : { arraySeparator }),
+        ...serializationFor(
+          p.in,
+          p.style,
+          p.explode,
+          isArray,
+          p.name,
+          p.allowReserved,
+        ),
         ...(p.fill === undefined ? {} : { fill: p.fill as ArgumentFill }),
       };
     }),
@@ -136,6 +159,10 @@ function templateFrom(
         }
       : {
           bodyRoot: spec.bodyRoot,
+          ...(spec.contentType !== undefined &&
+          isBinaryMediaType(spec.contentType)
+            ? { binaryBody: true }
+            : {}),
           ...(spec.rootFill === undefined
             ? {}
             : { rootFill: spec.rootFill as ArgumentFill }),
@@ -196,6 +223,32 @@ type ComposedExpectation = Extract<
  * media types keeps comparing exactly what it compared before. The ref fallbacks are the SDK's
  * last rung and stay out of the corpus.
  */
+function expectedFileOf(
+  file: Extract<ComposedBody, { kind: "binary" }>["file"],
+): NonNullable<ComposedExpectation["bodyFile"]> {
+  switch (file.source) {
+    case "text":
+      return {
+        text: file.text,
+        filename: file.filename,
+        mediaType: file.mediaType,
+      };
+    case "base64":
+      return {
+        base64: file.base64,
+        byteLength: file.byteLength,
+        filename: file.filename,
+        mediaType: file.mediaType,
+      };
+    case "ref":
+      return {
+        ref: file.ref,
+        ...(file.filename === undefined ? {} : { filename: file.filename }),
+        ...(file.mediaType === undefined ? {} : { mediaType: file.mediaType }),
+      };
+  }
+}
+
 function bodyExpectationOf(
   body: ComposedBody | undefined,
 ): Omit<ComposedExpectation, "pathAndQuery" | "headers"> {
@@ -216,6 +269,8 @@ function bodyExpectationOf(
       return { ...contentType, bodyText: body.value };
     case "urlencoded":
       return { ...contentType, bodyForm: body.encoded };
+    case "binary":
+      return { ...contentType, bodyFile: expectedFileOf(body.file) };
     case "multipart":
       return {
         ...contentType,
@@ -263,37 +318,49 @@ function bodyExpectationOf(
   }
 }
 
+function composeFixture(
+  template: RequestTemplate,
+  input: FixtureOf<"argument-mapping">["input"],
+): ReturnType<typeof compose> {
+  const composed = compose(
+    template,
+    input.arguments,
+    input.deferred,
+    input.maxInlineFileBytes === undefined
+      ? undefined
+      : { maxInlineFileBytes: input.maxInlineFileBytes },
+  );
+  if (input.carrierCookies === undefined) {
+    return composed;
+  }
+  const cookie = mergeCookieHeader(
+    input.carrierCookies,
+    composed.headers["cookie"],
+  );
+  return {
+    ...composed,
+    headers: {
+      ...composed.headers,
+      ...(cookie === undefined ? {} : { cookie }),
+    },
+  };
+}
+
 describe("conformance: argument-mapping", () => {
   for (const [file, fixture] of fixturesOf("argument-mapping")) {
     it(file, () => {
       const template = templateFrom(fixture.input.template);
       if ("error" in fixture.expected) {
         const expected = fixture.expected.error;
-        const limits =
-          fixture.input.maxInlineFileBytes === undefined
-            ? undefined
-            : { maxInlineFileBytes: fixture.input.maxInlineFileBytes };
         try {
-          compose(
-            template,
-            fixture.input.arguments,
-            fixture.input.deferred,
-            limits,
-          );
+          composeFixture(template, fixture.input);
           expect.unreachable(`expected error ${expected}`);
         } catch (error) {
           expect(error).toBeInstanceOf(SkMcpArgumentError);
           expect((error as SkMcpArgumentError).code).toBe(expected);
         }
       } else {
-        const composed = compose(
-          template,
-          fixture.input.arguments,
-          fixture.input.deferred,
-          fixture.input.maxInlineFileBytes === undefined
-            ? undefined
-            : { maxInlineFileBytes: fixture.input.maxInlineFileBytes },
-        );
+        const composed = composeFixture(template, fixture.input);
         expect(composed.pathAndQuery).toBe(fixture.expected.pathAndQuery);
         expect(composed.headers).toEqual(fixture.expected.headers ?? {});
         const {
@@ -427,14 +494,12 @@ function toolsOf(
       relief,
       files,
     );
-    if (production.endpoint.requestBody?.contentType !== undefined) {
-      createRequestTemplateFromEndpoint(
-        production.endpoint,
-        production.variant,
-        relief,
-        files,
-      );
-    }
+    createRequestTemplateFromEndpoint(
+      production.endpoint,
+      production.variant,
+      relief,
+      files,
+    );
     return definition;
   });
 }

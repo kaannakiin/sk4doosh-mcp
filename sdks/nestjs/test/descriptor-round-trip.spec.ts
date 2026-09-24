@@ -713,6 +713,48 @@ const hosts: Record<string, HostCase> = {
 };
 
 const unproducible: Record<string, string> = {
+  "allow-reserved-outside-query-rejected.json":
+    "Nest discovery never declares allowReserved.",
+  "binary-body-non-file-rejected.json":
+    "Nest discovery has no binary body: a raw body is read from the request stream and never declared as a file root.",
+  "binary-body-schema.json":
+    "Nest discovery has no binary body: a raw body is read from the request stream and never declared as a file root.",
+  "content-parameter-schema.json":
+    "Nest discovery has no content-serialized parameter: a @Query/@Param/@Headers value is bound by name, never parsed from a declared media type.",
+  "content-with-style-rejected.json":
+    "Nest discovery has no content-serialized parameter: a @Query/@Param/@Headers value is bound by name, never parsed from a declared media type.",
+  "cookie-and-path-array-parameters.json":
+    "Nest discovery emits no cookie parameter: there is no built-in cookie decorator, and a handler reads cookies from the request object.",
+  "cookie-explode-true-rejected.json":
+    "Nest discovery emits no cookie parameter: there is no built-in cookie decorator, and a handler reads cookies from the request object.",
+  "cookie-name-invalid-rejected.json":
+    "Nest discovery emits no cookie parameter: there is no built-in cookie decorator, and a handler reads cookies from the request object.",
+  "cookie-param-matches-carrier-rejected.json":
+    "Nest discovery writes no auth.carriers: its identity carriers are the host's forwarded headers, never a declared slot on the descriptor.",
+  "deprecated-surfaced.json":
+    "Nest discovery does not read a deprecation marker; the flag arrives from an OpenAPI source.",
+  "header-carrier-match-is-case-insensitive.json":
+    "Nest discovery writes no auth.carriers: its identity carriers are the host's forwarded headers, never a declared slot on the descriptor.",
+  "method-query-annotations.json":
+    "Nest has no QUERY route decorator, so no handler is mounted on that method.",
+  "multiple-querystring-rejected.json":
+    "Nest discovery has no querystring location: @Query() binds the parsed query object, not the raw query string.",
+  "output-schema-default-ignored.json":
+    "Nest discovery keys responses by exact status code; a default response never reaches the descriptor from it.",
+  "output-schema-range-fallback.json":
+    "Nest discovery keys responses by exact status code; a 2XX range never reaches the descriptor from it.",
+  "path-style-form-rejected.json":
+    "Nest discovery never writes an explicit parameter style, so a style the location cannot carry cannot arise from it.",
+  "query-param-matches-carrier-rejected.json":
+    "Nest discovery writes no auth.carriers: its identity carriers are the host's forwarded headers, never a declared slot on the descriptor.",
+  "query-style-label-rejected.json":
+    "Nest discovery never writes an explicit parameter style, so a style the location cannot carry cannot arise from it.",
+  "querystring-text-content-rejected.json":
+    "Nest discovery has no querystring location: @Query() binds the parsed query object, not the raw query string.",
+  "querystring-with-query-rejected.json":
+    "Nest discovery has no querystring location: @Query() binds the parsed query object, not the raw query string.",
+  "urlencoded-content-outside-querystring-rejected.json":
+    "Nest discovery has no content-serialized parameter: a @Query/@Param/@Headers value is bound by name, never parsed from a declared media type.",
   "body-with-shared-type-lifts-defs.json":
     "A query parameter whose schema is an object with $defs has no Nest binding: a named @Query('x') binds a scalar, and a whole @Query() object reports unbound_query_object.",
   "body-root-defs-conflict-drops-endpoint.json":

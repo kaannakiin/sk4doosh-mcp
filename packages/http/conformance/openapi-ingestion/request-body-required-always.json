@@ -1,0 +1,136 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "requestBodyRequired always bildirilmemis required'i true sayar; acikca false olan opsiyonel kalir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "post": {
+            "operationId": "createItem",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        },
+        "/drafts": {
+          "post": {
+            "operationId": "createDraft",
+            "requestBody": {
+              "required": false,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "requestBodyRequired": "always"
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "POST /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "createItem",
+          "method": "POST",
+          "route": "/items",
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      },
+      {
+        "key": "POST /drafts",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "createDraft",
+          "method": "POST",
+          "route": "/drafts",
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": false
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

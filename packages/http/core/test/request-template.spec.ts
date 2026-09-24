@@ -52,16 +52,16 @@ describe("createRequestTemplate", () => {
     }
   });
 
-  it("rejects array path parameters", () => {
-    expect(() =>
+  it("accepts array path parameters", () => {
+    expect(
       createRequestTemplate({
         method: "GET",
         route: "/items/{id}",
         parameters: [
           { name: "id", location: "path", kind: "string", isArray: true },
         ],
-      }),
-    ).toThrow("cannot be an array");
+      }).parameters[0],
+    ).toMatchObject({ name: "id", location: "path", isArray: true });
   });
 
   it("rejects body properties colliding with parameter names", () => {

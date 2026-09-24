@@ -1,0 +1,33 @@
+{
+  "kind": "metadata-extraction",
+  "description": "urlencoded icerik yalniz querystring'de olur",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/s",
+    "parameters": [
+      {
+        "name": "f",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        },
+        "contentType": "application/x-www-form-urlencoded"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_parameter_content"
+  }
+}

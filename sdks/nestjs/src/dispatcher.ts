@@ -1,11 +1,17 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 import {
+  armDeadline,
   compose,
+  mergeCookieHeader,
+  SkMcpDispatchAborted,
+  untilAbandoned,
+  writeBody,
   type ComposedRequest,
+  type DispatchDeadline,
+  type RefResolver,
   type RequestTemplate,
 } from "@sk-mcp/core";
-import { writeBody, type RefResolver } from "./body-writer.js";
 import { SkMcpFileRefused } from "./files.js";
 import {
   callerOf,
@@ -16,11 +22,7 @@ import {
   type SyntheticHeaders,
 } from "./options.js";
 import { markSyntheticRequest, wasShortCircuited } from "./markers.js";
-import {
-  createSyntheticContext,
-  SkMcpDispatchAborted,
-  type DispatchAbortReason,
-} from "./synthetic-context.js";
+import { createSyntheticContext } from "./synthetic-context.js";
 
 export interface DispatchResult {
   readonly status: number;
@@ -33,12 +35,7 @@ export interface ProbeResult extends DispatchResult {
   readonly shortCircuited: boolean;
 }
 
-/** The lifetime bound of one dispatch: the caller's cancellation channel and the clock. */
-export interface DispatchDeadline {
-  readonly signal?: AbortSignal;
-  /** Whole milliseconds; zero or absent means no deadline. */
-  readonly timeoutMs?: number;
-}
+export type { DispatchDeadline };
 
 /** What an invocation's body needs beyond its arguments: the budgets and whom a `ref` is resolved for. */
 export interface DispatchFiles {
@@ -65,34 +62,6 @@ function usableFilename(value: string | undefined): string | undefined {
 
 function usableMediaType(value: string | undefined): string | undefined {
   return value !== undefined && safeMediaType.test(value) ? value : undefined;
-}
-
-function untilAbandoned<T>(
-  work: Promise<T>,
-  signal: AbortSignal,
-  reason: () => DispatchAbortReason | undefined,
-): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = (): void => {
-      work.catch(() => undefined);
-      reject(new SkMcpDispatchAborted(reason() ?? "caller"));
-    };
-    if (signal.aborted) {
-      onAbort();
-      return;
-    }
-    signal.addEventListener("abort", onAbort, { once: true });
-    work.then(
-      (value) => {
-        signal.removeEventListener("abort", onAbort);
-        resolve(value);
-      },
-      (error: unknown) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error as Error);
-      },
-    );
-  });
 }
 
 const defaultUserAgent = "sk-mcp/0.0.0";
@@ -210,38 +179,18 @@ export class SkMcpDispatcher {
     }
 
     for (const [name, value] of Object.entries(composed.headers)) {
-      headers[name.toLowerCase()] = value;
+      const key = name.toLowerCase();
+      if (key === "cookie") {
+        const merged = mergeCookieHeader(headers.cookie, value);
+        if (merged !== undefined) {
+          headers.cookie = merged;
+        }
+        continue;
+      }
+      headers[key] = value;
     }
 
-    const signal = deadline?.signal;
-    const timeoutMs = deadline?.timeoutMs ?? 0;
-    const resolution = new AbortController();
-    let abandoned: DispatchAbortReason | undefined;
-    let abortContext: ((reason: DispatchAbortReason) => void) | undefined;
-    const abandon = (reason: DispatchAbortReason): void => {
-      if (abandoned !== undefined) {
-        return;
-      }
-      abandoned = reason;
-      resolution.abort();
-      abortContext?.(reason);
-    };
-    const onAbort = (): void => abandon("caller");
-    if (signal?.aborted === true) {
-      abandon("caller");
-    } else {
-      signal?.addEventListener("abort", onAbort, { once: true });
-    }
-    /**
-     * An un-unref'd handle keeps the event loop alive for the whole deadline after the dispatch
-     * already settled, which stops a test runner and a CLI from exiting. `clearTimeout` in the
-     * `finally` is the primary release; `unref` is what makes a missed one harmless.
-     */
-    const timer =
-      timeoutMs > 0
-        ? setTimeout(() => abandon("timeout"), timeoutMs)
-        : undefined;
-    timer?.unref?.();
+    const deadlineState = armDeadline(deadline);
 
     try {
       /**
@@ -255,11 +204,12 @@ export class SkMcpDispatcher {
           : await untilAbandoned(
               writeBody(
                 composed.body,
-                this.refResolver(outer, files, resolution.signal),
+                this.refResolver(outer, files, deadlineState.signal),
               ),
-              resolution.signal,
-              () => abandoned,
+              deadlineState.signal,
+              deadlineState.reason,
             );
+      const abandoned = deadlineState.reason();
       if (abandoned !== undefined) {
         throw new SkMcpDispatchAborted(abandoned);
       }
@@ -276,7 +226,7 @@ export class SkMcpDispatcher {
         outer?.connection,
       );
       markSyntheticRequest(req, probe);
-      abortContext = abort;
+      deadlineState.onAbandon(abort);
 
       try {
         pipeline(req, res);
@@ -293,10 +243,7 @@ export class SkMcpDispatcher {
       const dispatched = await result;
       return { ...dispatched, shortCircuited: wasShortCircuited(req) };
     } finally {
-      if (timer !== undefined) {
-        clearTimeout(timer);
-      }
-      signal?.removeEventListener("abort", onAbort);
+      deadlineState.dispose();
     }
   }
 

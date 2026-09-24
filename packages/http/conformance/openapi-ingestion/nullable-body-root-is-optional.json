@@ -1,0 +1,118 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "kok semasi null kabul eden govde opsiyoneldir; null uyesi kaldirilip govde acilir",
+  "input": {
+    "document": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "components": {
+        "schemas": {
+          "Note": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "paths": {
+        "/notes/{id}": {
+          "post": {
+            "operationId": "addNote",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "$ref": "#/components/schemas/Note"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "requestBodyRequired": "always"
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "POST /notes/{id}",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "addNote",
+          "method": "POST",
+          "route": "/notes/{id}",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": false
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

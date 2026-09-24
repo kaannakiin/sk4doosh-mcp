@@ -1,0 +1,36 @@
+{
+  "kind": "metadata-extraction",
+  "description": "deprecated operasyonun arac tanimi deprecated tasir",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/old",
+    "description": "Old listing.",
+    "deprecated": true,
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "op",
+    "description": "Old listing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "deprecated": true,
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

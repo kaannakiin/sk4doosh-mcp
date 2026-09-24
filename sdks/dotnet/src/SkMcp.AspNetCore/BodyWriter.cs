@@ -73,6 +73,9 @@ internal static class BodyWriter
                 return new WrittenBody(Encoding.UTF8.GetBytes(text.Value), $"{text.ContentType}; charset=utf-8");
             case UrlEncodedBody form:
                 return new WrittenBody(Encoding.ASCII.GetBytes(form.Encoded), form.ContentType);
+            case BinaryBody binary:
+                ResolvedFile binaryFile = await BytesOf(binary.File, "body", resolveRef).ConfigureAwait(false);
+                return new WrittenBody(binaryFile.Bytes.ToArray(), binary.ContentType);
             case MultipartBody multipart:
                 string boundary = $"----sk-mcp-{Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant()}";
                 using (MemoryStream stream = new())

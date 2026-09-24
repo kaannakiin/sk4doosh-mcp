@@ -1,0 +1,27 @@
+{
+  "kind": "argument-mapping",
+  "description": "cerez dizisi explode false ile virgulle katlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "tags",
+          "in": "cookie",
+          "type": "string",
+          "array": true
+        }
+      ]
+    },
+    "arguments": {
+      "tags": ["a", "b"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "tags=a,b"
+    }
+  }
+}

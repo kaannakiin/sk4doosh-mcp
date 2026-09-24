@@ -7,6 +7,7 @@ import type {
   RequestTemplate,
 } from "./request-template.js";
 import {
+  isBinaryMediaType,
   isJsonMediaType,
   jsonMediaType,
   multipartMediaType,
@@ -67,6 +68,11 @@ export type ComposedBody =
       readonly kind: "multipart";
       readonly contentType: string;
       readonly parts: readonly ComposedPart[];
+    }
+  | {
+      readonly kind: "binary";
+      readonly contentType: string;
+      readonly file: FileContent;
     };
 
 export interface ComposeLimits {
@@ -397,6 +403,13 @@ export function encodeBody(
   const contentType = template.contentType ?? jsonMediaType;
   if (isJsonMediaType(contentType)) {
     return { kind: "json", contentType, value: value as BodyValue };
+  }
+  if (isBinaryMediaType(contentType)) {
+    const sources = template.fileSources ?? new Set<FileSource>();
+    const field = template.bodyRoot ?? "body";
+    const file = readFile(value, field, { name: field, kind: "file" }, sources);
+    assertInlineBudget([{ name: field, file }], limits, sources);
+    return { kind: "binary", contentType, file };
   }
   if (contentType === textMediaType) {
     if (typeof value !== "string") {

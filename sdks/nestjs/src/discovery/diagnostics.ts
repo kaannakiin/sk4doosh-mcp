@@ -1,11 +1,18 @@
-export type CatalogSeverity = "warning" | "endpointDropped" | "fatal";
+import {
+  severityIn,
+  type CatalogSeverity,
+  type DiagnosticsOptions,
+  type SeverityTable,
+} from "@sk-mcp/core";
 
-export interface CatalogDiagnostic {
-  readonly code: string;
-  readonly message: string;
-}
+export { atLeast } from "@sk-mcp/core";
+export type {
+  CatalogDiagnostic,
+  CatalogSeverity,
+  DiagnosticsOptions,
+} from "@sk-mcp/core";
 
-const defaults: Readonly<Record<string, CatalogSeverity>> = {
+const defaults: SeverityTable = {
   name_collision: "fatal",
   ambiguous_selection: "fatal",
   invalid_name: "fatal",
@@ -45,34 +52,9 @@ const defaults: Readonly<Record<string, CatalogSeverity>> = {
   query_member_shadowed: "warning",
 };
 
-const rank: Readonly<Record<CatalogSeverity, number>> = {
-  warning: 0,
-  endpointDropped: 1,
-  fatal: 2,
-};
-
-export interface DiagnosticsOptions {
-  failOn?: CatalogSeverity;
-  readonly escalate?: Set<string>;
-  readonly downgrade?: Set<string>;
-}
-
 export function severityOf(
   code: string,
   options: DiagnosticsOptions = {},
 ): CatalogSeverity {
-  if (options.escalate?.has(code) === true) {
-    return "fatal";
-  }
-  if (options.downgrade?.has(code) === true) {
-    return "warning";
-  }
-  return defaults[code] ?? "warning";
-}
-
-export function atLeast(
-  severity: CatalogSeverity,
-  floor: CatalogSeverity,
-): boolean {
-  return rank[severity] >= rank[floor];
+  return severityIn(defaults, code, options);
 }

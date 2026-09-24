@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Requests;
@@ -9,18 +10,21 @@ namespace SkMcp.AspNetCore.Requests;
 internal sealed record ComposedRequest(
     string PathAndQuery, IReadOnlyDictionary<string, string> Headers, ComposedBody? Content)
 {
-    /// <summary>The body bytes of a body that needs no resolution; a multipart body is written by the dispatcher.</summary>
+    /// <summary>
+    /// The body bytes of a body that needs no resolution; a multipart or binary body may name a
+    /// <c>ref</c> file and is written by the dispatcher instead.
+    /// </summary>
     public byte[]? Body => Content switch
     {
         null => null,
         JsonBody json => json.Utf8,
         TextBody text => Encoding.UTF8.GetBytes(text.Value),
         UrlEncodedBody form => Encoding.ASCII.GetBytes(form.Encoded),
-        _ => throw new InvalidOperationException("A multipart body has no bytes until its parts are written."),
+        _ => throw new InvalidOperationException("This body has no bytes until its file is resolved and written."),
     };
 }
 
-internal static class RequestComposer
+internal static partial class RequestComposer
 {
     /// <summary>Composes an HTTP request from flat agent arguments.</summary>
     /// <param name="deferred">
@@ -65,8 +69,10 @@ internal static class RequestComposer
                     SkMcpArgumentException.MissingPathParameter,
                     $"Missing required path argument '{p.Name}'.");
             }
-            string value = FormatScalar(element, p, SkMcpArgumentException.InvalidPathType);
-            path = path.Replace("{" + p.Name + "}", Uri.EscapeDataString(value), StringComparison.Ordinal);
+            string segment = p.ContentType is not null
+                ? Uri.EscapeDataString(ContentText(p, element))
+                : PathSegment(p, element);
+            path = path.Replace("{" + p.Name + "}", segment, StringComparison.Ordinal);
         }
 
         StringBuilder query = new();
@@ -82,11 +88,17 @@ internal static class RequestComposer
                     SkMcpArgumentException.NullNotAllowed,
                     $"Query argument '{p.Name}' cannot be null; omit it instead.");
             }
+            if (p.ContentType is not null)
+            {
+                AppendEncoded(query, p.Name, Uri.EscapeDataString(ContentText(p, element)));
+                continue;
+            }
             if (p.Members is not null)
             {
                 AppendObject(query, p, element);
                 continue;
             }
+            Func<string, string> encodeValue = p.AllowReserved ? PercentEncodeAllowingReserved : Uri.EscapeDataString;
             if (p.IsArray)
             {
                 if (element.ValueKind != JsonValueKind.Array)
@@ -95,9 +107,16 @@ internal static class RequestComposer
                         SkMcpArgumentException.InvalidType,
                         $"Query argument '{p.Name}' must be an array.");
                 }
-                string[] items = [.. element.EnumerateArray()
-                    .Select(item => Uri.EscapeDataString(
-                        FormatScalar(item, p, SkMcpArgumentException.InvalidType)))];
+                string? separator = p.ArraySeparator;
+                string[] items = [.. element.EnumerateArray().Select(item =>
+                {
+                    string encoded = encodeValue(FormatScalar(item, p, SkMcpArgumentException.InvalidType));
+                    // Guard: allowReserved must not write an element's own delimiter raw, or
+                    // ["c,d"] would come back as two elements; every other reserved character stays raw.
+                    return p.AllowReserved && separator == ","
+                        ? encoded.Replace(",", "%2C", StringComparison.Ordinal)
+                        : encoded;
+                })];
                 if (items.Length == 0)
                 {
                     continue;
@@ -116,7 +135,7 @@ internal static class RequestComposer
             }
             else
             {
-                AppendQuery(query, p.Name, FormatScalar(element, p, SkMcpArgumentException.InvalidType));
+                AppendQuery(query, p.Name, FormatScalar(element, p, SkMcpArgumentException.InvalidType), encodeValue);
             }
         }
 
@@ -134,7 +153,11 @@ internal static class RequestComposer
                     $"Header argument '{p.Name}' cannot be null; omit it instead.");
             }
             string value;
-            if (p.IsArray)
+            if (p.ContentType is not null)
+            {
+                value = ContentText(p, element);
+            }
+            else if (p.IsArray)
             {
                 if (element.ValueKind != JsonValueKind.Array)
                 {
@@ -161,6 +184,49 @@ internal static class RequestComposer
                     $"Header argument '{p.Name}' contains a control character.");
             }
             headers[p.Name] = value;
+        }
+
+        List<string> cookies = [];
+        foreach (ParameterBinding p in template.Parameters.Where(x => x.Location == ParameterLocation.Cookie))
+        {
+            if (!wire.TryGetValue(p.Name, out JsonElement element))
+            {
+                continue;
+            }
+            if (element.ValueKind == JsonValueKind.Null)
+            {
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.NullNotAllowed,
+                    $"Cookie argument '{p.Name}' cannot be null; omit it instead.");
+            }
+            if (p.ContentType is not null)
+            {
+                cookies.Add($"{p.Name}={Uri.EscapeDataString(ContentText(p, element))}");
+                continue;
+            }
+            if (p.IsArray)
+            {
+                if (element.ValueKind != JsonValueKind.Array)
+                {
+                    throw new SkMcpArgumentException(
+                        SkMcpArgumentException.InvalidType,
+                        $"Cookie argument '{p.Name}' must be an array.");
+                }
+                string[] items = [.. element.EnumerateArray().Select(item => CookieValue(item, p))];
+                if (items.Length == 0)
+                {
+                    continue;
+                }
+                cookies.Add($"{p.Name}={string.Join(p.ArraySeparator ?? ",", items)}");
+            }
+            else
+            {
+                cookies.Add($"{p.Name}={CookieValue(element, p)}");
+            }
+        }
+        if (cookies.Count > 0)
+        {
+            headers["cookie"] = string.Join("; ", cookies);
         }
 
         JsonElement? bodyValue = null;
@@ -190,9 +256,87 @@ internal static class RequestComposer
             bodyValue = JsonSerializer.Deserialize<JsonElement>(bodyObject.ToJsonString());
         }
 
-        string pathAndQuery = query.Length > 0 ? $"{path}?{query}" : path;
+        ParameterBinding? querystring = template.Parameters.FirstOrDefault(
+            x => x.Location == ParameterLocation.Querystring);
+        string queryText = query.ToString();
+        if (querystring is not null && wire.TryGetValue(querystring.Name, out JsonElement querystringValue))
+        {
+            queryText = QuerystringText(querystring, querystringValue);
+        }
+
+        string pathAndQuery = queryText.Length > 0 ? $"{path}?{queryText}" : path;
         return new ComposedRequest(
             pathAndQuery, headers, RequestBodyEncoder.Encode(template, bodyValue, limits));
+    }
+
+    private static string ContentText(ParameterBinding p, JsonElement value)
+    {
+        if (p.ContentType == MediaTypes.Text)
+        {
+            if (value.ValueKind != JsonValueKind.String)
+            {
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.InvalidType, $"Argument '{p.Name}' must be of type string.");
+            }
+            return value.GetString()!;
+        }
+        return CanonicalJson.Stringify(value);
+    }
+
+    /// <summary>
+    /// A querystring parameter is the whole query string: JSON is percent-encoded as one value, and
+    /// urlencoded content writes one pair per declared member in declaration order, repeating the
+    /// key for an array member. The twin is <c>querystringText</c> in
+    /// packages/http/core/src/request-composer.ts.
+    /// </summary>
+    private static string QuerystringText(ParameterBinding p, JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.NullNotAllowed,
+                $"Query argument '{p.Name}' cannot be null; omit it instead.");
+        }
+        if (p.ContentType != MediaTypes.UrlEncoded)
+        {
+            return Uri.EscapeDataString(ContentText(p, value));
+        }
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.InvalidType, $"Query argument '{p.Name}' must be an object.");
+        }
+        List<string> pairs = [];
+        foreach (ObjectMember member in p.Members ?? [])
+        {
+            if (!value.TryGetProperty(member.Name, out JsonElement item))
+            {
+                continue;
+            }
+            ParameterBinding slot = new($"{p.Name}.{member.Name}", ParameterLocation.Query, member.Kind);
+            if (item.ValueKind == JsonValueKind.Null)
+            {
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.NullNotAllowed,
+                    $"Query argument '{slot.Name}' cannot be null; omit it instead.");
+            }
+            string key = Uri.EscapeDataString(member.Name);
+            if (!member.IsArray)
+            {
+                pairs.Add($"{key}={Uri.EscapeDataString(FormatScalar(item, slot, SkMcpArgumentException.InvalidType))}");
+                continue;
+            }
+            if (item.ValueKind != JsonValueKind.Array)
+            {
+                throw new SkMcpArgumentException(
+                    SkMcpArgumentException.InvalidType, $"Query argument '{slot.Name}' must be an array.");
+            }
+            foreach (JsonElement element in item.EnumerateArray())
+            {
+                pairs.Add($"{key}={Uri.EscapeDataString(FormatScalar(element, slot, SkMcpArgumentException.InvalidType))}");
+            }
+        }
+        return string.Join('&', pairs);
     }
 
     /// <summary>
@@ -341,9 +485,13 @@ internal static class RequestComposer
             : [value];
         bool shapeOk = !p.IsArray || value.ValueKind == JsonValueKind.Array;
         bool scalarsOk = shapeOk && items.All(item => RequestTemplate.FitsKind(item, p.Kind));
-        bool clean = p.Location != ParameterLocation.Header
+        bool headerClean = p.Location != ParameterLocation.Header
             || !items.Any(item => item.ValueKind == JsonValueKind.String
                 && item.GetString()!.AsSpan().IndexOfAny('\r', '\n', '\0') >= 0);
+        bool cookieClean = !p.RawCookie
+            || items.All(item => item.ValueKind != JsonValueKind.String
+                || RequestTemplate.IsCookieOctets(item.GetString()!));
+        bool clean = headerClean && cookieClean;
         if (!shapeOk || !scalarsOk || !clean)
         {
             throw new SkMcpArgumentException(
@@ -454,8 +602,22 @@ internal static class RequestComposer
         query.Append(encodedKey).Append('=').Append(encodedValue);
     }
 
-    private static void AppendQuery(StringBuilder query, string name, string value) =>
-        AppendEncoded(query, name, Uri.EscapeDataString(value));
+    private static void AppendQuery(StringBuilder query, string name, string value, Func<string, string> encode) =>
+        AppendEncoded(query, name, encode(value));
+
+    [GeneratedRegex("%(3A|2F|3F|40|21|24|27|28|29|2A|2C|3B|5B|5D)")]
+    private static partial Regex ReservedEscapes();
+
+    /// <summary>
+    /// Guard: <c>allowReserved</c> writes RFC 3986 reserved characters raw, except the ones that
+    /// delimit the query itself — <c>&amp;</c>, <c>=</c>, <c>#</c>, <c>+</c> and <c>%</c> stay
+    /// encoded, or a value would split into pairs, end the query or be read back as a space. The
+    /// twin is <c>percentEncodeAllowingReserved</c> in packages/http/core/src/wire-encoding.ts.
+    /// </summary>
+    internal static string PercentEncodeAllowingReserved(string value) =>
+        ReservedEscapes().Replace(
+            Uri.EscapeDataString(value),
+            m => ((char)Convert.ToInt32(m.Groups[1].Value, 16)).ToString());
 
     private static void AppendEncoded(StringBuilder query, string name, string encodedValue)
     {
@@ -474,6 +636,97 @@ internal static class RequestComposer
     /// input. A literal space is illegal in a URL, hence <c>%20</c>.
     /// </summary>
     private static string SeparatorFor(string delimiter) => delimiter == " " ? "%20" : delimiter;
+
+    /// <summary>
+    /// Renders one path segment. Each array element is encoded on its own and the style's
+    /// delimiters are written raw, the rule the query delimiter already follows, so an element
+    /// containing <c>,</c> or <c>.</c> stays one element and <c>5/../admin</c> stays one segment.
+    /// </summary>
+    private static string PathSegment(ParameterBinding p, JsonElement value)
+    {
+        string key = Uri.EscapeDataString(p.Name);
+        if (!p.IsArray)
+        {
+            string item = Uri.EscapeDataString(FormatScalar(value, p, SkMcpArgumentException.InvalidPathType));
+            return p.PathStyle switch
+            {
+                PathStyle.Label => $".{item}",
+                PathStyle.Matrix => $";{key}={item}",
+                _ => item,
+            };
+        }
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.InvalidPathType,
+                $"Path argument '{p.Name}' must be an array.");
+        }
+        string[] items = [.. value.EnumerateArray()
+            .Select(item => Uri.EscapeDataString(FormatScalar(item, p, SkMcpArgumentException.InvalidPathType)))];
+        if (items.Length == 0)
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.MissingPathParameter,
+                $"Missing required path argument '{p.Name}'; an empty array fills no segment.");
+        }
+        return p.PathStyle switch
+        {
+            PathStyle.Label => $".{string.Join(p.Explode ? "." : ",", items)}",
+            PathStyle.Matrix => p.Explode
+                ? string.Concat(items.Select(item => $";{key}={item}"))
+                : $";{key}={string.Join(",", items)}",
+            _ => string.Join(",", items),
+        };
+    }
+
+    private static string CookieValue(JsonElement element, ParameterBinding p)
+    {
+        string formatted = FormatScalar(element, p, SkMcpArgumentException.InvalidType);
+        if (!p.RawCookie)
+        {
+            return Uri.EscapeDataString(formatted);
+        }
+        if (!RequestTemplate.IsCookieOctets(formatted))
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.InvalidCookieValue,
+                $"Cookie argument '{p.Name}' contains a character a cookie value cannot carry; space, '\"', ',', ';', '\\' and control characters are not allowed.");
+        }
+        return formatted;
+    }
+
+    /// <summary>Joins the cookies an identity carrier already put on the request with the composed ones.</summary>
+    /// <exception cref="SkMcpArgumentException">
+    /// <c>cookie_carrier_collision</c> when a composed cookie has the name of a carried one: either
+    /// side winning would be a silent resolution — the agent overwriting the caller's credential, or
+    /// the agent's value vanishing without an error.
+    /// </exception>
+    internal static string? MergeCookieHeader(string? carried, string? composed)
+    {
+        if (composed is null)
+        {
+            return carried;
+        }
+        if (string.IsNullOrWhiteSpace(carried))
+        {
+            return composed;
+        }
+        HashSet<string> names = new(CookieNames(carried), StringComparer.Ordinal);
+        string? clash = CookieNames(composed).FirstOrDefault(names.Contains);
+        if (clash is not null)
+        {
+            throw new SkMcpArgumentException(
+                SkMcpArgumentException.CookieCarrierCollision,
+                $"Cookie '{clash}' already travels with the caller's identity and cannot also be sent as an argument; omit it.");
+        }
+        return $"{carried}; {composed}";
+    }
+
+    private static IEnumerable<string> CookieNames(string header) =>
+        header.Split(';')
+            .Select(pair => pair.Trim())
+            .Where(pair => pair.Length > 0)
+            .Select(pair => pair.Split('=', 2)[0].Trim());
 
     private static string DescribeKind(JsonValueKind kind) => kind switch
     {

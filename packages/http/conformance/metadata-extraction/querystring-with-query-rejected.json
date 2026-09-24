@@ -1,0 +1,36 @@
+{
+  "kind": "metadata-extraction",
+  "description": "querystring yaninda query parametresi reddedilir",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/s",
+    "parameters": [
+      {
+        "name": "q",
+        "in": "querystring",
+        "required": false,
+        "schema": {
+          "type": "object"
+        },
+        "contentType": "application/json"
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "querystring_with_query"
+  }
+}

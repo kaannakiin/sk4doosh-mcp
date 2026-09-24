@@ -1,0 +1,146 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "2.0 collectionFormat konuma gore style/explode olur; tsv dusurur",
+  "input": {
+    "document": {
+      "swagger": "2.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "host": "api.test",
+      "schemes": ["https"],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "parameters": [
+              {
+                "name": "a",
+                "in": "query",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "b",
+                "in": "query",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "collectionFormat": "multi"
+              },
+              {
+                "name": "c",
+                "in": "header",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "collectionFormat": "csv"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        },
+        "/other": {
+          "get": {
+            "operationId": "other",
+            "parameters": [
+              {
+                "name": "d",
+                "in": "query",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "collectionFormat": "tsv"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/items",
+          "parameters": [
+            {
+              "name": "a",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "style": "form",
+              "explode": false
+            },
+            {
+              "name": "b",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "style": "form",
+              "explode": true
+            },
+            {
+              "name": "c",
+              "in": "header",
+              "required": false,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "style": "simple",
+              "explode": false
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "unsupported_collection_format",
+        "at": "/paths/~1other/get/parameters/0"
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "yukleyici yokken dis referans reddedilir",
+  "input": {
+    "document": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "responses": {
+              "200": {
+                "description": "ok",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "models.json#/Item"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [],
+    "diagnostics": [
+      {
+        "code": "external_ref_blocked",
+        "at": "/paths/~1items/get/responses/200/content/application~1json/schema/$ref"
+      }
+    ]
+  }
+}

@@ -32,6 +32,8 @@ internal sealed record UrlEncodedBody(string Encoded) : ComposedBody(MediaTypes.
 
 internal sealed record MultipartBody(IReadOnlyList<ComposedPart> Parts) : ComposedBody(MediaTypes.Multipart);
 
+internal sealed record BinaryBody(string ContentType, FileContent File) : ComposedBody(ContentType);
+
 /// <param name="MaxInlineFileBytes">Decoded base64 bytes summed over one call; <c>text</c> and <c>ref</c> do not count.</param>
 internal sealed record ComposeLimits(int MaxInlineFileBytes);
 
@@ -307,6 +309,13 @@ internal static partial class RequestBodyEncoder
             return new JsonBody(contentType, Encoding.UTF8.GetBytes(element.GetRawText()));
         }
         string argument = template.BodyRoot ?? "body";
+        if (MediaTypes.IsBinary(contentType))
+        {
+            IReadOnlySet<FileSource> binarySources = template.FileSources ?? new HashSet<FileSource>();
+            FileContent file = ReadFile(element, argument, new FormField(argument, FormFieldKind.File), binarySources);
+            AssertInlineBudget([new FilePart(argument, file)], limits, binarySources);
+            return new BinaryBody(contentType, file);
+        }
         if (contentType == MediaTypes.Text)
         {
             if (element.ValueKind != JsonValueKind.String)

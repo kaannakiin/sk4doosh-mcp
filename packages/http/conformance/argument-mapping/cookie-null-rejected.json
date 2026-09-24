@@ -1,0 +1,23 @@
+{
+  "kind": "argument-mapping",
+  "description": "null cerez argumani reddedilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "lang": null
+    }
+  },
+  "expected": {
+    "error": "null_not_allowed"
+  }
+}

@@ -18,7 +18,13 @@ export type SkMcpTemplateErrorCode =
   | "variant_declaration_conflict"
   | "sealed_curation_overridden"
   | "ambiguous_curation"
-  | "unsupported_body_shape";
+  | "unsupported_body_shape"
+  | "unsupported_parameter_style"
+  | "invalid_cookie_name"
+  | "identity_carrier_parameter"
+  | "unsupported_parameter_content"
+  | "multiple_querystring"
+  | "querystring_with_query";
 
 export class SkMcpTemplateError extends Error {
   constructor(
@@ -39,6 +45,8 @@ export type SkMcpArgumentErrorCode =
   | "invalid_type"
   | "deferred_value_missing"
   | "deferred_value_invalid"
+  | "invalid_cookie_value"
+  | "cookie_carrier_collision"
   | "invalid_file_argument"
   | "file_too_large";
 

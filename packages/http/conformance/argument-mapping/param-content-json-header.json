@@ -1,0 +1,29 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerikli header parametresi ham JSON metni olarak yazilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "X-Filter",
+          "in": "header",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "X-Filter": {
+        "a": 1
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "X-Filter": "{\"a\":1}"
+    }
+  }
+}

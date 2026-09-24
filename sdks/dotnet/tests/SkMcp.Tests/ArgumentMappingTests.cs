@@ -354,15 +354,17 @@ public class ArgumentMappingTests
             }
             JsonElement expected = root.GetProperty("expected");
 
+            JsonElement input = root.GetProperty("input");
+
             if (expected.TryGetProperty("error", out JsonElement error))
             {
                 SkMcpArgumentException ex = Assert.Throws<SkMcpArgumentException>(
-                    () => RequestComposer.Compose(template, arguments, deferred, limits));
+                    () => ComposeFixture(template, input, arguments, deferred, limits));
                 Assert.Equal(error.GetString(), ex.Code);
             }
             else
             {
-                ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred, limits);
+                ComposedRequest composed = ComposeFixture(template, input, arguments, deferred, limits);
                 Assert.Equal(expected.GetProperty("pathAndQuery").GetString(), composed.PathAndQuery);
                 if (expected.TryGetProperty("headers", out JsonElement headers))
                 {
@@ -382,6 +384,33 @@ public class ArgumentMappingTests
         Assert.True(referenced, "no argument-mapping fixture offered a ref file source");
     }
 
+    /// <summary>
+    /// Composes a fixture, then merges <c>input.carrierCookies</c> into the composed cookie header
+    /// the way a dispatcher merges an identity carrier's cookie with a composed one; an error
+    /// fixture expects the merge's own exception exactly as it expects the composer's.
+    /// </summary>
+    private static ComposedRequest ComposeFixture(
+        RequestTemplate template, JsonElement input, JsonElement arguments,
+        Dictionary<string, JsonElement>? deferred, ComposeLimits? limits)
+    {
+        ComposedRequest composed = RequestComposer.Compose(template, arguments, deferred, limits);
+        if (!input.TryGetProperty("carrierCookies", out JsonElement carrierCookies))
+        {
+            return composed;
+        }
+        string? cookie = RequestComposer.MergeCookieHeader(
+            carrierCookies.GetString(), composed.Headers.GetValueOrDefault("cookie"));
+        if (cookie is null)
+        {
+            return composed;
+        }
+        Dictionary<string, string> headers = new(composed.Headers, StringComparer.OrdinalIgnoreCase)
+        {
+            ["cookie"] = cookie,
+        };
+        return composed with { Headers = headers };
+    }
+
     /// <remarks>
     /// <c>contentType</c> is compared only when the fixture states it, and a JSON body's default is
     /// written by no fixture, so every fixture that predates media types compares exactly what it
@@ -389,7 +418,7 @@ public class ArgumentMappingTests
     /// </remarks>
     private static void AssertBody(JsonElement expected, ComposedBody? body, string file)
     {
-        string[] keys = ["bodyJson", "bodyText", "bodyForm", "bodyParts"];
+        string[] keys = ["bodyJson", "bodyText", "bodyForm", "bodyParts", "bodyFile"];
         if (!keys.Any(key => expected.TryGetProperty(key, out JsonElement _)))
         {
             Assert.Null(body);
@@ -421,34 +450,37 @@ public class ArgumentMappingTests
                     JsonNode.DeepEquals(JsonNode.Parse(expected.GetProperty("bodyParts").GetRawText()), parts),
                     $"{file}: {parts.ToJsonString()}");
                 break;
+            case BinaryBody binary:
+                JsonNode fileNode = FileContentNode(binary.File);
+                Assert.True(
+                    JsonNode.DeepEquals(JsonNode.Parse(expected.GetProperty("bodyFile").GetRawText()), fileNode),
+                    $"{file}: {fileNode.ToJsonString()}");
+                break;
         }
     }
 
     private static JsonNode PartNode(ComposedPart part) => part switch
     {
         FieldPart field => new JsonObject { ["name"] = field.Name, ["value"] = field.Value },
-        FilePart { File: TextFile text } filePart => new JsonObject
-        {
-            ["name"] = filePart.Name,
-            ["file"] = new JsonObject { ["text"] = text.Text, ["filename"] = text.FileName, ["mediaType"] = text.MediaType },
-        },
-        FilePart { File: InlineFile inline } filePart => new JsonObject
-        {
-            ["name"] = filePart.Name,
-            ["file"] = new JsonObject
-            {
-                ["base64"] = inline.Base64,
-                ["byteLength"] = inline.ByteLength,
-                ["filename"] = inline.FileName,
-                ["mediaType"] = inline.MediaType,
-            },
-        },
-        FilePart { File: RefFile reference } filePart => new JsonObject
-        {
-            ["name"] = filePart.Name,
-            ["file"] = RefNode(reference),
-        },
+        FilePart filePart => new JsonObject { ["name"] = filePart.Name, ["file"] = FileContentNode(filePart.File) },
         _ => throw new InvalidOperationException($"Unknown part {part.GetType().Name}."),
+    };
+
+    private static JsonNode FileContentNode(FileContent file) => file switch
+    {
+        TextFile text => new JsonObject
+        {
+            ["text"] = text.Text, ["filename"] = text.FileName, ["mediaType"] = text.MediaType,
+        },
+        InlineFile inline => new JsonObject
+        {
+            ["base64"] = inline.Base64,
+            ["byteLength"] = inline.ByteLength,
+            ["filename"] = inline.FileName,
+            ["mediaType"] = inline.MediaType,
+        },
+        RefFile reference => RefNode(reference),
+        _ => throw new InvalidOperationException($"Unknown file content '{file.GetType().Name}'."),
     };
 
     private static JsonObject RefNode(RefFile reference)
@@ -473,6 +505,34 @@ public class ArgumentMappingTests
         {
             foreach (JsonElement p in parameterSpecs.EnumerateArray())
             {
+                string name = p.GetProperty("name").GetString()!;
+                ParameterLocation location = p.GetProperty("in").GetString() switch
+                {
+                    "path" => ParameterLocation.Path,
+                    "query" => ParameterLocation.Query,
+                    "cookie" => ParameterLocation.Cookie,
+                    "querystring" => ParameterLocation.Querystring,
+                    _ => ParameterLocation.Header,
+                };
+                string? argument = p.TryGetProperty("as", out JsonElement agentName) ? agentName.GetString() : null;
+                ArgumentFill? fill = p.TryGetProperty("fill", out JsonElement fillSpec)
+                    ? fillSpec.Deserialize<ArgumentFill>(FixtureJson)
+                    : null;
+
+                if (p.TryGetProperty("contentType", out JsonElement contentTypeSpec))
+                {
+                    IReadOnlyList<ObjectMember>? members = p.TryGetProperty("members", out JsonElement memberSpecs)
+                        ? [.. memberSpecs.EnumerateArray().Select(m => new ObjectMember(
+                            m.GetProperty("name").GetString()!,
+                            KindOf(m.GetProperty("type").GetString()),
+                            m.TryGetProperty("array", out JsonElement memberArray) && memberArray.GetBoolean()))]
+                        : null;
+                    parameters.Add(new ParameterBinding(
+                        name, location, ParameterKind.String,
+                        Argument: argument, Fill: fill, Members: members,
+                        ContentType: contentTypeSpec.GetString()));
+                    continue;
+                }
                 if (p.GetProperty("type").GetString() == "object")
                 {
                     grouped = true;
@@ -481,12 +541,10 @@ public class ArgumentMappingTests
                         : null;
                     dotted |= notation == "dot";
                     parameters.Add(new ParameterBinding(
-                        p.GetProperty("name").GetString()!,
+                        name,
                         ParameterLocation.Query,
                         ParameterKind.String,
-                        Argument: p.TryGetProperty("as", out JsonElement groupName)
-                            ? groupName.GetString()
-                            : null,
+                        Argument: argument,
                         Members: [.. p.GetProperty("members").EnumerateArray().Select(m =>
                             new ObjectMember(
                                 m.GetProperty("name").GetString()!,
@@ -496,26 +554,29 @@ public class ArgumentMappingTests
                         Notation: notation == "dot" ? ObjectNotation.Dot : ObjectNotation.Bracket));
                     continue;
                 }
+                bool isArray = p.TryGetProperty("array", out JsonElement array) && array.GetBoolean();
+                bool? allowReserved = p.TryGetProperty("allowReserved", out JsonElement allowReservedSpec)
+                    ? allowReservedSpec.GetBoolean()
+                    : null;
+                ScalarSerialization serialization = RequestTemplate.SerializationFor(
+                    location,
+                    p.TryGetProperty("style", out JsonElement style) ? style.GetString() : null,
+                    p.TryGetProperty("explode", out JsonElement explode) ? explode.GetBoolean() : null,
+                    isArray,
+                    name,
+                    allowReserved);
                 parameters.Add(new ParameterBinding(
-                    p.GetProperty("name").GetString()!,
-                    p.GetProperty("in").GetString() switch
-                    {
-                        "path" => ParameterLocation.Path,
-                        "query" => ParameterLocation.Query,
-                        _ => ParameterLocation.Header,
-                    },
+                    name,
+                    location,
                     KindOf(p.GetProperty("type").GetString()),
-                    p.TryGetProperty("array", out JsonElement array) && array.GetBoolean(),
-                    p.TryGetProperty("array", out JsonElement isArr) && isArr.GetBoolean()
-                        ? RequestTemplate.ArraySeparatorFor(
-                            p.TryGetProperty("style", out JsonElement style) ? style.GetString() : null,
-                            p.TryGetProperty("explode", out JsonElement explode) ? explode.GetBoolean() : null,
-                            p.GetProperty("name").GetString()!)
-                        : null,
-                    p.TryGetProperty("as", out JsonElement agentName) ? agentName.GetString() : null,
-                    p.TryGetProperty("fill", out JsonElement fill)
-                        ? fill.Deserialize<ArgumentFill>(FixtureJson)
-                        : null));
+                    isArray,
+                    serialization.ArraySeparator,
+                    argument,
+                    fill,
+                    PathStyle: serialization.PathStyle,
+                    Explode: serialization.Explode,
+                    RawCookie: serialization.RawCookie,
+                    AllowReserved: serialization.AllowReserved));
             }
         }
 
@@ -566,6 +627,11 @@ public class ArgumentMappingTests
             })]
             : null;
 
+        string? bodyContentType = spec.TryGetProperty("contentType", out JsonElement bodyContentTypeSpec)
+            ? bodyContentTypeSpec.GetString()
+            : null;
+        bool binaryBody = bodyRoot is not null && bodyContentType is not null && MediaTypes.IsBinary(bodyContentType);
+
         return RequestTemplate.Create(
             new HttpMethod(spec.GetProperty("method").GetString()!),
             spec.GetProperty("route").GetString()!,
@@ -578,11 +644,10 @@ public class ArgumentMappingTests
             spec.TryGetProperty("rootFill", out JsonElement rootFill)
                 ? rootFill.Deserialize<ArgumentFill>(FixtureJson)
                 : null,
-            contentType: spec.TryGetProperty("contentType", out JsonElement contentType)
-                ? contentType.GetString()
-                : null,
+            contentType: bodyContentType,
             form: form,
-            fileSources: fileSources);
+            fileSources: fileSources,
+            binaryBody: binaryBody);
     }
 
     private static FormField FormFieldOf(JsonElement field)

@@ -1,0 +1,72 @@
+{
+  "kind": "metadata-extraction",
+  "description": "octet-stream govdesi tek dosya argumani olarak yayinlanir",
+  "input": {
+    "operationId": "Op",
+    "method": "POST",
+    "route": "/upload",
+    "description": "Upload.",
+    "requestBody": {
+      "contentType": "application/octet-stream",
+      "schema": {
+        "type": "string",
+        "contentMediaType": "application/octet-stream"
+      }
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "op",
+    "description": "Upload.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "The file's content as text, sent as is."
+            },
+            "base64": {
+              "type": "string",
+              "contentEncoding": "base64",
+              "description": "The file's bytes as standard base64 with padding and no line breaks."
+            },
+            "name": {
+              "type": "string",
+              "description": "The filename the backend receives. Defaults to 'body'."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "The file's media type. Defaults to text/plain; charset=utf-8 for text and application/octet-stream otherwise."
+            }
+          },
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": ["text"]
+            },
+            {
+              "required": ["base64"]
+            }
+          ]
+        }
+      },
+      "required": ["body"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": false
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

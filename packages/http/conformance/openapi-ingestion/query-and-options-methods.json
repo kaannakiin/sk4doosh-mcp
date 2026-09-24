@@ -1,0 +1,106 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "3.2 query ve OPTIONS metotlari indirilir",
+  "input": {
+    "document": {
+      "openapi": "3.2.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/search": {
+          "query": {
+            "operationId": "search",
+            "requestBody": {
+              "required": true,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "term": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          },
+          "options": {
+            "operationId": "searchOptions",
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "OPTIONS /search",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "searchOptions",
+          "method": "OPTIONS",
+          "route": "/search",
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      },
+      {
+        "key": "QUERY /search",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "search",
+          "method": "QUERY",
+          "route": "/search",
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "text/plain icerikli parametreye string olmayan deger reddedilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "note",
+          "in": "query",
+          "type": "string",
+          "contentType": "text/plain"
+        }
+      ]
+    },
+    "arguments": {
+      "note": 5
+    }
+  },
+  "expected": {
+    "error": "invalid_type"
+  }
+}

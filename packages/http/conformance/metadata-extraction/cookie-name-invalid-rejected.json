@@ -1,0 +1,27 @@
+{
+  "kind": "metadata-extraction",
+  "description": "RFC 6265 token olmayan cerez adi endpoint'i dusurur",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items",
+    "parameters": [
+      {
+        "name": "la ng",
+        "in": "cookie",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "invalid_cookie_name"
+  }
+}

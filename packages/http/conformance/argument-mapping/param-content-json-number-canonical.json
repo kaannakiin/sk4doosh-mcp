@@ -1,0 +1,29 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerigindeki sayilar kanonik en kisa bicimde yazilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "n",
+          "in": "query",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "n": {
+        "d": 1.5,
+        "i": 10,
+        "neg": -0.25,
+        "z": 0
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?n=%7B%22d%22%3A1.5%2C%22i%22%3A10%2C%22neg%22%3A-0.25%2C%22z%22%3A0%7D"
+  }
+}

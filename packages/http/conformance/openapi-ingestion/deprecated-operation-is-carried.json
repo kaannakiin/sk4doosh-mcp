@@ -1,0 +1,56 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "deprecated operasyon descriptor'da isaretlenir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/old": {
+          "get": {
+            "operationId": "oldList",
+            "deprecated": true,
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /old",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "oldList",
+          "method": "GET",
+          "route": "/old",
+          "deprecated": true,
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

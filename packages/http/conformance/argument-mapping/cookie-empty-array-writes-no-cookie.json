@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "bos cerez dizisi cerez yazmaz",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "tags",
+          "in": "cookie",
+          "type": "string",
+          "array": true
+        }
+      ]
+    },
+    "arguments": {
+      "tags": []
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items"
+  }
+}

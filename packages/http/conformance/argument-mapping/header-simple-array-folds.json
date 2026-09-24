@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "simple stili header dizisi explode'dan bagimsiz virgulle katlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "x-tag",
+          "in": "header",
+          "type": "string",
+          "array": true,
+          "style": "simple"
+        }
+      ]
+    },
+    "arguments": {
+      "x-tag": ["a", "b"]
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "x-tag": "a,b"
+    }
+  }
+}

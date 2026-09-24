@@ -27,11 +27,15 @@ treat a file as binding without reading it.
 | `argument-mapping.md`        | Flat arguments → HTTP request                    | **normative candidate**                  |
 | `request-bodies.md`          | Body media types, form and multipart, file parts | normative, two implementations           |
 | `argument-curation.md`       | Renaming, re-describing and hiding arguments     | **specified, not yet implemented**       |
+| `openapi-ingestion.md`       | OpenAPI document → descriptors, diagnostics      | **specified, not yet implemented**       |
+| `credentials.md`             | Backend credentials for a network invoker        | **specified, not yet implemented**       |
 
 The four highlighted rows are the ones that bite. `schema-conversion-rules.md` has an
 "Unpinned areas" section listing behaviour that is deliberately not settled; `argument-mapping.md`
 is validated by two implementations but not yet declared normative; `argument-curation.md` is
-written ahead of any implementation on purpose, so nothing passes it yet.
+written ahead of any implementation on purpose, so nothing passes it yet. `openapi-ingestion.md`
+and `credentials.md` are written ahead of the network invoker in the same way, and bind only an
+implementation that reads OpenAPI documents or calls a backend over the network.
 
 The prose is English, like the documentation site that links to it. The design documents under
 repo-root `docs/` remain Turkish.

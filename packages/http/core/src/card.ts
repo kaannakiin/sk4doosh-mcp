@@ -18,6 +18,7 @@ export interface Card {
   readonly name: string;
   readonly description: string;
   readonly parameters: string;
+  readonly deprecated?: boolean;
   readonly authUncertain?: boolean;
 }
 
@@ -134,6 +135,7 @@ export function createCard(
     name: tool.name,
     description: truncateDescription(tool.description),
     parameters: summarizeParameters(tool.inputSchema),
+    ...(tool.deprecated === true ? { deprecated: true } : {}),
   };
   return decision === "unknown" ? { ...card, authUncertain: true } : card;
 }
@@ -145,7 +147,7 @@ export function createCard(
 export type ToolDetail = Pick<
   ToolDefinition,
   "name" | "description" | "inputSchema" | "outputSchema" | "annotations"
-> & { readonly authUncertain?: boolean };
+> & { readonly deprecated?: boolean; readonly authUncertain?: boolean };
 
 /**
  * Projects a tool into its loaded shape: name, untruncated description, input
@@ -170,6 +172,7 @@ export function createDetail(
       ? {}
       : { outputSchema: tool.outputSchema }),
     annotations: tool.annotations,
+    ...(tool.deprecated === true ? { deprecated: true } : {}),
     ...(decision === "unknown" ? { authUncertain: true } : {}),
   };
 }

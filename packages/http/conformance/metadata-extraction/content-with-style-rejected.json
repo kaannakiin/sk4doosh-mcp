@@ -1,0 +1,29 @@
+{
+  "kind": "metadata-extraction",
+  "description": "icerikle serilestirilen parametre stil tasiyamaz",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/s",
+    "parameters": [
+      {
+        "name": "f",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "object"
+        },
+        "contentType": "application/json",
+        "style": "form"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_parameter_content"
+  }
+}

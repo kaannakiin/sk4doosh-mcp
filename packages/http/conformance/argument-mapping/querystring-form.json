@@ -1,0 +1,38 @@
+{
+  "kind": "argument-mapping",
+  "description": "urlencoded querystring uyeleri bildirim sirasiyla ciftler olarak yazar; dizi anahtari tekrarlar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/search",
+      "parameters": [
+        {
+          "name": "q",
+          "in": "querystring",
+          "type": "object",
+          "contentType": "application/x-www-form-urlencoded",
+          "members": [
+            {
+              "name": "a",
+              "type": "string"
+            },
+            {
+              "name": "tags",
+              "type": "string",
+              "array": true
+            }
+          ]
+        }
+      ]
+    },
+    "arguments": {
+      "q": {
+        "tags": ["1", "2"],
+        "a": "x y"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/search?a=x%20y&tags=1&tags=2"
+  }
+}

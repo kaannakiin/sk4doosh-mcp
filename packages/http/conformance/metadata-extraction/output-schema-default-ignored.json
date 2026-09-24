@@ -1,0 +1,46 @@
+{
+  "kind": "metadata-extraction",
+  "description": "default yaniti cikti semasi olmaz",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/r",
+    "description": "R.",
+    "responses": {
+      "default": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "op",
+    "description": "R.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

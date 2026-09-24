@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using SkMcp.AspNetCore.Discovery;
 using SkMcp.AspNetCore.Naming;
 using SkMcp.AspNetCore.Requests;
@@ -6,7 +7,7 @@ using SkMcp.AspNetCore.Spec;
 
 namespace SkMcp.AspNetCore.Tools;
 
-internal static class ToolDefinitionFactory
+internal static partial class ToolDefinitionFactory
 {
     /// <param name="refDescription">Non-null means a file resolver is bound: file arguments offer <c>ref</c>, described by this text.</param>
     public static ToolDefinition Create(
@@ -24,6 +25,7 @@ internal static class ToolDefinitionFactory
                 : declared,
             InputSchema = BuildInputSchema(endpoint, variant, relief, refDescription),
             OutputSchema = BuildOutputSchema(endpoint),
+            Deprecated = endpoint.Deprecated == true ? true : null,
             Annotations = Annotate(endpoint.Method),
             Auth = endpoint.Auth,
         };
@@ -116,6 +118,7 @@ internal static class ToolDefinitionFactory
         EndpointDescriptor endpoint, ToolVariant? variant, CurationRelief? relief, string? refDescription)
     {
         bool multipart = endpoint.RequestBody?.ContentType == MediaTypes.Multipart;
+        bool binary = endpoint.RequestBody?.ContentType is { } bodyContentType && MediaTypes.IsBinary(bodyContentType);
         JsonNode? FileAware(string wireName, JsonNode? schema) =>
             multipart ? PublishFileSchema(schema, wireName, refDescription) : schema;
         JsonObject properties = [];
@@ -200,6 +203,10 @@ internal static class ToolDefinitionFactory
                     rootProperties[field] = PublishFileSchema(rootProperties[field]?.DeepClone(), field, refDescription);
                 }
             }
+            else if (binary)
+            {
+                rootSchema = PublishFileSchema(rootSchema, bodyRoot, refDescription)!;
+            }
             if (Publish(bodyRoot, rootSchema) is { } key
                 && endpoint.RequestBody.Required != false)
             {
@@ -249,11 +256,15 @@ internal static class ToolDefinitionFactory
 
     private static readonly string[] PreferredStatuses = ["200", "201", "202", "204"];
 
+    [GeneratedRegex(@"^2[0-9]{2}$")]
+    private static partial Regex ExactSuccessStatus();
+
     private static JsonObject? PrimaryResponseOf(IReadOnlyDictionary<string, ResponseBody> responses)
     {
-        string[] successes = [.. responses.Keys.Where(status => status.StartsWith('2'))];
+        string[] successes = [.. responses.Keys.Where(status => ExactSuccessStatus().IsMatch(status))];
         string? chosen = Array.Find(PreferredStatuses, successes.Contains)
-            ?? successes.OrderBy(int.Parse).FirstOrDefault();
+            ?? successes.OrderBy(int.Parse).FirstOrDefault()
+            ?? (responses.ContainsKey("2XX") ? "2XX" : null);
         return chosen is null ? null : responses[chosen].Schema;
     }
 
@@ -400,7 +411,7 @@ internal static class ToolDefinitionFactory
 
     private static ToolAnnotations Annotate(string method) => method.ToUpperInvariant() switch
     {
-        "GET" or "HEAD" => new ToolAnnotations { ReadOnlyHint = true, IdempotentHint = true },
+        "GET" or "HEAD" or "OPTIONS" or "QUERY" => new ToolAnnotations { ReadOnlyHint = true, IdempotentHint = true },
         "POST" => new ToolAnnotations { DestructiveHint = false },
         "PUT" => new ToolAnnotations { DestructiveHint = true, IdempotentHint = true },
         "PATCH" => new ToolAnnotations { DestructiveHint = true },

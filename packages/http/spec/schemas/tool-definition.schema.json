@@ -6,16 +6,29 @@
   "additionalProperties": false,
   "required": ["name", "description", "inputSchema", "annotations", "auth"],
   "properties": {
-    "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,255}$" },
-    "description": { "type": "string", "minLength": 1 },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,255}$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deprecated": {
+      "type": "boolean"
+    },
     "inputSchema": {
       "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
     },
     "outputSchema": {
       "$ref": "endpoint-descriptor.schema.json#/$defs/JsonSchemaObject"
     },
-    "annotations": { "$ref": "#/$defs/ToolAnnotations" },
-    "auth": { "$ref": "endpoint-descriptor.schema.json#/$defs/Auth" }
+    "annotations": {
+      "$ref": "#/$defs/ToolAnnotations"
+    },
+    "auth": {
+      "$ref": "endpoint-descriptor.schema.json#/$defs/Auth"
+    }
   },
   "$defs": {
     "ToolAnnotations": {
@@ -23,9 +36,15 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "readOnlyHint": { "type": "boolean" },
-        "destructiveHint": { "type": "boolean" },
-        "idempotentHint": { "type": "boolean" }
+        "readOnlyHint": {
+          "type": "boolean"
+        },
+        "destructiveHint": {
+          "type": "boolean"
+        },
+        "idempotentHint": {
+          "type": "boolean"
+        }
       }
     }
   }

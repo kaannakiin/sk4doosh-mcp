@@ -3,6 +3,7 @@ import { encodeBody } from "./request-body.js";
 import type { BodyValue, ComposeLimits, ComposedBody } from "./request-body.js";
 import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
 import type {
+  ContentParameterBinding,
   ObjectParameterBinding,
   RequestTemplate,
   ScalarParameterBinding,
@@ -11,11 +12,13 @@ import {
   formatScalar,
   memberKey,
   percentEncode,
+  percentEncodeAllowingReserved,
   separatorFor,
 } from "./wire-encoding.js";
 import {
   allowedArgumentNames,
   deniedArgumentNames,
+  isCookieOctets,
 } from "./request-template.js";
 
 export interface ComposedRequest {
@@ -47,7 +50,8 @@ export function compose(
 
   let path = template.routeTemplate;
   for (const p of template.parameters.filter(
-    (x): x is ScalarParameterBinding => x.location === "path",
+    (x): x is ScalarParameterBinding | ContentParameterBinding =>
+      x.location === "path" && x.kind !== "object",
   )) {
     const value = wire.get(p.name);
     if (value === undefined || value === null) {
@@ -58,7 +62,9 @@ export function compose(
     }
     path = path.replaceAll(
       `{${p.name}}`,
-      percentEncode(formatScalar(value, p, "invalid_path_type")),
+      p.kind === "content"
+        ? percentEncode(contentText(p, value))
+        : pathSegment(p, value),
     );
   }
 
@@ -78,6 +84,14 @@ export function compose(
       query.push(...objectQueryEntries(p, value));
       continue;
     }
+    if (p.kind === "content") {
+      query.push(
+        `${percentEncode(p.name)}=${percentEncode(contentText(p, value))}`,
+      );
+      continue;
+    }
+    const encodeValue =
+      p.allowReserved === true ? percentEncodeAllowingReserved : percentEncode;
     if (p.isArray) {
       if (!Array.isArray(value)) {
         throw new SkMcpArgumentError(
@@ -88,9 +102,17 @@ export function compose(
       if (value.length === 0) {
         continue;
       }
-      const items = value.map((item) =>
-        percentEncode(formatScalar(item, p, "invalid_type")),
-      );
+      /**
+       * Guard: `allowReserved` must not write an element's own delimiter raw, or `["c,d"]` would
+       * come back as two elements; every other reserved character stays raw.
+       */
+      const separator = p.arraySeparator;
+      const items = value.map((item) => {
+        const encoded = encodeValue(formatScalar(item, p, "invalid_type"));
+        return p.allowReserved === true && separator === ","
+          ? encoded.replaceAll(",", "%2C")
+          : encoded;
+      });
       if (p.arraySeparator === undefined) {
         for (const item of items) {
           query.push(`${percentEncode(p.name)}=${item}`);
@@ -102,14 +124,24 @@ export function compose(
       }
     } else {
       query.push(
-        `${percentEncode(p.name)}=${percentEncode(formatScalar(value, p, "invalid_type"))}`,
+        `${percentEncode(p.name)}=${encodeValue(formatScalar(value, p, "invalid_type"))}`,
       );
     }
   }
 
+  const querystring = template.parameters.find(
+    (x): x is ContentParameterBinding =>
+      x.location === "querystring" && x.kind === "content",
+  );
+  let queryText = query.join("&");
+  if (querystring !== undefined && wire.has(querystring.name)) {
+    queryText = querystringText(querystring, wire.get(querystring.name));
+  }
+
   const headers: Record<string, string> = {};
   for (const p of template.parameters.filter(
-    (x): x is ScalarParameterBinding => x.location === "header",
+    (x): x is ScalarParameterBinding | ContentParameterBinding =>
+      x.location === "header" && x.kind !== "object",
   )) {
     if (!wire.has(p.name)) {
       continue;
@@ -122,7 +154,9 @@ export function compose(
       );
     }
     let formatted: string;
-    if (p.isArray) {
+    if (p.kind === "content") {
+      formatted = contentText(p, value);
+    } else if (p.isArray) {
       if (!Array.isArray(value)) {
         throw new SkMcpArgumentError(
           "invalid_type",
@@ -145,6 +179,46 @@ export function compose(
       );
     }
     headers[p.name] = formatted;
+  }
+
+  const cookies: string[] = [];
+  for (const p of template.parameters.filter(
+    (x): x is ScalarParameterBinding | ContentParameterBinding =>
+      x.location === "cookie" && x.kind !== "object",
+  )) {
+    if (!wire.has(p.name)) {
+      continue;
+    }
+    const value = wire.get(p.name);
+    if (value === null) {
+      throw new SkMcpArgumentError(
+        "null_not_allowed",
+        `Cookie argument '${p.name}' cannot be null; omit it instead.`,
+      );
+    }
+    if (p.kind === "content") {
+      cookies.push(`${p.name}=${percentEncode(contentText(p, value))}`);
+      continue;
+    }
+    if (p.isArray) {
+      if (!Array.isArray(value)) {
+        throw new SkMcpArgumentError(
+          "invalid_type",
+          `Cookie argument '${p.name}' must be an array.`,
+        );
+      }
+      if (value.length === 0) {
+        continue;
+      }
+      cookies.push(
+        `${p.name}=${value.map((item) => cookieValue(item, p)).join(p.arraySeparator ?? ",")}`,
+      );
+    } else {
+      cookies.push(`${p.name}=${cookieValue(value, p)}`);
+    }
+  }
+  if (cookies.length > 0) {
+    headers["cookie"] = cookies.join("; ");
   }
 
   let bodyValue: BodyValue | undefined;
@@ -179,7 +253,7 @@ export function compose(
     bodyValue = fields;
   }
 
-  const pathAndQuery = query.length > 0 ? `${path}?${query.join("&")}` : path;
+  const pathAndQuery = queryText.length > 0 ? `${path}?${queryText}` : path;
   const body = encodeBody(template, bodyValue, limits);
   return body === undefined
     ? { pathAndQuery, headers }
@@ -187,6 +261,169 @@ export function compose(
 }
 
 const absent = Symbol("absent");
+
+function contentText(p: ContentParameterBinding, value: unknown): string {
+  if (p.mediaType === "text/plain") {
+    if (typeof value !== "string") {
+      throw new SkMcpArgumentError(
+        "invalid_type",
+        `Argument '${p.name}' must be of type string.`,
+      );
+    }
+    return value;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * A querystring parameter is the whole query string: JSON is percent-encoded as one value, and
+ * urlencoded content writes one pair per declared member in declaration order, repeating the key
+ * for an array member.
+ */
+function querystringText(p: ContentParameterBinding, value: unknown): string {
+  if (value === null) {
+    throw new SkMcpArgumentError(
+      "null_not_allowed",
+      `Query argument '${p.name}' cannot be null; omit it instead.`,
+    );
+  }
+  if (p.mediaType !== "application/x-www-form-urlencoded") {
+    return percentEncode(contentText(p, value));
+  }
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new SkMcpArgumentError(
+      "invalid_type",
+      `Query argument '${p.name}' must be an object.`,
+    );
+  }
+  const supplied = value as Readonly<Record<string, unknown>>;
+  return (p.members ?? [])
+    .flatMap((member) => {
+      const item = supplied[member.name];
+      if (item === undefined) {
+        return [];
+      }
+      const slot = { name: `${p.name}.${member.name}`, kind: member.kind };
+      if (item === null) {
+        throw new SkMcpArgumentError(
+          "null_not_allowed",
+          `Query argument '${slot.name}' cannot be null; omit it instead.`,
+        );
+      }
+      const key = percentEncode(member.name);
+      if (member.isArray !== true) {
+        return [
+          `${key}=${percentEncode(formatScalar(item, slot, "invalid_type"))}`,
+        ];
+      }
+      if (!Array.isArray(item)) {
+        throw new SkMcpArgumentError(
+          "invalid_type",
+          `Query argument '${slot.name}' must be an array.`,
+        );
+      }
+      return item.map(
+        (element) =>
+          `${key}=${percentEncode(formatScalar(element, slot, "invalid_type"))}`,
+      );
+    })
+    .join("&");
+}
+
+/**
+ * Guard: each element is encoded on its own and the style's delimiters are written raw, the rule
+ * the query delimiter already follows, so an element containing `,` or `.` stays one element and
+ * `5/../admin` stays one segment.
+ */
+function pathSegment(p: ScalarParameterBinding, value: unknown): string {
+  const key = percentEncode(p.name);
+  if (p.isArray !== true) {
+    const item = percentEncode(formatScalar(value, p, "invalid_path_type"));
+    switch (p.pathStyle) {
+      case "label":
+        return `.${item}`;
+      case "matrix":
+        return `;${key}=${item}`;
+      default:
+        return item;
+    }
+  }
+  if (!Array.isArray(value)) {
+    throw new SkMcpArgumentError(
+      "invalid_path_type",
+      `Path argument '${p.name}' must be an array.`,
+    );
+  }
+  if (value.length === 0) {
+    throw new SkMcpArgumentError(
+      "missing_path_parameter",
+      `Missing required path argument '${p.name}'; an empty array fills no segment.`,
+    );
+  }
+  const items = value.map((item) =>
+    percentEncode(formatScalar(item, p, "invalid_path_type")),
+  );
+  switch (p.pathStyle) {
+    case "label":
+      return `.${items.join(p.explode === true ? "." : ",")}`;
+    case "matrix":
+      return p.explode === true
+        ? items.map((item) => `;${key}=${item}`).join("")
+        : `;${key}=${items.join(",")}`;
+    default:
+      return items.join(",");
+  }
+}
+
+function cookieValue(value: unknown, p: ScalarParameterBinding): string {
+  const formatted = formatScalar(value, p, "invalid_type");
+  if (p.rawCookie !== true) {
+    return percentEncode(formatted);
+  }
+  if (!isCookieOctets(formatted)) {
+    throw new SkMcpArgumentError(
+      "invalid_cookie_value",
+      `Cookie argument '${p.name}' contains a character a cookie value cannot carry; space, '"', ',', ';', '\\' and control characters are not allowed.`,
+    );
+  }
+  return formatted;
+}
+
+/**
+ * Joins the cookies an identity carrier already put on the request with the composed ones.
+ *
+ * @throws SkMcpArgumentError `cookie_carrier_collision` when a composed cookie has the name of a
+ * carried one: either side winning would be a silent resolution — the agent overwriting the
+ * caller's credential, or the agent's value vanishing without an error.
+ */
+export function mergeCookieHeader(
+  carried: string | undefined,
+  composed: string | undefined,
+): string | undefined {
+  if (composed === undefined) {
+    return carried;
+  }
+  if (carried === undefined || carried.trim() === "") {
+    return composed;
+  }
+  const names = new Set(cookieNames(carried));
+  const clash = cookieNames(composed).find((name) => names.has(name));
+  if (clash !== undefined) {
+    throw new SkMcpArgumentError(
+      "cookie_carrier_collision",
+      `Cookie '${clash}' already travels with the caller's identity and cannot also be sent as an argument; omit it.`,
+    );
+  }
+  return `${carried}; ${composed}`;
+}
+
+function cookieNames(header: string): string[] {
+  return header
+    .split(";")
+    .map((pair) => pair.trim())
+    .filter((pair) => pair.length > 0)
+    .map((pair) => (pair.split("=", 1)[0] ?? "").trim());
+}
 
 /**
  * Rewrites agent keys to wire names.
@@ -272,11 +509,29 @@ function assertFilledParameter(
       }
     });
   const clean =
-    p.location !== "header" ||
-    !(items as unknown[]).some(
-      (item) => typeof item === "string" && /[\r\n\0]/.test(item),
-    );
+    (p.location !== "header" ||
+      !(items as unknown[]).some(
+        (item) => typeof item === "string" && /[\r\n\0]/.test(item),
+      )) &&
+    (p.rawCookie !== true ||
+      (items as unknown[]).every(
+        (item) => typeof item !== "string" || isCookieOctets(item),
+      ));
   if (!shapeOk || !scalarsOk || !clean) {
+    throw new SkMcpArgumentError(
+      "deferred_value_invalid",
+      `The operation could not be completed because a value it fills itself was unusable. Retrying with the same arguments will not help. Argument: '${p.name}'.`,
+    );
+  }
+}
+
+function assertFilledContent(value: unknown, p: ContentParameterBinding): void {
+  const text = p.mediaType === "text/plain";
+  const serialized = text ? value : JSON.stringify(value);
+  const unusable =
+    typeof serialized !== "string" ||
+    (p.location === "header" && /[\r\n\0]/.test(serialized));
+  if (unusable) {
     throw new SkMcpArgumentError(
       "deferred_value_invalid",
       `The operation could not be completed because a value it fills itself was unusable. Retrying with the same arguments will not help. Argument: '${p.name}'.`,
@@ -299,7 +554,11 @@ function applyFills(
     if (value === absent) {
       continue;
     }
-    assertFilledParameter(value, p);
+    if (p.kind === "content") {
+      assertFilledContent(value, p);
+    } else {
+      assertFilledParameter(value, p);
+    }
     wire.set(p.name, value);
   }
   for (const [field, fill] of template.bodyFills ?? []) {
@@ -399,7 +658,10 @@ function rejectUnknownMembers(
   entries: ReadonlyMap<string, unknown>,
 ): void {
   for (const parameter of template.parameters) {
-    if (parameter.kind !== "object") {
+    if (
+      parameter.kind !== "object" &&
+      (parameter.kind !== "content" || parameter.members === undefined)
+    ) {
       continue;
     }
     const group = parameter.argument ?? parameter.name;
@@ -407,12 +669,11 @@ function rejectUnknownMembers(
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       continue;
     }
-    const declared = new Set(parameter.members.map((member) => member.name));
+    const members = parameter.members ?? [];
+    const declared = new Set(members.map((member) => member.name));
     const unknown = Object.keys(value).filter((name) => !declared.has(name));
     if (unknown.length > 0) {
-      const allowed = parameter.members
-        .map((member) => `${group}.${member.name}`)
-        .sort();
+      const allowed = members.map((member) => `${group}.${member.name}`).sort();
       throw new SkMcpArgumentError(
         "unknown_argument",
         `Unknown argument(s): ${unknown.map((name) => `${group}.${name}`).join(", ")}. Allowed: ${allowed.join(", ")}.`,

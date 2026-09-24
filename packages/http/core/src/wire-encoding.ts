@@ -12,6 +12,19 @@ export function separatorFor(delimiter: string): string {
   return delimiter === " " ? "%20" : delimiter;
 }
 
+const reservedEscapes = /%(3A|2F|3F|40|21|24|27|28|29|2A|2C|3B|5B|5D)/g;
+
+/**
+ * Guard: `allowReserved` writes RFC 3986 reserved characters raw, except the ones that delimit the
+ * query itself — `&`, `=`, `#`, `+` and `%` stay encoded, or a value would split into pairs, end
+ * the query or be read back as a space.
+ */
+export function percentEncodeAllowingReserved(value: string): string {
+  return percentEncode(value).replace(reservedEscapes, (escape) =>
+    String.fromCharCode(parseInt(escape.slice(1), 16)),
+  );
+}
+
 export function percentEncode(value: string): string {
   return encodeURIComponent(value).replace(
     /[!'()*]/g,

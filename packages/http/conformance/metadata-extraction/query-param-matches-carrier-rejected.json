@@ -1,0 +1,33 @@
+{
+  "kind": "metadata-extraction",
+  "description": "kimlik tasiyicisinin kullandigi query yuvasini isgal eden veri parametresi reddedilir",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items",
+    "parameters": [
+      {
+        "name": "api_key",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false,
+      "carriers": [
+        {
+          "in": "query",
+          "name": "api_key"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "error": "identity_carrier_parameter"
+  }
+}

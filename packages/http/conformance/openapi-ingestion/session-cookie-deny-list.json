@@ -1,0 +1,95 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "bildirilmemis oturum cerezi kimlik sayilir ve iki uyari verir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/items": {
+          "get": {
+            "operationId": "listItems",
+            "parameters": [
+              {
+                "name": "JSESSIONID",
+                "in": "cookie",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "lang",
+                "in": "cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/items",
+          "parameters": [
+            {
+              "name": "lang",
+              "in": "cookie",
+              "required": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false,
+            "carriers": [
+              {
+                "in": "cookie",
+                "name": "JSESSIONID"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "identity_cookie_parameter",
+        "at": "/paths/~1items/get/parameters/0"
+      },
+      {
+        "code": "identity_cookie_uncovered",
+        "at": "/paths/~1items/get/parameters/0"
+      }
+    ]
+  }
+}

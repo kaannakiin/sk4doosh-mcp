@@ -42,6 +42,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddSingleton<SkMcp.AspNetCore.Files.ISkMcpFileResolver, DemoApi.DemoAttachmentResolver>();
+builder.Services.AddOpenApi();
 builder.Services.AddSkMcp(options =>
 {
     options.Visibility.Tier = VisibilityTier.Probe;
@@ -67,6 +68,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapOpenApi().AllowAnonymous();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
     .AllowAnonymous()
     .WithMetadata(new McpToolAttribute(), new EndpointDescriptionAttribute("Service health status; requires no identity."));

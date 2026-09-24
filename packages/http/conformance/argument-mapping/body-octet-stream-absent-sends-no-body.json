@@ -1,0 +1,17 @@
+{
+  "kind": "argument-mapping",
+  "description": "verilmeyen dosya govdesi govde gondermez",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/upload",
+      "parameters": [],
+      "bodyRoot": "file",
+      "contentType": "application/octet-stream"
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/upload"
+  }
+}

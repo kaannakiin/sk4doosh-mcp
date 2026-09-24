@@ -1,0 +1,33 @@
+{
+  "kind": "metadata-extraction",
+  "description": "header tasiyici eslesmesi buyuk/kucuk harfe duyarsiz",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items",
+    "parameters": [
+      {
+        "name": "x-api-key",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false,
+      "carriers": [
+        {
+          "in": "header",
+          "name": "X-API-Key"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "error": "identity_carrier_parameter"
+  }
+}

@@ -284,6 +284,7 @@ internal sealed class SkMcpMetaTools(
         tool.Name,
         Description = Truncate(tool.Description),
         Parameters = Summarize(tool.InputSchema),
+        Deprecated = tool.Deprecated == true ? true : (bool?)null,
         AuthUncertain = Uncertain(decision),
     };
 
@@ -307,6 +308,7 @@ internal sealed class SkMcpMetaTools(
         tool.InputSchema,
         tool.OutputSchema,
         tool.Annotations,
+        Deprecated = tool.Deprecated == true ? true : (bool?)null,
         AuthUncertain = Uncertain(decision),
     };
 

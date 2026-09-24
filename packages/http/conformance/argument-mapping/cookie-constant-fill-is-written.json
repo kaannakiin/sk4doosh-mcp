@@ -1,0 +1,28 @@
+{
+  "kind": "argument-mapping",
+  "description": "sabit dolgu cerezi gizli yazar",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string",
+          "fill": {
+            "kind": "constant",
+            "value": "tr"
+          }
+        }
+      ]
+    },
+    "arguments": {}
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "lang=tr"
+    }
+  }
+}

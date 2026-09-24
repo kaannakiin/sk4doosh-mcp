@@ -1,0 +1,31 @@
+{
+  "kind": "metadata-extraction",
+  "description": "explode true cerez dizisi adi tekrarlar ve endpoint'i dusurur",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items",
+    "parameters": [
+      {
+        "name": "tags",
+        "in": "cookie",
+        "required": false,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "explode": true
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_parameter_style"
+  }
+}

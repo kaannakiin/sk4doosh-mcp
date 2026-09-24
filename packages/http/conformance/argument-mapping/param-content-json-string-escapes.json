@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerigi yalniz tirnak, ters bolu ve kontrol karakterlerini kacirir; ASCII disi karakter UTF-8 olarak kodlanir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "s",
+          "in": "query",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "s": {
+        "t": "é\"\\\n\t"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items?s=%7B%22t%22%3A%22%C3%A9%5C%22%5C%5C%5Cn%5Ct%22%7D"
+  }
+}

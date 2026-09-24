@@ -15,7 +15,7 @@ A body is not always JSON. This document defines which media types an operation'
 | Multipart | `multipart/form-data`                           | one part per wire key; a file field is a file part |
 | Text      | `text/plain`                                    | the body root string, as is                        |
 
-Any other media type has no writer: the template MUST be refused with `unsupported_body_shape`, and discovery reports the endpoint as `unsupported_binding`.
+A body of any other media type is written as **one file's bytes** when the body root is a file schema (`contentMediaType` without `contentEncoding`) — `application/octet-stream`, `image/png`, `application/pdf`. The agent sends a file argument ([below](#the-file-argument)) as the body root, the same budgets apply, and `Content-Type` is the declared media type, never the file's own. Absent, no body is sent. Any other media type, or one of these whose root is not a file, has no writer: the template MUST be refused with `unsupported_body_shape`, and discovery reports the endpoint as `unsupported_binding`.
 
 ### Choosing one
 

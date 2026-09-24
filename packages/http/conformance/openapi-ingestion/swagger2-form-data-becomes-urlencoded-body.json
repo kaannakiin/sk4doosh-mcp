@@ -1,0 +1,80 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "2.0 formData alanlari urlencoded govde olur",
+  "input": {
+    "document": {
+      "swagger": "2.0",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "host": "api.test",
+      "schemes": ["https"],
+      "paths": {
+        "/items": {
+          "post": {
+            "operationId": "createItem",
+            "consumes": ["application/x-www-form-urlencoded"],
+            "parameters": [
+              {
+                "name": "name",
+                "in": "formData",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "count",
+                "in": "formData",
+                "type": "integer"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "POST /items",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "createItem",
+          "method": "POST",
+          "route": "/items",
+          "requestBody": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": ["name"]
+            },
+            "contentType": "application/x-www-form-urlencoded"
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

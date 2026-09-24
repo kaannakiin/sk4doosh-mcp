@@ -1,0 +1,48 @@
+{
+  "kind": "metadata-extraction",
+  "description": "QUERY metodu salt-okur ve idempotent isaretlenir",
+  "input": {
+    "operationId": "Op",
+    "method": "QUERY",
+    "route": "/search",
+    "description": "Search.",
+    "requestBody": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "name": "op",
+    "description": "Search.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "term": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  }
+}

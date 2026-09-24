@@ -1,0 +1,72 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "dosya kokunlu binary govde kendi media turuyle indirilir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/avatar": {
+          "put": {
+            "operationId": "putAvatar",
+            "requestBody": {
+              "required": true,
+              "content": {
+                "image/png": {
+                  "schema": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "PUT /avatar",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "putAvatar",
+          "method": "PUT",
+          "route": "/avatar",
+          "requestBody": {
+            "schema": {
+              "type": "string",
+              "contentMediaType": "image/png"
+            },
+            "contentType": "image/png"
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

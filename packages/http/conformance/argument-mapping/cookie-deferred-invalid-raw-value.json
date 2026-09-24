@@ -1,0 +1,29 @@
+{
+  "kind": "argument-mapping",
+  "description": "doldurulan cookie stili degeri gecersiz oktet tasirsa ajana onaramayacagi hata donmez",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "v",
+          "in": "cookie",
+          "type": "string",
+          "style": "cookie",
+          "fill": {
+            "kind": "deferred",
+            "source": "locale"
+          }
+        }
+      ]
+    },
+    "arguments": {},
+    "deferred": {
+      "locale": "a b"
+    }
+  },
+  "expected": {
+    "error": "deferred_value_invalid"
+  }
+}

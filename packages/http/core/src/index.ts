@@ -5,6 +5,7 @@ export {
   protocolRevisions,
 } from "./protocol.js";
 export type { EndpointDescriptor } from "./generated/endpoint-descriptor.js";
+export type { IdentityCarrier } from "./generated/endpoint-descriptor.js";
 export type {
   ArgumentCuration,
   ArgumentFill,
@@ -26,14 +27,19 @@ export type {
 export {
   arraySeparatorFor,
   createRequestTemplate,
+  isBinaryMediaType,
+  isCookieOctets,
   isFormMediaType,
   isJsonMediaType,
   jsonMediaType,
   multipartMediaType,
+  serializationFor,
   textMediaType,
   urlEncodedMediaType,
 } from "./request-template.js";
 export type {
+  ContentMediaType,
+  ContentParameterBinding,
   FileSource,
   FormBinding,
   FormFieldBinding,
@@ -41,10 +47,12 @@ export type {
   ParameterKind,
   ParameterLocation,
   ParameterStyle,
+  PathStyle,
   RequestTemplate,
   RequestTemplateInput,
+  ScalarSerialization,
 } from "./request-template.js";
-export { compose } from "./request-composer.js";
+export { compose, mergeCookieHeader } from "./request-composer.js";
 export type { ComposedRequest } from "./request-composer.js";
 export type {
   BodyValue,
@@ -227,3 +235,70 @@ export { flattenCacheKey } from "./cache/cache.js";
 export { MemorySkMcpCache } from "./cache/memory-cache.js";
 export type { MemorySkMcpCacheOptions } from "./cache/memory-cache.js";
 export { SingleFlight } from "./cache/single-flight.js";
+export { atLeast, severityIn } from "./catalog/diagnostics.js";
+export type {
+  CatalogDiagnostic,
+  CatalogSeverity,
+  DiagnosticsOptions,
+  SeverityTable,
+} from "./catalog/diagnostics.js";
+export { writeBody } from "./body-writer.js";
+export type {
+  RefFile,
+  RefResolver,
+  ResolvedFile,
+  WrittenBody,
+} from "./body-writer.js";
+export {
+  assertCatalogValid,
+  buildCatalog,
+  cleanTags,
+} from "./catalog/pipeline.js";
+export type {
+  CatalogBuild,
+  CatalogCandidate,
+  CatalogEntry,
+  CatalogPipelineOptions,
+  DiagnosticReporter,
+} from "./catalog/pipeline.js";
+export {
+  armDeadline,
+  SkMcpDispatchAborted,
+  untilAbandoned,
+} from "./invoke/deadline.js";
+export type {
+  Abandonment,
+  DispatchAbortReason,
+  DispatchDeadline,
+  Invoker,
+} from "./invoke/deadline.js";
+export {
+  catalogGenerationMetaKey,
+  deferredSourcesOf,
+  emitGuarded,
+  errorResult,
+  invokeArgumentsDescription,
+  invokeDescription,
+  knownFields,
+  loadDescription,
+  missingArgument,
+  notInvocable,
+  operationNameDescription,
+  resolveDeferred,
+  searchCatalog,
+  searchDescription,
+  searchDetailDescription,
+  searchLimitDescription,
+  searchNarrowing,
+  searchQueryDescription,
+  searchTagsDescription,
+  textResult,
+  unknownTool,
+  vocabularyOf,
+  wrongArgumentType,
+} from "./meta-tools/meta-tools.js";
+export type {
+  MetaResponse,
+  SearchRequest,
+  WireResult,
+} from "./meta-tools/meta-tools.js";

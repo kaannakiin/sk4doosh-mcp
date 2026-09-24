@@ -1,0 +1,80 @@
+{
+  "kind": "metadata-extraction",
+  "description": "cerez ve path dizisi ajana siradan argumanlar olarak gorunur; kimlik tasiyicilari sema'ya girmez",
+  "input": {
+    "operationId": "ListItems",
+    "method": "GET",
+    "route": "/items/{ids}",
+    "description": "Lists items.",
+    "parameters": [
+      {
+        "name": "ids",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "style": "matrix"
+      },
+      {
+        "name": "lang",
+        "in": "cookie",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Response language."
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false,
+      "carriers": [
+        {
+          "in": "cookie",
+          "name": "sid"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "name": "list_items",
+    "description": "Lists items.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "lang": {
+          "type": "string",
+          "description": "Response language."
+        }
+      },
+      "required": ["ids"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true
+    },
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false,
+      "carriers": [
+        {
+          "in": "cookie",
+          "name": "sid"
+        }
+      ]
+    }
+  }
+}

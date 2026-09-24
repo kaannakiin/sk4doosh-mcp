@@ -182,9 +182,10 @@ public sealed class CatalogFixtureTests
     }
 
     /// <remarks>
-    /// Builds the request template too whenever the body is not JSON, because every body-shape
-    /// rejection lives there: a definition alone would publish a form tool whose template can
-    /// never be built.
+    /// Always builds the request template too, not only when the body is not JSON: a
+    /// parameter-level rejection (an unsupported style, an invalid cookie name, an identity
+    /// carrier collision) surfaces only when the template is built, and a definition alone would
+    /// still publish a tool whose template can never be built.
     /// </remarks>
     private static IReadOnlyList<ToolDefinition> ToolsOf(
         EndpointDescriptor endpoint, CurationRelief? relief, string? refDescription = null) =>
@@ -193,15 +194,12 @@ public sealed class CatalogFixtureTests
             {
                 ToolDefinition tool = ToolDefinitionFactory.Create(
                     production.Endpoint, null, production.Variant, relief, refDescription);
-                if (production.Endpoint.RequestBody?.ContentType is not null)
+                List<CatalogDiagnostic> diagnostics = [];
+                (_, string? failure) = EndpointCatalog.BuildTemplate(
+                    production.Endpoint, diagnostics, production.Variant, relief, refDescription);
+                if (failure is not null)
                 {
-                    List<CatalogDiagnostic> diagnostics = [];
-                    (_, string? failure) = EndpointCatalog.BuildTemplate(
-                        production.Endpoint, diagnostics, production.Variant, relief, refDescription);
-                    if (failure is not null)
-                    {
-                        throw new SkMcpTemplateException(failure, diagnostics[^1].Message);
-                    }
+                    throw new SkMcpTemplateException(failure, diagnostics[^1].Message);
                 }
                 return tool;
             })];

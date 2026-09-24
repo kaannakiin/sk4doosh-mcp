@@ -1,0 +1,24 @@
+{
+  "kind": "argument-mapping",
+  "description": "JSON icerikli query parametresine null reddedilir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "filter",
+          "in": "query",
+          "type": "json",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "arguments": {
+      "filter": null
+    }
+  },
+  "expected": {
+    "error": "null_not_allowed"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "kind": "argument-mapping",
+  "description": "kimlik cerezi once, argumandan gelen cerez sonra tek header'da birlesir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "lang": "tr"
+    },
+    "carrierCookies": "sid=abc"
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "sid=abc; lang=tr"
+    }
+  }
+}

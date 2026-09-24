@@ -1,0 +1,37 @@
+{
+  "kind": "metadata-extraction",
+  "description": "ikinci querystring parametresi reddedilir",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/s",
+    "parameters": [
+      {
+        "name": "a",
+        "in": "querystring",
+        "required": false,
+        "schema": {
+          "type": "object"
+        },
+        "contentType": "application/json"
+      },
+      {
+        "name": "b",
+        "in": "querystring",
+        "required": false,
+        "schema": {
+          "type": "object"
+        },
+        "contentType": "application/json"
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "multiple_querystring"
+  }
+}

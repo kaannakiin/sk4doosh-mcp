@@ -1,0 +1,28 @@
+{
+  "kind": "metadata-extraction",
+  "description": "allowReserved yalniz query parametresinde olur",
+  "input": {
+    "operationId": "Op",
+    "method": "GET",
+    "route": "/s/{id}",
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "allowReserved": true
+      }
+    ],
+    "auth": {
+      "anonymous": "yes",
+      "policies": [],
+      "imperative": false
+    }
+  },
+  "expected": {
+    "error": "unsupported_parameter_style"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "kind": "card",
+  "description": "deprecated arac karti deprecated tasir",
+  "input": {
+    "tool": {
+      "name": "old_op",
+      "description": "Old listing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "deprecated": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      },
+      "auth": {
+        "anonymous": "yes",
+        "policies": [],
+        "imperative": false
+      }
+    }
+  },
+  "expected": {
+    "name": "old_op",
+    "description": "Old listing.",
+    "parameters": "page: integer",
+    "deprecated": true
+  }
+}

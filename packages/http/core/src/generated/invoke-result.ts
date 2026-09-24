@@ -20,6 +20,8 @@ export type SdkErrorCode =
   | "invalid_type"
   | "deferred_value_missing"
   | "deferred_value_invalid"
+  | "invalid_cookie_value"
+  | "cookie_carrier_collision"
   | "invalid_file_argument"
   | "file_too_large"
   | "file_unresolved"

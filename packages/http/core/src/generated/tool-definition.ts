@@ -3,6 +3,7 @@ export type Anonymity = "yes" | "no" | "unknown";
 export interface ToolDefinition {
   name: string;
   description: string;
+  deprecated?: boolean;
   inputSchema: JsonSchemaObject;
   outputSchema?: JsonSchemaObject;
   annotations: ToolAnnotations;
@@ -64,4 +65,9 @@ export interface Auth {
   anonymous: Anonymity;
   policies: string[];
   imperative: boolean;
+  carriers?: IdentityCarrier[];
+}
+export interface IdentityCarrier {
+  in: "header" | "query" | "cookie";
+  name: string;
 }

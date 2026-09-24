@@ -22,6 +22,12 @@ public sealed class SkMcpTemplateException(string code, string message) : Except
     public const string AmbiguousCuration = "ambiguous_curation";
     public const string SealedCurationOverridden = "sealed_curation_overridden";
     public const string UnsupportedBodyShape = "unsupported_body_shape";
+    public const string UnsupportedParameterStyle = "unsupported_parameter_style";
+    public const string InvalidCookieName = "invalid_cookie_name";
+    public const string IdentityCarrierParameter = "identity_carrier_parameter";
+    public const string UnsupportedParameterContent = "unsupported_parameter_content";
+    public const string MultipleQuerystring = "multiple_querystring";
+    public const string QuerystringWithQuery = "querystring_with_query";
 }
 
 public sealed class SkMcpArgumentException(string code, string message) : Exception(message)
@@ -36,6 +42,8 @@ public sealed class SkMcpArgumentException(string code, string message) : Except
     public const string InvalidType = "invalid_type";
     public const string DeferredValueMissing = "deferred_value_missing";
     public const string DeferredValueInvalid = "deferred_value_invalid";
+    public const string InvalidCookieValue = "invalid_cookie_value";
+    public const string CookieCarrierCollision = "cookie_carrier_collision";
     public const string InvalidFileArgument = "invalid_file_argument";
     public const string FileTooLarge = "file_too_large";
 }

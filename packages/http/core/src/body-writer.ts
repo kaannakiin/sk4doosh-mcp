@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { ComposedBody, FileContent } from "@sk-mcp/core";
+import type { ComposedBody, FileContent } from "./request-body.js";
 
 export interface ResolvedFile {
   readonly bytes: Uint8Array;
@@ -98,6 +98,10 @@ export async function writeBody(
         contentType: body.contentType,
         bytes: Buffer.from(body.encoded, "ascii"),
       };
+    case "binary": {
+      const file = await fileBytes(body.file, "body", resolveRef);
+      return { contentType: body.contentType, bytes: Buffer.from(file.bytes) };
+    }
     case "multipart": {
       const boundary = `----sk-mcp-${randomBytes(16).toString("hex")}`;
       const chunks: Buffer[] = [];

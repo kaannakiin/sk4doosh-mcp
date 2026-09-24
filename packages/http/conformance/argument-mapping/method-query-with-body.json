@@ -1,0 +1,23 @@
+{
+  "kind": "argument-mapping",
+  "description": "QUERY metodu govde tasiyabilir",
+  "input": {
+    "template": {
+      "method": "QUERY",
+      "route": "/search",
+      "parameters": [],
+      "body": {
+        "properties": ["term"]
+      }
+    },
+    "arguments": {
+      "term": "x"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/search",
+    "bodyJson": {
+      "term": "x"
+    }
+  }
+}

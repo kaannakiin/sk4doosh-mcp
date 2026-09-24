@@ -1,0 +1,107 @@
+{
+  "kind": "openapi-ingestion",
+  "description": "ortak yol oneki rotadan base URL'ye tasinir",
+  "input": {
+    "document": {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "t",
+        "version": "1"
+      },
+      "servers": [
+        {
+          "url": "https://api.test"
+        }
+      ],
+      "paths": {
+        "/Rest/Tasks/{id}": {
+          "get": {
+            "operationId": "getTask",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        },
+        "/health": {
+          "get": {
+            "operationId": "listItems",
+            "parameters": [],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "hoistPathPrefix": "/Rest"
+    }
+  },
+  "expected": {
+    "endpoints": [
+      {
+        "key": "GET /Rest/Tasks/{id}",
+        "baseUrl": "https://api.test/Rest",
+        "descriptor": {
+          "operationId": "getTask",
+          "method": "GET",
+          "route": "/Tasks/{id}",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      },
+      {
+        "key": "GET /health",
+        "baseUrl": "https://api.test",
+        "descriptor": {
+          "operationId": "listItems",
+          "method": "GET",
+          "route": "/health",
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          },
+          "auth": {
+            "anonymous": "unknown",
+            "policies": [],
+            "imperative": false
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

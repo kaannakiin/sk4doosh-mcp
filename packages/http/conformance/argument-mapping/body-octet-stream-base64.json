@@ -1,0 +1,29 @@
+{
+  "kind": "argument-mapping",
+  "description": "octet-stream govdesi base64 dosyadan yazilir",
+  "input": {
+    "template": {
+      "method": "POST",
+      "route": "/upload",
+      "parameters": [],
+      "bodyRoot": "file",
+      "contentType": "application/octet-stream"
+    },
+    "arguments": {
+      "file": {
+        "base64": "aGVsbG8=",
+        "name": "h.bin"
+      }
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/upload",
+    "contentType": "application/octet-stream",
+    "bodyFile": {
+      "base64": "aGVsbG8=",
+      "byteLength": 5,
+      "filename": "h.bin",
+      "mediaType": "application/octet-stream"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "kind": "argument-mapping",
+  "description": "arguman cerezi yoksa kimlik cerezi aynen kalir",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {},
+    "carrierCookies": "sid=abc"
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "sid=abc"
+    }
+  }
+}

@@ -939,6 +939,49 @@ internal static partial class EndpointCatalog
         return members;
     }
 
+    /// <summary>Builds the binding of a content-serialized parameter.</summary>
+    /// <remarks>
+    /// A urlencoded querystring freezes its members from the schema, as an object query parameter
+    /// does, so the agent's own key order cannot change the composed string. The twin is
+    /// <c>contentBindingFor</c> in packages/http/core/src/tool.ts.
+    /// </remarks>
+    private static ParameterBinding ContentBindingFor(Parameter parameter, ResolvedArgument? resolved)
+    {
+        if (parameter.Style is not null || parameter.Explode is not null)
+        {
+            throw new SkMcpTemplateException(
+                SkMcpTemplateException.UnsupportedParameterContent,
+                $"Parameter '{parameter.Name}' is serialized as {parameter.ContentType} and cannot also declare a style.");
+        }
+        string mediaType = parameter.ContentType!;
+        List<ObjectMember>? members = null;
+        if (mediaType == MediaTypes.UrlEncoded && parameter.Schema["properties"] is JsonObject properties)
+        {
+            members = [];
+            foreach ((string name, JsonNode? node) in properties)
+            {
+                string? memberType = RequestBodyShape.TypeOf(node?["type"]);
+                bool isArray = memberType == "array";
+                string? scalar = isArray ? RequestBodyShape.TypeOf(node?["items"]?["type"]) : memberType;
+                if (scalar is null || !FormScalars.Contains(scalar))
+                {
+                    throw new SkMcpTemplateException(
+                        SkMcpTemplateException.UnsupportedObjectNesting,
+                        $"Member '{parameter.Name}.{name}' is not a query scalar or an array of them.");
+                }
+                members.Add(new ObjectMember(name, Kind(scalar), isArray));
+            }
+        }
+        return new ParameterBinding(
+            parameter.Name,
+            Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true),
+            ParameterKind.String,
+            Argument: resolved?.Argument,
+            Fill: resolved?.Fill,
+            Members: members,
+            ContentType: mediaType);
+    }
+
     internal static string? Locate(BindingSource? source)
     {
         if (source == BindingSource.Path)
@@ -1002,16 +1045,21 @@ internal static partial class EndpointCatalog
             List<ParameterBinding> bindings = [];
             foreach (Parameter parameter in descriptor.Parameters ?? [])
             {
-                string? type = RequestBodyShape.TypeOf(parameter.Schema["type"]);
-                bool isArray = type == "array";
-                string? scalar = isArray
-                    ? RequestBodyShape.TypeOf(parameter.Schema["items"]?["type"])
-                    : type;
                 ResolvedArgument? resolved = curation.Of(parameter.Name);
                 if (resolved?.Fill is not null && parameter.Required)
                 {
                     requiredFills.Add(parameter.Name);
                 }
+                if (parameter.ContentType is not null)
+                {
+                    bindings.Add(ContentBindingFor(parameter, resolved));
+                    continue;
+                }
+                string? type = RequestBodyShape.TypeOf(parameter.Schema["type"]);
+                bool isArray = type == "array";
+                string? scalar = isArray
+                    ? RequestBodyShape.TypeOf(parameter.Schema["items"]?["type"])
+                    : type;
                 if (type == "object" || parameter.Style == "deepObject")
                 {
                     bindings.Add(new ParameterBinding(
@@ -1025,16 +1073,21 @@ internal static partial class EndpointCatalog
                             parameter.Style, parameter.Explode, parameter.ObjectNotation, parameter.Name)));
                     continue;
                 }
+                ParameterLocation location = Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true);
+                ScalarSerialization serialization = RequestTemplate.SerializationFor(
+                    location, parameter.Style, parameter.Explode, isArray, parameter.Name, parameter.AllowReserved);
                 bindings.Add(new ParameterBinding(
                     parameter.Name,
-                    Enum.Parse<ParameterLocation>(parameter.In, ignoreCase: true),
+                    location,
                     Kind(scalar),
                     isArray,
-                    isArray
-                        ? RequestTemplate.ArraySeparatorFor(parameter.Style, parameter.Explode, parameter.Name)
-                        : null,
+                    serialization.ArraySeparator,
                     resolved?.Argument,
-                    resolved?.Fill));
+                    resolved?.Fill,
+                    PathStyle: serialization.PathStyle,
+                    Explode: serialization.Explode,
+                    RawCookie: serialization.RawCookie,
+                    AllowReserved: serialization.AllowReserved));
             }
 
             List<string>? bodyProperties = null;
@@ -1090,11 +1143,14 @@ internal static partial class EndpointCatalog
                         : null;
                 form = FormBindingFor(requestBody, formProperties);
             }
+            bool binaryBody = contentType is not null
+                && MediaTypes.IsBinary(contentType)
+                && IsFileSchema(descriptor.RequestBody?.Schema);
 
             return (RequestTemplate.Create(
                 new HttpMethod(descriptor.Method), descriptor.Route, bindings, bodyProperties,
                 allowsAdditional, bodyRoot, bodyAliases, bodyFills, rootFill, requiredFills,
-                contentType, form, FileSourcesOf(refDescription)), null);
+                contentType, form, FileSourcesOf(refDescription), descriptor.Auth.Carriers, binaryBody), null);
         }
         catch (Exception ex) when (ex is SkMcpTemplateException or ArgumentException or FormatException)
         {

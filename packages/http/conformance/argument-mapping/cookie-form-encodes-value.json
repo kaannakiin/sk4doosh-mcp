@@ -1,0 +1,26 @@
+{
+  "kind": "argument-mapping",
+  "description": "form stili cerez degeri RFC 3986 ile kodlanir; bosluk ve noktali virgul cerezi bolemez",
+  "input": {
+    "template": {
+      "method": "GET",
+      "route": "/items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "cookie",
+          "type": "string"
+        }
+      ]
+    },
+    "arguments": {
+      "lang": "en US;x=1"
+    }
+  },
+  "expected": {
+    "pathAndQuery": "/items",
+    "headers": {
+      "cookie": "lang=en%20US%3Bx%3D1"
+    }
+  }
+}
