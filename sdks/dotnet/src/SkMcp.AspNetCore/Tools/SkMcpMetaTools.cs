@@ -50,7 +50,7 @@ internal sealed class SkMcpMetaTools(
     /// Guard: <c>detail</c> is a string carrying <see cref="AllowedValuesAttribute"/> rather than a CLR
     /// enum. An enum parameter is deserialized during argument binding, so an unrecognised value would
     /// throw before this method runs and the answer would be neither the clamp
-    /// <see href="../../../../packages/spec/search-semantics.md">search-semantics.md</see> requires nor an
+    /// <see href="../../../../packages/http/spec/search-semantics.md">search-semantics.md</see> requires nor an
     /// sk-mcp envelope from <see cref="Respond"/>. The attribute only decorates the published schema, which
     /// is what keeps the clamp reachable in both SDKs. T16 pins the published shape.
     /// </remarks>

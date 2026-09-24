@@ -32,7 +32,7 @@ jobs:
         # pdf: whether the PDF engine publishes a prebuilt binary for this
         # target. @firecrawl/pdf-inspector ships no darwin-x64 build and its
         # wasm fallback is unpublished, so @sk-mcp/pdf-mcp is left out of that
-        # leg rather than failing it (docs/pdf-motoru-karari.md).
+        # leg rather than failing it.
         target:
           - { id: linux-x64, os: ubuntu-24.04, pdf: true }
           - { id: linux-arm64, os: ubuntu-24.04-arm, pdf: true }

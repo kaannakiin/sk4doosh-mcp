@@ -45,8 +45,7 @@ function parse(argv: readonly string[]): Invocation | undefined {
  * binary is catchable. The PDF engine ships prebuilt binaries for a narrower set
  * of platforms than the rest of this repo — there is no darwin-x64 build and the
  * wasm fallback its loader references is unpublished — and a static import would
- * abort the process before this file could explain why
- * (docs/pdf-motoru-karari.md).
+ * abort the process before this file could explain why.
  */
 function isEngineLoadFailure(detail: string): boolean {
   return (

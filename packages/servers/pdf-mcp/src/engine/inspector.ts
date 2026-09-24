@@ -37,9 +37,10 @@ const documentTypes: Readonly<Record<string, DocumentType>> = {
 /**
  * Guard: every failure arrives as a bare Error whose `code` is napi's
  * `GenericFailure`, so only the message distinguishes an encrypted file from a
- * corrupt one. The three observed messages are pinned by inspector.spec.ts — a
- * library upgrade that reworded them degrades to extraction_failed instead of
- * mislabelling, and the test says so out loud.
+ * corrupt one. The observed messages are pinned by the failure-classification
+ * cases in test/engine.spec.ts — a library upgrade that reworded them
+ * degrades to extraction_failed instead of mislabelling, and the test says so
+ * out loud.
  */
 function asEngineError(error: unknown, subject: string): SkMcpPdfError {
   const detail = error instanceof Error ? error.message : String(error);
