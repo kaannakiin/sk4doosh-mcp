@@ -13,6 +13,13 @@ export const limits = {
   ...coreLimits,
   maxPdfBytes,
   maxPages: 2_000,
+  /**
+   * Guard: a safe ceiling, not a measurement. The synthetic 200-page, text-only
+   * document measured 21.1 ms to extract whole and 7.0 ms for one page, so
+   * selecting pages saves a third, not 199/200 — which is why a document is
+   * extracted once and cached. A real document with embedded fonts and images
+   * is far slower, and nothing measured bounds it.
+   */
   maxExtractMs: 20_000,
   maxConcurrentExtractions: 2,
   maxConcurrentListings: 4,

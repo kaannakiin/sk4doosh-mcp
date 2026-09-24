@@ -50,7 +50,7 @@ describe("page numbering", () => {
 
 describe("classification is a document verdict, not a page list", () => {
   /**
-   * Measured in docs/pdf-motoru-karari.md: the classifier flags every page of a
+   * Measured on 1.23.0: the classifier flags every page of a
    * document that contains a single scanned page. describe_document must not
    * build its page list from it, and this test fails if we ever start.
    */

@@ -6,8 +6,9 @@ import { limits } from "../platform/limits.js";
  * is 0-based while the sibling `pagesNeedingOcr` array is 1-based, and
  * `classifyPdf` reports the same concept 0-based where `processPdf` reports it
  * 1-based. Every conversion lives here and lint keeps the library import inside
- * this folder, so there is exactly one place the base can be wrong.
- * docs/pdf-motoru-karari.md records the measurement.
+ * this folder, so there is exactly one place the base can be wrong. Measured on
+ * 1.23.0 for one scanned page: `classifyPdfAsync` reports `[0]`,
+ * `extractPagesMarkdownAsync` reports `[1]`.
  */
 export function toOneBased(zeroBased: number): number {
   return zeroBased + 1;

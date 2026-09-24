@@ -12,8 +12,9 @@ import type {
  * Guard: `documentType` comes from the classifier and `pagesNeedingOcr` from the
  * per-page extraction, and neither is derived from the other. The classifier
  * reports every page of a document that contains one image page, so using it as
- * a page list would overstate what needs OCR by an order of magnitude
- * (docs/pdf-motoru-karari.md, Bulgu 2).
+ * a page list would overstate what needs OCR by an order of magnitude —
+ * measured on 1.23.0, a 10-page document with one image page came back with all
+ * 10 flagged, while the per-page extraction flagged the one.
  */
 export interface PdfBody {
   readonly format: "pdf";

@@ -114,7 +114,8 @@ bağımlılık gerektirmez.
 - **Dış yüzeydeki her sayfa numarası 1 tabanlıdır.** Kütüphane aynı sonuç nesnesinde bazı alanları
   0, bazılarını 1 tabanlı veriyor. Dönüşümün tamamı `src/engine/` içindedir ve lint,
   `@firecrawl/pdf-inspector` import'unu o klasör dışında yasaklar — ikinci bir import noktası bu
-  hatayı geri getirirdi ([docs/pdf-motoru-karari.md](../../../docs/pdf-motoru-karari.md)).
+  hatayı geri getirirdi (1.23.0'da ölçüldü: `PageMarkdownResult.page` 0, kardeş `pagesNeedingOcr` 1
+  tabanlı).
 
 - **Sayfa seçimi kütüphaneye gitmeden doğrulanır.** Aralık dışı bir indeks hata değil, `needsOcr`
   işaretli hayalet bir sayfa döndürüyor; negatif değer u32'ye sarıyor. İkisi de ajana gerçek sayfa
