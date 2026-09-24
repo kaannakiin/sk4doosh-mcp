@@ -72,7 +72,7 @@ no TODOs, no history. Measurements that justify a limit live in the guard commen
 
 - The spec (`packages/http/spec`) is normative and written in English with RFC 2119 keywords.
 - The docs site (`apps/docs`) is English and follows
-  [apps/docs/dokuman-kurallari.md](apps/docs/dokuman-kurallari.md) (Diátaxis: one page, one mode).
+  [apps/docs/WRITING.md](apps/docs/WRITING.md) (Diátaxis: one page, one mode).
 - Package READMEs are English.
 - There is no separate design-record tree. A decision lives next to what it constrains: the spec, a
   guard comment or the package README. Work that is planned but not built goes in

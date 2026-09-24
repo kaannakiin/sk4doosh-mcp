@@ -75,5 +75,5 @@ made; if a schema change breaks fixtures, update them in the same commit.
 - [`../conformance`](../conformance) — the fixture corpus that pins these rules
 - [`../core`](../core) — the TS reference implementation
 - `apps/docs` — the public site. **Site pages must not restate normative rules; they link here.**
-- [`../../../apps/docs/dokuman-kurallari.md`](../../../apps/docs/dokuman-kurallari.md) — the binding
+- [`../../../apps/docs/WRITING.md`](../../../apps/docs/WRITING.md) — the binding
   convention for anyone writing those pages

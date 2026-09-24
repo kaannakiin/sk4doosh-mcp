@@ -19,7 +19,7 @@ are no tests in this app.
 
 ## Writing documentation
 
-**Read [dokuman-kurallari.md](dokuman-kurallari.md) before adding or editing any page.** It is the
+**Read [WRITING.md](WRITING.md) before adding or editing any page.** It is the
 binding convention: Diátaxis four-mode taxonomy, one page = one mode, reference is generated not
 written, RFC 2119 keywords stay in `packages/http/spec`, every code example must have been run.
 
@@ -37,7 +37,7 @@ add one `{ id, label, tagline }` entry to `src/content/products.json`. No route 
 `$product` is a route param, so `routeTree.gen.ts` is untouched.
 
 `pnpm --filter @sk-mcp/docs validate` (`scripts/check-content.mjs`) enforces the structural half of
-`dokuman-kurallari.md`: folder/registry agreement, mode directory names, numeric prefixes, unique
+`WRITING.md`: folder/registry agreement, mode directory names, numeric prefixes, unique
 slugs, a `# Title` on every page, the how-to/reference title patterns, and that every internal
 `/docs/...` link points at a page that exists. It runs inside `pnpm lint` and in CI's node job.
 
@@ -47,8 +47,7 @@ time, so a `throw` in it fails `dev` but not `build`. The `validate` script is t
 ## Language
 
 Site content and UI strings are **English** — this site is sk-mcp's public face, and so is
-`packages/http/spec`, which these pages link to as normative. `dokuman-kurallari.md` is internal
-and stays Turkish. There is no i18n layer, by design.
+`packages/http/spec`, which these pages link to as normative. There is no i18n layer, by design.
 
 ## Style layers — the one thing that breaks silently
 

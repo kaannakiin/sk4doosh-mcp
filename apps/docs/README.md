@@ -17,14 +17,13 @@ by `src/lib/content.ts`; the product list comes from `src/content/products.json`
 `pnpm --filter @sk-mcp/docs validate` enforces the structural rules (mode folder names, product
 registration, unique slugs, `# Title`, internal link targets). `pnpm lint` runs it too.
 
-Site content and UI strings are written in **English** — this site is sk-mcp's public face. The
-repo root's `docs/` (internal design documents) stays in Turkish; `packages/http/spec/` is in
-English because the site links to it as its normative source. There is no i18n layer: one
+Site content and UI strings are written in **English** — this site is sk-mcp's public face. `packages/http/spec/`
+is in English too, because the site links to it as its normative source. There is no i18n layer: one
 language, no drift.
 
 The binding writing conventions — the Diátaxis taxonomy, one page per mode, reference pages
 generated rather than hand-written, RFC 2119 keywords confined to the spec — live in
-[dokuman-kurallari.md](dokuman-kurallari.md) (Turkish; internal to this team, not published).
+[WRITING.md](WRITING.md) (not published on the site).
 
 ## Style layers
 
