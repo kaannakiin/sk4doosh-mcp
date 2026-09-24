@@ -215,6 +215,7 @@ function project(
     exposedName,
     firstParty,
     scope: row.scope,
+    conversation: row.conversation ?? null,
     approvedAt: row.approvedAt.toISOString(),
     expiresAt: row.expiresAt?.toISOString() ?? null,
     expired: row.expired,

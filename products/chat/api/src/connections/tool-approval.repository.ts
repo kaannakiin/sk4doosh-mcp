@@ -35,6 +35,8 @@ export interface RememberedApproval {
 export interface ApprovalRow extends RememberedApproval {
   readonly subjectKey: string;
   readonly scope: GrantScope;
+  readonly conversation:
+    { readonly id: string; readonly title: string | null } | undefined;
   readonly expiresAt: Date | undefined;
   readonly expired: boolean;
   readonly available: boolean;
@@ -367,6 +369,37 @@ export class ToolApprovalRepository {
   }
 
   /**
+   * Guard: read through the reader's own sessions, so a grant scoped to a
+   * conversation that has since been deleted still lists, untitled, rather than
+   * disappearing from the one page where it can be withdrawn.
+   */
+  private async titlesFor(
+    userId: UserId,
+    rows: readonly { readonly scopeKey: string }[],
+  ): Promise<ReadonlyMap<string, string | null>> {
+    const scoped = [
+      ...new Set(
+        rows.map((row) => row.scopeKey).filter((key) => key !== GLOBAL_SCOPE),
+      ),
+    ];
+    if (scoped.length === 0) {
+      return new Map();
+    }
+
+    const sessions = await this.db.client.chatSession.findMany({
+      where: { userId: BigInt(userId), publicId: { in: scoped } },
+      select: { publicId: true, title: true, deletedAt: true },
+    });
+
+    return new Map(
+      sessions.map((session) => [
+        session.publicId,
+        session.deletedAt === null ? session.title : null,
+      ]),
+    );
+  }
+
+  /**
    * Every tool an integration offers, with the reader's override for each.
    *
    * @returns the tools, or `undefined` when no such integration is visible
@@ -607,12 +640,14 @@ export class ToolApprovalRepository {
       where: { userId: BigInt(userId), integrationId: integration.id },
       orderBy: { createdAt: "asc" },
     });
+    const titles = await this.titlesFor(userId, rows);
 
     return rows.map((row) => {
       const live = current.get(row.toolName);
 
       return toApprovalRow(
         row,
+        titles,
         live?.destructive ?? false,
         live !== undefined,
         live?.digest,
@@ -633,12 +668,14 @@ export class ToolApprovalRepository {
       where: { userId: BigInt(userId), integrationId: null },
       orderBy: { createdAt: "asc" },
     });
+    const titles = await this.titlesFor(userId, rows);
 
     return rows.map((row) => {
       const name = row.toolName;
 
       return toApprovalRow(
         row,
+        titles,
         false,
         isChatToolName(name),
         isChatToolName(name) ? chatToolDigest(name).toString("hex") : undefined,
@@ -658,6 +695,7 @@ interface StoredApproval {
 
 function toApprovalRow(
   row: StoredApproval,
+  titles: ReadonlyMap<string, string | null>,
   destructive: boolean,
   available: boolean,
   currentDigest: string | undefined,
@@ -668,6 +706,10 @@ function toApprovalRow(
     subjectKey: row.subjectKey,
     toolName: row.toolName,
     scope: row.scopeKey === GLOBAL_SCOPE ? "global" : "session",
+    conversation:
+      row.scopeKey === GLOBAL_SCOPE
+        ? undefined
+        : { id: row.scopeKey, title: titles.get(row.scopeKey) ?? null },
     approvedAt: row.updatedAt,
     expiresAt,
     expired: expiresAt !== undefined && expiresAt.getTime() <= Date.now(),

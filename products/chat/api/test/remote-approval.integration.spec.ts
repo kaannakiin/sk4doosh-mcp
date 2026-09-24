@@ -419,4 +419,29 @@ withDatabase("remote tool approvals", () => {
       await approvalRows.scopeKeyFor(userId, "session", undefined),
     ).toBeUndefined();
   });
+
+  it("names the conversation a scoped grant belongs to", async () => {
+    const userId = await owner();
+    const integration = await connect(userId, [{ name: "list_zones" }]);
+    const session = await db.client.chatSession.create({
+      data: {
+        publicId: "00000000-0000-7000-8000-0000000000bb",
+        userId: BigInt(userId),
+        title: "Zone audit",
+      },
+      select: { publicId: true },
+    });
+    await approvals.remember(
+      userId,
+      exposedToolNameFor(integration.id, "list_zones"),
+      session.publicId,
+    );
+
+    const [listed] = (await approvals.listFor(userId, integration.id)) ?? [];
+    expect(listed?.scope).toBe("session");
+    expect(listed?.conversation).toEqual({
+      id: session.publicId,
+      title: "Zone audit",
+    });
+  });
 });

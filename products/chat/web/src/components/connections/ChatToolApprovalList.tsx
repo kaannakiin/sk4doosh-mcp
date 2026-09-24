@@ -53,9 +53,14 @@ export function ChatToolApprovalList({ locale }: ChatToolApprovalListProps) {
             })}
           </span>
           <Badge size="xs" variant="light" color="var(--color-ink-dim)">
-            {approval.scope === "session"
-              ? t("connections.approvals.scope.session")
-              : t("connections.approvals.scope.global")}
+            {approval.conversation !== null &&
+            approval.conversation.title !== null
+              ? t("connections.approvals.scope.sessionNamed", {
+                  title: approval.conversation.title,
+                })
+              : approval.scope === "session"
+                ? t("connections.approvals.scope.session")
+                : t("connections.approvals.scope.global")}
           </Badge>
           {approval.expired ? (
             <Badge size="xs" variant="light" color="var(--color-ink-dim)">

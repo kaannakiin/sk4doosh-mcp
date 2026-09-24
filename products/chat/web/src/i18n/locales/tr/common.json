@@ -348,8 +348,9 @@
       "count_one": "{{count}} onay hatırlanıyor",
       "count_other": "{{count}} onay hatırlanıyor",
       "scope": {
-        "session": "Bu sohbet",
-        "global": "Her yer"
+        "session": "Tek bir sohbet",
+        "global": "Her yer",
+        "sessionNamed": "Sohbet: {{title}}"
       },
       "expired": "Düştü",
       "expiresAt": "{{when}} düşer",

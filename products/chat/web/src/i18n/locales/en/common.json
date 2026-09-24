@@ -348,8 +348,9 @@
       "count_one": "{{count}} remembered",
       "count_other": "{{count}} remembered",
       "scope": {
-        "session": "This conversation",
-        "global": "Everywhere"
+        "session": "One conversation",
+        "global": "Everywhere",
+        "sessionNamed": "Conversation: {{title}}"
       },
       "expired": "Lapsed",
       "expiresAt": "Lapses {{when}}",

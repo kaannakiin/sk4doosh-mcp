@@ -27,6 +27,14 @@ export const approvedToolSchema = z.object({
   exposedName: exposedToolNameSchema,
   firstParty: z.boolean(),
   scope: grantScopeSchema,
+  /**
+   * The conversation a `session` grant is limited to, `null` for a global one.
+   * The settings page is outside every conversation, so "this conversation"
+   * there names none of them.
+   */
+  conversation: z
+    .object({ id: sessionIdSchema, title: z.string().nullable() })
+    .nullable(),
   approvedAt: z.iso.datetime(),
   expiresAt: z.iso.datetime().nullable(),
   expired: z.boolean(),
