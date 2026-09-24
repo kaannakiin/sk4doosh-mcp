@@ -1,0 +1,20 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "passThroughEnv": [
+        "SKMCP_OPENAPI_CONFIG",
+        "SKMCP_OPENAPI_ACCEPTANCE_DOC",
+        "SKMCP_PARITY_DIR"
+      ]
+    },
+    "dev": {
+      "passThroughEnv": ["SKMCP_OPENAPI_CONFIG"]
+    }
+  }
+}

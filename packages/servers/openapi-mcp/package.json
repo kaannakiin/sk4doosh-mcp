@@ -1,0 +1,44 @@
+{
+  "name": "@sk-mcp/openapi-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MCP server that exposes an OpenAPI document as a search-first sk-mcp catalog over a remote backend.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "sk-mcp-openapi": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@sk-mcp/core": "workspace:*",
+    "@sk-mcp/openapi": "workspace:*",
+    "zod": "^4.5.4"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "dev": "tsc --watch",
+    "lint": "oxlint --deny-warnings",
+    "check-types": "tsc -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@sk-mcp/oxlint-config": "workspace:*",
+    "@sk-mcp/typescript-config": "workspace:*",
+    "@types/node": "^24.3.0",
+    "oxlint": "1.85.0",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}
