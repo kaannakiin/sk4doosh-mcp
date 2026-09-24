@@ -490,7 +490,7 @@ importers:
         specifier: workspace:^
         version: link:../../cores/db-core
       mssql:
-        specifier: ^11.0.2
+        specifier: 11.0.2
         version: 11.0.2(supports-color@7.2.0)
       zod:
         specifier: ^4.5.4
