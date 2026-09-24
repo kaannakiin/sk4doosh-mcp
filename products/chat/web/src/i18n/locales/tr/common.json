@@ -89,6 +89,12 @@
     "rememberScope": {
       "session": "Bu sohbette",
       "global": "Her yerde"
+    },
+    "rememberFor": "Süre",
+    "rememberTtl": {
+      "day": "Bir gün",
+      "week": "Bir hafta",
+      "never": "Her zaman"
     }
   },
   "errors": {
@@ -287,7 +293,8 @@
       "label": "MCP sunucu adresi",
       "placeholder": "https://ornek.com/mcp",
       "submit": "Ekle",
-      "hint": "Sunucuya hemen bağlanılır; birkaç saniye sürebilir."
+      "hint": "Sunucuya hemen bağlanılır; birkaç saniye sürebilir.",
+      "mode": "Bu sunucu için onay"
     },
     "status": {
       "disconnected": "Bağlı değil",
@@ -329,7 +336,7 @@
       "integration_too_large": "Sunucunun yanıtı, bu ürünün okuyacağı boyuttan büyük."
     },
     "approvals": {
-      "show": "Hatırlanan araçlar",
+      "show": "Araçlar ve onaylar",
       "hide": "Gizle",
       "empty": "Bu sunucu için hatırlanan onay yok.",
       "loading": "Hatırlanan onaylar yükleniyor…",
@@ -347,7 +354,8 @@
       "expired": "Düştü",
       "expiresAt": "{{when}} düşer",
       "chatTitle": "Bu ürünün kendi araçları",
-      "chatEmpty": "Hatırlanan onay yok."
+      "chatEmpty": "Hatırlanan onay yok.",
+      "title": "Hatırlanan onaylar"
     },
     "mode": {
       "label": "Araç onayı",
@@ -359,7 +367,7 @@
       }
     },
     "ttl": {
-      "label": "Hatırlanan onayların düşmesi",
+      "label": "Hatırlanan onayların varsayılan süresi",
       "day": "Bir gün sonra",
       "week": "Bir hafta sonra",
       "never": "Hiçbir zaman",
@@ -368,6 +376,37 @@
         "week": "Bundan sonra vereceğin onay, verdikten bir hafta sonra düşer. Daha önce verdiklerin kendi koşullarında kalır.",
         "never": "Verdiğin onay, sen unutana kadar kalır."
       }
+    },
+    "integrationMode": {
+      "label": "Onay",
+      "inherit": "Varsayılanım",
+      "always_ask": "Her seferinde sor",
+      "remember": "Hatırla",
+      "auto": "Sorma",
+      "hint": {
+        "inherit": "Yukarıdaki araç onayı ayarınızı izler.",
+        "always_ask": "Bu sunucunun araçlarına yapılan her çağrı için sorulur.",
+        "remember": "“Bir daha sorma” ile onayladığınız araç, tanımı değişene kadar sormadan çalışır.",
+        "auto": "Bu sunucunun araçları sormadan çalışır. Sunucunun veri değiştirebilir ya da silebilir dediği araçlar, aşağıda tek tek izin vermediğiniz sürece yine sorar."
+      }
+    },
+    "toolList": {
+      "title": "Araçlar",
+      "loading": "Araçlar yükleniyor…",
+      "empty": "Bu sunucu araç sunmuyor.",
+      "destructive": "Veri değiştirebilir",
+      "stale": "Tanım değişti, yeniden sorar",
+      "override": {
+        "inherit": "Varsayılan",
+        "always_ask": "Hep sor",
+        "auto": "Sorma"
+      },
+      "confirmAuto": {
+        "message": "Sunucu bu aracın veri değiştirebileceğini ya da silebileceğini söylüyor. Sormadan çalıştırılsın mı?",
+        "confirm": "Sormadan çalıştır",
+        "cancel": "Vazgeç"
+      },
+      "autoWarning": "Veri değiştirebildiği halde sormadan çalışır."
     }
   }
 }

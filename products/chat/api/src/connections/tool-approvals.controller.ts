@@ -4,11 +4,13 @@ import {
   toolApprovalParamsSchema,
   updateGrantTtlSchema,
   updateToolApprovalModeSchema,
+  updateToolOverrideSchema,
   type ApprovedToolListResponse,
   type RememberTool,
   type ToolApprovalParams,
   type UpdateGrantTtl,
   type UpdateToolApprovalMode,
+  type UpdateToolOverride,
 } from "@chat/contracts/integration/tool-approval";
 import {
   Body,
@@ -33,11 +35,11 @@ import { NoStoreInterceptor } from "../auth/no-store.interceptor.ts";
 import { requireAuth, type RequestWithAuth } from "../auth/request-auth.ts";
 import type { UserId } from "../db/ids.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
+import { ToolApprovalRepository } from "./tool-approval.repository.ts";
 import {
-  scopeKeyFor,
-  ToolApprovalRepository,
-} from "./tool-approval.repository.ts";
-import { ToolApprovalService } from "./tool-approval.service.ts";
+  ToolApprovalService,
+  type ApprovalChange,
+} from "./tool-approval.service.ts";
 
 /**
  * Guard: its own controller rather than a route under `/integrations`. The path
@@ -60,21 +62,6 @@ export class ToolApprovalsController {
     private readonly i18n: I18nService,
   ) {}
 
-  /**
-   * Guard: declared before `:exposedName`, which Nest would otherwise match
-   * against the literal segment. Nothing this platform mints is named `mode` —
-   * every exposed name begins with a derived prefix — but the route order is
-   * what makes that a fact rather than a coincidence.
-   *
-   * Guard: this lives here and not on the auth controller. `ConnectionsModule`
-   * already imports `AuthModule`, so the reverse would be a cycle; the mode is
-   * read back through `/auth/me`, which needs no module dependency at all.
-   */
-  /**
-   * Guard: declared before `:exposedName` for the same reason `mode` is. Nothing
-   * this platform mints is named by a bare verb, but route order is what makes
-   * that a fact rather than a coincidence.
-   */
   @Get()
   async list(
     @Req() request: RequestWithAuth,
@@ -86,6 +73,12 @@ export class ToolApprovalsController {
     return { approvals: [...approvals] };
   }
 
+  /**
+   * Guard: declared before `:exposedName`, which Nest would otherwise match
+   * against the literal segment. Nothing this platform mints is named by a bare
+   * verb — every exposed name begins with a derived prefix — but the route order
+   * is what makes that a fact rather than a coincidence.
+   */
   @Patch("ttl")
   @HttpCode(HttpStatus.NO_CONTENT)
   async setTtl(
@@ -95,6 +88,11 @@ export class ToolApprovalsController {
     await this.modes.setTtl(this.userIdOf(request), body.ttl);
   }
 
+  /**
+   * Guard: this lives here and not on the auth controller. `ConnectionsModule`
+   * already imports `AuthModule`, so the reverse would be a cycle; the mode is
+   * read back through `/auth/me`, which needs no module dependency at all.
+   */
   @Patch("mode")
   @HttpCode(HttpStatus.NO_CONTENT)
   async setMode(
@@ -109,8 +107,8 @@ export class ToolApprovalsController {
    * Guard: `PUT`, and the body names only the scope. Remembering the same tool
    * twice is not an error, and the digest is read from the stored definition
    * rather than sent — a client-supplied digest would be a client-supplied
-   * grant. The expiry is computed here from the reader's own preference for the
-   * same reason.
+   * grant. The expiry is computed here, from the duration the reader picked or
+   * their own preference.
    */
   @Put(":exposedName")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -119,11 +117,45 @@ export class ToolApprovalsController {
     @Body({ schema: rememberToolSchema }) body: RememberTool,
     @Req() request: RequestWithAuth,
   ): Promise<void> {
+    const userId = this.userIdOf(request);
+    const scopeKey = await this.modes.scopeKeyFor(
+      userId,
+      body.scope,
+      body.sessionId,
+    );
+
+    if (scopeKey === undefined) {
+      throw new HttpException(
+        {
+          code: "session_not_found",
+          message: this.i18n.t("connections:errors.session_not_found"),
+        } satisfies ApiError,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     await this.settle(
       await this.approvals.remember(
+        userId,
+        params.exposedName,
+        scopeKey,
+        body.ttl,
+      ),
+    );
+  }
+
+  @Put(":exposedName/override")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async override(
+    @Param({ schema: toolApprovalParamsSchema }) params: ToolApprovalParams,
+    @Body({ schema: updateToolOverrideSchema }) body: UpdateToolOverride,
+    @Req() request: RequestWithAuth,
+  ): Promise<void> {
+    await this.settle(
+      await this.approvals.override(
         this.userIdOf(request),
         params.exposedName,
-        scopeKeyFor(body.scope, body.sessionId),
+        body.mode,
       ),
     );
   }
@@ -139,7 +171,17 @@ export class ToolApprovalsController {
     );
   }
 
-  private async settle(outcome: "changed" | "unknown_tool"): Promise<void> {
+  private async settle(outcome: ApprovalChange): Promise<void> {
+    if (outcome === "policy_fixed") {
+      throw new HttpException(
+        {
+          code: "tool_policy_fixed",
+          message: this.i18n.t("connections:errors.tool_policy_fixed"),
+        } satisfies ApiError,
+        HttpStatus.CONFLICT,
+      );
+    }
+
     if (outcome === "unknown_tool") {
       throw new HttpException(
         {

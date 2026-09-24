@@ -4,6 +4,7 @@ import {
   type CreateIntegration,
   type IntegrationSummary,
 } from "@chat/contracts/integration/registration";
+import { integrationApprovalSettingSchema } from "@chat/contracts/integration/tool-approval-mode";
 import { errorCodeOf } from "@chat/queries/client";
 import { useCurrentUser } from "@chat/queries/auth/current-user";
 import { useIntegrationList } from "@chat/queries/connections/list";
@@ -14,10 +15,17 @@ import {
   useRemoveIntegration,
 } from "@chat/queries/connections/mutations";
 import { connectHref } from "@chat/queries/connections/path";
-import { Alert, Button, Loader, Modal, TextInput } from "@mantine/core";
+import {
+  Alert,
+  Button,
+  Loader,
+  Modal,
+  SegmentedControl,
+  TextInput,
+} from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { ApprovalModeField } from "~/components/connections/ApprovalModeField";
@@ -72,16 +80,20 @@ function ConnectionsRoute() {
 
   const form = useForm<CreateIntegration>({
     resolver: contractResolver(createIntegrationSchema, t),
-    defaultValues: { mcpUrl: "" },
+    defaultValues: { mcpUrl: "", approvalMode: "always_ask" },
     mode: "onTouched",
   });
   const { errors, isSubmitting } = form.formState;
+  const approvalMode = useWatch({
+    control: form.control,
+    name: "approvalMode",
+  });
 
   const submit = form.handleSubmit(async (values) => {
     setFailure(undefined);
     try {
       await add.mutateAsync(values);
-      form.reset({ mcpUrl: "" });
+      form.reset({ mcpUrl: "", approvalMode: "always_ask" });
     } catch (error) {
       if (applyServerIssues(error, form.setError) === "form") {
         setFailure(errorCodeOf(error) ?? "integration_unreachable");
@@ -169,6 +181,37 @@ function ConnectionsRoute() {
           >
             {t("connections.add.submit")}
           </Button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-xs font-medium">
+            {t("connections.add.mode")}
+          </span>
+          <SegmentedControl
+            size="xs"
+            radius="md"
+            value={approvalMode}
+            data={[
+              {
+                value: "always_ask",
+                label: t("connections.integrationMode.always_ask"),
+              },
+              {
+                value: "remember",
+                label: t("connections.integrationMode.remember"),
+              },
+              { value: "auto", label: t("connections.integrationMode.auto") },
+              {
+                value: "inherit",
+                label: t("connections.integrationMode.inherit"),
+              },
+            ]}
+            onChange={(value) => {
+              const parsed = integrationApprovalSettingSchema.safeParse(value);
+              if (parsed.success) {
+                form.setValue("approvalMode", parsed.data);
+              }
+            }}
+          />
         </div>
         <p className="mt-2 text-xs text-ink-dim">{t("connections.add.hint")}</p>
       </form>

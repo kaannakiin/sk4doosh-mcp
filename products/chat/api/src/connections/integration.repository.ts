@@ -6,6 +6,7 @@ import type {
   IntegrationId,
 } from "@chat/contracts/integration/integration";
 import type { IntegrationSummary } from "@chat/contracts/integration/registration";
+import type { IntegrationApprovalSetting } from "@chat/contracts/integration/tool-approval-mode";
 import { Injectable } from "@nestjs/common";
 
 import { DbService } from "../db/db.service.ts";
@@ -17,6 +18,7 @@ export interface IntegrationDraft {
   readonly ownerId: bigint;
   readonly mcpUrl: string;
   readonly displayName: string;
+  readonly approvalMode: IntegrationApprovalSetting;
 }
 
 export interface IntegrationRecord {
@@ -36,6 +38,22 @@ export interface OwnedIntegration {
 }
 
 export type CreateResult = IntegrationRecord | "duplicate";
+
+/**
+ * Guard: written inside the integration's own create, never after it. A server
+ * that existed for a moment without its row would inherit the reader's own mode
+ * for that moment, which is the one window the `always_ask` default exists to
+ * close.
+ */
+function approvalSettingFor(input: IntegrationDraft) {
+  return input.approvalMode === "inherit"
+    ? {}
+    : {
+        approvalSettings: {
+          create: { userId: input.ownerId, mode: input.approvalMode },
+        },
+      };
+}
 
 function toolRows(integrationId: bigint, tools: readonly RemoteTool[]) {
   return tools.map((tool) => ({
@@ -72,6 +90,7 @@ export class IntegrationRepository {
           ownerId: input.ownerId,
           mcpUrl: input.mcpUrl,
           displayName: input.displayName,
+          ...approvalSettingFor(input),
         },
         select: { id: true, publicId: true, mcpUrl: true, authMode: true },
       });
@@ -114,6 +133,7 @@ export class IntegrationRepository {
             mcpUrl: input.mcpUrl,
             displayName: input.displayName,
             toolsRefreshedAt: new Date(),
+            ...approvalSettingFor(input),
           },
           select: { id: true, publicId: true, mcpUrl: true, authMode: true },
         });
@@ -206,6 +226,10 @@ export class IntegrationRepository {
       where: visibleToUser(userId),
       include: {
         connections: { where: { userId: BigInt(userId) } },
+        approvalSettings: {
+          where: { userId: BigInt(userId) },
+          select: { mode: true },
+        },
         _count: { select: { tools: true } },
       },
       orderBy: { createdAt: "asc" },
@@ -213,6 +237,7 @@ export class IntegrationRepository {
 
     return rows.map((row) => {
       const [connection] = row.connections;
+      const [approval] = row.approvalSettings;
 
       return {
         id: row.publicId,
@@ -221,6 +246,7 @@ export class IntegrationRepository {
         origin: row.origin,
         authMode: row.authMode,
         toolCount: row._count.tools,
+        approvalMode: approval?.mode ?? "inherit",
         connection:
           connection === undefined
             ? null

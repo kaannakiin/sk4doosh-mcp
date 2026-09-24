@@ -1,7 +1,11 @@
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { Locale } from "@chat/contracts/common/locale";
-import { decideToolApproval } from "@chat/contracts/tools/approval-decision";
-import type { ToolGrant } from "@chat/contracts/tools/approval-decision";
+import {
+  decideToolApproval,
+  grantCanApply,
+  type ToolApprovalRequest,
+  type ToolGrant,
+} from "@chat/contracts/tools/approval-decision";
 import { policyFor } from "@chat/contracts/tools/approval-policy";
 import { isChatToolName } from "@chat/contracts/tools/tool-name";
 import { Injectable } from "@nestjs/common";
@@ -25,6 +29,17 @@ export type ToolApprovalGate = (
   toolName: string,
   dynamic: boolean,
 ) => ToolApprovalStatus;
+
+/**
+ * One turn's approval answers: the gate the model loop calls, and whether a
+ * prompt for a tool should offer to remember the reader's answer.
+ */
+export interface TurnApproval {
+  readonly gate: ToolApprovalGate;
+  readonly rememberable: (toolName: string) => boolean;
+}
+
+type Posture = Omit<ToolApprovalRequest, "now">;
 
 const NO_GRANTS: readonly ToolGrant[] = [];
 
@@ -67,57 +82,57 @@ export class ToolApprovalGateService {
     session: SessionId,
     byExposedName: ReadonlyMap<string, CatalogTool>,
     locale: Locale,
-  ): Promise<ToolApprovalGate> {
-    const [mode, grants] = await Promise.all([
-      this.approvals.modeFor(userId),
-      this.approvals.grantsFor(userId, session),
-    ]);
+  ): Promise<TurnApproval> {
+    const context = await this.approvals.contextFor(userId, session);
     const now = new Date();
 
-    return (toolName, dynamic) => {
-      if (dynamic) {
-        return this.deny(locale);
-      }
-
+    /**
+     * Guard: a remote tool's policy is `askable` even when the server calls it
+     * destructive. `destructive` is carried separately and still asks, but a
+     * policy of `always` would also outrank the reader's own per-tool override,
+     * and that override is the one way the reader may loosen such a tool.
+     */
+    const postureOf = (toolName: string): Posture | undefined => {
       const remote = byExposedName.get(toolName);
       if (remote !== undefined) {
-        const decision = decideToolApproval({
-          policy: remote.destructive ? "always" : "askable",
-          mode,
+        const subject = approvalKey(
+          remote.integrationPublicId,
+          remote.remoteName,
+        );
+
+        return {
+          policy: "askable",
+          mode:
+            context.integrationModes.get(remote.integrationPublicId) ??
+            context.mode,
+          override: context.overrides.get(subject),
           destructive: remote.destructive,
           currentDigest: remote.definitionDigest,
-          grants:
-            grants.get(
-              approvalKey(remote.integrationPublicId, remote.remoteName),
-            ) ?? NO_GRANTS,
-          now,
-        });
-
-        return decision.outcome === "allow"
-          ? "approved"
-          : {
-              type: "user-approval",
-              reason: this.i18n.t(
-                "chat:tools.approval.reason",
-                { server: remote.integrationName, tool: remote.remoteName },
-                locale,
-              ),
-            };
+          grants: context.grants.get(subject) ?? NO_GRANTS,
+        };
       }
 
       if (!isChatToolName(toolName)) {
+        return undefined;
+      }
+
+      return {
+        policy: policyFor(toolName),
+        mode: context.mode,
+        override: context.overrides.get(toolName),
+        destructive: false,
+        currentDigest: chatToolDigest(toolName).toString("hex"),
+        grants: context.grants.get(toolName) ?? NO_GRANTS,
+      };
+    };
+
+    const gate: ToolApprovalGate = (toolName, dynamic) => {
+      const posture = dynamic ? undefined : postureOf(toolName);
+      if (posture === undefined) {
         return this.deny(locale);
       }
 
-      const decision = decideToolApproval({
-        policy: policyFor(toolName),
-        mode,
-        destructive: false,
-        currentDigest: chatToolDigest(toolName).toString("hex"),
-        grants: grants.get(toolName) ?? NO_GRANTS,
-        now,
-      });
-
+      const decision = decideToolApproval({ ...posture, now });
       if (decision.outcome === "allow") {
         /**
          * Guard: a tool that never asks answers `not-applicable`, not
@@ -129,10 +144,28 @@ export class ToolApprovalGateService {
           : "approved";
       }
 
+      const remote = byExposedName.get(toolName);
+
       return {
         type: "user-approval",
-        reason: this.i18n.t(`chat:approval.reasons.${toolName}`, {}, locale),
+        reason:
+          remote === undefined
+            ? this.i18n.t(`chat:approval.reasons.${toolName}`, {}, locale)
+            : this.i18n.t(
+                "chat:tools.approval.reason",
+                { server: remote.integrationName, tool: remote.remoteName },
+                locale,
+              ),
       };
+    };
+
+    return {
+      gate,
+      rememberable: (toolName) => {
+        const posture = postureOf(toolName);
+
+        return posture !== undefined && grantCanApply(posture);
+      },
     };
   }
 

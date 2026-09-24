@@ -7,6 +7,8 @@
     "integration_auth_unsupported": "That server does not support the authorization this product can perform.",
     "integration_not_found": "No such integration.",
     "integration_too_large": "That server's answer was larger than this product will read.",
-    "tool_not_offered": "That server does not offer this tool."
+    "tool_not_offered": "That server does not offer this tool.",
+    "session_not_found": "That conversation is not yours, or no longer exists.",
+    "tool_policy_fixed": "This tool's approval is fixed by the product and cannot be changed."
   }
 }

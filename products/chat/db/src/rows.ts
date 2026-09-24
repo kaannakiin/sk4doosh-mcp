@@ -21,17 +21,23 @@ import type {
   IntegrationOrigin,
 } from "@chat/contracts/integration/integration";
 import type { GrantTtl } from "@chat/contracts/integration/grant-scope";
-import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
+import type {
+  IntegrationApprovalMode,
+  ToolApprovalMode,
+  ToolOverrideMode,
+} from "@chat/contracts/integration/tool-approval-mode";
 import type {
   ConnectionEventKind,
   ConnectionStatus as SchemaConnectionStatus,
   DiscoveryFailure as SchemaDiscoveryFailure,
   GrantTtl as SchemaGrantTtl,
+  IntegrationApprovalMode as SchemaIntegrationApprovalMode,
   IntegrationAuthMode as SchemaIntegrationAuthMode,
   IntegrationOrigin as SchemaIntegrationOrigin,
   IntegrationStatus,
   MessageRole as SchemaMessageRole,
   ToolApprovalMode as SchemaToolApprovalMode,
+  ToolOverrideMode as SchemaToolOverrideMode,
   ReaderFamily as SchemaReaderFamily,
   TurnOutcome as SchemaTurnOutcome,
 } from "./generated/enums.js";
@@ -40,11 +46,13 @@ export type {
   ConnectionStatus,
   DiscoveryFailure,
   GrantTtl,
+  IntegrationApprovalMode,
   IntegrationAuthMode,
   IntegrationOrigin,
   MessageRole,
   ReaderFamily,
   ToolApprovalMode,
+  ToolOverrideMode,
 };
 
 export type { ConnectionEventKind, IntegrationStatus };
@@ -79,7 +87,9 @@ export type EnumParity =
   | Assert<Exact<ConnectionStatus, SchemaConnectionStatus>>
   | Assert<Exact<DiscoveryFailure, SchemaDiscoveryFailure>>
   | Assert<Exact<ToolApprovalMode, SchemaToolApprovalMode>>
-  | Assert<Exact<GrantTtl, SchemaGrantTtl>>;
+  | Assert<Exact<GrantTtl, SchemaGrantTtl>>
+  | Assert<Exact<IntegrationApprovalMode, SchemaIntegrationApprovalMode>>
+  | Assert<Exact<ToolOverrideMode, SchemaToolOverrideMode>>;
 
 export interface SessionRow {
   readonly id: string;

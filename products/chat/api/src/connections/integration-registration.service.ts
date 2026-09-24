@@ -3,10 +3,11 @@ import {
   isSecureEndpoint,
   type EndpointPolicy,
 } from "@chat/contracts/integration/discovery";
-import type {
-  CreateIntegration,
-  IntegrationSummary,
-  RegistrationFailure,
+import {
+  createIntegrationSchema,
+  type CreateIntegrationRequest,
+  type IntegrationSummary,
+  type RegistrationFailure,
 } from "@chat/contracts/integration/registration";
 import type { RemoteTool } from "@chat/contracts/integration/remote-tool";
 import { Inject, Injectable, Logger } from "@nestjs/common";
@@ -17,6 +18,7 @@ import type { UserId } from "../db/ids.ts";
 import { AuthorizationDiscoveryService } from "./authorization-discovery.service.ts";
 import {
   IntegrationRepository,
+  type IntegrationDraft,
   type IntegrationRecord,
 } from "./integration.repository.ts";
 import {
@@ -129,7 +131,7 @@ export class IntegrationRegistrationService {
    */
   async register(
     userId: UserId,
-    input: CreateIntegration,
+    input: CreateIntegrationRequest,
   ): Promise<RegistrationResult> {
     const mcpUrl = normalize(input.mcpUrl);
     if (mcpUrl === undefined || !isSecureEndpoint(mcpUrl, this.policy)) {
@@ -137,6 +139,14 @@ export class IntegrationRegistrationService {
     }
 
     const displayName = input.displayName ?? new URL(mcpUrl).host;
+    const draft: IntegrationDraft = {
+      ownerId: BigInt(userId),
+      mcpUrl,
+      displayName,
+      approvalMode: createIntegrationSchema.shape.approvalMode.parse(
+        input.approvalMode,
+      ),
+    };
 
     /**
      * Guard: a row somebody is already using is refused before anything reaches
@@ -158,10 +168,10 @@ export class IntegrationRegistrationService {
         return { kind: "refused", failure: "integration_unreachable" };
 
       case "open":
-        return this.registerOpen(userId, mcpUrl, displayName, stale);
+        return this.registerOpen(userId, draft, stale);
 
       case "challenged":
-        return this.registerOauth(userId, mcpUrl, displayName, stale);
+        return this.registerOauth(userId, draft, stale);
     }
   }
 
@@ -174,12 +184,11 @@ export class IntegrationRegistrationService {
    */
   private async registerOpen(
     userId: UserId,
-    mcpUrl: string,
-    displayName: string,
+    draft: IntegrationDraft,
     stale: IntegrationRecord | undefined,
   ): Promise<RegistrationResult> {
     const listed = await listTools({
-      url: mcpUrl,
+      url: draft.mcpUrl,
       accessToken: undefined,
       endpoint: this.policy,
       timeoutMs: LIST_TIMEOUT_MS,
@@ -188,7 +197,7 @@ export class IntegrationRegistrationService {
 
     if (listed.kind === "failed") {
       if (listed.failure === "unauthorized") {
-        return this.registerOauth(userId, mcpUrl, displayName, stale);
+        return this.registerOauth(userId, draft, stale);
       }
 
       return { kind: "refused", failure: LISTING_FAILURE[listed.failure] };
@@ -205,9 +214,7 @@ export class IntegrationRegistrationService {
     }
 
     const created = await this.integrations.createOpen({
-      ownerId: BigInt(userId),
-      mcpUrl,
-      displayName,
+      ...draft,
       tools: listed.value,
     });
 
@@ -217,7 +224,7 @@ export class IntegrationRegistrationService {
 
     return {
       kind: "created",
-      integration: this.summarize(created, displayName, listed.value),
+      integration: this.summarize(created, draft, listed.value),
     };
   }
 
@@ -230,17 +237,10 @@ export class IntegrationRegistrationService {
    */
   private async registerOauth(
     userId: UserId,
-    mcpUrl: string,
-    displayName: string,
+    draft: IntegrationDraft,
     stale: IntegrationRecord | undefined,
   ): Promise<RegistrationResult> {
-    const created =
-      stale ??
-      (await this.integrations.create({
-        ownerId: BigInt(userId),
-        mcpUrl,
-        displayName,
-      }));
+    const created = stale ?? (await this.integrations.create(draft));
 
     if (created === "duplicate") {
       return { kind: "refused", failure: "integration_duplicate" };
@@ -266,7 +266,7 @@ export class IntegrationRegistrationService {
     return stale === undefined
       ? {
           kind: "created",
-          integration: this.summarize(subject, displayName, []),
+          integration: this.summarize(subject, draft, []),
         }
       : { kind: "refused", failure: "integration_duplicate" };
   }
@@ -279,18 +279,19 @@ export class IntegrationRegistrationService {
    */
   private summarize(
     created: IntegrationRecord,
-    displayName: string,
+    draft: IntegrationDraft,
     tools: readonly RemoteTool[],
   ): IntegrationSummary {
     const open = created.authMode === "none";
 
     return {
       id: created.publicId,
-      displayName,
+      displayName: draft.displayName,
       mcpUrl: created.mcpUrl,
       origin: "user",
       authMode: created.authMode,
       toolCount: tools.length,
+      approvalMode: draft.approvalMode,
       connection: open
         ? {
             status: "active",

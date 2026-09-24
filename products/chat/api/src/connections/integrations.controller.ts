@@ -3,7 +3,12 @@ import {
   connectParamsSchema,
   type ConnectParams,
 } from "@chat/contracts/integration/connect";
-import type { ApprovedToolListResponse } from "@chat/contracts/integration/tool-approval";
+import {
+  updateIntegrationApprovalModeSchema,
+  type ApprovedToolListResponse,
+  type IntegrationToolListResponse,
+  type UpdateIntegrationApprovalMode,
+} from "@chat/contracts/integration/tool-approval";
 import {
   createIntegrationSchema,
   type CreateIntegration,
@@ -19,6 +24,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -131,6 +137,42 @@ export class IntegrationsController {
     }
 
     return { approvals: [...approvals] };
+  }
+
+  @Get(":integrationId/tools")
+  async listTools(
+    @Param({ schema: connectParamsSchema }) params: ConnectParams,
+    @Req() request: RequestWithAuth,
+  ): Promise<IntegrationToolListResponse> {
+    const tools = await this.toolApprovals.toolsFor(
+      this.userIdOf(request),
+      params.integrationId,
+    );
+
+    if (tools === undefined) {
+      throw this.fail("integration_not_found", HttpStatus.NOT_FOUND);
+    }
+
+    return { tools: [...tools] };
+  }
+
+  @Patch(":integrationId/approval-mode")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setApprovalMode(
+    @Param({ schema: connectParamsSchema }) params: ConnectParams,
+    @Body({ schema: updateIntegrationApprovalModeSchema })
+    body: UpdateIntegrationApprovalMode,
+    @Req() request: RequestWithAuth,
+  ): Promise<void> {
+    const found = await this.toolApprovals.setIntegrationMode(
+      this.userIdOf(request),
+      params.integrationId,
+      body.mode,
+    );
+
+    if (!found) {
+      throw this.fail("integration_not_found", HttpStatus.NOT_FOUND);
+    }
   }
 
   /**

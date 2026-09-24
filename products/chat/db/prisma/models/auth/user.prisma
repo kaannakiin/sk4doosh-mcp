@@ -24,6 +24,8 @@ model User {
   connections        Connection[]
   connectionAttempts ConnectionAttempt[]
   toolApprovals      ToolApproval[]
+  approvalSettings   IntegrationApprovalSetting[]
+  toolOverrides      ToolApprovalOverride[]
 
   @@map("app_user")
 }

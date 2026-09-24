@@ -32,6 +32,8 @@ model Integration {
   connections Connection[]
   attempts    ConnectionAttempt[]
   approvals   ToolApproval[]
+  approvalSettings IntegrationApprovalSetting[]
+  toolOverrides    ToolApprovalOverride[]
 
   @@index([ownerId], map: "integration_owner_idx")
   @@map("integration")

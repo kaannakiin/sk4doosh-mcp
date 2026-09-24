@@ -85,11 +85,12 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
    * `memo` on every tool card in the list.
    */
   const onDecision = useCallback(
-    ({ approvalId, approved, rememberAs, scope }: ToolDecision) => {
+    ({ approvalId, approved, rememberAs, scope, ttl }: ToolDecision) => {
       if (rememberAs !== undefined) {
         rememberTool({
           exposedName: rememberAs,
           scope,
+          ttl,
           ...(scope === "session" ? { sessionId } : {}),
         });
       }

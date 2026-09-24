@@ -1,5 +1,14 @@
+import type { GrantTtl } from "@chat/contracts/integration/grant-scope";
 import type { IntegrationId } from "@chat/contracts/integration/integration";
-import type { ApprovedTool } from "@chat/contracts/integration/tool-approval";
+import type {
+  ApprovedTool,
+  IntegrationTool,
+} from "@chat/contracts/integration/tool-approval";
+import type {
+  IntegrationApprovalSetting,
+  ToolOverrideSetting,
+} from "@chat/contracts/integration/tool-approval-mode";
+import { policyFor } from "@chat/contracts/tools/approval-policy";
 import { isChatToolName } from "@chat/contracts/tools/tool-name";
 import { Injectable } from "@nestjs/common";
 
@@ -15,7 +24,7 @@ import {
   type ApprovalRow,
 } from "./tool-approval.repository.ts";
 
-export type ApprovalChange = "changed" | "unknown_tool";
+export type ApprovalChange = "changed" | "unknown_tool" | "policy_fixed";
 
 @Injectable()
 export class ToolApprovalService {
@@ -52,9 +61,10 @@ export class ToolApprovalService {
     userId: UserId,
     exposedName: string,
     scopeKey: string,
+    ttl?: GrantTtl,
   ): Promise<ApprovalChange> {
     if (isChatToolName(exposedName)) {
-      await this.approvals.rememberChatTool(userId, exposedName, scopeKey);
+      await this.approvals.rememberChatTool(userId, exposedName, scopeKey, ttl);
 
       return "changed";
     }
@@ -69,9 +79,76 @@ export class ToolApprovalService {
       tool.integrationPublicId,
       tool.remoteName,
       scopeKey,
+      ttl,
     ))
       ? "changed"
       : "unknown_tool";
+  }
+
+  /**
+   * Guard: a tool whose posture this product fixes is refused rather than
+   * recorded. `codex_task` asks every time and `describe_workbook` never does;
+   * an override the decision will never read is a setting the page would show
+   * as in force when it is not.
+   */
+  async override(
+    userId: UserId,
+    exposedName: string,
+    setting: ToolOverrideSetting,
+  ): Promise<ApprovalChange> {
+    if (isChatToolName(exposedName)) {
+      if (policyFor(exposedName) !== "askable") {
+        return "policy_fixed";
+      }
+
+      await this.approvals.overrideChatTool(userId, exposedName, setting);
+
+      return "changed";
+    }
+
+    const tool = await this.resolve(userId, exposedName);
+    if (tool === undefined) {
+      return "unknown_tool";
+    }
+
+    return (await this.approvals.overrideRemote(
+      userId,
+      tool.integrationPublicId,
+      tool.remoteName,
+      setting,
+    ))
+      ? "changed"
+      : "unknown_tool";
+  }
+
+  /**
+   * @returns whether the integration is one this reader can see
+   */
+  setIntegrationMode(
+    userId: UserId,
+    integrationId: IntegrationId,
+    setting: IntegrationApprovalSetting,
+  ): Promise<boolean> {
+    return this.approvals.setIntegrationMode(userId, integrationId, setting);
+  }
+
+  /**
+   * @returns the integration's tools, or `undefined` when no such integration is visible
+   */
+  async toolsFor(
+    userId: UserId,
+    integrationId: IntegrationId,
+  ): Promise<readonly IntegrationTool[] | undefined> {
+    const rows = await this.approvals.toolsFor(userId, integrationId);
+
+    return rows?.map((row) => ({
+      exposedName: exposedToolNameFor(integrationId, row.name),
+      name: row.name,
+      title: row.title,
+      destructive: row.destructive,
+      override: row.override,
+      overrideStale: row.overrideStale,
+    }));
   }
 
   async forget(userId: UserId, exposedName: string): Promise<ApprovalChange> {

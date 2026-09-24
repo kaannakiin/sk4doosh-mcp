@@ -1,7 +1,9 @@
 import type { Locale } from "@chat/contracts/common/locale";
 import {
   approvedToolListResponseSchema,
+  integrationToolListResponseSchema,
   type ApprovedTool,
+  type IntegrationTool,
 } from "@chat/contracts/integration/tool-approval";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
@@ -71,6 +73,40 @@ export function chatToolApprovalsOptions(client: ChatClient, locale: Locale) {
 export function useChatToolApprovals(locale: Locale, enabled: boolean) {
   return useQuery({
     ...chatToolApprovalsOptions(useChatClient(), locale),
+    enabled,
+  });
+}
+
+/**
+ * Guard: keyed under the approvals prefix, so setting an override sweeps it
+ * together with the remembered lists that sit beside it on the card.
+ */
+export function integrationToolsOptions(
+  client: ChatClient,
+  locale: Locale,
+  integrationId: string,
+) {
+  return queryOptions({
+    queryKey: connectionKeys.tools(integrationId),
+    queryFn: async ({ signal }): Promise<readonly IntegrationTool[]> => {
+      const { tools } = await client.request(
+        integrationPath(integrationId, "/tools"),
+        integrationToolListResponseSchema,
+        { locale, signal },
+      );
+
+      return tools;
+    },
+  });
+}
+
+export function useIntegrationTools(
+  integrationId: string,
+  locale: Locale,
+  enabled: boolean,
+) {
+  return useQuery({
+    ...integrationToolsOptions(useChatClient(), locale, integrationId),
     enabled,
   });
 }

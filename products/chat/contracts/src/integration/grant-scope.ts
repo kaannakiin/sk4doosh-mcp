@@ -19,9 +19,10 @@ export function isGrantScope(value: unknown): value is GrantScope {
 /**
  * How long a new grant stays live.
  *
- * Guard: a reader preference, not a per-decision choice. Three controls on an
- * approval card is a card nobody reads; the scope is the decision, the duration
- * is a setting the decision inherits.
+ * Guard: the reader's preference is what the prompt preselects, and the prompt
+ * lets them pick another for one decision. It stays out of sight until the
+ * reader asks to be remembered, so an approval that remembers nothing still
+ * shows two buttons and nothing else.
  *
  * Guard: there is no `session` duration, because that would be a second way to
  * spell the `session` scope — and the two could then be combined into a grant

@@ -1,11 +1,17 @@
-import type { ToolApprovalMode } from "../integration/tool-approval-mode.ts";
+import type {
+  IntegrationApprovalMode,
+  ToolOverrideMode,
+} from "../integration/tool-approval-mode.ts";
 import type { ToolApprovalPolicy } from "./approval-policy.ts";
 
 export type ToolApprovalReason =
   | "policy_auto"
   | "policy_always"
+  | "override_always_ask"
+  | "override_auto"
   | "declared_destructive"
   | "mode_always_ask"
+  | "mode_auto"
   | "not_remembered"
   | "grant_expired"
   | "definition_changed"
@@ -29,9 +35,20 @@ export interface ToolGrant {
   readonly expiresAt: Date | undefined;
 }
 
+/**
+ * The reader's standing decision about one tool. `digest` is the definition an
+ * `auto` override was given for.
+ */
+export interface ToolOverride {
+  readonly mode: ToolOverrideMode;
+  readonly digest: string | undefined;
+}
+
 export interface ToolApprovalRequest {
   readonly policy: ToolApprovalPolicy;
-  readonly mode: ToolApprovalMode;
+  /** The integration's mode when the reader set one, else their own. */
+  readonly mode: IntegrationApprovalMode;
+  readonly override: ToolOverride | undefined;
   readonly destructive: boolean;
   readonly currentDigest: string;
   readonly grants: readonly ToolGrant[];
@@ -39,14 +56,17 @@ export interface ToolApprovalRequest {
 }
 
 /**
- * Guard: total over `ToolApprovalMode`, so a third mode has to declare its
- * posture rather than inherit one by falling through. A `switch` would return
- * `undefined` for an unhandled mode, and an absent answer reads downstream as
- * permission.
+ * Guard: total over the mode, so a new mode has to declare its posture rather
+ * than inherit one by falling through. A `switch` would return `undefined` for
+ * an unhandled mode, and an absent answer reads downstream as permission.
  */
-const ASKS_ALWAYS: Record<ToolApprovalMode, boolean> = {
-  always_ask: true,
-  remember: false,
+const MODE_POSTURE: Record<
+  IntegrationApprovalMode,
+  "ask" | "grants" | "allow"
+> = {
+  always_ask: "ask",
+  remember: "grants",
+  auto: "allow",
 };
 
 /**
@@ -61,6 +81,11 @@ const ASKS_ALWAYS: Record<ToolApprovalMode, boolean> = {
  * Guard: `policy` outranks everything, in both directions. `auto` short-circuits
  * before the grant is even read, and `always` before any grant can silence it —
  * so a tool that must never run unasked cannot be quietened by a row in a table.
+ *
+ * Guard: the reader's per-tool override is next, and it is the only thing that
+ * outranks the server's destructive hint. An integration's mode never does: a
+ * reader who trusts a server has not thereby said that its deleting tools may
+ * run unasked, and saying so is one explicit decision per tool.
  *
  * Guard: the digest is compared, not merely the grant's presence. A definition
  * can change under a name it keeps, and the consent was given for the definition
@@ -88,12 +113,28 @@ export function decideToolApproval(
     return { outcome: "ask", reason: "policy_always" };
   }
 
+  const { override } = request;
+  if (override?.mode === "always_ask") {
+    return { outcome: "ask", reason: "override_always_ask" };
+  }
+
+  if (override?.mode === "auto") {
+    return override.digest === request.currentDigest
+      ? { outcome: "allow", reason: "override_auto" }
+      : { outcome: "ask", reason: "definition_changed" };
+  }
+
   if (request.destructive) {
     return { outcome: "ask", reason: "declared_destructive" };
   }
 
-  if (ASKS_ALWAYS[request.mode]) {
+  const posture = MODE_POSTURE[request.mode];
+  if (posture === "ask") {
     return { outcome: "ask", reason: "mode_always_ask" };
+  }
+
+  if (posture === "allow") {
+    return { outcome: "allow", reason: "mode_auto" };
   }
 
   if (request.grants.length === 0) {
@@ -115,4 +156,28 @@ export function decideToolApproval(
   }
 
   return { outcome: "allow", reason: "remembered" };
+}
+
+/**
+ * Whether a remembered grant could ever be what lets this tool run, which is
+ * when the prompt is worth offering "don't ask again".
+ *
+ * Guard: answered from the same inputs as the decision, so the prompt and the
+ * gate cannot disagree. A checkbox the gate would then ignore is a consent the
+ * reader believes they gave and did not.
+ *
+ * @param request the same posture the decision is asked about, grants aside
+ */
+export function grantCanApply(
+  request: Pick<
+    ToolApprovalRequest,
+    "policy" | "mode" | "override" | "destructive"
+  >,
+): boolean {
+  return (
+    request.policy === "askable" &&
+    request.override === undefined &&
+    !request.destructive &&
+    MODE_POSTURE[request.mode] === "grants"
+  );
 }

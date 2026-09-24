@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { decideToolApproval } from "../src/tools/approval-decision.ts";
+import {
+  decideToolApproval,
+  grantCanApply,
+} from "../src/tools/approval-decision.ts";
 import {
   CHAT_TOOL_POLICY,
   toolApprovalPolicySchema,
@@ -16,6 +19,7 @@ const NOW = new Date("2026-09-17T12:00:00.000Z");
 const base = {
   policy: "askable",
   mode: "remember",
+  override: undefined,
   destructive: false,
   currentDigest: DIGEST,
   grants: [],
@@ -119,6 +123,57 @@ describe("decideToolApproval", () => {
     ).toEqual({ outcome: "allow", reason: "remembered" });
   });
 
+  it("runs everything unasked in auto, except what the server calls destructive", () => {
+    expect(decideToolApproval({ ...base, mode: "auto" })).toEqual({
+      outcome: "allow",
+      reason: "mode_auto",
+    });
+    expect(
+      decideToolApproval({ ...base, mode: "auto", destructive: true }),
+    ).toEqual({ outcome: "ask", reason: "declared_destructive" });
+  });
+
+  it("lets an always_ask override silence nothing and outrank a grant", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        mode: "auto",
+        override: { mode: "always_ask", digest: undefined },
+        grants: [{ digest: DIGEST, expiresAt: undefined }],
+      }),
+    ).toEqual({ outcome: "ask", reason: "override_always_ask" });
+  });
+
+  it("lets an auto override run a destructive tool it was given for", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        mode: "always_ask",
+        destructive: true,
+        override: { mode: "auto", digest: DIGEST },
+      }),
+    ).toEqual({ outcome: "allow", reason: "override_auto" });
+  });
+
+  it("asks again when an auto override's definition changed", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        override: { mode: "auto", digest: OTHER },
+      }),
+    ).toEqual({ outcome: "ask", reason: "definition_changed" });
+  });
+
+  it("never lets an override loosen a tool the product always asks about", () => {
+    expect(
+      decideToolApproval({
+        ...base,
+        policy: "always",
+        override: { mode: "auto", digest: DIGEST },
+      }),
+    ).toEqual({ outcome: "ask", reason: "policy_always" });
+  });
+
   it("ignores an expired grant when deciding the digest matched", () => {
     expect(
       decideToolApproval({
@@ -129,6 +184,22 @@ describe("decideToolApproval", () => {
         ],
       }),
     ).toEqual({ outcome: "ask", reason: "definition_changed" });
+  });
+});
+
+describe("grantCanApply", () => {
+  it("offers to remember only where a grant is what decides", () => {
+    expect(grantCanApply(base)).toBe(true);
+    expect(grantCanApply({ ...base, mode: "always_ask" })).toBe(false);
+    expect(grantCanApply({ ...base, mode: "auto" })).toBe(false);
+    expect(grantCanApply({ ...base, destructive: true })).toBe(false);
+    expect(grantCanApply({ ...base, policy: "always" })).toBe(false);
+    expect(
+      grantCanApply({
+        ...base,
+        override: { mode: "always_ask", digest: undefined },
+      }),
+    ).toBe(false);
   });
 });
 

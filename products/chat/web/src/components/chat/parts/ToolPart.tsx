@@ -1,10 +1,16 @@
-import type { GrantScope } from "@chat/contracts/integration/grant-scope";
-import { Button, Checkbox, Radio } from "@mantine/core";
+import {
+  isGrantTtl,
+  type GrantScope,
+  type GrantTtl,
+} from "@chat/contracts/integration/grant-scope";
+import { useCurrentUser } from "@chat/queries/auth/current-user";
+import { Button, Checkbox, Radio, SegmentedControl } from "@mantine/core";
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import { getToolName } from "ai";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useLocale } from "~/core/hooks/use-locale";
 import { codexOutputOf } from "~/lib/codex-output";
 import { formatToolInput, formatToolOutput } from "~/lib/tool-output";
 import { CodexPart } from "./CodexPart";
@@ -18,19 +24,23 @@ export interface ToolDecision {
   readonly rememberAs: string | undefined;
   /** How far that grant reaches. Meaningless when nothing is remembered. */
   readonly scope: GrantScope;
+  /** How long that grant lives. Meaningless when nothing is remembered. */
+  readonly ttl: GrantTtl;
 }
 
 /**
- * Guard: read from the part rather than derived from the name. The server puts
- * each tool's posture in `metadata`, which the sdk copies here — a page that
- * guessed instead would offer to remember a tool the server refuses to remember,
- * which is what it used to do for every destructive one.
+ * Guard: read from the part rather than derived from the name. The server
+ * answers `rememberable` from the same inputs its gate decides with — the
+ * reader's mode, the integration's mode, any override, the destructive hint — so
+ * the prompt never offers a grant the gate would then ignore.
  */
 function rememberable(part: ReaderToolPart): boolean {
-  const policy = (part.toolMetadata as { policy?: unknown } | undefined)
-    ?.policy;
+  const metadata = part.toolMetadata as
+    { rememberable?: unknown; policy?: unknown } | undefined;
 
-  return policy !== "always";
+  return typeof metadata?.rememberable === "boolean"
+    ? metadata.rememberable
+    : metadata?.policy !== "always";
 }
 
 export interface ToolPartProps {
@@ -40,8 +50,11 @@ export interface ToolPartProps {
 
 function ToolPartComponent({ part, onDecision }: ToolPartProps) {
   const { t } = useTranslation();
+  const me = useCurrentUser(useLocale());
   const [remember, setRemember] = useState(false);
   const [scope, setScope] = useState<GrantScope>("session");
+  const [chosenTtl, setChosenTtl] = useState<GrantTtl | undefined>();
+  const ttl = chosenTtl ?? me.data?.grantTtl ?? "never";
   const name = getToolName(part);
   const args = formatToolInput(part.input);
   const approvalId = part.approval?.id;
@@ -127,6 +140,28 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
                   </div>
                 </Radio.Group>
               ) : null}
+              {remember ? (
+                <div className="ms-6 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-ink-dim">
+                    {t("tool.rememberFor")}
+                  </span>
+                  <SegmentedControl
+                    size="xs"
+                    radius="md"
+                    value={ttl}
+                    data={[
+                      { value: "day", label: t("tool.rememberTtl.day") },
+                      { value: "week", label: t("tool.rememberTtl.week") },
+                      { value: "never", label: t("tool.rememberTtl.never") },
+                    ]}
+                    onChange={(value) => {
+                      if (isGrantTtl(value)) {
+                        setChosenTtl(value);
+                      }
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
           <div className="flex gap-2">
@@ -138,6 +173,7 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
                   approved: true,
                   rememberAs: remember ? name : undefined,
                   scope,
+                  ttl,
                 });
               }}
             >
@@ -152,6 +188,7 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
                   approved: false,
                   rememberAs: undefined,
                   scope,
+                  ttl,
                 });
               }}
             >

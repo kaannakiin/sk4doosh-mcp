@@ -65,9 +65,9 @@ platform policy`: partner integration registration and scope publishing are
   not built (see the repository's `ROADMAP.md`).
 - **`user`** — `connection_only`. There is no scope map for a server the user
   pointed the product at themselves, so the connection itself is the grant.
-  The user-facing backstop for this case is tool approval
-  (`products/chat/api/src/chat/tool-approval-gate.service.ts`,
-  `@chat/contracts/tools/approval-decision.ts`); see "Known limits" below.
+  The user-facing backstop for this case is tool approval: a server a user
+  adds starts at `always_ask`, and trusting it more is the user's choice (see
+  "Tool approval" below).
 
 Before any of this runs, `authorizeInvocation` also checks connection
 ownership (`connection.ownerId !== sessionUserId`), integration match
@@ -75,6 +75,29 @@ ownership (`connection.ownerId !== sessionUserId`), integration match
 (`active` only) — each with its own denial reason, and a missing connection
 denies with the same reason as one owned by someone else, so a caller cannot
 use the response to enumerate other users' connections.
+
+## Tool approval
+
+Whether a tool call needs the user's consent is decided per call by
+`decideToolApproval` (`@chat/contracts/tools/approval-decision.ts`), in this
+order:
+
+1. The product's own posture for the tool (`CHAT_TOOL_POLICY`): `auto` never
+   asks, `always` (`codex_task`) always asks, and nothing below can change
+   either.
+2. The user's per-tool override (`tool_approval_override`): `always_ask`, or
+   `auto`. An `auto` override is bound to the tool definition it was given
+   for and asks again once the server rewrites the tool. This is the only
+   setting that can let a tool the server calls destructive run unasked.
+3. The server's destructive hint: asks.
+4. The integration's mode (`integration_approval_setting`), else the user's
+   own mode: `always_ask`, `remember` (a remembered grant decides) or `auto`.
+   A server the user adds starts at `always_ask`; an integration with no row
+   follows the user's own mode.
+
+`grantCanApply` answers, from the same inputs, whether "don't ask again" is
+worth offering, and the gate copies that onto each tool's metadata so the
+prompt never offers a grant the gate would ignore.
 
 ## Security invariants the code enforces
 
@@ -116,14 +139,6 @@ use the response to enumerate other users' connections.
   the lease duration. Not a correctness bug — a stale list is still usable —
   but worth knowing before a first partner integration ships with shared
   connections.
-- **User-added ("bring your own MCP server") tools are not forced through
-  per-call approval by origin.** The approval gate
-  (`tool-approval-gate.service.ts`, `decideToolApproval`) raises the bar only
-  for a tool the _server_ declares `destructive`; it does not currently
-  distinguish a `user`-origin integration (no scope map, connection is the
-  grant) from a `partner` one. A non-destructive tool on a self-added server
-  can be remembered exactly like a partner tool, even though the connection
-  carries no scoped consent to fall back on.
 - **Scope map has no consent versioning.** If a partner narrows or widens
   which scope a tool requires, a user who consented under the old mapping is
   not re-prompted — see `ROADMAP.md` for the two ways to close this before

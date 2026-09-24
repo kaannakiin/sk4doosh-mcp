@@ -38,9 +38,9 @@ export function ApprovedToolList({
 
   return (
     <ul className="w-full divide-y divide-hairline">
-      {approvals.data.map((approval) => (
+      {approvals.data.map((approval, index) => (
         <li
-          key={approval.toolName}
+          key={`${approval.subjectKey}:${approval.scope}:${String(index)}`}
           className="flex flex-wrap items-center gap-2 py-2"
         >
           <span className="min-w-0 grow truncate font-mono text-xs">

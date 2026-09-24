@@ -4,6 +4,8 @@ import { Badge, Button } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { ApprovedToolList } from "./ApprovedToolList";
+import { IntegrationApprovalModeField } from "./IntegrationApprovalModeField";
+import { IntegrationToolList } from "./IntegrationToolList";
 
 interface IntegrationCardProps {
   readonly integration: IntegrationSummary;
@@ -128,14 +130,36 @@ export function IntegrationCard({
         ) : null}
       </div>
 
+      <div className="w-full">
+        <IntegrationApprovalModeField
+          integrationId={integration.id}
+          mode={integration.approvalMode}
+          locale={locale}
+        />
+      </div>
+
       {/*
-        Mounted only while open: the list is a second request per card, and a
-        reader with a dozen servers would otherwise pay for a dozen of them to
-        render a page where every list is collapsed.
+        Mounted only while open: the lists are two more requests per card, and a
+        reader with a dozen servers would otherwise pay for them on a page where
+        every list is collapsed.
       */}
       {expanded ? (
-        <div className="w-full border-t border-hairline pt-1">
-          <ApprovedToolList integrationId={integration.id} locale={locale} />
+        <div className="flex w-full flex-col gap-3 border-t border-hairline pt-2">
+          <section>
+            <h3 className="text-xs font-medium">
+              {t("connections.toolList.title")}
+            </h3>
+            <IntegrationToolList
+              integrationId={integration.id}
+              locale={locale}
+            />
+          </section>
+          <section>
+            <h3 className="text-xs font-medium">
+              {t("connections.approvals.title")}
+            </h3>
+            <ApprovedToolList integrationId={integration.id} locale={locale} />
+          </section>
         </div>
       ) : null}
     </div>

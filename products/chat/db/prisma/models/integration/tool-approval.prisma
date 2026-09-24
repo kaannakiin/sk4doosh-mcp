@@ -66,3 +66,53 @@ model ToolApproval {
   @@index([integrationId], map: "tool_approval_integration_idx")
   @@map("tool_approval")
 }
+
+/// How one reader wants the tools of one integration approved, in place of their
+/// own mode.
+///
+/// Guard: no row means the reader's own mode applies. Absence is "inherit", so a
+/// partner integration offered to everyone starts from each reader's own choice
+/// rather than from a posture nobody picked.
+model IntegrationApprovalSetting {
+  userId        BigInt                  @map("user_id")
+  integrationId BigInt                  @map("integration_id")
+  mode          IntegrationApprovalMode
+  createdAt     DateTime                @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, integrationId])
+  @@index([integrationId], map: "integration_approval_setting_integration_idx")
+  @@map("integration_approval_setting")
+}
+
+/// One reader's standing decision about one tool: ask every time, or never.
+///
+/// Guard: this is the only thing that outranks a server's destructive hint, and
+/// it is written one tool at a time by the reader. Loosening a destructive tool
+/// is therefore always an explicit decision about that tool, never a side effect
+/// of an integration's mode.
+///
+/// Guard: an `auto` row carries the digest of the definition it was given for,
+/// and stops applying when the definition changes — a server that keeps a name
+/// and rewrites what the tool does must ask again. An `always_ask` row carries
+/// none: asking more can never be the wrong answer to a changed definition.
+model ToolApprovalOverride {
+  userId           BigInt           @map("user_id")
+  subjectKey       String           @map("subject_key")
+  integrationId    BigInt?          @map("integration_id")
+  toolName         String           @map("tool_name")
+  mode             ToolOverrideMode
+  definitionDigest Bytes?           @map("definition_digest")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration? @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, subjectKey])
+  @@index([integrationId], map: "tool_approval_override_integration_idx")
+  @@map("tool_approval_override")
+}

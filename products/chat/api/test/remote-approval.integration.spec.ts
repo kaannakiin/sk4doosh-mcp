@@ -19,6 +19,7 @@ import { ToolApprovalRepository } from "../src/connections/tool-approval.reposit
 import { ToolApprovalService } from "../src/connections/tool-approval.service.ts";
 import { DbService } from "../src/db/db.service.ts";
 import type { SessionId } from "@chat/contracts/chat/session";
+import type { IntegrationApprovalSetting } from "@chat/contracts/integration/tool-approval-mode";
 
 import type { UserId } from "../src/db/ids.ts";
 import { GLOBAL_SCOPE } from "../src/connections/tool-approval.repository.ts";
@@ -103,11 +104,16 @@ withDatabase("remote tool approvals", () => {
     return row.id.toString() as UserId;
   }
 
-  async function connect(userId: UserId, tools: readonly StubTool[]) {
+  async function connect(
+    userId: UserId,
+    tools: readonly StubTool[],
+    approvalMode?: IntegrationApprovalSetting,
+  ) {
     const server = mcpStub({ open: true, tools });
     stub = await startStub(server.handler);
     const outcome = await registration.register(userId, {
       mcpUrl: `${stub.origin}/mcp`,
+      approvalMode: approvalMode ?? "remember",
     });
     if (outcome.kind === "refused") {
       throw new Error(`registration refused: ${outcome.failure}`);
@@ -132,7 +138,7 @@ withDatabase("remote tool approvals", () => {
   const SCOPED_SESSION = "00000000-0000-7000-8000-000000000001" as SessionId;
 
   async function ask(userId: UserId, exposedName: string): Promise<boolean> {
-    const gate = await gates.gateFor(
+    const { gate } = await gates.gateFor(
       userId,
       SCOPED_SESSION,
       await catalogMap(userId),
@@ -224,7 +230,11 @@ withDatabase("remote tool approvals", () => {
 
   it("suspends the memory in always_ask without removing it", async () => {
     const userId = await owner();
-    const integration = await connect(userId, [{ name: "list_zones" }]);
+    const integration = await connect(
+      userId,
+      [{ name: "list_zones" }],
+      "inherit",
+    );
     const exposed = exposedToolNameFor(integration.id, "list_zones");
     await approvals.remember(userId, exposed, GLOBAL_SCOPE);
 
@@ -269,5 +279,144 @@ withDatabase("remote tool approvals", () => {
     const listed = await approvals.listFor(userId, integration.id);
     expect(listed).toHaveLength(1);
     expect(listed?.[0]?.available).toBe(false);
+  });
+
+  it("starts a newly added server at always_ask", async () => {
+    const userId = await owner();
+    const server = mcpStub({ open: true, tools: [{ name: "list_zones" }] });
+    stub = await startStub(server.handler);
+    const outcome = await registration.register(userId, {
+      mcpUrl: `${stub.origin}/mcp`,
+    });
+    if (outcome.kind === "refused") {
+      throw new Error(`registration refused: ${outcome.failure}`);
+    }
+    const exposed = exposedToolNameFor(outcome.integration.id, "list_zones");
+
+    expect(outcome.integration.approvalMode).toBe("always_ask");
+    await approvals.remember(userId, exposed, GLOBAL_SCOPE);
+    expect(await ask(userId, exposed)).toBe(true);
+  });
+
+  it("runs a trusted server's tools unasked, except the destructive ones", async () => {
+    const userId = await owner();
+    const integration = await connect(
+      userId,
+      [
+        { name: "list_zones" },
+        { name: "delete_zone", annotations: { destructiveHint: true } },
+      ],
+      "auto",
+    );
+
+    expect(
+      await ask(userId, exposedToolNameFor(integration.id, "list_zones")),
+    ).toBe(false);
+    expect(
+      await ask(userId, exposedToolNameFor(integration.id, "delete_zone")),
+    ).toBe(true);
+  });
+
+  it("falls back to the reader's own mode once the server's is inherited", async () => {
+    const userId = await owner();
+    const integration = await connect(userId, [{ name: "list_zones" }], "auto");
+    const exposed = exposedToolNameFor(integration.id, "list_zones");
+
+    expect(
+      await approvals.setIntegrationMode(userId, integration.id, "inherit"),
+    ).toBe(true);
+    expect(await ask(userId, exposed)).toBe(true);
+    expect(
+      await db.client.integrationApprovalSetting.count({
+        where: { userId: BigInt(userId) },
+      }),
+    ).toBe(0);
+  });
+
+  it("lets an auto override run one destructive tool until it is rewritten", async () => {
+    const userId = await owner();
+    const integration = await connect(userId, [
+      {
+        name: "delete_zone",
+        description: "Deletes a zone.",
+        annotations: { destructiveHint: true },
+      },
+    ]);
+    const exposed = exposedToolNameFor(integration.id, "delete_zone");
+
+    expect(await approvals.override(userId, exposed, "auto")).toBe("changed");
+    expect(await ask(userId, exposed)).toBe(false);
+
+    await integrations.replaceTools(
+      (
+        await db.client.integration.findFirstOrThrow({
+          where: { publicId: integration.id },
+          select: { id: true },
+        })
+      ).id,
+      [
+        {
+          name: "delete_zone",
+          description: "Deletes every zone.",
+          inputSchema: { type: "object" },
+          annotations: { destructiveHint: true },
+        },
+      ],
+    );
+
+    expect(await ask(userId, exposed)).toBe(true);
+    const [listed] = (await approvals.toolsFor(userId, integration.id)) ?? [];
+    expect(listed?.overrideStale).toBe(true);
+  });
+
+  it("lets an always_ask override outrank a remembered grant", async () => {
+    const userId = await owner();
+    const integration = await connect(userId, [{ name: "list_zones" }]);
+    const exposed = exposedToolNameFor(integration.id, "list_zones");
+    await approvals.remember(userId, exposed, GLOBAL_SCOPE);
+
+    await approvals.override(userId, exposed, "always_ask");
+    expect(await ask(userId, exposed)).toBe(true);
+
+    await approvals.override(userId, exposed, "inherit");
+    expect(await ask(userId, exposed)).toBe(false);
+  });
+
+  it("refuses to override a tool the product always asks about", async () => {
+    const userId = await owner();
+
+    expect(await approvals.override(userId, "codex_task", "auto")).toBe(
+      "policy_fixed",
+    );
+  });
+
+  it("scopes a grant only to a conversation the reader owns", async () => {
+    const userId = await owner();
+    const stranger = await owner();
+    const session = await db.client.chatSession.create({
+      data: {
+        publicId: "00000000-0000-7000-8000-0000000000aa",
+        userId: BigInt(stranger),
+      },
+      select: { publicId: true },
+    });
+
+    expect(
+      await approvalRows.scopeKeyFor(
+        userId,
+        "session",
+        session.publicId as SessionId,
+      ),
+    ).toBeUndefined();
+    expect(
+      await approvalRows.scopeKeyFor(
+        stranger,
+        "session",
+        session.publicId as SessionId,
+      ),
+    ).toBe(session.publicId);
+    expect(
+      await approvalRows.scopeKeyFor(userId, "session", undefined),
+    ).toBeUndefined();
   });
 });

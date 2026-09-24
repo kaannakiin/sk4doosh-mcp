@@ -2,7 +2,7 @@ import type { Locale } from "@chat/contracts/common/locale";
 import {
   integrationListResponseSchema,
   integrationSummarySchema,
-  type CreateIntegration,
+  type CreateIntegrationRequest,
   type IntegrationListResponse,
   type IntegrationSummary,
 } from "@chat/contracts/integration/registration";
@@ -10,7 +10,11 @@ import type {
   GrantScope,
   GrantTtl,
 } from "@chat/contracts/integration/grant-scope";
-import type { ToolApprovalMode } from "@chat/contracts/integration/tool-approval-mode";
+import type {
+  IntegrationApprovalSetting,
+  ToolApprovalMode,
+  ToolOverrideSetting,
+} from "@chat/contracts/integration/tool-approval-mode";
 import { useMutation } from "@tanstack/react-query";
 
 import { authKeys } from "../auth/keys.ts";
@@ -31,7 +35,7 @@ import {
 export function useAddIntegration(locale: Locale) {
   const client = useChatClient();
 
-  return useMutation<IntegrationSummary, Error, CreateIntegration>({
+  return useMutation<IntegrationSummary, Error, CreateIntegrationRequest>({
     mutationFn: (body) =>
       client.request(INTEGRATION_PATHS.root, integrationSummarySchema, {
         method: "POST",
@@ -107,23 +111,24 @@ export interface RememberToolInput {
   readonly scope: GrantScope;
   /** Required for a conversation-scoped grant, refused for a global one. */
   readonly sessionId?: string;
+  readonly ttl: GrantTtl;
 }
 
 /**
  * Guard: the request carries no digest and no expiry. The api reads the
- * definition it is remembering out of its own records, and computes the lapse
- * from the reader's own preference — either one chosen by the page would let it
+ * definition it is remembering out of its own records and computes the lapse
+ * from the duration the reader picked — a page that sent either would let it
  * record consent on terms the reader never set.
  */
 export function useRememberTool(locale: Locale) {
   const client = useChatClient();
 
   return useMutation<void, Error, RememberToolInput>({
-    mutationFn: ({ exposedName, scope, sessionId }) =>
+    mutationFn: ({ exposedName, scope, sessionId, ttl }) =>
       client.requestNoContent(toolApprovalPath(exposedName), {
         method: "PUT",
         locale,
-        body: scope === "session" ? { scope, sessionId } : { scope },
+        body: scope === "session" ? { scope, sessionId, ttl } : { scope, ttl },
       }),
     onSettled: (_data, _error, _input, _context, { client: queryClient }) =>
       void queryClient.invalidateQueries({
@@ -150,11 +155,6 @@ export function useForgetTool(locale: Locale) {
 
 /**
  * Guard: invalidates the identity query rather than the connections one. The
- * mode rides on `/auth/me`, because it is a property of the reader and not of
- * any one server.
- */
-/**
- * Guard: invalidates the identity query for the same reason the mode does. The
  * duration is a property of the reader, not of any one server, and it rides back
  * on `/auth/me`.
  */
@@ -173,6 +173,10 @@ export function useSetGrantTtl(locale: Locale) {
   });
 }
 
+/**
+ * Guard: invalidates the identity query for the same reason the duration does:
+ * the reader's own mode rides on `/auth/me`.
+ */
 export function useSetToolApprovalMode(locale: Locale) {
   const client = useChatClient();
 
@@ -185,5 +189,52 @@ export function useSetToolApprovalMode(locale: Locale) {
       }),
     onSettled: (_data, _error, _mode, _context, { client: queryClient }) =>
       void queryClient.invalidateQueries({ queryKey: authKeys.currentUser() }),
+  });
+}
+
+export interface SetIntegrationApprovalModeInput {
+  readonly integrationId: string;
+  readonly mode: IntegrationApprovalSetting;
+}
+
+export function useSetIntegrationApprovalMode(locale: Locale) {
+  const client = useChatClient();
+
+  return useMutation<void, Error, SetIntegrationApprovalModeInput>({
+    mutationFn: ({ integrationId, mode }) =>
+      client.requestNoContent(
+        integrationPath(integrationId, "/approval-mode"),
+        {
+          method: "PATCH",
+          locale,
+          body: { mode },
+        },
+      ),
+    onSettled: (_data, _error, _input, _context, { client: queryClient }) =>
+      void queryClient.invalidateQueries({
+        queryKey: connectionKeys.integrations(),
+      }),
+  });
+}
+
+export interface SetToolOverrideInput {
+  readonly exposedName: string;
+  readonly mode: ToolOverrideSetting;
+}
+
+export function useSetToolOverride(locale: Locale) {
+  const client = useChatClient();
+
+  return useMutation<void, Error, SetToolOverrideInput>({
+    mutationFn: ({ exposedName, mode }) =>
+      client.requestNoContent(`${toolApprovalPath(exposedName)}/override`, {
+        method: "PUT",
+        locale,
+        body: { mode },
+      }),
+    onSettled: (_data, _error, _input, _context, { client: queryClient }) =>
+      void queryClient.invalidateQueries({
+        queryKey: connectionKeys.approvalsAll(),
+      }),
   });
 }

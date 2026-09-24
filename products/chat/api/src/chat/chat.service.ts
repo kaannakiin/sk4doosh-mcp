@@ -12,6 +12,7 @@ import {
   smoothStream,
   toUIMessageStream,
   validateUIMessages,
+  type ToolSet,
 } from "ai";
 import { streamText } from "ai-sdk-ollama";
 import type { ServerResponse } from "node:http";
@@ -125,7 +126,7 @@ export class ChatService {
       tools,
       ignoreIncompleteToolCalls: true,
     });
-    const gate = await this.approvals.gateFor(
+    const approval = await this.approvals.gateFor(
       userId,
       request.sessionId,
       surface.byExposedName,
@@ -157,7 +158,7 @@ export class ChatService {
         locale,
       ),
       messages: history,
-      tools,
+      tools: withRememberable(tools, approval.rememberable),
       /**
        * Guard: only the tools `find_tools` has surfaced, plus the ones the
        * conversation already used, are handed to the provider. `activeTools` is
@@ -195,7 +196,7 @@ export class ChatService {
        * shipped tools ended up being the ones that could never be remembered.
        */
       toolApproval: ({ toolCall }) =>
-        gate(toolCall.toolName, toolCall.dynamic === true),
+        approval.gate(toolCall.toolName, toolCall.dynamic === true),
     });
 
     await pipeUIMessageStreamToResponse({
@@ -238,6 +239,27 @@ export class ChatService {
  * Feeding this signal to `streamText` is what makes it enqueue a real abort
  * chunk, which reaches the flush through the normal path.
  */
+/**
+ * Guard: the prompt's "don't ask again" is offered from the gate's own answer,
+ * copied onto each tool's metadata, which the sdk hands to the page. A page that
+ * derived it from the tool's name or policy would offer to remember a tool whose
+ * grant this reader's mode or override makes the gate ignore.
+ */
+function withRememberable(
+  tools: ToolSet,
+  rememberable: (toolName: string) => boolean,
+): ToolSet {
+  return Object.fromEntries(
+    Object.entries(tools).map(([name, tool]) => [
+      name,
+      {
+        ...tool,
+        metadata: { ...tool.metadata, rememberable: rememberable(name) },
+      },
+    ]),
+  ) as ToolSet;
+}
+
 function abortOnDisconnect(response: ServerResponse): AbortController {
   const controller = new AbortController();
   response.on("close", () => {

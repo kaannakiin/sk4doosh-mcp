@@ -23,3 +23,14 @@ enum GrantTtl {
   week
   never
 }
+
+enum IntegrationApprovalMode {
+  always_ask
+  remember
+  auto
+}
+
+enum ToolOverrideMode {
+  always_ask
+  auto
+}

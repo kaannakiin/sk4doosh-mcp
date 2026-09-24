@@ -89,6 +89,12 @@
     "rememberScope": {
       "session": "In this conversation",
       "global": "Everywhere"
+    },
+    "rememberFor": "For",
+    "rememberTtl": {
+      "day": "A day",
+      "week": "A week",
+      "never": "Always"
     }
   },
   "errors": {
@@ -287,7 +293,8 @@
       "label": "MCP server address",
       "placeholder": "https://example.com/mcp",
       "submit": "Add",
-      "hint": "The server is contacted now, so this can take a few seconds."
+      "hint": "The server is contacted now, so this can take a few seconds.",
+      "mode": "Approval for this server"
     },
     "status": {
       "disconnected": "Not connected",
@@ -329,7 +336,7 @@
       "integration_too_large": "That server's answer was larger than this product will read."
     },
     "approvals": {
-      "show": "Remembered tools",
+      "show": "Tools and approvals",
       "hide": "Hide",
       "empty": "No remembered approvals for this server.",
       "loading": "Loading remembered approvals…",
@@ -347,7 +354,8 @@
       "expired": "Lapsed",
       "expiresAt": "Lapses {{when}}",
       "chatTitle": "This product's own tools",
-      "chatEmpty": "No remembered approvals."
+      "chatEmpty": "No remembered approvals.",
+      "title": "Remembered approvals"
     },
     "mode": {
       "label": "Tool approval",
@@ -359,7 +367,7 @@
       }
     },
     "ttl": {
-      "label": "Remembered approvals lapse",
+      "label": "Default lapse for remembered approvals",
       "day": "After a day",
       "week": "After a week",
       "never": "Never",
@@ -368,6 +376,37 @@
         "week": "A new approval lapses a week after you give it. Approvals you already gave keep their own terms.",
         "never": "An approval stays until you forget it."
       }
+    },
+    "integrationMode": {
+      "label": "Approval",
+      "inherit": "My default",
+      "always_ask": "Ask every time",
+      "remember": "Remember",
+      "auto": "Don't ask",
+      "hint": {
+        "inherit": "Follows your tool approval setting above.",
+        "always_ask": "Every call to this server's tools is asked about.",
+        "remember": "A tool you approve with “Don't ask again” runs without asking, until its definition changes.",
+        "auto": "This server's tools run without asking. Tools the server marks as able to change or delete data still ask, unless you allow one below."
+      }
+    },
+    "toolList": {
+      "title": "Tools",
+      "loading": "Loading tools…",
+      "empty": "This server offers no tools.",
+      "destructive": "Can change data",
+      "stale": "Definition changed, asks again",
+      "override": {
+        "inherit": "Default",
+        "always_ask": "Always ask",
+        "auto": "Don't ask"
+      },
+      "confirmAuto": {
+        "message": "The server says this tool can change or delete data. Run it without asking?",
+        "confirm": "Run without asking",
+        "cancel": "Cancel"
+      },
+      "autoWarning": "Runs without asking even though it can change data."
     }
   }
 }
