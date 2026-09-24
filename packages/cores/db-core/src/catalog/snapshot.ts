@@ -52,9 +52,18 @@ export interface CatalogCacheSpec<TConfig> {
 const qualify = (ref: { schema: string; name: string }): string =>
   `${ref.schema}.${ref.name}`;
 
-function lastIndexOf(objects: readonly CatalogObject[], key: string): number {
+/**
+ * Guard: the boundary is the last object the column read reached, not the
+ * object it stopped on. The column read is not scoped to the object prefix, so
+ * when both reads are cut it can stop on an object past the last one read —
+ * looking that object up finds nothing and turns a partial index into a refusal.
+ */
+function lastCoveredIndex(
+  objects: readonly CatalogObject[],
+  covered: ReadonlyMap<string, unknown>,
+): number {
   for (let index = objects.length - 1; index >= 0; index -= 1) {
-    if (qualify(objects[index] as CatalogObject) === key) {
+    if (covered.has(qualify(objects[index] as CatalogObject))) {
       return index;
     }
   }
@@ -132,12 +141,9 @@ export async function buildSnapshot<TConfig>(
     });
   }
 
-  const last = rows[rows.length - 1];
-  const boundary = !columnsCut
-    ? objects.length - 1
-    : last === undefined
-      ? -1
-      : lastIndexOf(objects, qualify(last));
+  const boundary = columnsCut
+    ? lastCoveredIndex(objects, grouped)
+    : objects.length - 1;
 
   if (columnsCut && boundary < 0) {
     throw fail(

@@ -442,6 +442,63 @@ describe("a catalogue the index could not read whole", () => {
   });
 });
 
+/**
+ * Guard: the column read is not scoped to the object prefix, so when both reads
+ * are cut the column cut can land past the last object read. The boundary is
+ * then the object cut, not a failure.
+ */
+describe("a catalogue both reads cut, the column read further", () => {
+  const cut: Record<string, Script> = {
+    server: catalogRows["server"] as Script,
+    catalogObjects: rows(
+      [column("schema", 0), column("name", 1), column("kind", 2)],
+      [
+        ["dbo", "AInvoices", "table"],
+        ["dbo", "BLedger", "table"],
+        ["dbo", "CVendors", "table"],
+        ["dbo", "DOrders", "table"],
+      ],
+    ),
+    catalogColumns: rows(
+      [
+        column("schema", 0),
+        column("name", 1),
+        column("column", 2),
+        column("ordinal", 3),
+      ],
+      [
+        ["dbo", "AInvoices", "InvoiceNo", 0],
+        ["dbo", "BLedger", "LedgerNo", 0],
+        ["dbo", "CVendors", "VendorName", 0],
+        ["dbo", "DOrders", "OrderNo", 0],
+        ["dbo", "DOrders", "Total", 1],
+      ],
+    ),
+  };
+
+  beforeEach(async () => {
+    await connect(
+      (spec) => cut[spec.sql] ?? rows([column("a", 0)], [["x"]]),
+      { ...dbCoreLimits, maxIndexObjects: 2, maxIndexRows: 4 },
+    );
+  });
+
+  it("indexes the object prefix instead of refusing the search", async () => {
+    const envelope = body(
+      (await client.callTool({
+        name: "search_catalog",
+        arguments: { query: "ledgerno" },
+      })) as TextResult,
+    );
+    const facts = envelope["catalog"] as Record<string, unknown>;
+    expect(envelope["error"]).toBeUndefined();
+    expect(facts["complete"]).toBe(false);
+    expect(facts["indexedObjects"]).toBe(2);
+    expect(facts["coverageEndsAt"]).toBe("dbo.BLedger");
+    expect((envelope["results"] as unknown[]).length).toBe(1);
+  });
+});
+
 describe("describe_table", () => {
   beforeEach(async () => {
     await connect(catalogOnly);
