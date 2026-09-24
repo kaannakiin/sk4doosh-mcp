@@ -1,6 +1,6 @@
 # Credentials
 
-> Status: **specified, not yet implemented.** Applies to an invoker that calls a backend over the network (`packages/servers/openapi-mcp`). An embedded SDK forwards the caller's own carriers to its own pipeline and is not bound by this file. The design record is `docs/uzak-kimlik-karari.md`.
+> Status: **normative, one implementation** (`packages/servers/openapi-mcp`). Applies to an invoker that calls a backend over the network. An embedded SDK forwards the caller's own carriers to its own pipeline and is not bound by this file.
 
 An embedded SDK replays a call through the backend's own pipeline, so the caller's `Authorization` header is already addressed to the right audience. A network invoker is a separate service: the token the agent presented is addressed to the invoker, not to the backend. This document defines where the credential for a backend call comes from and where it is written.
 

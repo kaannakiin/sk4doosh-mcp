@@ -1,6 +1,6 @@
 # OpenAPI Ingestion
 
-> Status: **specified, not yet implemented.** Written ahead of the implementation in `packages/http/openapi`, which is the order this repository requires. Bound by the `openapi-ingestion` fixture profile ([fixture-format.md](fixture-format.md)), not by the core profile: an SDK that never reads an OpenAPI document is not bound by this file. The design record is `docs/openapi-kaynak-karari.md`.
+> Status: **normative, one implementation** (`packages/http/openapi`). Bound by the `openapi-ingestion` fixture profile ([fixture-format.md](fixture-format.md)), not by the core profile: an SDK that never reads an OpenAPI document is not bound by this file.
 
 An OpenAPI document is a second source of `EndpointDescriptor`s, next to framework discovery. This document defines how a Swagger 2.0 or OpenAPI 3.0–3.2 document becomes descriptors, a server map and a security model, and which diagnostics the conversion reports. Everything after the descriptor — naming, selection, curation, template production, composition, error mapping, search — is the existing catalog and is not restated here.
 
