@@ -120,6 +120,8 @@ read-only members kept.
   `InvokeSuccess.body`: `invoke_tool` is one fixed meta-tool whose result shape varies per call, so a
   client cannot check its `structuredContent` against a static schema. The compact card does not
   carry it either ([search-semantics.md](search-semantics.md)).
+- `outputSchema` belongs to a catalog tool as `load_tool` returns it. The three meta-tools' own MCP
+  `Tool.outputSchema` is not written.
 
 ## Method → annotation table
 

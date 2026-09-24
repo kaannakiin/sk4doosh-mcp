@@ -100,6 +100,8 @@ A filled slot MUST NOT produce `invalid_path_type`, `invalid_type`, `null_not_al
 
 Both messages MUST carry no value, no source name and no wire slot name, in the same register as the withheld-detail messages in [error-mapping.md](error-mapping.md), and MUST state that retrying will not help. The source and the slot belong in the host's log.
 
+A provider fills a slot and nothing else, so it cannot write an identity channel: a slot on a declared identity carrier is refused at template production ([argument-mapping.md](argument-mapping.md), `identity_carrier_parameter`), hidden or not. Carrying identity to the backend is the carriers' job, not curation's.
+
 `null` from a provider is not a value on a path, query or header slot: it is treated as absent, because `null_not_allowed`'s guidance ("omit it instead") addresses an agent that cannot act here. On a body slot `null` is written verbatim, because `{"x": null}` is a legitimate body.
 
 **Forward constraint.** No response cache exists today ([caching.md](caching.md) covers `facts` and `probe` only), so nothing is broken. But any future cache keyed by `CallerScope` MUST fold every source an endpoint fills into its key. A provider reading a header outside the declared identity carriers is invisible to the carrier digest, and a cache that misses it serves one tenant's response to another.
@@ -169,4 +171,6 @@ Reused rather than added: two declarations for one wire name is `duplicate_argum
 - **A visible default.** [schema-conversion-rules.md](schema-conversion-rules.md) Table 5 declines to write `default`; `hidden` is the only value-injection path, and `omit` covers "let the backend decide".
 - **Per-caller curation.** The published schema MUST be caller-independent. A caller-dependent schema would break the catalog snapshot, the generation stamp and the `listChanged` fan-out ([transport.md](transport.md)), all three of which assume a single global generation. Only the **value** of a deferred fill varies per caller.
 - **Reordering arguments.** The order of `properties` and `required` is normative; curation renames in place.
+- **A general tool-transformation hook.** Curation is a named, single-purpose declaration that the tool-definition factory and the request composer read as an **input**; neither gains a hook, and no new extension point is added for it. A general callback over the finished tool would let a host reshape the published schema without the template that enforces it, and the drift would be invisible until a call failed.
+- **Deleting a description.** A curated description is at least one character: an empty string cannot be told apart from "no declaration" in a JSON fixture.
 - **Deriving a value from another argument.** Not specified here. The provider contract is written so that it can be specified later without a second mechanism.

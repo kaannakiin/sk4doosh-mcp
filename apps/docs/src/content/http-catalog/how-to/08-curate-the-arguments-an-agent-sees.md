@@ -113,7 +113,9 @@ options.arguments
 ```
 
 Rules merge per argument and per field, so a global rule that hides a tenant identifier survives a
-method-level rule that only renames something else.
+method-level rule that only renames something else. When an attribute or decorator and a central
+rule set the same argument, the one beside the endpoint wins — it is nearer the code, which is the
+reading a maintainer expects. Seal the rule when that is not what you want.
 
 ## Keep the description honest
 
@@ -204,6 +206,18 @@ Three things to know before you switch it on:
 - **Only NestJS's named bindings group.** `@Query('filter') dto: FilterDto` groups;
   `@Query() dto: FilterDto` does not and never will, because Nest hands the bare form the whole
   query object. On ASP.NET Core both spellings group.
+
+On NestJS, two things about query strings bite whether or not you group, because every query value
+arrives as a string and `qs` decides array-ness per request:
+
+- An `@IsInt()` member needs `@Type(() => Number)`, or validation rejects the string it receives.
+- A one-element array member needs a `@Transform` that wraps a lone value: `qs` returns a string
+  for a key it sees once and an array only when the key repeats, for `?items=a` and `?f[items]=a`
+  alike.
+
+`f[items]=a` and `f%5Bitems%5D=a` parse identically, because `qs` decodes the key first; `f.items=a`
+is never parsed as a member, even with the extended parser, which is why NestJS always gets
+bracket notation.
 
 Members that cannot be a query value — a nested object, a dictionary — are left out and named in an
 `unbound_query_object` warning. If nothing is left, the SDK declines to group and keeps today's

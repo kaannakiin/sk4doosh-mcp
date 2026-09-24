@@ -108,6 +108,12 @@ public sealed class ErrorMappingTests
     private static readonly IReadOnlySet<string> NoKnownFields = new HashSet<string>();
     private static readonly IReadOnlyDictionary<string, string> EmptyHeaders = new Dictionary<string, string>();
 
+    /// <remarks>
+    /// Guard: the C# generator emits nothing for the root <c>InvokeResult</c> union, so an
+    /// <see cref="InvokeOutcome"/> case missing here passes gen, build and type-check. Globbing the
+    /// whole <c>error-mapping</c> directory is the only check that catches it; moving those fixtures
+    /// elsewhere removes it.
+    /// </remarks>
     [Fact]
     public void E1_ConformanceFixtures_AllPass()
     {

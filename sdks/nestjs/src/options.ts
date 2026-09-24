@@ -207,7 +207,7 @@ export interface SkMcpInvokeOptions {
    * How long an invocation waits for the backend, in whole milliseconds. Zero means no deadline.
    *
    * Values at or above 60000 are unreachable through a stock MCP client, whose own request timeout
-   * cancels first.
+   * (`DEFAULT_REQUEST_TIMEOUT_MSEC` in the TypeScript client) cancels first.
    */
   timeoutMs: number;
   maxResponseBytesFor?: (target: InvokeTarget) => number | undefined;

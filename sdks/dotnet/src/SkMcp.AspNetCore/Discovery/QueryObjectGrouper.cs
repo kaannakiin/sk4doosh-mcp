@@ -29,6 +29,13 @@ internal static class QueryObjectGrouper
 
     internal static readonly Plan Empty = new(new HashSet<ApiParameterDescription>(), []);
 
+    /// <remarks>
+    /// Guard: every leaf of a grouped parameter is consumed, the ones the group cannot express
+    /// included. A leaf that leaked back as a top-level argument would be sent unprefixed next to the
+    /// group, and <c>?Range.Min=1&amp;filter.Status=a</c> makes the binder's
+    /// <c>ContainsPrefix("filter")</c> true, which switches off its unprefixed fallback, so
+    /// <c>Range.Min</c> would never be read.
+    /// </remarks>
     internal static Plan Build(
         ApiDescription api,
         SchemaMapperOptions schema,
