@@ -285,6 +285,13 @@ export const apiEnvSchema = z.preprocess(
         .default(CODEX_MAX_WORKSPACES_DEFAULT),
       CHAT_CODEX_LLM_MCP_ENTRY: z.string().trim().min(1).optional(),
 
+      /**
+       * Guard: required in production. The ai sdk signs each approval request
+       * with it, binding the tool name and the input, and verifies the
+       * signature when the approved call comes back. Without it the approval in
+       * a resent conversation is taken on the client's word: a page can approve
+       * a call it was never asked about, or change the input of one it was.
+       */
       CHAT_TOOL_APPROVAL_SECRET: z.string().min(32).optional(),
     })
     .superRefine((env, ctx) => {
@@ -350,6 +357,13 @@ export const apiEnvSchema = z.preprocess(
             code: "custom",
             path: ["CHAT_REDIS_URL"],
             message: "redis authentication is required in production",
+          });
+        }
+        if (env.CHAT_TOOL_APPROVAL_SECRET === undefined) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["CHAT_TOOL_APPROVAL_SECRET"],
+            message: "tool approvals must be signed in production",
           });
         }
       }
