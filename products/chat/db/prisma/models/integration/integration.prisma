@@ -44,6 +44,12 @@ model Integration {
 /// choosing the narrower scope widens the grant while choosing the wider one
 /// breaks the user who consented to the narrower — here the manifest is refused
 /// at ingest instead.
+///
+/// Guard: a row here carries no manifest version. A partner that moves a tool
+/// to a narrower scope silently widens every user's existing consent for that
+/// scope, and nothing in this table can detect the change — the fix is a data
+/// model decision (version the row, or force re-consent when a scope's tool
+/// list grows), not a query.
 model IntegrationToolScope {
   integrationId BigInt @map("integration_id")
   toolName      String @map("tool_name")

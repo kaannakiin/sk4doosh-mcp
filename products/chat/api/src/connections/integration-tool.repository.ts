@@ -134,6 +134,10 @@ export class IntegrationToolRepository {
    * Guard: the staleness test is part of the same statement. Reading it first
    * and claiming after would let two turns that both read "stale" both claim.
    *
+   * Known limit: the lease is keyed by `integrationId` alone, not by user. Two
+   * users connected to the same partner integration share one refresh window,
+   * so one user's refresh suppresses the other's until the lease clears.
+   *
    * @param integrationId the integration's surrogate key
    * @param staleAfterMs how old a list may be before it is re-read
    * @param leaseMs how long the claim is held

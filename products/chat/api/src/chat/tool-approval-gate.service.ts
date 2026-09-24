@@ -14,6 +14,13 @@ import { chatToolDigest } from "../connections/tool-digest.ts";
 import type { UserId } from "../db/ids.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 
+/**
+ * Guard: takes no arguments payload on purpose. A remembered grant covers the
+ * tool definition, never the call's `input` — approving `delete_file` once
+ * approves it for every path it is ever called with. Narrowing that would mean
+ * deciding which input fields are part of a tool's identity, which the tool's
+ * own schema does not currently say.
+ */
 export type ToolApprovalGate = (
   toolName: string,
   dynamic: boolean,

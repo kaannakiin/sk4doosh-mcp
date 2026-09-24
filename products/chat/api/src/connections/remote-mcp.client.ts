@@ -1,3 +1,12 @@
+/**
+ * Guard: this file speaks MCP's streamable-http transport by hand instead of
+ * through `@modelcontextprotocol/sdk`. The SDK's transport calls the global
+ * `fetch` directly, with no hook to route it through `guarded-http.ts` — the
+ * one place SSRF/DNS-rebinding protection lives for a registrant-supplied
+ * url. Handshake (`initialize` → `notifications/initialized` → `tools/list`),
+ * `mcp-session-id` handling and event-stream framing are reimplemented here
+ * over `guardedFollow` instead.
+ */
 import { PRODUCT_NAME } from "@chat/contracts/common/product";
 import type { EndpointPolicy } from "@chat/contracts/integration/discovery";
 import {

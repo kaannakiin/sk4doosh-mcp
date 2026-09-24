@@ -21,6 +21,12 @@ export interface GuardedRequest {
   readonly maxBytes: number;
 }
 
+/**
+ * Guard: `headers` is carried because `oauth4webapi` only checks
+ * `content-type` on its error path — a DCR failure that comes back
+ * `text/html` reads as unreachable instead of surfacing the server's `error`
+ * body. Dropping headers here would make that unrecoverable downstream.
+ */
 export interface GuardedResponse {
   readonly status: number;
   readonly headers: Record<string, string>;
