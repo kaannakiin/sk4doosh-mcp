@@ -37,6 +37,7 @@ if (result.fatal) {
 | `loader`              | `DocumentLoader`                   | —                      | Reads an external `$ref`; without one, a document that has any is refused (`external_ref_blocked`, fatal) |
 | `strict`              | `boolean`                          | `false`                | Raises `openapi_document_invalid` from a warning to a fatal diagnostic                                    |
 | `cookieDenyList`      | `RegExp`                           | the built-in deny-list | Cookie names treated as identity carriers even when no security scheme declares them                      |
+| `identityCookies`     | `readonly string[]`                | `[]`                   | Exact cookie names added to the deny-list (case-insensitive); they extend it and never replace it         |
 | `outputSchema`        | `"document"` \| `"omit"`           | `"document"`           | `omit` for a backend whose responses do not match its document                                            |
 | `hoistPathPrefix`     | `string`                           | —                      | A leading path segment moved from every route into the base URL                                           |
 | `requestBodyRequired` | `"document"` \| `"always"`         | `"document"`           | `always` treats an undeclared `requestBody.required` as `true`                                            |
@@ -68,7 +69,7 @@ contains any external `$ref` is refused with `external_ref_blocked` rather than 
 never decides on its own which file or host it may reach; that decision belongs to the host. A
 loader is expected to enforce its own limits (an allowlisted host, a deadline, a size cap, a root
 directory for a file); `@sk-mcp/openapi-mcp`'s loader is one example, restricted to the document's
-own host with a 64 MiB cap.
+own host plus its configured `refHosts`, with a 64 MiB cap.
 
 ## Diagnostics
 
