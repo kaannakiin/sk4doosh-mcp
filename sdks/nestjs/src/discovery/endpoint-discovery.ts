@@ -637,7 +637,7 @@ function responseSchemaOf(
     dropReadOnlyProperties: false,
   });
   for (const diagnostic of diagnostics) {
-    const key = `${diagnostic.code} ${diagnostic.message}`;
+    const key = `${diagnostic.code}\u0000${diagnostic.message}`;
     if (reported.has(key)) {
       continue;
     }
