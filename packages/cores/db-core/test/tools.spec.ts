@@ -477,10 +477,11 @@ describe("a catalogue both reads cut, the column read further", () => {
   };
 
   beforeEach(async () => {
-    await connect(
-      (spec) => cut[spec.sql] ?? rows([column("a", 0)], [["x"]]),
-      { ...dbCoreLimits, maxIndexObjects: 2, maxIndexRows: 4 },
-    );
+    await connect((spec) => cut[spec.sql] ?? rows([column("a", 0)], [["x"]]), {
+      ...dbCoreLimits,
+      maxIndexObjects: 2,
+      maxIndexRows: 4,
+    });
   });
 
   it("indexes the object prefix instead of refusing the search", async () => {
