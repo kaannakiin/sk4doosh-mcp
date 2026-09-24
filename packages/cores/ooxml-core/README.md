@@ -1,17 +1,12 @@
 # @sk-mcp/ooxml-core
 
-OOXML (ECMA-376) konteynerlerini okuyan paylaşılan çekirdek: zip part kaynağı, OPC paketi,
-ilişkiler, içerik türleri ve tek geçişli XML part taraması. `@sk-mcp/excel-mcp` tüketicisidir;
-`docx-mcp` ve `pptx-mcp` aynı çekirdeğe oturur.
+Shared reader for OOXML (ECMA-376) containers: a zip part source, the OPC package model,
+relationships, content types and single-pass XML part scanning. `@sk-mcp/excel-mcp` consumes it
+today; `docx-mcp` and `pptx-mcp` are meant to sit on the same core later.
 
-## Sınır
+## Usage
 
-Bu paket **format kelime hazinesi taşımaz**. `xl/`, `word/`, `ppt/` önekleri, SpreadsheetML /
-WordprocessingML / PresentationML namespace'leri ve "workbook", "sheet", "document", "presentation"
-adları buraya girmez. Konteyner adları — package, part, relationship, archive — ECMA-376 kelime
-hazinesidir ve serbesttir.
-
-Hiçbir `@sk-mcp/*` paketini adlandırmaz. Hata üreteci yapısal olarak enjekte edilir:
+A consumer injects an error factory and reads a package through the resulting reader:
 
 ```ts
 const reader = createOoxmlReader({
@@ -20,50 +15,77 @@ const reader = createOoxmlReader({
 });
 ```
 
-Çekirdek yalnızca kendi bildiği olguyu verir (hangi part, hangi zip özelliği, parser ne dedi);
-hata sınıfını, kod kelime hazinesini ve recovery metnini tüketici seçer — format nouns oraya aittir.
+The core hands back only the fact it alone knows (which part, which zip property, what the parser
+reported); the consumer chooses the error class, the code vocabulary and the recovery text —
+format nouns belong there, not in this package.
 
-## Neden SAX, neden DOM değil
+## API
 
-`packages/servers/xml-mcp` `libxml2-wasm` kullanıyor çünkü şeması **bilinmeyen** belge üstünde DOM ve XPath
-gerekiyor; o seçim worker izolasyonunu, pool'u ve makine-denetimli worker modül grafiğini getirdi.
-OOXML part'larında şema **bilinir** ve her okuma ileri yönlü tek geçiştir. Rastgele erişim part'lar
-_arasındadır_, ki onu `PartSource` indeksi karşılar. Bu yüzden burada worker yok, pool yok, WASM yok.
+| Module      | Exports                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reader`    | `createOoxmlReader`, `OoxmlEnvironment`, `OoxmlReader`                                                                                                   |
+| `container` | `classifyContainerMagic`; `extensionOf`, `normalisePartPath`, `relationshipsPathFor`, `resolveTarget`                                                    |
+| `xml`       | `ooxmlNamespaces`, `XmlPartReader`                                                                                                                       |
+| `limits`    | `ooxmlLimits`, `OoxmlLimits`                                                                                                                             |
+| `model`     | `OoxmlErrorCode`, `OoxmlErrorFactory`; `ContainerKind`, `ContentTypes`, `OpcPackage`, `PartEntry`, `PartSource`, `Relationship`; `XmlNode`, `XmlVisitor` |
 
-## Zip
+## Rules
 
-`fflate` üstünde iki geçiş: sayım geçişi hiçbir şeyi inflate etmeden dizini indeksler ve red
-listesini uygular, okuma yalnız istenen part'ı açar. Boyut kapıları sayım geçişinde koşar — inflate
-sonrası uygulanan kapı kapı değildir.
+- **No format-specific vocabulary.** An `xl/`, `word/` or `ppt/` prefix, a SpreadsheetML /
+  WordprocessingML / PresentationML namespace, or the noun "workbook", "sheet", "document" or
+  "presentation" inside this package is a defect. Container nouns — package, part, relationship,
+  archive — are ECMA-376 vocabulary and are allowed.
+- **Names no `@sk-mcp/*` package.** The error factory and the part source both arrive by
+  injection, so `@e965/xlsx` never enters this package.
+- **`saxes` and `fflate` are its only runtime dependencies.**
 
-Üç kapı birlikte çalışır, çünkü tek eşik ya gerçek dosyayı reddeder ya bombayı geçirir:
+## Design notes
 
-| Kapı                     | Değer   | Dayanak                                                                        |
-| ------------------------ | ------- | ------------------------------------------------------------------------------ |
-| `maxPartBytes`           | 384 MiB | Node `MAX_STRING_LENGTH` 512 Mi karakter; `part()` decode edilmiş string döner |
-| `maxExpansionRatio`      | 200:1   | Ölçülen gerçek en yüksek oran 40:1; tek deflate akışı ~1032:1'i aşamaz         |
-| `ratioFloorBytes`        | 16 MiB  | Altında oran denetlenmez; küçük tekrarlı part normaldir                        |
-| `maxDecodedPackageBytes` | 512 MiB | Çok sayıda sınır-altı part'ın toplamını bağlar                                 |
+**Why SAX, not DOM.** `packages/servers/xml-mcp` uses `libxml2-wasm` because it needs DOM and
+XPath over a document whose schema is **unknown** — that choice brought worker isolation, a pool,
+and a machine-checked worker module graph with it. An OOXML part's schema is **known** and every
+read is a single forward pass. Random access happens _between_ parts, which the `PartSource` index
+already covers. So there is no worker, no pool and no WASM here.
 
-## Bilinen sınır
+**Zip.** Two passes over `fflate`: a counting pass indexes the directory without inflating
+anything and applies the deny list; the read pass inflates only the requested part. The size gates
+run during the counting pass — a gate applied after inflation is not a gate. Three gates work
+together, because one threshold alone either rejects real files or lets a bomb through:
 
-Zip entry başına şifreleme (PKWARE) **tespit edilmez**: `fflate` general purpose flag'i filtreye
-göstermiyor. Office'in şifrelediği belge zaten zip değil CFB konteyneridir ve
-`classifyContainerMagic` tarafından paketin dışında yakalanır. Şifreli bir entry bozuk part olarak
-başarısız olur.
+| Gate                     | Value   | Basis                                                                                  |
+| ------------------------ | ------- | -------------------------------------------------------------------------------------- |
+| `maxPartBytes`           | 384 MiB | Node's `MAX_STRING_LENGTH` is 512 Mi characters; `part()` returns a decoded string     |
+| `maxExpansionRatio`      | 200:1   | The measured real-world maximum is 40:1; a single deflate stream cannot exceed ~1032:1 |
+| `ratioFloorBytes`        | 16 MiB  | Below this, ratio is not checked — a small, highly repetitive part is normal           |
+| `maxDecodedPackageBytes` | 512 MiB | Bounds the sum of many parts that each stay under their own limit                      |
+
+**Known limitation.** Per-entry zip encryption (PKWARE) is **not detected**: `fflate`'s
+general-purpose flag bit is not exposed to the filter callback. A document Office actually
+encrypts is already a CFB container, not a zip, and `classifyContainerMagic` catches it outside
+the package. An encrypted entry fails as a corrupt part instead.
 
 ## Rejected alternatives
 
-- **An in-house zip reader.** About 330 lines and a 30-case test matrix as a precondition. `fflate` is mature, MIT, dependency-free, and its `filter` callback still leaves the bomb gate to this package.
-- **A `file-core` dependency for `asciiLower`.** A twelve-line function would pull in the MCP SDK and zod peers and invert the layering; it is copied instead (`src/primitives/text.ts`).
-- **An in-process BIFF8 or Word binary reader.** Thousands of lines of parser for an effectively undocumented format, over untrusted input, inside a read-only server whose value is a small attack surface.
-- **Shelling out to `soffice --convert-to`.** It writes the converted file, depends on an install no manifest can express and no CI runner has, costs seconds per document, and hands untrusted input to a large C++ surface with a macro and URL-fetch CVE history.
-- **A `PartPath` brand.** A forged part path is a cache miss (`part()` returns `undefined`), not a traversal; nothing is opened on disk, so the brand buys nothing. The `Relationship` union already prevents mix-ups.
-- **An `"encrypted"` `ContainerKind`.** It would separate encrypted OOXML from legacy binaries, but the combined message is never wrong today, and a new member breaks every exhaustive switch.
+- **An in-house zip reader.** About 330 lines and a 30-case test matrix as a precondition.
+  `fflate` is mature, MIT, dependency-free, and its `filter` callback still leaves the bomb gate to
+  this package.
+- **A `file-core` dependency for `asciiLower`.** A twelve-line function would pull in the MCP SDK
+  and zod peers and invert the layering; it is copied instead (`src/primitives/text.ts`).
+- **An in-process BIFF8 or Word binary reader.** Thousands of lines of parser for an effectively
+  undocumented format, over untrusted input, inside a read-only server whose value is a small
+  attack surface.
+- **Shelling out to `soffice --convert-to`.** It writes the converted file, depends on an install
+  no manifest can express and no CI runner has, costs seconds per document, and hands untrusted
+  input to a large C++ surface with a macro and URL-fetch CVE history.
+- **A `PartPath` brand.** A forged part path is a cache miss (`part()` returns `undefined`), not a
+  traversal; nothing is opened on disk, so the brand buys nothing. The `Relationship` union already
+  prevents mix-ups.
+- **An `"encrypted"` `ContainerKind`.** It would separate encrypted OOXML from legacy binaries, but
+  the combined message is never wrong today, and a new member breaks every exhaustive switch.
 
-## Komutlar
+## Development
 
-```text
+```bash
 pnpm turbo run build check-types lint --filter=@sk-mcp/ooxml-core
 pnpm turbo run test --filter=@sk-mcp/ooxml-core
 ```

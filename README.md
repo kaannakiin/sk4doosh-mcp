@@ -1,87 +1,126 @@
 # sk-mcp
 
-Swagger for agents. An MCP layer that embeds into a backend you already have: it exposes your
-endpoints as a search-first tool catalog and replays each agent call through the backend's **own
-request pipeline**. Enforcement stays wherever it already lives — sk-mcp neither copies nor
-rewrites your authorization logic.
+**Swagger for agents.** sk-mcp turns what you already have — an HTTP backend, a folder of
+spreadsheets, a SQL Server database — into tools an AI agent can find and call over the
+[Model Context Protocol](https://modelcontextprotocol.io).
 
-The spec is language-neutral. Each language's SDK validates itself against the same fixture corpus,
-so parity is a test result rather than a claim.
+It comes in two shapes:
 
-## Where to start
+- **The HTTP catalog** embeds in an ASP.NET Core or NestJS backend. It exposes your endpoints as a
+  search-first tool catalog and replays every agent call through your backend's **own request
+  pipeline**, so your authentication, authorization and validation apply unchanged. For a backend
+  on any other stack, an OpenAPI gateway builds the same catalog from its document.
+- **Source servers** are standalone, read-only MCP servers for local files and databases: Excel,
+  XML, PDF and Microsoft SQL Server, plus a server that hands bounded language work to a local
+  model.
 
-- **Use it in an ASP.NET Core backend** — [sdks/dotnet/README.md](sdks/dotnet/README.md)
-- **Use it in a NestJS backend** — [sdks/nestjs/README.md](sdks/nestjs/README.md)
-- **Read the docs site** — `apps/docs`, run with `pnpm --filter @sk-mcp/docs dev`
-  (`http://localhost:5180`)
-- **Work on the chat product** — `products/chat`, run with `pnpm dev:chat`
-  (web `http://localhost:5190`, api `http://127.0.0.1:5191`)
+> **Status:** early. Nothing is published to npm or NuGet yet; build from source (below). The
+> spec, the fixture corpus and both SDKs are tested in CI; APIs may still change.
 
-## Repository map
+## Why
 
-| Path                                                                 | Role                                                                                                               |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [packages/http/spec](packages/http/spec)                             | Normative spec: English prose + `schemas/*.schema.json`. The single source of truth, all languages                 |
-| [packages/http/conformance](packages/http/conformance)               | Pure JSON fixture corpus (9 kinds, 140 fixtures) + `validate.mjs`                                                  |
-| [packages/http/core](packages/http/core)                             | TS reference implementation; spec types are generated, never hand-written. Internal                                |
-| [sdks/dotnet](sdks/dotnet)                                           | C# SDK — `SkMcp.AspNetCore`, public alpha ([README](sdks/dotnet/README.md))                                        |
-| [sdks/nestjs](sdks/nestjs)                                           | NestJS SDK — discovery, search and visibility shipped; internal, not published ([README](sdks/nestjs/README.md))   |
-| [sdks/nestjs/samples/agent-client](sdks/nestjs/samples/agent-client) | Scenario-driven MCP client (smoke, validation-retry, error-envelope)                                               |
-| [packages/cores/mcp-core](packages/cores/mcp-core)                   | Published source-agnostic machinery for read-only MCP servers: tools, budget, errors, cursors                      |
-| [packages/cores/file-core](packages/cores/file-core)                 | Published shared machinery for read-only, sandboxed, file-backed MCP servers                                       |
-| [packages/cores/db-core](packages/cores/db-core)                     | Published shared machinery for read-only, dialect-agnostic, database-backed MCP servers                            |
-| [packages/servers/mssql-mcp](packages/servers/mssql-mcp)             | Standalone published product: a read-only MCP server for Microsoft SQL Server                                      |
-| [packages/cores/ooxml-core](packages/cores/ooxml-core)               | Published shared reader for OOXML containers: zip, OPC, relationships, content types                               |
-| [packages/servers/excel-mcp](packages/servers/excel-mcp)             | Standalone published product: an MCP server that reads local Excel workbooks                                       |
-| [packages/servers/xml-mcp](packages/servers/xml-mcp)                 | Standalone published product: an MCP server that reads local XML documents                                         |
-| [packages/servers/pdf-mcp](packages/servers/pdf-mcp)                 | Standalone published product: an MCP server that reads local PDF documents                                         |
-| [packages/servers/llm-mcp](packages/servers/llm-mcp)                 | Standalone published product: an MCP server that lets a planning agent hand bounded language work to a local model |
-| [apps/docs](apps/docs)                                               | The documentation site. English, and the project's public face                                                     |
-| [products/chat/contracts](products/chat/contracts)                   | Shared zod schemas of the chat product, consumed by both its api and its web app                                   |
-| [products/chat/api](products/chat/api)                               | NestJS 12 chat backend, localized (`en`, `tr`)                                                                     |
-| [products/chat/web](products/chat/web)                               | TanStack Start + Mantine + Tailwind chat frontend, localized (`en`, `tr`)                                          |
+A naive MCP adapter turns every endpoint into a tool and forwards calls over the network. That
+floods the agent's context, loses the caller's identity and silently papers over what it cannot
+represent. sk-mcp instead:
 
-`packages/toolchain/oxlint-config` and `packages/toolchain/typescript-config` are internal configuration packages.
-`packages/lab/xml-lab` is an evidence harness with no shipping surface.
+- shows the agent **three meta-tools** (`search_tools`, `load_tool`, `invoke_tool`) rather than the
+  whole catalog, so the size of your API does not grow the agent's context;
+- decides **what a caller can see** from the backend's own authorization, and still enforces every
+  call in the backend at invoke time;
+- treats every silent resolution — a name collision, an unknown argument, a truncated response — as
+  an error with a code the agent can act on.
 
-The HTTP catalog (`packages/http/core`, both SDKs) and the local-source servers (`packages/cores/mcp-core`,
-`packages/cores/file-core`, `packages/cores/ooxml-core`, `excel-mcp`, `xml-mcp`, `pdf-mcp`) are two separate product shapes that share no runtime code path. One is a
-library you embed in your backend; the others are servers you run against local files.
+The longer argument is on the docs site:
+[why sk-mcp is not an OpenAPI adapter](apps/docs/src/content/http-catalog/explanation/06-why-sk-mcp-is-not-an-openapi-adapter.md).
 
-`products/chat` is a third line, and it shares only the toolchain: no `packages/*` or `sdks/*`
-package may depend on `@chat/*`. The scope is the filter — `--filter='@chat/*'` and
-`--filter='!@chat/*'` partition the repo, and the two lines have independent CI workflows.
+## Quick start
 
-## Build and test
+Requirements: Node.js 24+, pnpm 11 (`corepack enable`), and the .NET 8 or 10 SDK for the C# side.
 
 ```bash
+git clone https://github.com/kaannakiin/sk4doosh-mcp.git
+cd sk4doosh-mcp
 pnpm install
-pnpm build          # turbo run build
-pnpm lint           # lint + conformance fixture validation + content checks
-pnpm check-types
+pnpm build
 ```
 
-TS tests run through turbo so `^build` resolves:
-`pnpm turbo run test --filter=@sk-mcp/core`, `--filter=@sk-mcp/sdk-nestjs` (Vitest).
-The C# side: `pnpm turbo run test --filter=@sk-mcp/sdk-dotnet` (net8.0 + net10.0).
+Then pick what you need:
 
-Per product line: `pnpm dev:chat` / `pnpm build:chat` for the chat product, `pnpm dev:sk` /
-`pnpm build:sk` for everything else. `pnpm boundaries` checks that the two lines stay apart.
+| I want to…                                  | Start here                                                   |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Expose an ASP.NET Core API to agents        | [sdks/dotnet](sdks/dotnet/README.md)                         |
+| Expose a NestJS API to agents               | [sdks/nestjs](sdks/nestjs/README.md)                         |
+| Expose any backend that has an OpenAPI file | [packages/servers/openapi-mcp](packages/servers/openapi-mcp) |
+| Let an agent read Excel workbooks           | [packages/servers/excel-mcp](packages/servers/excel-mcp)     |
+| Let an agent read XML documents             | [packages/servers/xml-mcp](packages/servers/xml-mcp)         |
+| Let an agent read PDF documents             | [packages/servers/pdf-mcp](packages/servers/pdf-mcp)         |
+| Let an agent query SQL Server, read-only    | [packages/servers/mssql-mcp](packages/servers/mssql-mcp)     |
+| Hand bounded text work to a local model     | [packages/servers/llm-mcp](packages/servers/llm-mcp)         |
+| Build my own read-only MCP server           | [packages/cores/mcp-core](packages/cores/mcp-core)           |
 
-Spec types are generated. Change the schema, then run `pnpm turbo run gen`.
-`packages/http/core/src/generated/` and `sdks/dotnet/src/SkMcp.AspNetCore/Generated/` are committed and
-never hand-edited.
+Each package README has its own quick start, configuration and limits.
 
-## Documentation and language
+## Packages
 
-The site under `apps/docs` and the spec under `packages/http/spec` are written in **English** — the site
-is sk-mcp's public face and the spec is what it links to as normative. Site pages describe and link;
-the spec binds. There is no separate design-record tree: a decision lives next to what it
-constrains — the spec, a guard comment, or the package README — and unbuilt work is in
-[ROADMAP.md](ROADMAP.md). `apps/docs` carries no i18n layer, by design; `products/chat` is localized (`en`, `tr`).
+### HTTP catalog
 
-Anyone editing the site is bound by [apps/docs/dokuman-kurallari.md](apps/docs/dokuman-kurallari.md).
+| Package                                             | What it is                                                            | Status    |
+| --------------------------------------------------- | --------------------------------------------------------------------- | --------- |
+| [SkMcp.AspNetCore](sdks/dotnet)                     | ASP.NET Core SDK                                                      | alpha     |
+| [@sk-mcp/sdk-nestjs](sdks/nestjs)                   | NestJS SDK                                                            | internal  |
+| [@sk-mcp/openapi-mcp](packages/servers/openapi-mcp) | Gateway: an OpenAPI document as a catalog over a remote backend       | internal  |
+| [@sk-mcp/openapi](packages/http/openapi)            | Swagger 2.0 / OpenAPI 3.0–3.2 ingestion                               | internal  |
+| [@sk-mcp/core](packages/http/core)                  | TypeScript reference implementation of the spec                       | internal  |
+| [spec](packages/http/spec)                          | The normative spec and JSON Schemas — the single source of truth      | normative |
+| [conformance](packages/http/conformance)            | 480 JSON fixtures across 11 kinds that every implementation must pass | —         |
+
+### Source servers and their cores
+
+| Package                                                        | What it is                                                   | Status      |
+| -------------------------------------------------------------- | ------------------------------------------------------------ | ----------- |
+| [@sk-mcp/excel-mcp](packages/servers/excel-mcp)                | Reads local Excel workbooks                                  | publishable |
+| [@sk-mcp/xml-mcp](packages/servers/xml-mcp)                    | Reads local XML documents                                    | publishable |
+| [@sk-mcp/pdf-mcp](packages/servers/pdf-mcp)                    | Reads local PDF documents, with pluggable OCR                | publishable |
+| [@sk-mcp/mssql-mcp](packages/servers/mssql-mcp)                | Read-only Microsoft SQL Server                               | publishable |
+| [@sk-mcp/llm-mcp](packages/servers/llm-mcp)                    | Delegates bounded language work to a local model (Ollama)    | publishable |
+| [@sk-mcp/ocr-ollama](packages/adapters/ocr-ollama)             | OCR provider for pdf-mcp                                     | publishable |
+| [@sk-mcp/pdf-raster-pdfjs](packages/adapters/pdf-raster-pdfjs) | Page rasterizer for pdf-mcp                                  | publishable |
+| [@sk-mcp/mcp-core](packages/cores/mcp-core)                    | Source-agnostic machinery for read-only MCP servers          | publishable |
+| [@sk-mcp/file-core](packages/cores/file-core)                  | Sandboxed file layer over mcp-core                           | publishable |
+| [@sk-mcp/db-core](packages/cores/db-core)                      | Relational layer over mcp-core; dialects and drivers plug in | publishable |
+| [@sk-mcp/ooxml-core](packages/cores/ooxml-core)                | Reader for OOXML (zip/OPC) containers                        | publishable |
+
+"Publishable" means the package is built and checked for publication in CI but not on npm yet.
+
+### Also in this repository
+
+- [apps/docs](apps/docs) — the documentation site (TanStack Start). Run it with
+  `pnpm --filter @sk-mcp/docs dev` and open `http://localhost:5180`.
+- [products/chat](products/chat) — a chat product built on these servers. It is a separate
+  product line and shares only the toolchain.
+
+## How the HTTP catalog works
+
+1. At startup the SDK reads your framework's route and authorization metadata and builds a catalog
+   of tools, named by fixed rules; a name collision fails startup.
+2. An agent calls `search_tools`, gets compact cards for the tools **this caller** may use, and
+   `load_tool` for the full schema of the one it picks.
+3. `invoke_tool` composes an HTTP request from the arguments and replays it through your pipeline
+   as the caller. The response is mapped to a fixed error vocabulary and a size budget before it
+   reaches the agent.
+
+The rules for each step are in the [spec](packages/http/spec/README.md), and the
+[conformance corpus](packages/http/conformance) pins them so the TypeScript and C#
+implementations cannot drift apart.
+
+## Documentation
+
+- **Guides and reference:** the docs site in [apps/docs](apps/docs) (tutorials, how-tos,
+  explanations).
+- **The spec:** [packages/http/spec](packages/http/spec/README.md).
+- **What is planned:** [ROADMAP.md](ROADMAP.md).
+- **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

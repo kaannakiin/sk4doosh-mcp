@@ -1,39 +1,79 @@
 # @sk-mcp/pdf-mcp
 
-Yerel PDF belgelerini okuyan, salt-okunur, sandbox'lanmış bir MCP sunucusu. `@sk-mcp/file-core`
-üzerine kuruludur: sandbox yol çözümü, yanıt bütçesi, hata zarfı, cursor ve belge önbelleği oradan
-gelir. Metin çıkarımı `@firecrawl/pdf-inspector` ile yapılır. Sunucu **hiçbir zaman ağa çıkmaz**:
-OCR gerekiyorsa iki port enjekte edilir ve bağlantı kararı tamamen onları bağlayana aittir.
+A read-only, sandboxed MCP server for local PDF documents. It builds on `@sk-mcp/file-core`,
+which supplies sandbox path resolution, the response budget, the error envelope, cursors and the
+document cache. Text extraction uses `@firecrawl/pdf-inspector`. The server **never reaches the
+network**: OCR is optional, and when it is enabled, the connection decision belongs entirely to
+whoever supplies the two injected ports.
 
-## Kurulum
+## Quick start
 
 ```json
 {
   "mcpServers": {
     "pdf": {
       "command": "npx",
-      "args": ["-y", "@sk-mcp/pdf-mcp", "/belgelerin/olduğu/klasör"]
+      "args": ["-y", "@sk-mcp/pdf-mcp", "/path/to/documents"]
     }
   }
 }
 ```
 
-## Bu sürümde ne var
+To enable OCR, point `--ocr` at a module whose default export is an `OcrBinding` (see
+[Configuration](#configuration) and [OCR](#ocr)):
 
-| Tool                | Ne yapar                                                                  |
-| ------------------- | ------------------------------------------------------------------------- |
-| `list_documents`    | Kökün altındaki PDF adaylarını listeler; hiçbir dosyayı açmaz             |
-| `describe_document` | Sayfa sayısı, belge türü, sayfa sayfa OCR ihtiyacı, sunucunun yetenekleri |
-| `read_pages`        | Seçilen sayfaları Markdown olarak okur; sayfa numaraları korunur          |
-| `find_in_document`  | Çıkarılmış metinde literal arama; sayfa numarası ve eşleşme bağlamı       |
+```json
+{
+  "mcpServers": {
+    "pdf": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sk-mcp/pdf-mcp",
+        "/path/to/documents",
+        "--ocr",
+        "/path/to/ollama-binding.js"
+      ]
+    }
+  }
+}
+```
 
-Dosya yolu biliniyorsa `describe_document` zorunlu değildir: `read_pages` ve `find_in_document`
-yalnız `filePath` ile çalışır.
+## Tools
+
+| Tool                | What it does                                                           | Key arguments                                                      |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `list_documents`    | Lists readable PDF candidates under the root; never opens a file       | `subdirectory`, `pattern`, `maxResults`                            |
+| `describe_document` | Page count, document type, per-page OCR need, server capabilities      | `filePath`                                                         |
+| `read_pages`        | Reads selected pages as Markdown, page numbers 1-based                 | `filePath`, `pages`, `maxPages`, `ocr`, `cursor`                   |
+| `find_in_document`  | Literal search over extracted text, with page number and match context | `filePath`, `query`, `matchMode`, `caseSensitive`, `ocr`, `cursor` |
+
+If the file path is already known, `describe_document` is optional: `read_pages` and
+`find_in_document` work from `filePath` alone.
+
+## Configuration
+
+CLI (`sk-mcp-pdf <pdf-source-root> [--ocr <module>]`):
+
+| Argument            | Default  | Meaning                                                                                                                                                                                                                      |
+| ------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<pdf-source-root>` | required | Sandbox root; every readable path is resolved and checked against it.                                                                                                                                                        |
+| `--ocr <module>`    | none     | Path or package specifier to a module whose default export is `{ rasterizer, provider }`. Absent means no OCR: `read_pages`/`find_in_document` refuse `ocr: true` and `describe_document` reports `capabilities.ocr: false`. |
+
+Programmatic (`createPdfMcpServer(root, options)`):
+
+| Option                     | Default | Meaning                                                                                                                                |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `documentCacheSize`        | `2`     | Extracted documents held in memory at once, 1–16. A budget, not a guard: each cached document holds every page's Markdown on the heap. |
+| `maxConcurrentListings`    | `4`     | Concurrent `list_documents` calls before a request is refused.                                                                         |
+| `maxConcurrentExtractions` | `2`     | Concurrent PDF extractions before a request is refused.                                                                                |
+| `ocr`                      | none    | An `OcrBinding` (`{ rasterizer, provider, dpi?, maxPagesPerCall?, timeoutMs? }`). Neither port is a dependency of this package.        |
 
 ## OCR
 
-Sunucu OCR _yapmaz_, OCR'ı _destekler_. İki port enjekte edilir; ne raster kütüphanesi ne de model
-istemcisi bu paketin bağımlılığıdır — `db-core`'un hiçbir sürücü adlandırmamasıyla aynı duruş.
+The server does not perform OCR; it supports it. Two ports are injected — neither the raster
+library nor the model client is a dependency of this package, the same stance `db-core` takes
+toward a database driver.
 
 ```ts
 interface PageRasterizer {
@@ -54,99 +94,100 @@ interface OcrProvider {
 }
 ```
 
-Sunucu yalnız şunu yapar: metin katmanının cevaplayamadığı sayfaları `render` eder, çıkan görüntüleri
-`recognize` eder, sonucu o sayfanın yerine koyar ve `source: "ocr"` olarak işaretler.
+The server does exactly this: it `render`s the pages the text layer could not answer, `recognize`s
+the resulting images, substitutes the result for that page, and marks it `source: "ocr"`.
+
+Programmatic binding:
 
 ```ts
 createPdfMcpServer(root, {
-  ocr: { rasterizer: poppler, provider: ollama, dpi: 200 },
+  ocr: { rasterizer: pdfjsRasterizer, provider: ollamaProvider, dpi: 200 },
 });
 ```
 
-Ollama sağlayıcısı bu kadar:
+CLI binding — a module whose default export matches `OcrBinding`, loaded with `--ocr <module>`
+(see `examples/ollama-binding.ts` in this package for a working example built from
+`@sk-mcp/pdf-raster-pdfjs` and `@sk-mcp/ocr-ollama`):
 
 ```ts
-const ollama: OcrProvider = {
-  name: "ollama/llama3.2-vision",
-  recognize: ({ pages }) =>
-    Promise.all(
-      pages.map(async (page) => {
-        const response = await fetch("http://127.0.0.1:11434/api/generate", {
-          method: "POST",
-          body: JSON.stringify({
-            model: "llama3.2-vision",
-            prompt: "Transcribe this page as Markdown.",
-            images: [Buffer.from(page.image).toString("base64")],
-            stream: false,
-          }),
-        });
-        const { response: markdown } = await response.json();
-        return { page: page.page, markdown };
-      }),
-    ),
+import { createPdfjsRasterizer } from "@sk-mcp/pdf-raster-pdfjs";
+import { createOllamaOcrProvider } from "@sk-mcp/ocr-ollama";
+import type { OcrBinding } from "@sk-mcp/pdf-mcp";
+
+const binding: OcrBinding = {
+  rasterizer: createPdfjsRasterizer(),
+  provider: createOllamaOcrProvider({
+    baseUrl: process.env["SKMCP_PDF_OCR_URL"] ?? "http://127.0.0.1:11434",
+    model: process.env["SKMCP_PDF_OCR_MODEL"] ?? "deepseek-ocr:3b",
+  }),
+  dpi: 200,
 };
+
+export default binding;
 ```
 
-Raster tarafı için en ucuz seçenek poppler'ın CLI'ı (`pdftoppm -png -r <dpi> -f <n> -l <n>`); native
-bağımlılık gerektirmez.
+### OCR rules
 
-### OCR'da bağlayıcı olanlar
+- **`ocr: true` with no provider bound is an error** (`ocr_unavailable`), never a silent fall back
+  to the text layer. Otherwise an agent that asked for OCR could mistake "nobody transcribed this
+  document" for "no match". `describe_document` → `capabilities.ocr` reports whether one is bound.
+- **An empty transcription does not count as an answer.** If the provider returns empty text, the
+  page stays `needsOcr` — "the model returned nothing" is not the same as "this page is blank".
+- **An unrequested page is ignored.** The ports may reorder, skip, or invent pages; results are
+  matched to the page number that was requested, so a provider cannot overwrite a page the text
+  layer already trusted.
+- **Bytes leave the process.** Binding a provider means those pages' pixels go somewhere else. OCR
+  therefore defaults to off and is requested explicitly on every call.
+- **A page is not re-transcribed on every call.** Transcriptions are cached by document fingerprint
+  plus page number. The cache is not a progress log: a search sends only the pages after the cursor
+  to OCR and carries coverage forward in the cursor, so even a large document is eventually walked
+  to the end from cache.
+- **An expired job does not release its slot.** Neither the engine nor an injected port can cancel
+  work that has already started; the slot stays held until the work actually finishes. A provider
+  that never returns can only be recovered by restarting the server — reclaiming the slot on a
+  timer would only postpone the limit.
 
-- **Sağlayıcı yoksa `ocr: true` hatadır** (`ocr_unavailable`), sessizce metin katmanına düşmez.
-  Aksi halde OCR isteyen bir ajan, kimsenin çevirmediği bir belgeden "eşleşme yok" cevabını kesin
-  sanardı. `describe_document` → `capabilities.ocr` bağlı olup olmadığını söyler.
-- **Boş transkripsiyon cevap sayılmaz.** Sağlayıcı boş metin döndürürse sayfa `needsOcr` kalır —
-  "model bir şey döndürmedi" ile "bu sayfa boş" aynı şey değil.
-- **İstenmeyen sayfa yok sayılır.** Portlar sırayı bozabilir, sayfa atlayabilir, olmayan sayfa
-  uydurabilir; sonuçlar istenen sayfa numarasına göre eşleştirilir, böylece bir sağlayıcı metin
-  katmanı güvenilir olan bir sayfanın üzerine yazamaz.
-- **Byte'lar süreçten çıkar.** Bir sağlayıcı bağlamak, o sayfaların piksellerinin dışarı gitmesi
-  demektir. Bu yüzden varsayılan kapalı ve her çağrıda açıkça isteniyor.
-- **Sayfa başına tekrar ödenmez.** Transkripsiyon belge damgası + sayfa numarasıyla önbelleklenir.
-  Önbellek ilerleme kaydı değildir: arama yalnız cursor'dan sonraki sayfaları OCR'a verir ve
-  kapsamayı cursor içinde taşır, böylece önbellekten büyük bir belge de sonuna kadar gezilir.
-- **Süresi dolan iş slotunu bırakmaz.** Motor da portlar da başlamış işi iptal edemez; slot iş
-  gerçekten bitene kadar dolu kalır. Hiç dönmeyen bir sağlayıcının slotunu yalnız sunucuyu yeniden
-  başlatmak geri alır — zamanla iade, sınırı yalnızca ertelerdi.
+## Rules
 
-## Bağlayıcı kurallar
+- **Every page number on the public surface is 1-based.** The underlying library returns some
+  fields 0-based and others 1-based within the same result object. The whole conversion lives in
+  `src/engine/`, and lint bans importing `@firecrawl/pdf-inspector` outside that folder — a second
+  import site would reintroduce the bug (measured on 1.23.0: `PageMarkdownResult.page` is
+  0-based, sibling `pagesNeedingOcr` is 1-based).
+- **Page selection is validated before it reaches the library.** An out-of-range index otherwise
+  comes back as a phantom page marked `needsOcr`; a negative index wraps through u32. Both would
+  look like a real page to the agent.
+- **`describe_document` never builds its OCR page list from the classifier.** `classifyPdf` marks
+  every page of a document that contains a single scanned page. The list comes from the
+  per-page extraction instead. `classificationConfidence` is confidence in the classifier's own
+  verdict, not in any extracted text's accuracy.
+- **An unreadable page is never presented as an empty one.** A scanned page returns `needsOcr:
+true`; `empty` is `true` only for a page the engine trusted and found genuinely blank.
+- **Search coverage is reported on every response.** When any page needs OCR, `coverageComplete`
+  is `false`, and an empty match list is not proof the query is absent from the whole document.
+- **A document is extracted once, in full; the response is paginated.** Measurement showed that
+  requesting a single page cuts extraction cost by a third, not 200-fold — the fixed cost
+  dominates. Cursor identity depends on document content and OCR mode, not page size. An explicit
+  `pages` selection is preserved across a cursor: it carries forward the rest of that selection
+  and never wanders into unselected pages. A cursor resuming inside a page carries that page's
+  text fingerprint; if the text changed since transcription, the response is `stale_cursor` rather
+  than silently skipping content.
+- **The server never reaches the network.** `fetch`, `node:http`, `node:net` and their siblings
+  are lint-banned inside `src/`, and the ban is repeated in every layer's override — a later
+  oxlint override replaces `no-restricted-imports` rather than merging with it, so a single
+  top-level ban would not apply everywhere.
+- **Platform support is narrow.** The engine ships no `darwin-x64` binary and its wasm fallback is
+  unpublished. On an unsupported host the server stops at startup with a one-line message (exit
+  code 3).
 
-- **Dış yüzeydeki her sayfa numarası 1 tabanlıdır.** Kütüphane aynı sonuç nesnesinde bazı alanları
-  0, bazılarını 1 tabanlı veriyor. Dönüşümün tamamı `src/engine/` içindedir ve lint,
-  `@firecrawl/pdf-inspector` import'unu o klasör dışında yasaklar — ikinci bir import noktası bu
-  hatayı geri getirirdi (1.23.0'da ölçüldü: `PageMarkdownResult.page` 0, kardeş `pagesNeedingOcr` 1
-  tabanlı).
-
-- **Sayfa seçimi kütüphaneye gitmeden doğrulanır.** Aralık dışı bir indeks hata değil, `needsOcr`
-  işaretli hayalet bir sayfa döndürüyor; negatif değer u32'ye sarıyor. İkisi de ajana gerçek sayfa
-  gibi görünürdü.
-
-- **`describe_document` OCR sayfa listesini sınıflandırıcıdan üretmez.** `classifyPdf`, içinde tek
-  bir taranmış sayfa olan belgenin bütün sayfalarını işaretliyor. Liste sayfa sayfa çıkarımdan gelir.
-  `classificationConfidence` sınıflandırıcının kendi hükmüne güvenidir — metnin doğruluk skoru değil.
-
-- **Okunamayan sayfa boş sayfa gibi sunulmaz.** Taranmış sayfa `needsOcr: true` ile döner; `empty`
-  yalnız motorun güvendiği ve gerçekten boş bulduğu sayfa için `true`'dur.
-
-- **Arama kapsamı her yanıtta bildirilir.** OCR gerektiren sayfa varsa `coverageComplete` `false`
-  olur ve boş bir eşleşme listesi belgenin tamamı için kesin sonuç sayılmaz.
-
-- **Belge bir kez bütün çıkarılır, yanıt sayfalanır.** Ölçüm, tek sayfa istemenin maliyeti 200'de 1
-  değil 3'te 1 düşürdüğünü gösterdi; sabit maliyet baskın. Cursor kimliği belge içeriğine ve `ocr`
-  moduna bağlıdır, sayfa boyutuna değil. Açık `pages` seçimi de devam eder: cursor seçimin kalanını
-  taşır, seçilmemiş sayfaya geçmez. Sayfa içinden devam eden cursor o sayfanın metin özetini taşır;
-  metin yeniden transkripsiyonla değiştiyse `stale_cursor` döner, içerik sessizce atlanmaz.
-
-- **Sunucu ağa çıkmaz.** `fetch`, `node:http`, `node:net` ve kardeşleri `src/` içinde lint ile
-  yasaklıdır ve yasak her katmana ayrı ayrı dokunmuştur — oxlint'te sonraki bir override
-  `no-restricted-imports`'u birleştirmeden eziyor, tek bir blok sessizce uygulanmaz hale gelirdi.
-
-- **Platform desteği dar.** Motor `darwin-x64` binary'si yayımlamıyor ve wasm fallback'i yayımlanmamış.
-  Desteklenmeyen bir hostta sunucu tek satırlık bir mesajla başlangıçta durur (çıkış kodu 3).
-
-## Çalıştırma
+## Development
 
 ```sh
 pnpm turbo run build --filter=@sk-mcp/pdf-mcp
-node packages/servers/pdf-mcp/dist/cli.js /belgelerin/olduğu/klasör
+node packages/servers/pdf-mcp/dist/cli.js /path/to/documents
 ```
+
+Tests: `pnpm turbo run test --filter=@sk-mcp/pdf-mcp` (Vitest). A live-Ollama suite
+(`test/ocr-live.spec.ts`) is skipped unless `SKMCP_PDF_OCR_URL` is set; it also reads
+`SKMCP_PDF_OCR_MODEL` (default `deepseek-ocr:3b`). Everything else in `test/ocr.spec.ts` runs
+against fake ports; the live suite only proves the two real adapters compose.

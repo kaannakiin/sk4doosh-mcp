@@ -1,35 +1,52 @@
 # @sk-mcp/xml-lab
 
-F0 kanıt harness'ı.
+The F0 evidence harness for the XML MCP engine gate.
 
-Bu paket **ürün kodu değildir**. `libxml2-wasm` tercihini hedef dağıtımda ölçen deneyleri, fixture üreteçlerini ve kanıt toplayıcısını tutar. Çıktısı `out/f0/*.json`'dır (git'e girmez).
+## What this is
 
-## Neden kalıcı
+This package is **not product code**. It holds the experiments that measured the
+`libxml2-wasm` choice on the target distribution, the fixture generators, and the evidence
+collector. Its output goes to `packages/lab/xml-lab/out/f0/*.json`, which is git-ignored.
 
-Çıkış kapısı: _"Başarısız tercih değişikliği aynı fixture matrisiyle sınanır."_ Motor reddedilirse `@xmldom/xmldom` + `xpath` aynı korpustan geçmek zorunda. Fixture üreteci, manifest ve assertion'lar bu yüzden motordan büyük ölçüde bağımsızdır; motora özgü çağrılar probe dosyalarında toplanmıştır.
+## Why it stays in the repo
 
-## Asla olmayacakları
+The exit gate reads: "a failed engine choice is re-tested against the same fixture matrix." If
+the engine were ever rejected, `@xmldom/xmldom` + `xpath` would have to pass the same corpus. The
+fixture generator, the manifest and the assertions are therefore kept largely independent of the
+engine; engine-specific calls are collected in the probe files.
 
-- `build` script'i yok, dolayısıyla `dist/` yok. Paket import edilemez.
-- `main`/`types`/`exports`/`files`/`bin`/`publishConfig` yok. `private: true`.
-- Hiçbir paketin `dependencies`/`devDependencies`/`peerDependencies` listesine girmez. `packages/servers/xml-mcp` oluştuğunda buradan hiçbir şey import etmez.
-- `pack` job'unun filter listesine eklenmez.
-- Ürün kodu tutmaz: MCP sunucusu, tool handler'ı, `file-core` entegrasyonu, cursor codec'i burada olmaz.
-- `libxml2-wasm` yalnız `devDependencies`'te ve **exact** sürümle durur; caret F0-01 integrity olgularını sessizce geçersizleştirir.
-- Testler repo çalışma ağacına yazmaz. Probe stdout'a, toplayıcı `out/f0/` altına yazar.
+## What this will never be
 
-## Deney modeli
+- No `build` script, so no `dist/`. The package cannot be imported.
+- No `main`, `types`, `exports`, `files`, `bin` or `publishConfig`. `private: true`.
+- Not listed in any package's `dependencies`, `devDependencies` or `peerDependencies`. Once
+  `packages/servers/xml-mcp` exists, it imports nothing from here.
+- Never added to the `pack` job's filter list.
+- No product code: no MCP server, no tool handler, no `file-core` integration, no cursor codec.
+- `libxml2-wasm` stays in `devDependencies` only, at an **exact** version. A caret would silently
+  invalidate the F0-01 integrity evidence.
+- Tests never write into the repository's working tree. A probe writes to stdout; the collector
+  writes under `out/f0/`.
 
-Her deney üç katman: `test/*.spec.ts` (`spawnSync`, heap cap, timeout) → `test/probes/*.mjs` (kendi kendini assert eder, ölçer) → **stdout'a tam olarak bir JSON satırı**. Tehlikeli fixture'lar normal runner sürecinde sınırsız koşmaz.
+## Experiment structure
 
-`--max-old-space-size` yalnız JS heap'ini bağlar; WASM linear memory'yi bağlamaz. Tek RSS kanıtı ölçülmüş RSS'tir.
+Each experiment has three layers: `test/*.spec.ts` (`spawnSync`, a heap cap, a timeout) →
+`test/probes/*.mjs` (self-asserting, self-measuring) → **exactly one JSON line on stdout**.
+Dangerous fixtures never run unbounded inside the normal test runner process.
 
-## Komutlar
+`--max-old-space-size` only bounds the JS heap — it does not bound WASM linear memory. The only
+reliable evidence of resident memory is measured RSS.
 
-```text
+## Running
+
+```bash
 pnpm turbo run check-types lint --filter=@sk-mcp/xml-lab
 pnpm turbo run test --filter=@sk-mcp/xml-lab --force
 node packages/lab/xml-lab/collect-evidence.mjs
 ```
 
-`SKMCP_XML_BENCH=1` tam ölçüm kademesini açar; varsayılan yalnız 1 MiB kademesi koşar. `SKMCP_XML_F0_NO_NETWORK=1` F0-02'yi atlar ve kanıtta `not run` olarak işaretler.
+`collect-evidence.mjs` writes its JSON evidence files to `packages/lab/xml-lab/out/f0/`
+(git-ignored).
+
+`SKMCP_XML_BENCH=1` turns on the full measurement tier; by default only the 1 MiB tier runs.
+`SKMCP_XML_F0_NO_NETWORK=1` skips F0-02 and records it as "not run" in the evidence.

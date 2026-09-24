@@ -1,33 +1,71 @@
 # @sk-mcp/file-core
 
-Dosya okuyan, salt-okunur, sandbox'lanmış MCP sunucularının paylaşılan makinesi. `@sk-mcp/excel-mcp`, `@sk-mcp/xml-mcp` ve `@sk-mcp/pdf-mcp` bunun üzerine kuruludur.
+Shared machinery for read-only, sandboxed, file-backed MCP servers. `@sk-mcp/excel-mcp`,
+`@sk-mcp/xml-mcp` and `@sk-mcp/pdf-mcp` are all built on top of it.
 
-Kaynak-agnostik makine (`guard`, yanıt bütçesi, hata zarfı, cursor codec, stdio sunucusu) **`@sk-mcp/mcp-core`'a taşındı**; bu paket onu tüketir, dosyaya özgü katmanı ekler ve çıktı yazan tool türü (`ownOutput`, `OwnOutputToolDefinition`, `ToolCatalog`, `createMcpOutputServer`) dışındaki yüzeyi yeniden ihraç eder.
+The source-agnostic machinery (`guard`, the response budget, the error envelope, the cursor
+codec, the stdio server) **moved to `@sk-mcp/mcp-core`**; this package consumes it, adds the
+file-specific layer, and re-exports its full surface except the output-writing tool type
+(`ownOutput`, `OwnOutputToolDefinition`, `ToolCatalog`, `createMcpOutputServer`).
 
-Bu paket **`@sk-mcp/core` değildir** ve ona iki yönde de bağlanmaz. `@sk-mcp/core` spec'in HTTP katalog referans implementasyonudur; bu paket yerel dosya kaynaklarının makinesidir.
+This package is **not `@sk-mcp/core`** and does not depend on it in either direction.
+`@sk-mcp/core` is the spec's HTTP catalog reference implementation; this package is the machinery
+behind local file sources.
 
-## Ne veriyor
+## Usage
 
-| Modül        | İçerik                                                                                                                                                    |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `paths`      | `SandboxedPath` markası, `SandboxRoot`, `isContained`, `createSandboxRoot`, `resolveSourcePath` — sıralı fail-fast zinciri ve varlık ifşa etmeme özelliği |
-| `listing`    | `listSources` — glob, symlink containment, tarama sınırı, okunamayan girdi sayımı                                                                         |
-| `documents`  | `createDocumentStore` — aç + fstat + boyut kapısı + parmak izi + örnek-kapsamlı LRU; parse ve `variantKey` kancaları                                      |
-| `cursor`     | `fingerprint` — yol, mtime ve boyuttan kimlik; içerik damgası `mcp-core`'dan gelir                                                                        |
-| `errors`     | `FileSourceError`, `CoreErrorCode`, `redactRoot` — `mcp-core`'un tabanını dosya kodlarıyla genişletir                                                     |
-| `formats`    | `FormatRegistry` — uzantı → format eşlemesi, `unsupported_extension`                                                                                      |
-| `tools`      | `guard` ve `toToolError` sarmalayıcıları — `mcp-core`'a kök redaktörünü bağlar                                                                            |
-| `cli`        | `parseServerArgv` — saf argv ayrıştırması                                                                                                                 |
-| `vocabulary` | `Vocabulary<TToolName>` — `mcp-core`'un tabanına `rootLabel`, `readableLabel`, `tooLargeRecovery` ekler                                                   |
+A file server names only this package (never `@sk-mcp/mcp-core` directly): it resolves paths
+through `createSandboxRoot`/`resolveSourcePath`, lists sources with `listSources`, opens and caches
+documents with `createDocumentStore`, and wraps its handlers with the `guard`/`toToolError` this
+package re-exports — both already bound to the root redactor, so no file server can emit an error
+envelope carrying an absolute path. `parseServerArgv` reads the single positional sandbox root from
+`argv`.
 
-## Bağlayıcı kurallar
+## API
 
-- **Bu paket format-özgü kelime taşımaz.** "workbook", "sheet", "spreadsheet", "excel" gibi bir string literal burada bir kusurdur; isimler `Vocabulary` ile gelir.
-- **Hata örnekleri enjekte edilen `ErrorFactory` ile üretilir.** Paket asla `new FileSourceError(...)` çağırmaz; böylece tüketicinin kendi hata sınıfı ve `instanceof` kontrolleri korunur.
-- **`zod` ve `@modelcontextprotocol/sdk` peer bağımlılıktır.** İki kopya `z.infer` tip kimliğini bozar ve SDK'nın şema introspection'ı `instanceof` kontrolü yapar.
-- **Kök redaksiyonu `guard` tarafından bağlanır**, çağrı yerlerinde değil. `mcp-core`'un `ErrorContext.redact` dikişine `redactRoot` burada takılır; hiçbir dosya sunucusu mutlak yol taşıyan bir hata zarfı üretemez.
-- **`SandboxedPath` markası yalnızca burada bildirilir**, `Fingerprint` ise `mcp-core`'da. İkinci bir `unique symbol` bildirimi aynı marka değildir.
+| Module       | Exports                                                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paths`      | The `SandboxedPath` brand, `SandboxRoot`, `isContained`, `createSandboxRoot`, `resolveSourcePath` — an ordered fail-fast chain that never discloses existence |
+| `listing`    | `listSources` — glob matching, symlink containment, a scan limit, a count of unreadable entries                                                               |
+| `documents`  | `createDocumentStore` — open + fstat + size gate + fingerprint + an instance-scoped LRU; parse and `variantKey` hooks                                         |
+| `cursor`     | `fingerprint` — identity from path, mtime and size; content fingerprinting comes from `mcp-core`                                                              |
+| `errors`     | `FileSourceError`, `CoreErrorCode`, `redactRoot` — widens `mcp-core`'s base with the file error codes                                                         |
+| `formats`    | `FormatRegistry` — extension-to-format mapping, `unsupported_extension`                                                                                       |
+| `tools`      | `guard` and `toToolError` wrappers — bind `mcp-core`'s root redactor                                                                                          |
+| `cli`        | `parseServerArgv` — pure argv parsing                                                                                                                         |
+| `vocabulary` | `Vocabulary<TToolName>` — adds `rootLabel`, `readableLabel`, `tooLargeRecovery` to `mcp-core`'s base                                                          |
+
+## Rules
+
+- **No format-specific vocabulary.** A string literal such as `"workbook"`, `"sheet"`,
+  `"spreadsheet"` or `"excel"` inside this package is a defect; user-facing names arrive through
+  the injected `Vocabulary`.
+- **Error instances come from the injected `ErrorFactory`.** The package never calls
+  `new FileSourceError(...)`, which keeps a consumer's own error class and `instanceof` checks
+  intact.
+- **`zod` and `@modelcontextprotocol/sdk` are peer dependencies.** Two resolved copies would
+  break `z.infer` type identity, and the SDK's schema introspection does an `instanceof` check.
+- **Root redaction is bound by `guard`, not at call sites.** `redactRoot` plugs into `mcp-core`'s
+  `ErrorContext.redact` seam here, so no file server can produce an error envelope carrying an
+  absolute path.
+- **The `SandboxedPath` brand is declared only here**, and `Fingerprint` only in `mcp-core`. A
+  second `unique symbol` declaration is not the same brand.
 
 ## What stays here
 
-`cli.ts` (`parseServerArgv`) and `fingerprint(realPath, mtimeMs, size)` stay in this package rather than in `mcp-core`: the single positional root argument and an identity built from file metadata are file concepts. A database server takes its connection from the environment, because a connection secret must never be in `argv`. The generic `fingerprintFromDigest` and `contentFingerprint` are in `mcp-core`.
+`cli.ts` (`parseServerArgv`) and `fingerprint(realPath, mtimeMs, size)` stay in this package
+rather than in `mcp-core`: the single positional root argument and an identity built from file
+metadata are file concepts. A database server takes its connection from the environment, because a
+connection secret must never be in `argv`. The generic `fingerprintFromDigest` and
+`contentFingerprint` are in `mcp-core`.
+
+## Development
+
+```bash
+pnpm turbo run build check-types lint --filter=@sk-mcp/file-core
+pnpm turbo run test --filter=@sk-mcp/file-core
+```
+
+Always build through Turbo, never `pnpm --filter @sk-mcp/file-core run build` on its own —
+downstream consumers such as `excel-mcp` resolve this package through `exports.default →
+./dist/index.js`, so a bare filter can leave them testing against a stale `dist`.

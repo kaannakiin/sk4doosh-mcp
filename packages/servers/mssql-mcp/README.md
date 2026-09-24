@@ -1,56 +1,93 @@
 # @sk-mcp/mssql-mcp
 
-Microsoft SQL Server okuyan salt-okunur MCP sunucusu. `@sk-mcp/db-core` üzerine kuruludur ve ondan başka hiçbir `@sk-mcp/*` paketi adlandırmaz.
+Read-only MCP server for Microsoft SQL Server. It builds on `@sk-mcp/db-core` and names no other `@sk-mcp/*` package.
 
-Dört tool: `describe_connection`, `search_catalog`, `describe_table`, `run_query`.
+## Quick start
 
-## Çalıştırma
+The connection comes from the environment, not from a tool argument, so a client only needs the four required variables:
 
-Bağlantı süreç başlarken ortamdan girer. **Agent bağlantı bilgisi veremez** — hiçbir tool argümanı taşımaz.
+```text
+SKMCP_MSSQL_SERVER=10.0.0.5 \
+SKMCP_MSSQL_DATABASE=Sales \
+SKMCP_MSSQL_USER=mcp_reader \
+SKMCP_MSSQL_PASSWORD=... \
+npx sk-mcp-mssql
+```
+
+See [Configuration](#configuration) for the full variable list and defaults.
+
+## Tools
+
+| Tool                  | What it does                                                                                                                                                                                                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `describe_connection` | Reports which database this server is connected to, what the connection may do, and the limits every other tool is bound by. Takes no arguments and never returns credentials.                                                                                                                                                  |
+| `search_catalog`      | Finds tables and views by concept rather than exact name: the query is matched against schema, object and column names, and against whatever descriptions the catalogue carries. Leave `query` empty to page through the catalogue instead. Start here — the names it returns are what `describe_table` and `run_query` accept. |
+| `describe_table`      | Reports one table's columns with their types and nullability, plus its primary, unique and foreign keys. Read this before writing a query against the table.                                                                                                                                                                    |
+| `run_query`           | Runs one read-only SQL statement and returns its rows. Writes are refused. The response is capped and there is no cursor, so a large result is walked with your own ordering and paging clause; a truncated response names which clause this engine uses.                                                                       |
+
+## Configuration
+
+The connection is read from the environment when the process starts. **The agent cannot supply connection details** — no tool argument carries them.
 
 ```text
 SKMCP_MSSQL_SERVER=10.0.0.5
 SKMCP_MSSQL_DATABASE=Sales
 SKMCP_MSSQL_USER=mcp_reader
 SKMCP_MSSQL_PASSWORD=...
-SKMCP_MSSQL_PORT=1433                       # varsayılan
-SKMCP_MSSQL_ENCRYPT=true                    # varsayılan
-SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE=false  # varsayılan
-SKMCP_MSSQL_CONNECT_TIMEOUT_MS=15000        # varsayılan
-SKMCP_MSSQL_QUERY_TIMEOUT_MS=30000          # varsayılan
+SKMCP_MSSQL_PORT=1433                       # default
+SKMCP_MSSQL_ENCRYPT=true                    # default
+SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE=false  # default
+SKMCP_MSSQL_CONNECT_TIMEOUT_MS=15000        # default
+SKMCP_MSSQL_QUERY_TIMEOUT_MS=30000          # default
 
 npx sk-mcp-mssql
 ```
 
-İlk dördü zorunlu. Ayrıştırma istekli ve ölümcül; **bağlanma tembel** — ölü bir veritabanı sunucunun açılmasını ve `tools/list` cevaplamasını engellemez.
+| Variable                               | Default         | Meaning                                              |
+| -------------------------------------- | --------------- | ---------------------------------------------------- |
+| `SKMCP_MSSQL_SERVER`                   | none — required | Server host.                                         |
+| `SKMCP_MSSQL_DATABASE`                 | none — required | Database name.                                       |
+| `SKMCP_MSSQL_USER`                     | none — required | Login used to connect.                               |
+| `SKMCP_MSSQL_PASSWORD`                 | none — required | Password for that login.                             |
+| `SKMCP_MSSQL_PORT`                     | `1433`          | TCP port.                                            |
+| `SKMCP_MSSQL_ENCRYPT`                  | `true`          | Whether the connection is encrypted.                 |
+| `SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE` | `false`         | Whether an untrusted server certificate is accepted. |
+| `SKMCP_MSSQL_CONNECT_TIMEOUT_MS`       | `15000`         | Connection timeout.                                  |
+| `SKMCP_MSSQL_QUERY_TIMEOUT_MS`         | `30000`         | Query deadline (see [Rules](#rules)).                |
 
-## Salt-okunurluk
+The first four variables are required. Parsing is eager and fatal; **connecting is lazy** — a dead database server does not stop the process from starting and answering `tools/list`.
 
-Üç katman, ve **en zayıfı bu paketin içinde**:
+## Read-only posture
 
-1. **Veritabanı principal'ı — gerçek güvence.** `db_datareader` ve başka hiçbir şey olan bir kullanıcıyla bağlanın.
-2. **Oturum.** MSSQL'de yok. `ApplicationIntent=ReadOnly` yalnızca bir availability group içinde okunabilir secondary'ye yönlendirir; standalone instance'ta hiçbir şey garanti etmez. `describe_connection` bunu `sessionIntent: "none"` diye dürüst raporlar.
-3. **Statement guard — yalnızca okunaklı hata.** `readOnlyGuard` yorumları ve string literallerini maskeleyip ilk sözcüğün `SELECT` ya da `WITH` olmasını, tek statement olmasını ve yazma anahtar sözcüğü taşımamasını arar. **Güvenlik sınırı değildir.** Yazma yetkisi olan bir principal'la bağlanırsanız bu guard'ın atlatılması gerçek bir yazma olur.
+Three layers, and **the weakest one lives inside this package**:
 
-## Bağlayıcı kurallar
+1. **The database principal — the real guarantee.** Connect with a user that is `db_datareader` and nothing else.
+2. **The session.** MSSQL has no read-only session flag. `ApplicationIntent=ReadOnly` only routes into a readable secondary inside an availability group; on a standalone instance it guarantees nothing. `describe_connection` reports this honestly as `sessionIntent: "none"`.
+3. **The statement guard — a legible error, nothing more.** `readOnlyGuard` masks comments and string literals, then checks that the first word is `SELECT` or `WITH`, that the statement is singular, and that it carries no write keyword. **It is not a security boundary.** If the connection uses a principal that can write, defeating this guard produces a real write.
 
-- **`src` üç lint-zorunlu katman + üç kök giriş noktası.** `platform/` (db-core ve node sınırı), `dialect/` (SQL yazan **tek** klasör), `driver/` (`mssql` adını anan **tek** klasör); `cli.ts`, `server.ts`, `index.ts` kökte kalır ve tek kompozisyon köküdür.
-- **`sqlText` ve `quotedIdentifier` yalnızca `dialect/` içinde çağrılabilir**, `importNames` ile yasaklanmış. Agent metni `SqlText`'e yalnızca `readOnlyGuard`'ın `allow` kolundan dönüşür.
-- **`process.env` yalnızca `cli.ts`'te okunur** ve her değişken adıyla erişilir — `turbo/no-undeclared-env-vars` böylece her birini `turbo.json`'ın `passThroughEnv`'ine yazmaya zorlar.
-- **Sorgu süre sınırı `request.timeout`'a bırakılmaz.** Ölçüldü: o alan çalışan bir statement'ı kesmiyor (`request.timeout = 800`, 10 sn'lik `waitfor delay`'i durdurmadı). Deadline bir zamanlayıcı + açık `cancel()`.
-- **Tip tablosunun kaynağı normatif listedir, bir veritabanında rastlananlar değil.** `dialect/types.ts` T-SQL'in tam tip listesini karşılar ve iki isim uzayına birden cevap verir (`sys.types.name` ve sürücünün result-set adı). Eşlemelerin gerekçeleri ve bilerek `unknown` bırakılan iki tip `dialect/types.ts`'in guard'larında ve `test/dialect.spec.ts`'te.
-- **Her mantıksal bağlantı `max: 1` olan kendi sürücü havuzudur.** Havuzlamanın sahibi `db-core`; altına ikinci bir havuz koymak iki çağrının onun arkasından aynı soketi paylaşmasına yol açardı — iptal kuralının dayandığı şeyin tam tersi.
+## Rules
 
-## Test
+- **`src` is three lint-enforced layers over three root entrypoints.** `platform/` (the db-core and Node boundary), `dialect/` (the only folder that writes SQL), `driver/` (the only folder that names `mssql`); `cli.ts`, `server.ts` and `index.ts` stay at the root as the single composition root.
+- **`sqlText` and `quotedIdentifier` are callable only inside `dialect/`**, banned elsewhere by `importNames`. Agent text becomes `SqlText` only through the `allow` arm of `readOnlyGuard`.
+- **`process.env` is read only in `cli.ts`**, each variable accessed by name — `turbo/no-undeclared-env-vars` forces every one of them into `turbo.json`'s `passThroughEnv`.
+- **The query deadline is never left to `request.timeout`.** Measured: that field does not interrupt a running statement (`request.timeout = 800` did not stop a 10 s `waitfor delay`). The deadline is a timer plus an explicit `cancel()`.
+- **The type table's source of truth is the normative list, not what one database happens to contain.** `dialect/types.ts` covers the full T-SQL type list and answers to both namespaces at once (`sys.types.name` and the driver's result-set name). The reasoning behind each mapping, and the two types left `unknown` on purpose (`sql_variant`, whose shape changes per row, and `vector`, a SQL Server 2025 type whose `tedious@18` shape is unmeasured), are documented in `dialect/types.ts`'s own guard comments and in `test/dialect.spec.ts`.
+- **Every logical connection is its own driver pool with `max: 1`.** Pooling is owned by `db-core`; a second pool underneath it would let two calls share the same socket behind its back — the exact opposite of what the cancellation rule depends on.
 
-`pnpm turbo run test --filter=@sk-mcp/mssql-mcp` — saf fonksiyon testleri, veritabanı gerekmez.
+## Development
 
-Katalog SQL'i sahteyle doğrulanamaz: snapshot metnin değişmediğini kanıtlar, join'lerin doğru olduğunu değil. `test/live.spec.ts` bunun için var ve gerçek bir sunucuya karşı koşar:
+```text
+pnpm turbo run test --filter=@sk-mcp/mssql-mcp
+```
+
+These are pure function tests; no database is needed.
+
+Catalogue SQL cannot be verified with a fake: a snapshot proves the text has not changed, not that the joins are correct. `test/live.spec.ts` exists for that and runs against a real server:
 
 ```text
 SKMCP_MSSQL_LIVE=1 SKMCP_MSSQL_SERVER=... pnpm turbo run test --filter=@sk-mcp/mssql-mcp
 ```
 
-`SKMCP_MSSQL_LIVE` yoksa atlanır, yani CI'nın veritabanına ihtiyacı olmaz. **Bu takımı üretime karşı koşmayın** — sorgu iptali ve bağlantı koparma deniyor.
+Without `SKMCP_MSSQL_LIVE` the live suite is skipped, so CI needs no database. **Do not run this suite against production** — it exercises query cancellation and dropped connections.
 
 Every driver fact this server relies on was measured on SQL Server 15.0.2000.5 (2019 Developer Edition) with `mssql@11.0.2` → `tedious@18.6.2`, which is why `mssql` is pinned exactly. `tedious` is still resolved by `mssql`'s own range, so re-run the live suite after a lockfile change that moves it.

@@ -3,11 +3,12 @@
 The language-neutral reference implementation of the sk-mcp spec, in TypeScript.
 
 **This is not a package you install.** `private: true`, version `0.0.0`, never published; it exists
-as a `workspace:*` dependency of `@sk-mcp/sdk-nestjs` and nothing else. There is no version to pin
+as a `workspace:*` dependency of `@sk-mcp/sdk-nestjs`, `@sk-mcp/openapi` and `@sk-mcp/openapi-mcp`
+(and the NestJS agent-client sample). There is no version to pin
 and no public API contract. If you are reading this you are changing it.
 
 `core` is **not** `file-core`. This package is the HTTP catalog implementation;
-[`../file-core`](../file-core) is the shared machinery for file-backed MCP servers. Neither depends
+[`@sk-mcp/file-core`](../../cores/file-core) is the shared machinery for file-backed MCP servers. Neither depends
 on the other, in either direction.
 
 ## What lives here
