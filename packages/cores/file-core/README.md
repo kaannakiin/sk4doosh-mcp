@@ -2,7 +2,7 @@
 
 Dosya okuyan, salt-okunur, sandbox'lanmış MCP sunucularının paylaşılan makinesi. `@sk-mcp/excel-mcp`, `@sk-mcp/xml-mcp` ve `@sk-mcp/pdf-mcp` bunun üzerine kuruludur.
 
-Kaynak-agnostik makine (`guard`, yanıt bütçesi, hata zarfı, cursor codec, stdio sunucusu) **`@sk-mcp/mcp-core`'a taşındı**; bu paket onu tüketir, dosyaya özgü katmanı ekler ve tam yüzeyi yeniden ihraç eder.
+Kaynak-agnostik makine (`guard`, yanıt bütçesi, hata zarfı, cursor codec, stdio sunucusu) **`@sk-mcp/mcp-core`'a taşındı**; bu paket onu tüketir, dosyaya özgü katmanı ekler ve çıktı yazan tool türü (`ownOutput`, `OwnOutputToolDefinition`, `ToolCatalog`, `createMcpOutputServer`) dışındaki yüzeyi yeniden ihraç eder.
 
 Bu paket **`@sk-mcp/core` değildir** ve ona iki yönde de bağlanmaz. `@sk-mcp/core` spec'in HTTP katalog referans implementasyonudur; bu paket yerel dosya kaynaklarının makinesidir.
 
@@ -27,3 +27,7 @@ Bu paket **`@sk-mcp/core` değildir** ve ona iki yönde de bağlanmaz. `@sk-mcp/
 - **`zod` ve `@modelcontextprotocol/sdk` peer bağımlılıktır.** İki kopya `z.infer` tip kimliğini bozar ve SDK'nın şema introspection'ı `instanceof` kontrolü yapar.
 - **Kök redaksiyonu `guard` tarafından bağlanır**, çağrı yerlerinde değil. `mcp-core`'un `ErrorContext.redact` dikişine `redactRoot` burada takılır; hiçbir dosya sunucusu mutlak yol taşıyan bir hata zarfı üretemez.
 - **`SandboxedPath` markası yalnızca burada bildirilir**, `Fingerprint` ise `mcp-core`'da. İkinci bir `unique symbol` bildirimi aynı marka değildir.
+
+## What stays here
+
+`cli.ts` (`parseServerArgv`) and `fingerprint(realPath, mtimeMs, size)` stay in this package rather than in `mcp-core`: the single positional root argument and an identity built from file metadata are file concepts. A database server takes its connection from the environment, because a connection secret must never be in `argv`. The generic `fingerprintFromDigest` and `contentFingerprint` are in `mcp-core`.

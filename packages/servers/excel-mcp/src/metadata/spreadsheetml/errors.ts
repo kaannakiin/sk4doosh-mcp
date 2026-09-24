@@ -35,6 +35,10 @@ const mappings: Readonly<Record<OoxmlErrorCode, Mapping>> = {
  * Translates a container failure into this server's vocabulary. The core states
  * the fact and knows no spreadsheet nouns; the code and the recovery advice are
  * chosen here, which is the only place they belong.
+ *
+ * Guard: this adapter cannot be skipped by accident. Under `strictFunctionTypes`
+ * the server's own `ErrorFactory` is not assignable to `OoxmlErrorFactory`,
+ * because codes such as `corrupt_package` are not in the server's union.
  */
 export const failOoxml: OoxmlErrorFactory = (code, message) => {
   const mapping = mappings[code];

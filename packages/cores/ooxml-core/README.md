@@ -52,6 +52,15 @@ göstermiyor. Office'in şifrelediği belge zaten zip değil CFB konteyneridir v
 `classifyContainerMagic` tarafından paketin dışında yakalanır. Şifreli bir entry bozuk part olarak
 başarısız olur.
 
+## Rejected alternatives
+
+- **An in-house zip reader.** About 330 lines and a 30-case test matrix as a precondition. `fflate` is mature, MIT, dependency-free, and its `filter` callback still leaves the bomb gate to this package.
+- **A `file-core` dependency for `asciiLower`.** A twelve-line function would pull in the MCP SDK and zod peers and invert the layering; it is copied instead (`src/primitives/text.ts`).
+- **An in-process BIFF8 or Word binary reader.** Thousands of lines of parser for an effectively undocumented format, over untrusted input, inside a read-only server whose value is a small attack surface.
+- **Shelling out to `soffice --convert-to`.** It writes the converted file, depends on an install no manifest can express and no CI runner has, costs seconds per document, and hands untrusted input to a large C++ surface with a macro and URL-fetch CVE history.
+- **A `PartPath` brand.** A forged part path is a cache miss (`part()` returns `undefined`), not a traversal; nothing is opened on disk, so the brand buys nothing. The `Relationship` union already prevents mix-ups.
+- **An `"encrypted"` `ContainerKind`.** It would separate encrypted OOXML from legacy binaries, but the combined message is never wrong today, and a new member breaks every exhaustive switch.
+
 ## Komutlar
 
 ```text

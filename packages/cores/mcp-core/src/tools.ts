@@ -40,9 +40,10 @@ export interface OwnOutputAnnotations extends ToolAnnotations {
 
 /**
  * Guard: these hints tell the client the tool only ever adds a new entry under the server's own
- * output location, which is why a client may auto-approve it. The core cannot write anything, so
- * the consumer carries the promise: create-only, a name it chooses itself, never outside that
- * location (docs/cikti-yazan-tool-karari.md).
+ * output location, which is why a client may auto-approve it — a client that approves by
+ * annotation writes without asking, so a hint that overstates this is an unapproved write. The
+ * core cannot write anything, so the consumer carries the promise: create-only, a name it chooses
+ * itself, never outside that location.
  */
 export const ownOutput: OwnOutputAnnotations = {
   readOnlyHint: false,
@@ -156,6 +157,10 @@ function payloadBytes(result: CallToolResult): number {
 
 export interface GuardContext<K extends string> extends ErrorContext {
   readonly tool: K;
+  /**
+   * Guard: narrowed to the one code `guard()` raises. The factory is contravariant in its code, so
+   * a wider type here would force every consumer's error union to carry the core's codes.
+   */
   readonly fail: ErrorFactory<"resource_limit">;
   readonly maxBytes?: number;
 }

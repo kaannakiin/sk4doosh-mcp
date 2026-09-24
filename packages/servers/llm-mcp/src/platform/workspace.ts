@@ -163,7 +163,7 @@ export async function openWorkspace(
    * to the workspace.
    *
    * Guard: this is the only write the server performs, and it keeps the four
-   * promises the `ownOutput` annotation makes (docs/cikti-yazan-tool-karari.md):
+   * promises the `ownOutput` annotation from `@sk-mcp/mcp-core` makes:
    * the directory is re-checked on its realpath so a symlink cannot move it
    * outside; the name is the server's, reduced to a safe alphabet with a fixed
    * extension, so no input can place an `AGENTS.md` or climb a directory; `wx`

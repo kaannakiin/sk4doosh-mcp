@@ -10,6 +10,12 @@ export interface WorkbookPackage extends OpcPackage {
 }
 
 const workbookPath = "xl/workbook.xml";
+/**
+ * Guard: media is selected by this prefix, not by content type. The core carries
+ * `ContentTypes`, but switching to it would change this server's result set: an
+ * image with no content-type entry would drop out and one outside `xl/media/`
+ * would appear.
+ */
 const mediaPrefix = "xl/media/";
 
 function readSheetParts(opc: OpcPackage): ReadonlyMap<string, string> {

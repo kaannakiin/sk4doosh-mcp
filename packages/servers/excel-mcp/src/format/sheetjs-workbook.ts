@@ -71,7 +71,10 @@ interface MergeRange extends GridBounds {
  * below has to exclude. `dense` keeps each sheet as row arrays rather than one
  * property per cell. `bookFiles` is off: the OOXML readers reach their parts
  * through ooxml-core's own archive reader, so retaining SheetJS's decompressed
- * table would hold the package a second time for nothing.
+ * table would hold the package a second time for nothing. Measured on a 24 MiB
+ * workbook of incompressible media: `arrayBuffers` 48.4 MiB with it on, 24.1 MiB
+ * off, wall time about 215 ms either way — SheetJS inflates every entry
+ * regardless and the flag only decides whether the table is kept.
  */
 const readOptions = {
   type: "buffer",
