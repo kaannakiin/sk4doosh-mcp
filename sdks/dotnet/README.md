@@ -5,7 +5,7 @@ agents as a search-first tool catalog and replays each call through **your own**
 authentication and authorization keep working exactly as they do today. Not a gateway, not
 duplicated business logic.
 
-> Status: `0.1.0-alpha.1`. The public API is frozen in this release but it is alpha; breaking
+> Status: `0.1.0-alpha.2`. The public API is frozen in this release but it is alpha; breaking
 > changes are possible.
 
 ## Requirements
@@ -20,13 +20,13 @@ The alpha ships from a local nupkg feed; it is not on nuget.org.
 ```bash
 # in the sk-mcp repository
 pnpm turbo run pack --filter=@sk-mcp/sdk-dotnet
-# → sdks/dotnet/local/nupkg-feed/SkMcp.AspNetCore.0.1.0-alpha.1.nupkg
+# → sdks/dotnet/local/nupkg-feed/SkMcp.AspNetCore.0.1.0-alpha.2.nupkg
 ```
 
 ```bash
 # in your own project
 dotnet nuget add source /absolute/path/to/sk-mcp/sdks/dotnet/local/nupkg-feed --name sk-mcp-local
-dotnet add package SkMcp.AspNetCore --version 0.1.0-alpha.1
+dotnet add package SkMcp.AspNetCore --version 0.1.0-alpha.2
 ```
 
 Do not wire it with a `ProjectReference`. SkMcp multi-targets (`net8.0;net10.0`) and a
