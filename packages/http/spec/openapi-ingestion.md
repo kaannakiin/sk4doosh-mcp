@@ -2,7 +2,7 @@
 
 > Status: **normative, one implementation** (`packages/http/openapi`). Bound by the `openapi-ingestion` fixture profile ([fixture-format.md](fixture-format.md)), not by the core profile: an SDK that never reads an OpenAPI document is not bound by this file.
 
-An OpenAPI document is a second source of `EndpointDescriptor`s, next to framework discovery. This document defines how a Swagger 2.0 or OpenAPI 3.0–3.2 document becomes descriptors, a server map and a security model, and which diagnostics the conversion reports. Everything after the descriptor — naming, selection, curation, template production, composition, error mapping, search — is the existing catalog and is not restated here.
+An OpenAPI document is a second source of `EndpointDescriptor`s, next to framework discovery. This document defines how a Swagger 2.0 or OpenAPI 3.0–3.2 document becomes descriptors, a server map and a security model, and which diagnostics the conversion reports. Everything after the descriptor — naming, selection, curation, template production, composition, error mapping, search — is the existing catalog and is not restated here. The embedded SDKs reach only ASP.NET Core and NestJS; for any other backend, its document is the only machine-readable account of its operations.
 
 ## Principles
 
@@ -25,11 +25,11 @@ An OpenAPI document is a second source of `EndpointDescriptor`s, next to framewo
 | 8. Normalize    | JSON Schema keywords (§ Schema normalization)                                                      | per rule                                                              |
 | 9. Lower        | operation → `EndpointDescriptor`                                                                   | per rule                                                              |
 
-Validation defaults to warnings because real documents are routinely invalid in ways that do not matter to the operations actually used, and a gateway that refuses a whole backend over one bad example is unusable. A strict mode exists for CI.
+Validation defaults to warnings because real documents are routinely invalid in ways that do not matter to the operations actually used, and a gateway that refuses a whole backend over one bad example is unusable. A strict mode exists for CI. The implementation validates by point checks on the constructs it reads, not against the version's full meta-schema, so a defect in a part of the document nothing lowers produces no diagnostic.
 
 ## References
 
-- An **external** `$ref` (another file, a URL) is resolved only through the loader the host supplied: a file ref MUST stay inside the configured root directory; an http(s) ref MUST pass the same host allowlist, deadline and size limit as invocation. Anything else is `external_ref_blocked`. An external ref is a way for the document's author to make the ingesting process issue a request.
+- An **external** `$ref` (another file, a URL) is resolved only through the loader the host supplied: a file ref MUST stay inside the configured root directory; an http(s) ref MUST pass a host allowlist, a deadline and a size limit. The gateway allows only the document's own host for this, not the invocation allowlist, with a 64 MiB limit. Anything else is `external_ref_blocked`. An external ref is a way for the document's author to make the ingesting process issue a request.
 - A reference to a **non-schema** component is inlined. A cycle among them (a path item that references itself) drops every operation it reaches.
 - A reference to a **schema** is kept as a reference, because schemas are legitimately recursive. For each schema slot (every parameter, the request body, every response) the transitive closure of `#/components/schemas/<name>` is copied into that slot's `$defs` under the escaped name and the reference is rewritten to `#/$defs/<name>`. `liftDefs` then merges the slot bags exactly as it does for framework descriptors ([schema-conversion-rules.md](schema-conversion-rules.md)).
 - Every slot is **dereferenced at its top level**: a parameter because its kind is read from its top-level `type`, a body because the core flattens only an object root, a response so its output schema is an object rather than a reference. A nullable reference (`anyOf` of the reference and `null`, which is what `nullable` next to `$ref` becomes) is dereferenced the same way. A parameter schema that is recursive at its top level is `recursive_parameter_schema` (endpoint dropped); a recursive body or response keeps its reference and the body is sent in root mode.
@@ -88,7 +88,7 @@ The descriptor carries JSON Schema 2020-12 and the core passes property schemas 
 
 ### Identity cookies
 
-A cookie parameter is an identity carrier, never an argument, when its name is the `name` of an `apiKey` security scheme with `in: cookie`, or matches the configured deny-list (default: `session`, `sid`, `token`, `auth`, `jwt`, and any name containing `sess`, case-insensitive). It is moved to `Auth.carriers` and reported as `identity_cookie_parameter` (warning); when no security scheme covers it, also `identity_cookie_uncovered`. The deny-list is a safety net for documents that never declare their session cookie; the security scheme is the authoritative source. See `docs/cerez-parametre-karari.md`.
+A cookie parameter is an identity carrier, never an argument, when its name is the `name` of an `apiKey` security scheme with `in: cookie`, or matches the configured deny-list (default: `session`, `sid`, `token`, `auth`, `jwt`, and any name containing `sess`, case-insensitive). It is moved to `Auth.carriers` and reported as `identity_cookie_parameter` (warning); when no security scheme covers it, also `identity_cookie_uncovered`. The deny-list is a safety net for documents that never declare their session cookie; the security scheme is the authoritative source. A host of the library can replace the deny-list (`cookieDenyList`); the gateway uses the default.
 
 ### Request body
 
@@ -116,6 +116,8 @@ A server whose host is not on the invocation allowlist drops every operation tha
 ## Security
 
 The effective requirement of an operation is its own `security`, else the root's. `[]` and `[{}]` mean anonymous: the descriptor's `auth.anonymous` is `"yes"`. Anything else is `"unknown"`, and `policies` is empty: a document says which credential a call needs, never which caller may make it, so visibility is `unknown` and enforcement stays with the backend ([visibility.md](visibility.md), invariant 1).
+
+There is no remote probe. An embedded probe stops a synthetic request before the handler runs ([visibility.md](visibility.md)); the same request sent to a remote backend would run the handler for real.
 
 How a requirement is satisfied at invocation time is [credentials.md](credentials.md). A scheme the invoker cannot satisfy (`mutualTLS`; an `oauth2` or `openIdConnect` scheme with no token exchange configured) is `security_scheme_unsupported`; the operation is dropped only when no alternative of its requirement can be satisfied (`security_unsatisfiable`).
 
@@ -158,3 +160,8 @@ A host MAY escalate or downgrade a code, as with framework discovery. A report S
 ## Not supported
 
 Callbacks, links, webhooks, `mutualTLS`, XML-only bodies, streaming success responses, non-default multipart encodings, parameter content other than JSON, text and a urlencoded querystring, `TRACE`, and `tsv`. Each is listed above with the diagnostic it produces.
+
+## Rejected
+
+- **`swagger-client` as a runtime dependency.** Its serialization is the closest thing to a reference, but it is 6.3 MB of CommonJS and carries known defects this implementation does not repeat: it merges path-item and operation parameters by name alone, each cookie parameter overwrites the previous one, it applies every scheme instead of one satisfiable requirement, and it skips `querystring`.
+- **Picking the first media type an operation lists.** It would tie a tool to the order of a list nobody wrote for it; [request-bodies.md](request-bodies.md)'s ordered selection applies instead.
