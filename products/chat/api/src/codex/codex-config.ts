@@ -13,11 +13,12 @@ const LOCAL_WORKER_TIMEOUT_SEC = 900;
  *
  * Guard: the local worker's host and model travel in `mcp_servers.<name>.env`
  * because codex hands an MCP server none of its own environment — only `HOME`
- * and `PATH` were measured arriving (docs/llm-mcp-plani.md, rule 2). The
- * approval mode is `auto` because under `approvalPolicy: "never"` a tool call
- * that asks for approval is rejected outright (rule 1); `auto` decides from the
- * tool's own annotations. The timeout covers time spent queued behind other
- * local calls (rule 6). `num_ctx` is left to the server's default on purpose:
+ * and `PATH` were measured arriving. The approval mode is `auto` because
+ * under `approvalPolicy: "never"` a tool call that asks for approval is
+ * rejected outright; `auto` decides from the tool's own annotations. The
+ * timeout covers time spent queued behind other local calls — codex was
+ * measured firing 17 calls at once. `num_ctx` is left to the server's default
+ * on purpose:
  * `CHAT_LLM_CONTEXT_TOKENS` is what the orchestrator requests, not the window
  * the GPU was measured to deliver.
  *

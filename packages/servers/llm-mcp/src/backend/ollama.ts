@@ -48,8 +48,8 @@ function modelNamesOf(body: unknown): readonly unknown[] {
 
 /**
  * Talks to Ollama's native API, which is the only one that exposes `num_ctx`,
- * `keep_alive` and schema-constrained `format` — the three settings every rule
- * in docs/llm-mcp-plani.md was measured with.
+ * `keep_alive` and schema-constrained `format` — the three settings every
+ * guard in this package was measured with.
  */
 export function createOllamaBackend(options: OllamaBackendOptions): Backend {
   const endpoint = (path: string): string =>
@@ -175,9 +175,9 @@ export function createOllamaBackend(options: OllamaBackendOptions): Backend {
 
     /**
      * Guard: an empty message list makes Ollama load the model and return,
-     * which moves the measured 20 s cold start out of the first real call
-     * (docs/llm-mcp-plani.md, rule 7). `num_ctx` is sent here too, because a
-     * model loaded with a different window is reloaded on the next request.
+     * which moves the measured 20 s cold start out of the first real call.
+     * `num_ctx` is sent here too, because a model loaded with a different
+     * window is reloaded on the next request.
      */
     async warm(): Promise<void> {
       await chat([], { options: { num_ctx: options.contextTokens } });

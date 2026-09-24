@@ -2,21 +2,21 @@ import { mcpCoreLimits } from "@sk-mcp/mcp-core";
 
 /**
  * Guard: Ollama never refuses an oversized prompt — 84,608 characters sent to a
- * 16k window came back as 8,194 processed tokens with the head silently dropped
- * (docs/llm-mcp-plani.md, rule 4). The server counts before it sends, and 45%
- * of the window is the input budget, leaving the rest for the system prompt and
- * the answer. Turkish text measured ~1.8 characters per token; English runs
- * near 4, so the estimate errs towards refusing, never towards truncating.
+ * 16k window came back as 8,194 processed tokens with the head silently
+ * dropped. The server counts before it sends, and 45% of the window is the
+ * input budget, leaving the rest for the system prompt and the answer.
+ * Turkish text measured ~1.8 characters per token; English runs near 4, so
+ * the estimate errs towards refusing, never towards truncating.
  *
- * Guard: labelling was measured at ~16 output tokens and ~270 ms per row
- * (rule 9). 2,000 rows is about nine minutes, inside the 900 s tool timeout
- * codex is given; a larger file is refused up front rather than timed out
- * halfway with nothing written.
+ * Guard: labelling was measured at ~16 output tokens and ~270 ms per row.
+ * 2,000 rows is about nine minutes, inside the 900 s tool timeout codex is
+ * given; a larger file is refused up front rather than timed out halfway with
+ * nothing written.
  *
  * Guard: a long summarize or extract runs one call per chunk plus the merge.
- * Seventeen documents were measured clearing the queue in 157 s (rule 14's
- * run), so 32 chunks and three merge rounds stay inside the same 900 s; a
- * larger input is refused before the first call.
+ * Seventeen documents were measured clearing the queue in 157 s, so 32 chunks
+ * and three merge rounds stay inside the same 900 s; a larger input is
+ * refused before the first call.
  */
 export const limits = {
   ...mcpCoreLimits,
@@ -42,8 +42,8 @@ export function estimateTokens(text: string): number {
 
 /**
  * Guard: without an id-bearing schema the model was measured looping into
- * 12,600 tokens of garbage (docs/llm-mcp-plani.md, rule 8). A ceiling on the
- * answer ends such a loop inside the window instead of at the timeout.
+ * 12,600 tokens of garbage. A ceiling on the answer ends such a loop inside
+ * the window instead of at the timeout.
  */
 export function outputBudgetTokens(contextTokens: number): number {
   return Math.floor(contextTokens * limits.outputBudgetRatio);

@@ -177,9 +177,9 @@ function samplesOf(
  * copy to the server's output directory.
  *
  * Guard: each row keeps its number through the model and back, because an
- * id-less answer format was measured losing its place (docs/llm-mcp-plani.md,
- * rule 8). A row the model skipped is asked once more, then left unlabelled
- * and counted, never guessed.
+ * id-less answer format was measured losing its place. A row the model
+ * skipped is asked once more, then left unlabelled and counted, never
+ * guessed.
  */
 export async function runMap(
   { backend, workspace }: MapDeps,

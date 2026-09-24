@@ -1,11 +1,11 @@
 /**
  * The `AGENTS.md` written into every workspace when a local worker is bound.
  *
- * Guard: without this file codex never called the local model at all
- * (docs/llm-mcp-plani.md, rule 11). It names only tools the server exposes
- * today; naming one it does not would send the agent after a tool that is not
- * there. The sample-first line is measured: a blind `local_map` instruction got
- * 2 of 14 days right, a sample-informed one 14 of 14 (rule 12).
+ * Guard: without this file codex never called the local model at all. It
+ * names only tools the server exposes today; naming one it does not would
+ * send the agent after a tool that is not there. The sample-first line is
+ * measured: a blind `local_map` instruction got 2 of 14 days right, a
+ * sample-informed one 14 of 14.
  */
 export const DELEGATION_INSTRUCTIONS = `# Delegation
 

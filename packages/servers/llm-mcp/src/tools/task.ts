@@ -114,10 +114,10 @@ function notesSection(notes: readonly string[]): string {
  *
  * Guard: every path is resolved before any is read, and the whole prompt is
  * measured before the queue is entered, because the host drops the head of an
- * oversized prompt without an error (docs/llm-mcp-plani.md, rule 4). An input
- * over the budget is never sent whole: summarize and extract split it and read
- * every part — the measured gain of the local model is on long text (rule 14) —
- * and every other kind refuses it with the numbers.
+ * oversized prompt without an error. An input over the budget is never sent
+ * whole: summarize and extract split it and read every part — the measured
+ * gain of the local model is on long text, not on tabular data — and every
+ * other kind refuses it with the numbers.
  */
 export async function runTask(
   { backend, workspace }: TaskDeps,
