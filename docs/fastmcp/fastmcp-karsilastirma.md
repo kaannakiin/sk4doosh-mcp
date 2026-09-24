@@ -164,6 +164,8 @@ Sevk edilirken iki madde büyüdü: keşif yolu olmadan filtre sessiz boş sonu�
 
 ## 5. Kopyalanmayacaklar ve açık tartışma noktaları
 
+> **Yerine geçen (24 Eylül 2026):** `in: cookie` maddesi [../cerez-parametre-karari.md](../cerez-parametre-karari.md) ile tersine çevrildi; tartışma noktası 2 [../openapi-kaynak-karari.md](../openapi-kaynak-karari.md) ile karara bağlandı.
+
 **Kopyalanmayacaklar**
 
 - **Component `auth` = görünürlük + enforcement.** FastMCP `call_tool` proxy'si, ismi katalogda göremiyorsa çağırmaz; görünürlük enforcement'a dönüşür. Bizim invariant 1 tam tersi ve doğru: iki gerçek kaynağı zamanla ayrışır, enforcement backend pipeline'ında kalır.

@@ -73,6 +73,8 @@ Gruplama üye adlarını indeksten çıkarıyordu: `status` aranabilir terim olm
 
 ## 9. `in: cookie` buraya ait değil
 
+> **Yerine geçen (24 Eylül 2026):** [../cerez-parametre-karari.md](../cerez-parametre-karari.md). Aşağıdaki gerekçe taşıyıcıyı değerin sahibiyle karıştırıyordu; kimlik kuralı korunarak çerez parametresi birinci sınıf konum oldu.
+
 §4.9 iki maddeyi bir arada tutuyordu. Cookie yarısı açık bir tasarım sorusu değil, **zaten kapalı**: `argument-mapping.md:11` `Cookie`'yi ismen identity carrier sayıyor — "identity is never an argument". Serileştirmeyle ilgisi yok; tersine dönmesi için görünürlük/kimlik modelinin değişmesi gerekir. §5 "Kopyalanmayacaklar"a taşındı.
 
 ## 10. Doğrulama
