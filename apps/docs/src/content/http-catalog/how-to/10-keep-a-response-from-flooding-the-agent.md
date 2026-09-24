@@ -66,13 +66,19 @@ public async Task<IActionResult> Heavy(CancellationToken cancellationToken) =>
 ```ts
 @Get("reports/heavy")
 heavy(@Req() request: Request) {
-  return this.reports.load({ signal: AbortSignal.any([request.signal]) });
+  const controller = new AbortController();
+  request.on("close", () => controller.abort());
+  return this.reports.load({ signal: controller.signal });
 }
 ```
 
 On ASP.NET this is usually free, because `CancellationToken` is already threaded through EF Core
 and `HttpClient`. On Node it usually is not, because `AbortSignal` is not conventional in Nest
 handler signatures. That is an ecosystem difference, not a platform one.
+
+Nest itself only unsubscribes an `@Sse()` route on disconnect. A handler that returns a plain
+`Observable` keeps running; bind the request's `close` event as above, or stop it in an
+interceptor with `takeUntil(fromEvent(request, "close"))`.
 
 ## Changing the numbers
 
