@@ -15,6 +15,13 @@ const weights: Readonly<Record<SearchField, number>> = {
   schema: 1,
 };
 
+/**
+ * Guard: a prefix match is required, not a convenience. An all-capitals
+ * compound carries no boundary to split on, so `FATURATARIH` yields the single
+ * term `faturatarih` and only a prefix lets `fatura` reach it. The limit is
+ * measured too: `tarih` does not find it, because a prefix covers the head of an
+ * unsplittable compound, never its tail.
+ */
 const exactQuality = 1;
 const prefixQuality = 0.5;
 
@@ -48,7 +55,10 @@ interface Accumulator {
  * Repetition inside one object is how a wide table is shaped, not evidence that
  * it is the better answer — which is also why there is no `k1` or `b` here. The
  * discrimination comes from IDF alone, measured to separate `id` (0.70) from
- * `fuel` (5.33) on identifiers one to four tokens long.
+ * `fuel` (5.33) on identifiers one to four tokens long. There is no stopword
+ * list for the same reason: IDF derives one per catalogue, and a fixed list
+ * would silence a word that is noise in one deployment and the deciding term in
+ * another.
  */
 export function rank(
   index: InvertedIndex,

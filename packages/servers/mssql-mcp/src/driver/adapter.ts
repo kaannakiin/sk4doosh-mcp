@@ -52,7 +52,8 @@ function poolConfig(config: MssqlConfig): mssql.config {
  * Guard: the result-set path and the catalogue path both build their columns
  * through `columnDescriptor` over the dialect's verdict. Forwarding each
  * source's own fields instead is what let `run_query` and `describe_table`
- * report opposite fidelity for the same column.
+ * report opposite fidelity for the same column. The driver's `type.id` arrives
+ * undefined, so `type.name` is the only key.
  */
 function describe(meta: readonly ColumnMeta[]): ColumnDescriptor[] {
   return meta.map((column) =>

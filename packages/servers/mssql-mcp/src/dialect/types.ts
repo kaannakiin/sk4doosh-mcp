@@ -12,10 +12,11 @@ import {
  * `sys.types`. Folding to lower ASCII is what lets one table answer both; a
  * locale-dependent fold would break the dotted I on a Turkish system.
  *
- * The names are the normative T-SQL type list, not the set one database happened
- * to contain. `sql_variant` and `vector` are absent on purpose: the first carries
- * a different type in every row, the second has no measured driver shape, so
- * both are honestly `unknown` (docs/mssql-tip-tablosu.md).
+ * The names are the normative T-SQL type list ("Data types (Transact-SQL)" on
+ * learn.microsoft.com), not the set one database happened to contain.
+ * `sql_variant` and `vector` are absent on purpose: the first carries a
+ * different type in every row, the second is a SQL Server 2025 type whose
+ * tedious@18 shape is unmeasured, so both are honestly `unknown`.
  */
 const kinds: Readonly<Record<string, ColumnKind>> = {
   bit: "boolean",
@@ -41,7 +42,17 @@ const kinds: Readonly<Record<string, ColumnKind>> = {
   image: "binary",
   timestamp: "binary",
   rowversion: "binary",
+  /**
+   * Guard: the root node is a zero-length value, so an empty base64 string is
+   * the value itself, not a loss.
+   */
   hierarchyid: "binary",
+  /**
+   * Guard: the driver renames a UDT column from TDS `udtInfo.typeName`, so
+   * `geography`/`geometry` arrive by name while `hierarchyid` and every CLR type
+   * arrive as `UDT`, all as bytes. On the catalogue path a CLR type keeps its
+   * own name and falls to `unknown`; that asymmetry is accepted.
+   */
   udt: "binary",
   uniqueidentifier: "uuid",
   json: "json",

@@ -31,7 +31,8 @@ function encodeBinary(bytes: Uint8Array, policy: ValuePolicy): EncodedValue {
  * damaged number as a string would launder it into a form that claims precision,
  * so the loss is reported on the column by the dialect instead.
  * `NaN`/`Infinity` become null for the same reason: never invent a token the
- * engine did not send. The measurement is recorded in docs/db-surucu-spike.md.
+ * engine did not send. Measured: `123456789012345678.1234` in a `decimal(38,4)`
+ * column arrives as `123456789012345680`.
  */
 export function encodeValue(
   raw: unknown,

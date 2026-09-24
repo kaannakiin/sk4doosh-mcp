@@ -86,6 +86,10 @@ function clamp(text: string | undefined, limit: number): string | undefined {
  * rather than indexed with half its columns — a half-indexed table answers a
  * column search with silence while still appearing in other results, which reads
  * as "that column does not exist" instead of "I did not look".
+ *
+ * Objects and columns are two reads, not one: a single denormalised read repeats
+ * each object's description on every column row, measured at about 5.9 MB of
+ * pure repetition on an 11 518-column catalogue.
  */
 export async function buildSnapshot<TConfig>(
   spec: CatalogCacheSpec<TConfig>,

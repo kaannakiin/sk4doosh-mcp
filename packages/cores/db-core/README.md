@@ -31,7 +31,32 @@ Bu paket **`@sk-mcp/core` değildir** — o, spec'in HTTP katalog referans imple
 - **`SqlText` yalnızca `sqlText()` ile üretilir ve o fonksiyon dialect katmanına aittir.** Agent metni `SqlText`'e yalnızca `Dialect.readOnlyGuard`'ın `allow` kolundan dönüşür; bu, "statement'ı çalıştırmadan önce guard'ı çalıştır" kuralını gelenek değil tip kuralı yapar. Tüketici paketler `importNames` ile `sqlText`'i kendi tool katmanlarından yasaklar.
 - **Salt-okunurluk üç katmanlıdır ve guard en zayıfı.** Gerçek güvence veritabanı principal'ıdır; `readOnlyGuard` yalnızca bir yazma denemesinin sürücü izin hatası yerine okunaklı bir hata dönmesini sağlar. Tool açıklamaları ve `describe_connection` bunu böyle söyler.
 - **İptal edilen bir istek sonlanmadan bağlantı havuza dönmez.** `runCancellable` `settled` sonlanana kadar kirayı tutar; `cancelSettleMs` aşılırsa bağlantıyı karantinaya alır. `Promise.race([run(), abort()])` bu fonksiyonun var olma sebebi olan hatadır.
-- **`bigint` string olur; `decimal` onarılmaz, bildirilir.** Ölçüldü ([db-surucu-spike.md](../../../docs/db-surucu-spike.md)): geniş tamsayılar sürücüden string gelip korunuyor, ama geniş `decimal` binary64 olarak geliyor ve alt basamaklar çoktan gitmiş oluyor. Bozulmuş bir sayıyı string'e çevirmek onu hassas görünen bir forma sokar, o yüzden kayıp kolonda `lossy` ile bildirilir. `LossKind` üç değer taşır — `precision`, `timezone`, `representation` — ve üçünde de `kind` gerçek tipi söylemeye devam eder; bayrak yalnızca yanındaki değerin `kind`'ın vaat ettiği kadar sadık olmadığını söyler.
-- **İndeks katalog sırasının bir ön ekini kapsar ve içindeki her nesne eksiksizdir.** Kolon okuması kesildiyse son nesne kolonlarıyla birlikte tamamen düşer — yarım indekslenmiş bir tablo, bir kolon aramasına sessizlikle cevap verirken başka sonuçlarda görünmeye devam eder, ve bu "o kolon yok" diye okunur. Kısmilik her yanıtta `catalog.complete` ile ilan edilir, yalnızca kurulumda değil ([katalog-arama-tasarimi.md](../../../docs/katalog-arama-tasarimi.md)).
+- **`bigint` string olur; `decimal` onarılmaz, bildirilir.** Ölçüldü: geniş tamsayılar sürücüden string gelip korunuyor, ama geniş `decimal` binary64 olarak geliyor ve alt basamaklar çoktan gitmiş oluyor (`123456789012345678.1234` → `123456789012345680`). Bozulmuş bir sayıyı string'e çevirmek onu hassas görünen bir forma sokar, o yüzden kayıp kolonda `lossy` ile bildirilir. `LossKind` üç değer taşır — `precision`, `timezone`, `representation` — ve üçünde de `kind` gerçek tipi söylemeye devam eder; bayrak yalnızca yanındaki değerin `kind`'ın vaat ettiği kadar sadık olmadığını söyler.
+- **İndeks katalog sırasının bir ön ekini kapsar ve içindeki her nesne eksiksizdir.** Kolon okuması kesildiyse son nesne kolonlarıyla birlikte tamamen düşer — yarım indekslenmiş bir tablo, bir kolon aramasına sessizlikle cevap verirken başka sonuçlarda görünmeye devam eder, ve bu "o kolon yok" diye okunur. Kısmilik her yanıtta `catalog.complete` ile ilan edilir, yalnızca kurulumda değil.
 - **Sıralama IDF'dir, BM25 değil.** 1–4 token'lık tanımlayıcılarda terim frekansı ayırt etmiyor, IDF ediyor; açıklamalar da terim başına bir kez sayıldığı için `k1`/`b` hiçbir alanda gerekmiyor.
 - **Sırlar iki katmanda redakte edilir**: `createDbSource` çekirdeğin desenleriyle dialect'inkileri birleştirip `mcp-core`'un `ErrorContext.redact` dikişine bağlar, ve ürün normalizer'ı hataları zaten redakte doğurur.
+
+## Catalogue search
+
+`search_catalog` reads the catalogue once, in two queries (objects, then columns), and turns it into an inverted index held in memory for `catalogIndexTtlMs`. An empty query is the paged listing, which is why there is no `list_tables`.
+
+Measured on a 614-object, 11 518-column SQL Server catalogue, through the live MCP envelope:
+
+|                                    |                                            |
+| ---------------------------------- | ------------------------------------------ |
+| first call, index build included   | 489 ms                                     |
+| second call, from the cached index | 1 ms                                       |
+| index                              | 2 156 terms, 25 068 postings, about 301 KB |
+
+On the same catalogue with the column cap lowered to 4 000, the index held 211 whole objects and 3 993 columns; the boundary object kept all 17 of its columns, and a query for a name past the boundary returned no results with `complete: false` and a hint naming where coverage ends.
+
+The `MS_Description` path was checked against a temporary table, because the sample catalogue carried no descriptions and a join returning zero rows cannot tell "correct, no data" from "broken". The deciding row was a column **without** a description coming back `null`: a predicate missing `minor_id` or with the wrong `class` would have spread the table's description onto every column.
+
+Deliberately out of scope:
+
+- **Column-level result rows.** On an 11 500-column catalogue one term would produce hundreds of column results that bury the tables, and ranking would compare two different units. Column matches already appear in `matched[]`.
+- **A synonym or multilingual dictionary.** A separate problem; it can be added later without changing the index surface.
+- **Row counts and statistics.** A different permission surface.
+- **A persistent index.** Process lifetime is enough; persistence brings an invalidation problem.
+- **Suffix and substring matching.** It would close the `tarih`/`FATURATARIH` gap, at a cost not yet measured.
+- **Length decay for descriptions.** Added only if long descriptions are measured to suppress ranking.

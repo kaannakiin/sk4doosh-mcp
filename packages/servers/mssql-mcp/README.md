@@ -37,8 +37,8 @@ npx sk-mcp-mssql
 - **`src` üç lint-zorunlu katman + üç kök giriş noktası.** `platform/` (db-core ve node sınırı), `dialect/` (SQL yazan **tek** klasör), `driver/` (`mssql` adını anan **tek** klasör); `cli.ts`, `server.ts`, `index.ts` kökte kalır ve tek kompozisyon köküdür.
 - **`sqlText` ve `quotedIdentifier` yalnızca `dialect/` içinde çağrılabilir**, `importNames` ile yasaklanmış. Agent metni `SqlText`'e yalnızca `readOnlyGuard`'ın `allow` kolundan dönüşür.
 - **`process.env` yalnızca `cli.ts`'te okunur** ve her değişken adıyla erişilir — `turbo/no-undeclared-env-vars` böylece her birini `turbo.json`'ın `passThroughEnv`'ine yazmaya zorlar.
-- **Sorgu süre sınırı `request.timeout`'a bırakılmaz.** Ölçüldü ([db-surucu-spike.md](../../../docs/db-surucu-spike.md) §2): o alan çalışan bir statement'ı kesmiyor. Deadline bir zamanlayıcı + açık `cancel()`.
-- **Tip tablosunun kaynağı normatif listedir, bir veritabanında rastlananlar değil.** `dialect/types.ts` T-SQL'in tam tip listesini karşılar ve iki isim uzayına birden cevap verir (`sys.types.name` ve sürücünün result-set adı). Eşlemelerin gerekçeleri ve bilerek `unknown` bırakılan iki tip [mssql-tip-tablosu.md](../../../docs/mssql-tip-tablosu.md)'nde.
+- **Sorgu süre sınırı `request.timeout`'a bırakılmaz.** Ölçüldü: o alan çalışan bir statement'ı kesmiyor (`request.timeout = 800`, 10 sn'lik `waitfor delay`'i durdurmadı). Deadline bir zamanlayıcı + açık `cancel()`.
+- **Tip tablosunun kaynağı normatif listedir, bir veritabanında rastlananlar değil.** `dialect/types.ts` T-SQL'in tam tip listesini karşılar ve iki isim uzayına birden cevap verir (`sys.types.name` ve sürücünün result-set adı). Eşlemelerin gerekçeleri ve bilerek `unknown` bırakılan iki tip `dialect/types.ts`'in guard'larında ve `test/dialect.spec.ts`'te.
 - **Her mantıksal bağlantı `max: 1` olan kendi sürücü havuzudur.** Havuzlamanın sahibi `db-core`; altına ikinci bir havuz koymak iki çağrının onun arkasından aynı soketi paylaşmasına yol açardı — iptal kuralının dayandığı şeyin tam tersi.
 
 ## Test
@@ -52,3 +52,5 @@ SKMCP_MSSQL_LIVE=1 SKMCP_MSSQL_SERVER=... pnpm turbo run test --filter=@sk-mcp/m
 ```
 
 `SKMCP_MSSQL_LIVE` yoksa atlanır, yani CI'nın veritabanına ihtiyacı olmaz. **Bu takımı üretime karşı koşmayın** — sorgu iptali ve bağlantı koparma deniyor.
+
+Every driver fact this server relies on was measured on SQL Server 15.0.2000.5 (2019 Developer Edition) with `mssql@11.0.2` → `tedious@18.6.2`, which is why `mssql` is pinned exactly. `tedious` is still resolved by `mssql`'s own range, so re-run the live suite after a lockfile change that moves it.

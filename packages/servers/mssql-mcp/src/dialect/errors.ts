@@ -11,7 +11,10 @@ interface RequestErrorShape {
  * connection-level fault carries a string `code` (`ECANCEL`, `ELOGIN`), while a
  * server-side fault carries `code: "EREQUEST"` and the real reason in the
  * numeric `number`. Reading only one of them misclassifies half the failures.
- * The numbers below are measured in docs/db-surucu-spike.md §6.
+ * 208, 2812, 8134 and `ECANCEL` were measured on tedious@18.6.2. 2812 is a
+ * user error, not a missing procedure: SQL Server reads an unknown first word as
+ * a stored-procedure call, so `selct 1` answers "Could not find stored
+ * procedure".
  */
 const byNumber: Readonly<Record<number, DbErrorCode>> = {
   208: "object_not_found",
