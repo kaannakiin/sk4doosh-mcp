@@ -2,7 +2,7 @@
 
 F0 kanıt harness'ı.
 
-Bu paket **ürün kodu değildir**. `libxml2-wasm` tercihini hedef dağıtımda ölçen deneyleri, fixture üreteçlerini ve kanıt toplayıcısını tutar. Çıktısı `docs/xml/f0/*.json` ve Türkçe kapanış kaydıdır.
+Bu paket **ürün kodu değildir**. `libxml2-wasm` tercihini hedef dağıtımda ölçen deneyleri, fixture üreteçlerini ve kanıt toplayıcısını tutar. Çıktısı `out/f0/*.json`'dır (git'e girmez).
 
 ## Neden kalıcı
 
@@ -16,7 +16,7 @@ Bu paket **ürün kodu değildir**. `libxml2-wasm` tercihini hedef dağıtımda 
 - `pack` job'unun filter listesine eklenmez.
 - Ürün kodu tutmaz: MCP sunucusu, tool handler'ı, `file-core` entegrasyonu, cursor codec'i burada olmaz.
 - `libxml2-wasm` yalnız `devDependencies`'te ve **exact** sürümle durur; caret F0-01 integrity olgularını sessizce geçersizleştirir.
-- Testler repo çalışma ağacına yazmaz. Probe stdout'a, toplayıcı `docs/xml/f0/` altına yazar.
+- Testler repo çalışma ağacına yazmaz. Probe stdout'a, toplayıcı `out/f0/` altına yazar.
 
 ## Deney modeli
 

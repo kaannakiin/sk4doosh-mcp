@@ -75,9 +75,10 @@ never hand-edited.
 ## Documentation and language
 
 The site under `apps/docs` and the spec under `packages/http/spec` are written in **English** — the site
-is sk-mcp's public face and the spec is what it links to as normative. The design records under
-`docs/` stay **Turkish**: they are internal, and the ADRs there are immutable. Site pages describe
-and link; the spec binds. `apps/docs` carries no i18n layer, by design; `products/chat` is localized (`en`, `tr`).
+is sk-mcp's public face and the spec is what it links to as normative. Site pages describe and link;
+the spec binds. There is no separate design-record tree: a decision lives next to what it
+constrains — the spec, a guard comment, or the package README — and unbuilt work is in
+[ROADMAP.md](ROADMAP.md). `apps/docs` carries no i18n layer, by design; `products/chat` is localized (`en`, `tr`).
 
 Anyone editing the site is bound by [apps/docs/dokuman-kurallari.md](apps/docs/dokuman-kurallari.md).
 

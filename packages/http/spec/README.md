@@ -36,8 +36,7 @@ normative only in part; `argument-mapping.md` is validated by two implementation
 declared normative. `openapi-ingestion.md` and `credentials.md` have one implementation each and
 bind only an implementation that reads OpenAPI documents or calls a backend over the network.
 
-The prose is English, like the documentation site that links to it. The design documents under
-repo-root `docs/` remain Turkish.
+The prose is English, like the documentation site that links to it.
 
 ## Schemas
 

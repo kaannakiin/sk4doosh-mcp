@@ -53,5 +53,5 @@ jobs:
         if: always()
         with:
           name: xml-f0-${{ matrix.target.id }}-node${{ matrix.node }}
-          path: docs/xml/f0/*.json
+          path: packages/lab/xml-lab/out/f0/*.json
           if-no-files-found: error

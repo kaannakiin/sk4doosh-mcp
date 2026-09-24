@@ -47,9 +47,8 @@ time, so a `throw` in it fails `dev` but not `build`. The `validate` script is t
 ## Language
 
 Site content and UI strings are **English** — this site is sk-mcp's public face, and so is
-`packages/http/spec`, which these pages link to as normative. The root CLAUDE.md's Turkish-prose rule
-governs `docs/` only. `dokuman-kurallari.md` is internal and stays Turkish. There is no i18n layer,
-by design.
+`packages/http/spec`, which these pages link to as normative. `dokuman-kurallari.md` is internal
+and stays Turkish. There is no i18n layer, by design.
 
 ## Style layers — the one thing that breaks silently
 

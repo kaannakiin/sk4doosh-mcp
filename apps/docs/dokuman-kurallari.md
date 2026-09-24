@@ -56,7 +56,7 @@ farklı sorulara verdiği cevaplardır. Görünürlük konusunun dört sayfası 
 
 Bir sayfa tek bir ürün hattını anlatır; sayfanın ürünü yoludur. İki ürünü karşılaştıran bir sayfa
 yazma isteği geldiğinde o sayfa aslında iki explanation sayfasıdır — veya hiçbiri. Ortak olan şey
-ürün değil spec'tir; ortak anlatımın yeri `packages/http/spec/` ve repo kökündeki `docs/`'tur.
+ürün değil spec'tir; ortak anlatımın yeri `packages/http/spec/`'tir.
 
 Ürün klasörünün adı, ürünün paket ya da dizin adıyla eşleşir (`excel-mcp`, `xml-mcp`, `file-core`).
 `http-catalog` bilinçli istisnadır: bir paketi değil, iki SDK'ya yayılan bir yeteneği — ASP.NET Core
@@ -105,11 +105,11 @@ Tutorial sonuna kadar götürür; başarı gözle görülür bir çıktıyla bit
 geçerlidir — örneklerde gerçek müşteri policy adı, tenant adı veya endpoint yolu kullanılmaz.
 DemoApi'nin `OrdersRead`, `BusinessHours`, `alice`/`bob`/`carol` kadrosu bu iş için vardır.
 
-### 7. ADR değişmez
+### 7. Gerekçe kısıtladığı şeyin yanında yaşar
 
-`docs/kararlar/` altındaki bir karar kabul edildikten sonra düzenlenmez. Karar değişirse yeni
-ADR yazılır, eskisine `superseded by 0NN` notu düşülür. Geçmişi silmek en pahalı hata: altı ay
-sonra "bunu neden böyle yapmışız" sorusunun cevabı kalmaz.
+Ayrı bir karar kaydı ağacı yoktur. Normatif kural spec'te, ölçüm ve değişmez guard yorumunda,
+paket seviyesindeki karar o paketin README'sinde durur. Site sayfası bu gerekçeyi anlatabilir ama
+tek kaynağı olamaz: "bunu neden böyle yapmışız" sorusunun cevabı kodla birlikte versiyonlanır.
 
 ## Başlıklar
 
@@ -130,7 +130,7 @@ yazmaya hazır değilsin.
 
 - Site içeriği ve arayüz metinleri **İngilizce** — site sk-mcp'nin public yüzü.
 - `packages/http/spec/` **İngilizce** — site ona normatif kaynak olarak link verir, aynı kitlenin okuması gerekir.
-- Repo kökündeki `docs/` ve bu dosya **Türkçe** — iç tasarım dokümanları.
+- Bu dosya **Türkçe** — ekip içi kural.
 - i18n katmanı yoktur, bilinçli: tek dil, drift yok.
 
 Prose stili için **Google developer documentation style guide** referanstır. Zorlamak için
