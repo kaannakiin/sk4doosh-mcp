@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 
 import { useStickToBottom } from "~/core/hooks/use-stick-to-bottom";
 import { MessageBubble } from "./MessageBubble";
-import type { ToolDecision } from "./parts/ToolPart";
+import type { ToolDecision } from "./parts/ApprovalControls";
 
 export interface MessageListProps {
   readonly sessionId: SessionId;

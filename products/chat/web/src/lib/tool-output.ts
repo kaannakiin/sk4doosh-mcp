@@ -26,15 +26,10 @@ function textOf(output: unknown): string | undefined {
  */
 export function formatToolOutput(output: unknown): string {
   const text = textOf(output);
-  if (text === undefined) {
-    return JSON.stringify(output, null, 2);
-  }
 
-  try {
-    return JSON.stringify(JSON.parse(text), null, 2);
-  } catch {
-    return text;
-  }
+  return text === undefined
+    ? JSON.stringify(output, null, 2)
+    : asReadable(text);
 }
 
 export function formatToolInput(input: unknown): [string, string][] {
@@ -48,4 +43,16 @@ export function formatToolInput(input: unknown): [string, string][] {
       typeof value === "string" ? value : JSON.stringify(value),
     ],
   );
+}
+
+/**
+ * A tool's text as a reader should see it: re-indented when it is JSON, as it
+ * came when it is not — including JSON cut off at a preview's length.
+ */
+export function asReadable(text: string): string {
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2);
+  } catch {
+    return text;
+  }
 }

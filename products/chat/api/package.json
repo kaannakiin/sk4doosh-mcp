@@ -11,12 +11,15 @@
     "lint": "oxlint --deny-warnings",
     "check-types": "tsc -p tsconfig.test.json",
     "test": "vitest run",
-    "db:seed": "node dist/seed.js"
+    "db:seed": "node dist/seed.js",
+    "gen:codex-protocol": "node scripts/gen-codex-protocol.mjs"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.48",
     "@chat/contracts": "workspace:*",
     "@chat/db": "workspace:*",
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^12.0.1",

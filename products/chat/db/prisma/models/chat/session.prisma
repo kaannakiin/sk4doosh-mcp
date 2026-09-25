@@ -20,6 +20,15 @@ model ChatSession {
   /// leaves the process — resuming a thread is the only thing it is read for.
   codexThreadId String? @map("codex_thread_id")
 
+  /// The app-server thread that runs this conversation as its main agent. Kept
+  /// apart from `codexThreadId`, which names a delegated `codex_task` thread that
+  /// never saw the conversation it was called from.
+  agentThreadId String? @map("agent_thread_id")
+
+  agentCodexModel  String? @map("agent_codex_model")
+  agentEffort      String? @map("agent_effort")
+  agentWorkerModel String? @map("agent_worker_model")
+
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    ChatMessage[]
   attachments ChatAttachment[]

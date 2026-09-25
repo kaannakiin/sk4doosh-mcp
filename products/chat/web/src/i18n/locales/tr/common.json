@@ -412,5 +412,69 @@
       },
       "autoWarning": "Veri değiştirebildiği halde sormadan çalışır."
     }
+  },
+  "agents": {
+    "open": "Ajanlar",
+    "title": "Ajan etkinliği",
+    "turnLabel": "{{index}}. tur",
+    "empty": "Bu sohbette henüz bir ajan çalışmadı.",
+    "steps_one": "{{count}} adım",
+    "steps_other": "{{count}} adım",
+    "main": "Ana ajan",
+    "subagent": "Alt ajan",
+    "worker": "Yerel işçi",
+    "status": {
+      "running": "Çalışıyor",
+      "completed": "Bitti",
+      "failed": "Başarısız",
+      "interrupted": "Durduruldu"
+    },
+    "tokens": "{{value}} token",
+    "usage": {
+      "fresh": "Yeni token",
+      "input": "Giriş",
+      "cached": "Önbellek",
+      "output": "Çıkış",
+      "reasoning": "Akıl yürütme"
+    },
+    "context": "Bağlam {{used}} / {{window}}",
+    "compactions_one": "{{count}} sıkıştırma",
+    "compactions_other": "{{count}} sıkıştırma",
+    "calls_one": "{{count}} çağrı",
+    "calls_other": "{{count}} çağrı",
+    "agents_one": "{{count}} ajan",
+    "agents_other": "{{count}} ajan",
+    "duration": "Süre",
+    "total": "Toplam",
+    "rateLimit": "Plan kullanımı %{{percent}}",
+    "resets": "{{when}} sıfırlanır",
+    "compaction": "Bağlam sıkıştırıldı",
+    "workerTokens": "{{input}} giriş · {{output}} çıkış",
+    "model": {
+      "picker": "Model",
+      "codex": "Ajan modeli",
+      "effort": "Akıl yürütme",
+      "worker": "Yerel işçi modeli",
+      "setDefault": "Yeni sohbetlerde kullan",
+      "unavailable": "Model listesi yüklenemedi."
+    },
+    "freshTokens": "{{fresh}} yeni · {{cached}} önbellek",
+    "processed": "{{value}} işlendi",
+    "turns_one": "{{count}} tur",
+    "turns_other": "{{count}} tur",
+    "timeline": {
+      "spend": "Tur başına yeni token",
+      "context": "Bağlam doluluğu"
+    },
+    "approval": {
+      "status": {
+        "pending": "Onayını bekliyor",
+        "approved": "Onaylandı",
+        "denied": "Reddedildi",
+        "expired": "Süresi doldu"
+      }
+    },
+    "stepInput": "Girdi",
+    "stepOutput": "Dönüş"
   }
 }

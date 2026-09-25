@@ -11,9 +11,17 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useLocale } from "~/core/hooks/use-locale";
+import {
+  agentApprovalOf,
+  agentStepsOf,
+  agentTelemetryOf,
+} from "~/lib/agent-parts";
 
 import { AttachmentStrip } from "./AttachmentStrip";
-import type { ToolDecision } from "./parts/ToolPart";
+import { AgentApprovalPart } from "./parts/AgentApprovalPart";
+import { AgentStepsPart } from "./parts/AgentStepsPart";
+import { AgentTurnFooter } from "./parts/AgentTurnFooter";
+import type { ToolDecision } from "./parts/ApprovalControls";
 import { FilePart } from "./parts/FilePart";
 import { ReasoningPart } from "./parts/ReasoningPart";
 import { TextPart } from "./parts/TextPart";
@@ -44,6 +52,8 @@ function MessageBubbleComponent({
   const asked = message.role === "user";
   const last = message.parts.length - 1;
   const files = attachedFiles(message);
+  const steps = asked ? [] : agentStepsOf(message);
+  const telemetry = asked ? undefined : agentTelemetryOf(message);
 
   return (
     <article
@@ -62,6 +72,13 @@ function MessageBubbleComponent({
             files={files}
           />
         </div>
+      )}
+
+      {steps.length === 0 ? null : (
+        <AgentStepsPart
+          steps={steps}
+          running={streaming && telemetry?.endedAt == null}
+        />
       )}
 
       {message.parts.map((part, index) => {
@@ -96,8 +113,24 @@ function MessageBubbleComponent({
           return <FilePart key={key} url={part.url} filename={part.filename} />;
         }
 
+        const approval = agentApprovalOf(part);
+        if (approval !== undefined) {
+          return (
+            <AgentApprovalPart
+              key={approval.approvalId}
+              approval={approval}
+              live={streaming}
+              onDecision={onDecision}
+            />
+          );
+        }
+
         return null;
       })}
+
+      {telemetry === undefined || telemetry.endedAt === null ? null : (
+        <AgentTurnFooter telemetry={telemetry} />
+      )}
     </article>
   );
 }

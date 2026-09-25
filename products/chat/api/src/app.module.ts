@@ -6,6 +6,7 @@ import {
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_PIPE } from "@nestjs/core";
 
+import { AgentModule } from "./agent/agent.module.ts";
 import { AttachmentsModule } from "./attachments/attachments.module.ts";
 import { AuthModule } from "./auth/auth.module.ts";
 import { ChatModule } from "./chat/chat.module.ts";
@@ -37,6 +38,7 @@ import { ZodValidationPipe } from "./pipes/zod-validation.pipe.ts";
     McpModule,
     HealthModule,
     ChatModule,
+    AgentModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

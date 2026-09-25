@@ -18,6 +18,6 @@ import { CodexWorkspaceService } from "./codex-workspace.service.ts";
     CodexToolService,
     CodexWorkspaceService,
   ],
-  exports: [CodexToolService],
+  exports: [CodexToolService, CodexWorkspaceService],
 })
 export class CodexModule {}

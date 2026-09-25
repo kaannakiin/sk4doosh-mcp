@@ -1,5 +1,4 @@
 import type { Locale } from "@chat/contracts/common/locale";
-import { sanitizeToolDescription } from "@chat/contracts/integration/tool-description";
 import { sanitizeToolInputSchema } from "@chat/contracts/integration/tool-input-schema";
 import { findToolsInputSchema } from "@chat/contracts/tools/discovery/find-tools";
 import { Injectable, Logger } from "@nestjs/common";
@@ -15,8 +14,11 @@ import type { CatalogTool } from "../connections/integration-tool.repository.ts"
 import type { UserId } from "../db/ids.ts";
 import { I18nService } from "../i18n/i18n.service.ts";
 import { RemoteToolInvoker } from "./remote-tool-invoker.ts";
-
-const MAX_SEARCH_RESULTS = 10;
+import {
+  rankByTerms,
+  searchableRemote,
+  summarizeRemote,
+} from "./tool-search.ts";
 
 /**
  * Guard: a ceiling on what one turn may reveal, not on what the reader may
@@ -40,28 +42,6 @@ const EMPTY: RemoteToolSurface = {
   instructions: undefined,
   activeToolsFor: (local) => local,
 };
-
-function summarize(entry: CatalogTool): string {
-  return sanitizeToolDescription(entry.title, entry.description);
-}
-
-/**
- * Guard: search reads what the server wrote, not what the model is shown.
- * `summarize` bounds its output at a length that would drop the tail of a long
- * description, and a term that only appears there is still the reader's best
- * handle on the tool they are looking for.
- */
-function searchable(entry: CatalogTool): string {
-  return [
-    entry.remoteName,
-    entry.title,
-    entry.description,
-    entry.integrationName,
-  ]
-    .filter((part) => part !== null && part !== "")
-    .join(" ")
-    .toLowerCase();
-}
 
 @Injectable()
 export class RemoteToolSetService {
@@ -131,7 +111,7 @@ export class RemoteToolSetService {
     for (const [exposed, entry] of byExposedName) {
       tools[exposed] = tool({
         metadata: { policy: entry.destructive ? "always" : "askable" },
-        description: summarize(entry),
+        description: summarizeRemote(entry),
         inputSchema: jsonSchema(
           sanitizeToolInputSchema(entry.inputSchema) as Record<string, unknown>,
         ),
@@ -164,16 +144,7 @@ export class RemoteToolSetService {
       description: this.i18n.t("chat:tools.find.description", {}, locale),
       inputSchema: findToolsInputSchema,
       execute: ({ query }: { query: string }) => {
-        const terms = query.toLowerCase().split(/\s+/u).filter(Boolean);
-        const scored = catalog
-          .map((entry) => ({
-            entry,
-            hits: terms.filter((term) => searchable(entry).includes(term))
-              .length,
-          }))
-          .filter(({ hits }) => hits > 0)
-          .sort((left, right) => right.hits - left.hits)
-          .slice(0, MAX_SEARCH_RESULTS);
+        const scored = rankByTerms(catalog, query, searchableRemote);
 
         if (scored.length === 0) {
           return {
@@ -182,7 +153,7 @@ export class RemoteToolSetService {
           };
         }
 
-        const found = scored.map(({ entry }) => {
+        const found = scored.map((entry) => {
           const name = exposedToolNameFor(
             entry.integrationPublicId,
             entry.remoteName,
@@ -194,7 +165,7 @@ export class RemoteToolSetService {
           return {
             name,
             server: entry.integrationName,
-            description: summarize(entry),
+            description: summarizeRemote(entry),
           };
         });
 

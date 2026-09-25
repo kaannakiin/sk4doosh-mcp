@@ -44,6 +44,8 @@ export class CodexWorkspaceService implements OnModuleDestroy {
 
   private readonly touched = new Map<SessionId, number>();
 
+  private readonly releasing: ((session: SessionId) => Promise<void>)[] = [];
+
   private readonly settings: CodexConfig;
 
   private readonly sweeper: NodeJS.Timeout;
@@ -106,8 +108,23 @@ export class CodexWorkspaceService implements OnModuleDestroy {
     return { directory, copied };
   }
 
+  /**
+   * Guard: a listener runs before the directory is removed, and that order is
+   * load bearing for the same reason `ReaderSessionService.sweep` gives — a
+   * server still holding a file in the workspace keeps its inode alive while the
+   * next call by name fails.
+   *
+   * @param listener what must let go of a conversation's workspace first
+   */
+  onRelease(listener: (session: SessionId) => Promise<void>): void {
+    this.releasing.push(listener);
+  }
+
   async release(session: SessionId): Promise<void> {
     this.touched.delete(session);
+    for (const listener of this.releasing) {
+      await listener(session);
+    }
     await rm(this.directoryFor(session), { recursive: true, force: true });
   }
 

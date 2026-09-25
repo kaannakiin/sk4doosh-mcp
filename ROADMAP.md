@@ -33,13 +33,10 @@ spec, a guard comment or the package README.
 
 ## llm-mcp
 
-- **Codex as the turn itself.** Remove the `codex_task` tool so codex owns the turn, and shrink the
-  chat product's local orchestrator to a chat-or-task gate. `mcp_tool_call` events already reach the
-  UI as activity steps (`products/chat/api/src/codex/codex-runner.service.ts`). Done when "build a
-  weekly report from this spreadsheet" works end to end with the local calls visible in the UI.
-- **Several model hosts.** Round-robin and failover across Ollama hosts, with `SKMCP_LLM_BASE_URL`
-  taking a comma-separated list. Done when a second GPU halves the queue and one host going down
-  moves its work to the other.
+- **Several model hosts.** The chat product's agent gateway already queues worker calls per host
+  (`products/chat/api/src/gateway/worker-lane.ts`); what is missing is more than one host to queue
+  on, with round-robin and failover between them. Done when a second GPU halves the queue and one
+  host going down moves its work to the other.
 - **A savings record.** Measure worker time, verification and codex's repair together, so a
   delegation's cost is known rather than assumed.
 - **A job model for large inputs.** Start and poll for work over 1 000 rows; `local_map` refuses more

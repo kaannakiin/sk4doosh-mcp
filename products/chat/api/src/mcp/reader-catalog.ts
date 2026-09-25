@@ -1,6 +1,7 @@
 import type { ReaderFamily } from "@chat/contracts/attachment/media-type";
 import { EXCEL_TOOL_SCHEMAS } from "@chat/contracts/tools/excel/catalog";
 import { PDF_TOOL_SCHEMAS } from "@chat/contracts/tools/pdf/catalog";
+import type { ChatToolName } from "@chat/contracts/tools/tool-name";
 import { XML_TOOL_SCHEMAS } from "@chat/contracts/tools/xml/catalog";
 import type { ToolSet } from "ai";
 import type { ZodType } from "zod";
@@ -48,4 +49,18 @@ export function exposedToolsOf(family: ReaderFamily, tools: ToolSet): ToolSet {
       ];
     }),
   ) as ToolSet;
+}
+
+export interface ReaderToolEntry {
+  readonly name: ChatToolName;
+  readonly serverName: string;
+  readonly description: string | undefined;
+}
+
+export function readerToolsOf(family: ReaderFamily): ReaderToolEntry[] {
+  return Object.entries(CATALOG_BY_FAMILY[family]).map(([name, entry]) => ({
+    name: name as ChatToolName,
+    serverName: entry.serverName ?? name,
+    description: entry.description,
+  }));
 }

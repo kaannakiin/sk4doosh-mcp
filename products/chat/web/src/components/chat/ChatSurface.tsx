@@ -1,5 +1,7 @@
+import type { AgentSelection } from "@chat/contracts/agent/model";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { Locale } from "@chat/contracts/common/locale";
+import { useAnswerAgentApproval } from "@chat/queries/agent/mutations";
 import { useUploadAttachment } from "@chat/queries/attachments/mutations";
 import { useRememberTool } from "@chat/queries/connections/mutations";
 import { useAttachments } from "@chat/queries/attachments/list";
@@ -10,15 +12,27 @@ import {
 } from "@chat/queries/chat/attached-files";
 import { useChatSession } from "@chat/queries/chat/use-chat-session";
 import type { SessionView } from "@chat/queries/sessions/detail";
-import { Alert } from "@mantine/core";
-import { useCallback } from "react";
+import { Alert, Button } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { IconBinaryTree2 } from "@tabler/icons-react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { ToolDecision } from "./parts/ToolPart";
+import { asCompact } from "~/core/text/count";
+import { turnsOf } from "~/lib/agent-parts";
+import { turnTokens } from "~/lib/agent-session";
+
+import type { ToolDecision } from "./parts/ApprovalControls";
 import { AttachmentStrip } from "./AttachmentStrip";
 import { Composer } from "./Composer";
 import { EmptyState } from "./EmptyState";
 import { MessageList } from "./MessageList";
+import { ModelPicker } from "./ModelPicker";
+
+const AgentActivityDialog = lazy(async () => ({
+  default: (await import("~/components/agents/AgentActivityDialog"))
+    .AgentActivityDialog,
+}));
 
 export interface ChatSurfaceProps {
   readonly sessionId: SessionId;
@@ -37,6 +51,9 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
   const pending = usePendingUploads(sessionId);
   const upload = useUploadAttachment(sessionId, locale);
   const { mutate: rememberTool } = useRememberTool(locale);
+  const { mutate: answerAgentApproval } = useAnswerAgentApproval(locale);
+  const [agent, setAgent] = useState<AgentSelection | null>(null);
+  const [agentsOpened, agentsDialog] = useDisclosure(false);
 
   const {
     messages,
@@ -53,6 +70,12 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
     session: view.session,
     attachmentCount: view.attachments.length,
   });
+
+  const turns = useMemo(() => turnsOf(messages), [messages]);
+  const spent = turns.reduce(
+    (sum, turn) => sum + turnTokens(turn.telemetry).fresh,
+    0,
+  );
 
   const busy = status === "submitted" || status === "streaming";
 
@@ -85,7 +108,14 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
    * `memo` on every tool card in the list.
    */
   const onDecision = useCallback(
-    ({ approvalId, approved, rememberAs, scope, ttl }: ToolDecision) => {
+    ({
+      channel,
+      approvalId,
+      approved,
+      rememberAs,
+      scope,
+      ttl,
+    }: ToolDecision) => {
       if (rememberAs !== undefined) {
         rememberTool({
           exposedName: rememberAs,
@@ -94,9 +124,18 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
           ...(scope === "session" ? { sessionId } : {}),
         });
       }
+      if (channel === "gateway") {
+        answerAgentApproval({
+          approvalId,
+          approved,
+          remembered: rememberAs !== undefined,
+        });
+
+        return;
+      }
       void addToolApprovalResponse({ id: approvalId, approved });
     },
-    [addToolApprovalResponse, rememberTool, sessionId],
+    [addToolApprovalResponse, answerAgentApproval, rememberTool, sessionId],
   );
 
   /**
@@ -109,14 +148,17 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
    */
   const onSend = useCallback(
     (text: string) => {
-      void sendMessage({
-        parts: [
-          ...(staged.length > 0 ? [attachedFilesPart(staged)] : []),
-          { type: "text", text },
-        ],
-      });
+      void sendMessage(
+        {
+          parts: [
+            ...(staged.length > 0 ? [attachedFilesPart(staged)] : []),
+            { type: "text", text },
+          ],
+        },
+        agent === null ? undefined : { body: { agent } },
+      );
     },
-    [sendMessage, staged],
+    [sendMessage, staged, agent],
   );
 
   return (
@@ -158,6 +200,26 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
           </Alert>
         ) : null}
 
+        <div className="mx-auto flex max-w-measure items-center justify-between gap-2 px-4 pt-2">
+          <ModelPicker
+            sessionId={sessionId}
+            locale={locale}
+            value={agent}
+            onChange={setAgent}
+          />
+          <Button
+            variant="subtle"
+            size="compact-xs"
+            color="gray"
+            leftSection={<IconBinaryTree2 size={13} />}
+            onClick={agentsDialog.open}
+          >
+            {spent === 0
+              ? t("agents.open")
+              : `${t("agents.open")} · ${t("agents.tokens", { value: asCompact(spent, locale) })}`}
+          </Button>
+        </div>
+
         <Composer
           busy={busy}
           attached={staged.length > 0 || pending.length > 0}
@@ -174,6 +236,17 @@ export function ChatSurface({ sessionId, locale, view }: ChatSurfaceProps) {
           />
         </Composer>
       </div>
+
+      {agentsOpened ? (
+        <Suspense fallback={null}>
+          <AgentActivityDialog
+            opened={agentsOpened}
+            onClose={agentsDialog.close}
+            turns={turns}
+            locale={locale}
+          />
+        </Suspense>
+      ) : null}
     </section>
   );
 }

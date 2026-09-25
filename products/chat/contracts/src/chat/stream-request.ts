@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { agentSelectionSchema } from "../agent/model.ts";
 import { sessionIdSchema } from "./session.ts";
 
 /**
@@ -21,6 +22,7 @@ export const streamRequestSchema = z.object({
    */
   trigger: z.enum(["submit-message", "regenerate-message"]).optional(),
   messageId: z.string().min(1).optional(),
+  agent: agentSelectionSchema.optional(),
 });
 
 export type StreamRequest = z.infer<typeof streamRequestSchema>;

@@ -70,6 +70,33 @@ export class AttachmentStoreService {
     );
   }
 
+  /**
+   * Materializes every readable attachment of the session into its sandbox.
+   *
+   * Guard: settled one by one rather than all or nothing. A file the cache
+   * refuses is left out of the returned list, so the agent is told exactly which
+   * files it can open instead of the whole turn failing on one of them.
+   *
+   * @returns the sandbox paths that are on disk, in listing order
+   */
+  async materializeReadable(
+    userId: UserId,
+    session: SessionId,
+  ): Promise<string[]> {
+    const rows = (
+      await this.repository.listAttachments(userId, session)
+    ).filter((row) => row.sandboxPath !== null);
+    const settled = await Promise.allSettled(
+      rows.map((row) => this.cache.ensure(session, row)),
+    );
+
+    return rows.flatMap((row, index) =>
+      settled[index]?.status === "fulfilled" && row.sandboxPath !== null
+        ? [row.sandboxPath]
+        : [],
+    );
+  }
+
   async familiesFor(
     userId: UserId,
     session: SessionId,

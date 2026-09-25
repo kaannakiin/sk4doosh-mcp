@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import {
+  AGENT_APPROVAL_HOLD_MS_DEFAULT,
+  AGENT_WORKER_CONCURRENCY_DEFAULT,
+} from "../agent/approval.ts";
+import {
   ATTACHMENT_MAX_BYTES_DEFAULT,
   ATTACHMENT_MAX_BYTES_HARD,
   ATTACHMENT_MAX_FILES_DEFAULT,
@@ -275,6 +279,7 @@ export const apiEnvSchema = z.preprocess(
        */
       CHAT_CODEX_ROOT: z.string().trim().min(1).optional(),
       CHAT_CODEX_MODEL: z.string().trim().min(1).optional(),
+      CHAT_CODEX_EFFORT: z.string().trim().min(1).optional(),
       CHAT_CODEX_TIMEOUT_MS: z.coerce
         .number()
         .int()
@@ -287,6 +292,18 @@ export const apiEnvSchema = z.preprocess(
         .positive()
         .default(CODEX_MAX_WORKSPACES_DEFAULT),
       CHAT_CODEX_LLM_MCP_ENTRY: z.string().trim().min(1).optional(),
+      CHAT_AGENT_APPROVAL_HOLD_MS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .max(CODEX_TIMEOUT_MS_HARD)
+        .default(AGENT_APPROVAL_HOLD_MS_DEFAULT),
+      CHAT_AGENT_WORKER_CONCURRENCY: z.coerce
+        .number()
+        .int()
+        .positive()
+        .max(16)
+        .default(AGENT_WORKER_CONCURRENCY_DEFAULT),
 
       /**
        * Guard: required in production. The ai sdk signs each approval request

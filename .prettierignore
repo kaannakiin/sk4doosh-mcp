@@ -5,3 +5,4 @@ dist
 apps/docs/src/routeTree.gen.ts
 products/chat/web/src/routeTree.gen.ts
 sdks/dotnet
+products/chat/api/src/codex/protocol/generated

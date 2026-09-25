@@ -2,12 +2,22 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { MulterModule } from "@nestjs/platform-express";
 
+import { AgentModule } from "../agent/agent.module.ts";
+import { AgentTurnService } from "../agent/agent-turn.service.ts";
 import { AttachmentsModule } from "../attachments/attachments.module.ts";
 import { AuthModule } from "../auth/auth.module.ts";
 import { CodexModule } from "../codex/codex.module.ts";
 import { ConnectionsModule } from "../connections/connections.module.ts";
 import type { AppConfig } from "../config/configuration.ts";
 import { DbModule } from "../db/db.module.ts";
+import { ApprovalHolds } from "../gateway/approval-holds.ts";
+import { GatewayCallsService } from "../gateway/gateway-calls.service.ts";
+import { GatewayServerService } from "../gateway/gateway-server.service.ts";
+import { GatewayController } from "../gateway/gateway.controller.ts";
+import { GrantRegistry } from "../gateway/grant-registry.ts";
+import { AgentServerPool } from "../gateway/server-pool.ts";
+import { ToolDirectoryService } from "../gateway/tool-directory.service.ts";
+import { WorkerLanes } from "../gateway/worker-lane.ts";
 import { LlmModule } from "../llm/llm.module.ts";
 import { McpModule } from "../mcp/mcp.module.ts";
 import { ChatController } from "./chat.controller.ts";
@@ -22,6 +32,7 @@ import { SystemPromptService } from "./system-prompt.service.ts";
 
 @Module({
   imports: [
+    AgentModule,
     AttachmentsModule,
     AuthModule,
     /**
@@ -71,8 +82,16 @@ import { SystemPromptService } from "./system-prompt.service.ts";
       }),
     }),
   ],
-  controllers: [ChatController],
+  controllers: [ChatController, GatewayController],
   providers: [
+    AgentServerPool,
+    AgentTurnService,
+    ApprovalHolds,
+    GatewayCallsService,
+    GatewayServerService,
+    GrantRegistry,
+    ToolDirectoryService,
+    WorkerLanes,
     ChatSessionRepository,
     MessageRepository,
     ChatService,

@@ -94,10 +94,16 @@ export interface CodexConfig {
   binary?: string;
   baseUrl?: string;
   model?: string;
+  effort?: string;
   root: string;
   timeoutMs: number;
   maxWorkspaces: number;
   localWorker?: string;
+}
+
+export interface GatewayConfig {
+  approvalHoldMs: number;
+  workerConcurrency: number;
 }
 
 export interface AppConfig {
@@ -116,6 +122,7 @@ export interface AppConfig {
   sessions: SessionConfig;
   readers: ReaderConfig;
   codex: CodexConfig;
+  gateway: GatewayConfig;
   toolApprovalSecret?: string;
 }
 
@@ -246,10 +253,7 @@ export function loadConfig(): AppConfig {
       document: { command: env.CHAT_MCP_XML_CMD, env: {} },
       pdf: {
         command: env.CHAT_MCP_PDF_CMD,
-        env: pdfReaderEnv(
-          env.CHAT_MCP_PDF_OCR_URL,
-          env.CHAT_MCP_PDF_OCR_MODEL,
-        ),
+        env: pdfReaderEnv(env.CHAT_MCP_PDF_OCR_URL, env.CHAT_MCP_PDF_OCR_MODEL),
       },
     },
     codex: {
@@ -267,6 +271,7 @@ export function loadConfig(): AppConfig {
       binary: env.CHAT_CODEX_BIN,
       baseUrl: env.CHAT_CODEX_BASE_URL,
       model: env.CHAT_CODEX_MODEL,
+      effort: env.CHAT_CODEX_EFFORT,
       root: env.CHAT_CODEX_ROOT ?? join(tmpdir(), "chat-codex"),
       timeoutMs: env.CHAT_CODEX_TIMEOUT_MS,
       maxWorkspaces: env.CHAT_CODEX_MAX_WORKSPACES,
@@ -279,6 +284,10 @@ export function loadConfig(): AppConfig {
         env.CHAT_CODEX_LLM_MCP_ENTRY === undefined
           ? undefined
           : resolve(env.CHAT_CODEX_LLM_MCP_ENTRY),
+    },
+    gateway: {
+      approvalHoldMs: env.CHAT_AGENT_APPROVAL_HOLD_MS,
+      workerConcurrency: env.CHAT_AGENT_WORKER_CONCURRENCY,
     },
     toolApprovalSecret: env.CHAT_TOOL_APPROVAL_SECRET,
   };

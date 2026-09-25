@@ -204,4 +204,27 @@ export class ChatSessionRepository {
       data: { codexThreadId: threadId },
     });
   }
+
+  async agentThreadFor(
+    userId: UserId,
+    sessionId: string,
+  ): Promise<string | undefined> {
+    const found = await this.db.client.chatSession.findFirst({
+      where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
+      select: { agentThreadId: true },
+    });
+
+    return found?.agentThreadId ?? undefined;
+  }
+
+  async rememberAgentThread(
+    userId: UserId,
+    sessionId: string,
+    threadId: string,
+  ): Promise<void> {
+    await this.db.client.chatSession.updateMany({
+      where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
+      data: { agentThreadId: threadId },
+    });
+  }
 }

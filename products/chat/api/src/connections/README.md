@@ -105,6 +105,14 @@ prompt never offers a grant the gate would ignore.
   and `find_tools` decide what a model is _shown_; `authorizeInvocation` is
   the only gate that decides what a model may _run_, and it runs regardless of
   how the tool call was discovered.
+- **The coding agent reaches no tool except through this process.** Its
+  threads are given one MCP server, the agent gateway
+  (`products/chat/api/src/gateway/`), on a loopback port with a bearer grant
+  that lives for one turn. Every reader, the local worker and every connected
+  server sit behind it, so a call from the agent — or from a sub-agent it
+  spawned — passes the turn's approval gate and, for a connected server,
+  `authorizeInvocation` and the token service, exactly as a call from the chat
+  model does. Codex never holds a connection's token.
 - **Ownership is re-checked on every invoke from the trusted session**, never
   from a client-supplied connection id — `authorize-invocation.ts`.
 - **Only an `active` connection may be used.** `revoked` and `reauth_required`

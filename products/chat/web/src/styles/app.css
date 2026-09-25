@@ -111,6 +111,23 @@ body {
   }
 }
 
+@keyframes agent-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.agent-edge-live {
+  stroke-dasharray: 6 4;
+  animation: agent-flow 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-edge-live {
+    animation: none;
+  }
+}
+
 /**
  * Guard: this is the one styled scope that stays css. `react-markdown` builds
  * these elements from the model's answer, so there is no jsx to hang a utility

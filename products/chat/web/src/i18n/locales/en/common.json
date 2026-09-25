@@ -412,5 +412,69 @@
       },
       "autoWarning": "Runs without asking even though it can change data."
     }
+  },
+  "agents": {
+    "open": "Agents",
+    "title": "Agent activity",
+    "turnLabel": "Turn {{index}}",
+    "empty": "No agent has run in this conversation yet.",
+    "steps_one": "{{count}} step",
+    "steps_other": "{{count}} steps",
+    "main": "Main agent",
+    "subagent": "Sub-agent",
+    "worker": "Local worker",
+    "status": {
+      "running": "Running",
+      "completed": "Done",
+      "failed": "Failed",
+      "interrupted": "Stopped"
+    },
+    "tokens": "{{value}} tokens",
+    "usage": {
+      "fresh": "New tokens",
+      "input": "Input",
+      "cached": "Cached",
+      "output": "Output",
+      "reasoning": "Reasoning"
+    },
+    "context": "Context {{used}} / {{window}}",
+    "compactions_one": "{{count}} compaction",
+    "compactions_other": "{{count}} compactions",
+    "calls_one": "{{count}} call",
+    "calls_other": "{{count}} calls",
+    "agents_one": "{{count}} agent",
+    "agents_other": "{{count}} agents",
+    "duration": "Duration",
+    "total": "Total",
+    "rateLimit": "Plan usage {{percent}}%",
+    "resets": "resets {{when}}",
+    "compaction": "Context compacted",
+    "workerTokens": "{{input}} in · {{output}} out",
+    "model": {
+      "picker": "Model",
+      "codex": "Agent model",
+      "effort": "Reasoning",
+      "worker": "Local worker model",
+      "setDefault": "Use for new conversations",
+      "unavailable": "The model list could not be loaded."
+    },
+    "freshTokens": "{{fresh}} new · {{cached}} cached",
+    "processed": "{{value}} processed",
+    "turns_one": "{{count}} turn",
+    "turns_other": "{{count}} turns",
+    "timeline": {
+      "spend": "New tokens per turn",
+      "context": "Context fill"
+    },
+    "approval": {
+      "status": {
+        "pending": "Waiting for you",
+        "approved": "Approved",
+        "denied": "Declined",
+        "expired": "Expired"
+      }
+    },
+    "stepInput": "Input",
+    "stepOutput": "Returned"
   }
 }

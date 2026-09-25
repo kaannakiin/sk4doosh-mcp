@@ -1,32 +1,14 @@
-import {
-  isGrantTtl,
-  type GrantScope,
-  type GrantTtl,
-} from "@chat/contracts/integration/grant-scope";
-import { useCurrentUser } from "@chat/queries/auth/current-user";
-import { Button, Checkbox, Radio, SegmentedControl } from "@mantine/core";
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import { getToolName } from "ai";
-import { memo, useState } from "react";
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useLocale } from "~/core/hooks/use-locale";
 import { codexOutputOf } from "~/lib/codex-output";
 import { formatToolInput, formatToolOutput } from "~/lib/tool-output";
+import { ApprovalControls, type ToolDecision } from "./ApprovalControls";
 import { CodexPart } from "./CodexPart";
 
 export type ReaderToolPart = ToolUIPart | DynamicToolUIPart;
-
-export interface ToolDecision {
-  readonly approvalId: string;
-  readonly approved: boolean;
-  /** The tool name to stop asking about, when the reader asked for that. */
-  readonly rememberAs: string | undefined;
-  /** How far that grant reaches. Meaningless when nothing is remembered. */
-  readonly scope: GrantScope;
-  /** How long that grant lives. Meaningless when nothing is remembered. */
-  readonly ttl: GrantTtl;
-}
 
 /**
  * Guard: read from the part rather than derived from the name. The server
@@ -50,11 +32,6 @@ export interface ToolPartProps {
 
 function ToolPartComponent({ part, onDecision }: ToolPartProps) {
   const { t } = useTranslation();
-  const me = useCurrentUser(useLocale());
-  const [remember, setRemember] = useState(false);
-  const [scope, setScope] = useState<GrantScope>("session");
-  const [chosenTtl, setChosenTtl] = useState<GrantTtl | undefined>();
-  const ttl = chosenTtl ?? me.data?.grantTtl ?? "never";
   const name = getToolName(part);
   const args = formatToolInput(part.input);
   const approvalId = part.approval?.id;
@@ -101,101 +78,13 @@ function ToolPartComponent({ part, onDecision }: ToolPartProps) {
       )}
 
       {part.state === "approval-requested" && approvalId !== undefined ? (
-        <div className="mt-3 flex flex-col gap-2.5">
-          {/*
-            The narrow grant is the one that is selected, and widening it is a
-            second, deliberate click. A single checkbox meaning "forever and
-            everywhere" made the widest thing a reader can give the easiest thing
-            to give.
-          */}
-          {rememberable(part) ? (
-            <div className="flex flex-col gap-1.5">
-              <Checkbox
-                size="xs"
-                checked={remember}
-                label={t("tool.remember")}
-                onChange={(event) => {
-                  setRemember(event.currentTarget.checked);
-                }}
-              />
-              {remember ? (
-                <Radio.Group
-                  size="xs"
-                  value={scope}
-                  onChange={(value) => {
-                    setScope(value === "global" ? "global" : "session");
-                  }}
-                >
-                  <div className="ms-6 flex flex-col gap-1">
-                    <Radio
-                      size="xs"
-                      value="session"
-                      label={t("tool.rememberScope.session")}
-                    />
-                    <Radio
-                      size="xs"
-                      value="global"
-                      label={t("tool.rememberScope.global")}
-                    />
-                  </div>
-                </Radio.Group>
-              ) : null}
-              {remember ? (
-                <div className="ms-6 flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-ink-dim">
-                    {t("tool.rememberFor")}
-                  </span>
-                  <SegmentedControl
-                    size="xs"
-                    radius="md"
-                    value={ttl}
-                    data={[
-                      { value: "day", label: t("tool.rememberTtl.day") },
-                      { value: "week", label: t("tool.rememberTtl.week") },
-                      { value: "never", label: t("tool.rememberTtl.never") },
-                    ]}
-                    onChange={(value) => {
-                      if (isGrantTtl(value)) {
-                        setChosenTtl(value);
-                      }
-                    }}
-                  />
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          <div className="flex gap-2">
-            <Button
-              size="xs"
-              onClick={() => {
-                onDecision({
-                  approvalId,
-                  approved: true,
-                  rememberAs: remember ? name : undefined,
-                  scope,
-                  ttl,
-                });
-              }}
-            >
-              {t("tool.approve")}
-            </Button>
-            <Button
-              size="xs"
-              variant="default"
-              onClick={() => {
-                onDecision({
-                  approvalId,
-                  approved: false,
-                  rememberAs: undefined,
-                  scope,
-                  ttl,
-                });
-              }}
-            >
-              {t("tool.deny")}
-            </Button>
-          </div>
-        </div>
+        <ApprovalControls
+          channel="stream"
+          approvalId={approvalId}
+          toolName={name}
+          rememberable={rememberable(part)}
+          onDecision={onDecision}
+        />
       ) : null}
 
       {codex === undefined ? null : (

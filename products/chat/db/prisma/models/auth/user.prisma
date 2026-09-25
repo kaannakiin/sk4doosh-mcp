@@ -12,6 +12,9 @@ model User {
   disabledAt      DateTime? @map("disabled_at") @db.Timestamptz
   toolApprovalMode ToolApprovalMode @default(remember) @map("tool_approval_mode")
   grantTtl         GrantTtl         @default(never) @map("grant_ttl")
+  agentCodexModel  String?          @map("agent_codex_model")
+  agentEffort      String?          @map("agent_effort")
+  agentWorkerModel String?          @map("agent_worker_model")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 

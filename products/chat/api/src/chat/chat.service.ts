@@ -7,16 +7,21 @@ import { ConfigService } from "@nestjs/config";
 import {
   convertToModelMessages,
   createIdGenerator,
+  createUIMessageStream,
   isStepCount,
   pipeUIMessageStreamToResponse,
   smoothStream,
   toUIMessageStream,
   validateUIMessages,
   type ToolSet,
+  type UIMessage,
 } from "ai";
 import { streamText } from "ai-sdk-ollama";
 import type { ServerResponse } from "node:http";
 
+import { AgentSelectionRepository } from "../agent/agent-selection.repository.ts";
+import type { AgentUIMessage } from "../agent/agent-message.ts";
+import { AgentTurnService } from "../agent/agent-turn.service.ts";
 import { AttachmentStoreService } from "../attachments/attachment-store.service.ts";
 import { SandboxCacheService } from "../attachments/sandbox-cache.service.ts";
 import { CodexToolService } from "../codex/codex-tool.service.ts";
@@ -71,6 +76,8 @@ export class ChatService {
     private readonly approvals: ToolApprovalGateService,
     private readonly codex: CodexToolService,
     private readonly prompt: SystemPromptService,
+    private readonly selections: AgentSelectionRepository,
+    private readonly agent: AgentTurnService,
   ) {
     this.approvalSecret = config.get("toolApprovalSecret", { infer: true });
   }
@@ -99,7 +106,28 @@ export class ChatService {
       );
     }
 
+    if (request.agent !== undefined) {
+      await this.selections.setForSession(
+        userId,
+        request.sessionId,
+        request.agent,
+      );
+    }
+
     const abort = abortOnDisconnect(response);
+
+    if (this.agent.enabled) {
+      await this.streamAgent(
+        request,
+        userId,
+        messages,
+        response,
+        locale,
+        abort,
+      );
+
+      return;
+    }
 
     /**
      * Guard: converted twice, and the second pass is the one that matters.
@@ -206,6 +234,47 @@ export class ChatService {
         originalMessages: messages,
         generateMessageId: messageId,
         onError: (cause) => this.renderError(cause, locale),
+        onEnd: (event) =>
+          this.history.settle(
+            userId,
+            request.sessionId,
+            event,
+            this.i18n.t("chat:tools.interrupted", {}, locale),
+          ),
+      }),
+    });
+  }
+
+  private async streamAgent(
+    request: StreamRequest,
+    userId: UserId,
+    messages: UIMessage[],
+    response: ServerResponse,
+    locale: Locale,
+    abort: AbortController,
+  ): Promise<void> {
+    const selection =
+      request.agent ??
+      (await this.selections.forSession(userId, request.sessionId));
+
+    await pipeUIMessageStreamToResponse({
+      response,
+      stream: createUIMessageStream<AgentUIMessage>({
+        originalMessages: messages as AgentUIMessage[],
+        generateId: messageId,
+        onError: (cause) => this.renderError(cause, locale),
+        execute: ({ writer }) =>
+          this.agent.run(
+            {
+              userId,
+              sessionId: request.sessionId,
+              messages,
+              selection,
+              locale,
+              signal: abort.signal,
+            },
+            writer,
+          ),
         onEnd: (event) =>
           this.history.settle(
             userId,
