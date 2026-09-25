@@ -120,6 +120,9 @@ export class AuthSessionService {
       new Date(Date.now() + WEB_REFRESH_TTL_MS),
       new Date(),
     );
+    if (outcome.kind === "superseded") {
+      this.errors.fail("refresh_superseded", HttpStatus.CONFLICT);
+    }
     if (outcome.kind !== "rotated") {
       this.errors.fail("session_expired", HttpStatus.UNAUTHORIZED);
     }

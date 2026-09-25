@@ -129,6 +129,61 @@ body {
 }
 
 /**
+ * Guard: the fade is a mask, not a gradient overlay, so it follows whatever
+ * background the row has — hover, active or the panel — without knowing it.
+ * While scrolling both edges fade, and the hook adds the fade's width to the
+ * shift so the last word still lands fully in view.
+ */
+.chat-marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+}
+
+.chat-marquee > * {
+  display: inline-block;
+}
+
+.chat-marquee[data-marquee] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 0.75rem,
+    #000 calc(100% - 0.75rem),
+    transparent
+  );
+}
+
+.chat-marquee[data-marquee] > * {
+  animation: chat-marquee var(--marquee-duration) ease-in-out infinite alternate;
+}
+
+@keyframes chat-marquee {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(calc(var(--marquee-shift) * -1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-marquee[data-marquee] {
+    mask-image: linear-gradient(
+      to right,
+      #000 calc(100% - 1.25rem),
+      transparent
+    );
+  }
+
+  .chat-marquee[data-marquee] > * {
+    animation: none;
+  }
+}
+
+/**
  * Guard: this is the one styled scope that stays css. `react-markdown` builds
  * these elements from the model's answer, so there is no jsx to hang a utility
  * on — a list item or a table cell inside a turn is created by the parser.

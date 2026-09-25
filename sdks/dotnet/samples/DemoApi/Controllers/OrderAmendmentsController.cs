@@ -21,6 +21,7 @@ public sealed class OrderAmendmentsController : ControllerBase
     [Authorize(Policy = "OrdersRead")]
     [Consumes("application/json-patch+json")]
     [Description("Amends an order draft with JSON Patch operations.")]
+    [Tags("Orders", "Amendments")]
     public IActionResult Amend([Description("Order id")] int id, [FromBody] JsonPatchDocument<OrderDraft> patch)
     {
         OrderDraft draft = new();

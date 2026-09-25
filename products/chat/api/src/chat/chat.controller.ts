@@ -38,6 +38,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -164,6 +165,55 @@ export class ChatController {
     }
 
     return renamed;
+  }
+
+  /**
+   * Records that the reader opened a conversation.
+   *
+   * Guard: answers 204 whether or not a row exists. The browser mints a
+   * conversation's id before its first turn creates the row, so opening an id
+   * the api has not stored yet is the normal path for every new chat, not an
+   * error to report.
+   */
+  @Post("sessions/:sessionId/open")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async open(
+    @Param("sessionId", { schema: sessionIdSchema }) sessionId: SessionId,
+    @Req() request: ChatRequest,
+  ): Promise<void> {
+    await this.history.open(this.userIdOf(request), sessionId);
+  }
+
+  @Put("sessions/:sessionId/pin")
+  async pin(
+    @Param("sessionId", { schema: sessionIdSchema }) sessionId: SessionId,
+    @Req() request: ChatRequest,
+  ): Promise<SessionSummary> {
+    const pinned = await this.history.pin(this.userIdOf(request), sessionId);
+    if (pinned === "limit") {
+      throw this.fail("pin_limit_reached", HttpStatus.CONFLICT);
+    }
+    if (pinned === undefined) {
+      throw this.fail("session_not_found", HttpStatus.NOT_FOUND);
+    }
+
+    return pinned;
+  }
+
+  @Delete("sessions/:sessionId/pin")
+  async unpin(
+    @Param("sessionId", { schema: sessionIdSchema }) sessionId: SessionId,
+    @Req() request: ChatRequest,
+  ): Promise<SessionSummary> {
+    const unpinned = await this.history.unpin(
+      this.userIdOf(request),
+      sessionId,
+    );
+    if (unpinned === undefined) {
+      throw this.fail("session_not_found", HttpStatus.NOT_FOUND);
+    }
+
+    return unpinned;
   }
 
   @Delete("sessions/:sessionId")

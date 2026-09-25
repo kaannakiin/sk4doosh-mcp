@@ -1,11 +1,13 @@
 import { chatKeys } from "@chat/queries/keys";
 import { useLogout } from "@chat/queries/auth/mutations";
-import { ActionIcon, Menu, Text } from "@mantine/core";
-import { IconDots, IconLogout } from "@tabler/icons-react";
+import { Avatar, Menu, UnstyledButton } from "@mantine/core";
+import { IconLogout, IconSelector } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 
+import { LocaleSwitcher } from "~/components/LocaleSwitcher";
+import { ThemeSwitcher } from "~/components/ThemeSwitcher";
 import { useLocale } from "~/core/hooks/use-locale";
 
 /**
@@ -22,6 +24,7 @@ export function AccountMenu() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const logout = useLogout(locale);
+  const name = `${user.firstName} ${user.lastName}`.trim();
 
   /**
    * Guard: the chat cache is dropped after the navigation resolves, not before.
@@ -36,34 +39,40 @@ export function AccountMenu() {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <Text size="sm" c="var(--color-ink-dim)" truncate>
-        {user.firstName} {user.lastName}
-      </Text>
-      <Menu position="top-start" withinPortal shadow="sm">
-        <Menu.Target>
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="sm"
-            aria-label={t("auth.account.menu")}
-          >
-            <IconDots size={15} />
-          </ActionIcon>
-        </Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Item
-            color="red"
-            leftSection={<IconLogout size={14} />}
-            disabled={logout.isPending}
-            onClick={() => {
-              void signOut();
-            }}
-          >
-            {t("auth.account.signOut")}
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
-    </div>
+    <Menu position="top-start" width="target" withinPortal shadow="sm">
+      <Menu.Target>
+        <UnstyledButton
+          className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-raised"
+          aria-label={t("auth.account.menu")}
+        >
+          <Avatar name={name} color="initials" size={30} radius="xl" />
+          <span className="min-w-0 flex-1 truncate text-start text-sm text-ink">
+            {name}
+          </span>
+          <IconSelector className="shrink-0 text-ink-dim" size={15} />
+        </UnstyledButton>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Label>{t("locale.label")}</Menu.Label>
+        <div className="px-2 pb-1.5">
+          <LocaleSwitcher />
+        </div>
+        <Menu.Label>{t("theme.label")}</Menu.Label>
+        <div className="px-2 pb-1.5">
+          <ThemeSwitcher />
+        </div>
+        <Menu.Divider />
+        <Menu.Item
+          color="red"
+          leftSection={<IconLogout size={14} />}
+          disabled={logout.isPending}
+          onClick={() => {
+            void signOut();
+          }}
+        >
+          {t("auth.account.signOut")}
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   );
 }

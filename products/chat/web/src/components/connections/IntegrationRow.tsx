@@ -51,13 +51,18 @@ function IntegrationRowComponent({
           <span className="block truncate font-medium">
             {integration.displayName}
           </span>
-          <span className="block truncate font-mono text-xs text-ink-dim">
-            {hostOf(integration.mcpUrl)}
+          <span className="mt-0.5 flex min-w-0 items-center gap-2 text-xs">
+            <span className="shrink-0 sm:hidden">
+              <StatusMark integration={integration} />
+            </span>
+            <span className="min-w-0 truncate font-mono text-ink-dim">
+              {hostOf(integration.mcpUrl)}
+            </span>
           </span>
         </Link>
       </td>
-      <td className="px-3 py-3">
-        <StatusMark integration={integration} compact />
+      <td className="hidden px-3 py-3 sm:table-cell">
+        <StatusMark integration={integration} />
       </td>
       <td className="hidden px-3 py-3 text-end font-mono text-xs tabular-nums sm:table-cell">
         {integration.toolCount}
@@ -72,7 +77,7 @@ function IntegrationRowComponent({
           ? t("connections.table.never")
           : formatRelative(lastUsed, locale)}
       </td>
-      <td className="py-2 ps-3 pe-2">
+      <td className="py-2 ps-3 pe-2 whitespace-nowrap">
         <div className="relative z-10 flex items-center justify-end gap-1.5">
           <ConnectButton integration={integration} />
           <IntegrationRowMenu

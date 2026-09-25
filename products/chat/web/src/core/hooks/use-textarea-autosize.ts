@@ -11,6 +11,20 @@ const COLLAPSED_MAX_PX = 168;
 
 const EXPANDED_MAX_PX = 520;
 
+/**
+ * Guard: the expanded ceiling is capped at half the visual viewport. A phone
+ * with its keyboard up has far less than 520px to give, and a taller box pushed
+ * the send row below the shell, which clips instead of scrolling.
+ */
+function expandedCeiling(): number {
+  const viewport = window.visualViewport?.height ?? window.innerHeight;
+
+  return Math.max(
+    COLLAPSED_MAX_PX,
+    Math.min(EXPANDED_MAX_PX, Math.round(viewport / 2)),
+  );
+}
+
 interface Metrics {
   readonly lineHeight: number;
   readonly padding: number;
@@ -66,7 +80,7 @@ export function useTextareaAutosize(expanded: boolean): TextareaAutosize {
       return;
     }
 
-    const ceiling = expandedRef.current ? EXPANDED_MAX_PX : COLLAPSED_MAX_PX;
+    const ceiling = expandedRef.current ? expandedCeiling() : COLLAPSED_MAX_PX;
 
     /**
      * Guard: resetting to `auto` makes the browser lay out the entire value, and
@@ -117,9 +131,11 @@ export function useTextareaAutosize(expanded: boolean): TextareaAutosize {
     };
 
     window.addEventListener("resize", refresh);
+    window.visualViewport?.addEventListener("resize", refresh);
     void document.fonts.ready.then(refresh);
     return () => {
       window.removeEventListener("resize", refresh);
+      window.visualViewport?.removeEventListener("resize", refresh);
     };
   }, [measure]);
 

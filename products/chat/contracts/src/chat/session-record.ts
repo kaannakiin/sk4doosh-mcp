@@ -9,6 +9,8 @@ export const sessionSummarySchema = z.object({
   attachmentCount: z.int().nonnegative(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+  lastOpenedAt: z.iso.datetime(),
+  pinnedAt: z.iso.datetime().nullable(),
 });
 
 export type SessionSummary = z.infer<typeof sessionSummarySchema>;

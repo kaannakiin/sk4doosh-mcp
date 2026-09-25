@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { chatKeys } from "../keys.ts";
 import { useChatClient } from "../provider.tsx";
-import { upsertSessionAtFront } from "../sessions/cache.ts";
+import { touchSession } from "../sessions/cache.ts";
 import { createChatTransport } from "./transport.ts";
 
 /**
@@ -99,6 +99,8 @@ export function useChatSession({
         attachmentCount,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        lastOpenedAt: new Date().toISOString(),
+        pinnedAt: null,
       },
     [session, sessionId, initialMessages.length, attachmentCount],
   );
@@ -116,10 +118,12 @@ export function useChatSession({
     throttle: STREAM_THROTTLE_MS,
     sendAutomaticallyWhen: readyToResume,
     onFinish: ({ messages }) => {
-      upsertSessionAtFront(queryClient, {
+      const now = new Date().toISOString();
+      touchSession(queryClient, {
         ...base,
         messageCount: messages.length,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
+        lastOpenedAt: now,
       });
       void queryClient.invalidateQueries({
         queryKey: chatKeys.session(sessionId),
@@ -156,7 +160,7 @@ export function useChatSession({
       return;
     }
     listed.current = true;
-    upsertSessionAtFront(queryClient, base);
+    touchSession(queryClient, base);
   }, [status, queryClient, base]);
 
   return chat;

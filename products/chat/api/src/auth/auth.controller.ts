@@ -278,7 +278,14 @@ export class AuthController {
         await this.sessions.refresh(this.cookies.refresh(request)),
       );
     } catch (error) {
-      this.cookies.clearAuth(response);
+      /**
+       * Guard: a superseded rotation leaves the cookies alone. Its twin already
+       * set fresh ones on this browser, and clearing here would erase them the
+       * moment this answer lands after the winner's.
+       */
+      if (errorCode(error) !== "refresh_superseded") {
+        this.cookies.clearAuth(response);
+      }
       throw error;
     }
   }

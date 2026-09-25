@@ -10,6 +10,7 @@ export type AuthErrorCode =
   | "invalid_or_expired_challenge"
   | "unauthorized"
   | "session_expired"
+  | "refresh_superseded"
   | "oauth_provider_unavailable"
   | "oauth_state_invalid"
   | "oauth_link_required"

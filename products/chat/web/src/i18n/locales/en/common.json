@@ -2,6 +2,12 @@
   "app": {
     "subtitle": "Ask about your files and the systems you have connected."
   },
+  "shell": {
+    "open": "Open sidebar",
+    "close": "Close sidebar",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
   "sessions": {
     "title": "Conversations",
     "new": "New conversation",
@@ -10,9 +16,13 @@
     "rename": "Rename",
     "delete": "Delete",
     "deleteConfirm": "Delete “{{title}}”? This cannot be undone.",
-    "save": "Save",
-    "actions": "Conversation actions",
-    "titleLabel": "Conversation title"
+    "titleLabel": "Conversation title",
+    "pinned": "Pinned",
+    "recents": "Recents",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "edit": "Edit conversation",
+    "pinLimit": "Pin limit reached — unpin one first"
   },
   "composer": {
     "placeholder": "Ask a question",
@@ -69,6 +79,16 @@
       "describe_pdf": "describe_pdf",
       "read_pdf_pages": "read_pdf_pages",
       "find_in_pdf": "find_in_pdf",
+      "list_workbooks": "list_workbooks",
+      "get_tables": "get_tables",
+      "get_data_validations": "get_data_validations",
+      "get_merged_ranges": "get_merged_ranges",
+      "get_conditional_formats": "get_conditional_formats",
+      "get_images": "get_images",
+      "find_in_document": "find_in_document",
+      "aggregate_document": "aggregate_document",
+      "list_documents": "list_documents",
+      "list_pdfs": "list_pdfs",
       "codex_task": "codex_task"
     },
     "remember": "Don't ask again",
@@ -543,6 +563,16 @@
         "describe_pdf": "Reports a PDF's page count and which pages need OCR.",
         "read_pdf_pages": "Reads the text of selected PDF pages.",
         "find_in_pdf": "Searches a PDF's text.",
+        "list_workbooks": "Lists the spreadsheets attached to the conversation.",
+        "get_tables": "Lists the sheet's Excel Tables with their ranges and header names.",
+        "get_data_validations": "Lists the values and rules each range of the sheet accepts.",
+        "get_merged_ranges": "Lists the sheet's merged cell ranges.",
+        "get_conditional_formats": "Lists the sheet's conditional formatting rules and thresholds.",
+        "get_images": "Lists the pictures placed on the sheet, with their position and size.",
+        "find_in_document": "Searches the XML document's text and attribute values.",
+        "aggregate_document": "Counts and totals a repeating element of the document.",
+        "list_documents": "Lists the XML documents attached to the conversation.",
+        "list_pdfs": "Lists the PDFs attached to the conversation.",
         "find_tools": "Searches the tools of the servers you connected.",
         "codex_task": "Runs a coding agent in its own sandboxed directory."
       }

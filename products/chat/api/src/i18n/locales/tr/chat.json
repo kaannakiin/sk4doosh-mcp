@@ -4,8 +4,8 @@
     "tools": {
       "none": "Bu sohbette kullanılabilir bir araç yok; dolayısıyla burada hiçbir şey okunmadı ya da çalıştırılmadı. Bu ürünün ne yaptığını ve neye ihtiyaç duyduğunu anlatabilirsin, ama bir dosya, bir sistem veya bir kayıt hakkındaki soruyu kendi belleğinden yanıtlama. Kullanıcıdan bir hesap tablosu, XML belgesi ya da PDF eklemesini, ya da bağlantılar sayfasından bir MCP sunucusu bağlamasını iste.",
       "readers": "Bu sohbette listelenen dosyalar için okuma araçların var. Yalnızca o dosya yollarını, tam olarak yazıldığı gibi kullan — başka hiçbir yol okunamaz. Bir dosyadan veri okumadan önce yapısını öğren, yanıt için gereken en az miktarı oku ve beklediğini değil aracın döndürdüğünü bildir.",
-      "workbook": "Bir hesap tablosu için: sayfalarını ve sütunlarını öğrenmek üzere önce describe_workbook çağır. Satırları toplamak, saymak veya gruplamak için aggregate_sheet çağır — aynı satırları read_sheet ile sayfalamaktan çok daha ucuzdur. Hücrelerin kendisi için read_sheet kullan ve sayfa tek seferde okunandan büyükse döndürdüğü imleci izle. Satırıyla adresleyemediğin bir değeri bulmak için find_in_sheet kullan.",
-      "document": "Bir XML belgesi için: öğe yapısını öğrenmek üzere önce describe_document çağır. read_node, o açıklamadaki bölüm adresini alır, XPath almaz. XPath 1.0 ifadesi için select_xpath, yinelenen bir öğeyi satır olarak okumak için project_records kullan.",
+      "workbook": "Bir hesap tablosu için: sayfalarını ve sütunlarını öğrenmek üzere önce describe_workbook çağır. Satırları toplamak, saymak veya gruplamak için aggregate_sheet çağır — aynı satırları read_sheet ile sayfalamaktan çok daha ucuzdur. Hücrelerin kendisi için read_sheet kullan ve sayfa tek seferde okunandan büyükse döndürdüğü imleci izle. Satırıyla adresleyemediğin bir değeri bulmak için find_in_sheet kullan. Düzeni belirsiz bir sayfayı okumadan önce get_tables Excel Tablolarını ve başlık satırlarını, get_merged_ranges birleştirilmiş hücreleri, get_data_validations bir sütunun kabul ettiği değerleri verir; get_conditional_formats ve get_images vurgulama kurallarını ve resimleri bildirir.",
+      "document": "Bir XML belgesi için: öğe yapısını öğrenmek üzere önce describe_document çağır. read_node, o açıklamadaki bölüm adresini alır, XPath almaz. XPath 1.0 ifadesi için select_xpath, yinelenen bir öğeyi satır olarak okumak için project_records kullan. Düz metni bulmak için find_in_document, yinelenen bir öğeyi kayıtlarını sayfalamadan saymak veya toplamak için aggregate_document kullan.",
       "pdf": "Bir PDF için: read_pdf_pages sayfaları Markdown olarak döndürür, find_in_pdf düz metni sayfa numarasıyla bulur; sayfa sayısını ya da hangi sayfaların taranmış olduğunu bilmen gerekiyorsa önce describe_pdf çağır. Taranmış bir sayfa ocr true ile metne dökülene kadar metin içermez; bu yavaştır — yalnızca ihtiyacın olan sayfalar için ve yalnızca describe_pdf OCR'ın kullanılabilir olduğunu bildiriyorsa iste."
     },
     "images": "Kullanıcı görsel ekledi. Hiçbir araç onları açamaz ve sen onları göremezsin. Bir yanıt bir görsele bağlıysa bunu söyle ve kullanıcıdan tarif etmesini iste.",
@@ -26,6 +26,11 @@
       "project_records": "Belgenin kayıtlarını satır olarak okumak istiyor.",
       "read_pdf_pages": "PDF'in sayfalarını okumak istiyor.",
       "find_in_pdf": "PDF'in metninde arama yapmak istiyor.",
+      "get_tables": "Sayfanın tablolarını ve başlık adlarını okumak istiyor.",
+      "get_data_validations": "Sayfanın veri doğrulama kurallarını ve izin verilen değerleri okumak istiyor.",
+      "get_conditional_formats": "Sayfanın koşullu biçimlendirme kurallarını okumak istiyor.",
+      "find_in_document": "Belgenin metninde arama yapmak istiyor.",
+      "aggregate_document": "Toplamları hesaplamak için belgenin kayıtlarını okumak istiyor.",
       "codex_task": "Kendi yalıtılmış dizininde dosya oluşturup düzenleyebilen bir kodlama ajanı çalıştırmak istiyor."
     }
   },
@@ -43,7 +48,8 @@
     "stream_failed": "Asistan yanıtı tamamlayamadı.",
     "file_missing": "Dosya gönderilmedi.",
     "attachment_not_found": "Bu ek artık mevcut değil.",
-    "session_not_found": "Bu sohbet mevcut değil."
+    "session_not_found": "Bu sohbet mevcut değil.",
+    "pin_limit_reached": "Sabitleme sınırına ulaştın. Yenisini sabitlemek için birinin sabitlemesini kaldır."
   },
   "tools": {
     "denied": {

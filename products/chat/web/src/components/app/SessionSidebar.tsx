@@ -1,40 +1,46 @@
 import { PRODUCT_NAME } from "@chat/contracts/common/product";
-import { SESSION_TITLE_MAX_LENGTH } from "@chat/contracts/chat/session-limits";
+import { SESSION_PIN_LIMIT } from "@chat/contracts/chat/session-limits";
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
 import {
   useDeleteSession,
   useRenameSession,
+  useSetSessionPinned,
 } from "@chat/queries/sessions/mutations";
 import { useSessionList } from "@chat/queries/sessions/list";
-import { Button, Loader, Modal, Text, TextInput } from "@mantine/core";
+import { Button, Loader, Modal, Text } from "@mantine/core";
 import { IconPencilPlus, IconPlug } from "@tabler/icons-react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { AccountMenu } from "./AccountMenu";
 import { useInfiniteSentinel } from "~/core/hooks/use-infinite-sentinel";
 import { useLocale } from "~/core/hooks/use-locale";
-import { LocaleSwitcher } from "~/components/LocaleSwitcher";
-import { ThemeSwitcher } from "~/components/ThemeSwitcher";
+import { AccountMenu } from "./AccountMenu";
 import { SessionRow } from "./SessionRow";
+
+const NAV_ROW =
+  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink no-underline hover:bg-raised";
+
+const HEADING = "px-3 pt-5 pb-1.5 text-xs font-medium text-ink-dim";
+
+const NO_SESSIONS: readonly SessionSummary[] = [];
 
 export interface SessionSidebarProps {
   readonly onNavigate: () => void;
+  readonly controls?: ReactNode;
 }
 
-export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
+export function SessionSidebar({ onNavigate, controls }: SessionSidebarProps) {
   const { t } = useTranslation();
   const locale = useLocale();
   const params = useParams({ strict: false });
   const navigate = useNavigate();
   const list = useSessionList({ locale });
-  const rename = useRenameSession(locale);
+  const { mutate: rename } = useRenameSession(locale);
+  const { mutate: setPinned } = useSetSessionPinned(locale);
   const remove = useDeleteSession(locale);
 
-  const [renaming, setRenaming] = useState<SessionSummary | undefined>();
   const [deleting, setDeleting] = useState<SessionSummary | undefined>();
-  const [draft, setDraft] = useState("");
 
   const sentinel = useInfiniteSentinel({
     hasNextPage: list.hasNextPage,
@@ -42,11 +48,40 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
     fetchNextPage: list.fetchNextPage,
   });
 
-  const sessions = list.data ?? [];
+  const pinned = list.data?.pinned ?? NO_SESSIONS;
+  const recents = list.data?.recents ?? NO_SESSIONS;
+  const pinLimitReached = pinned.length >= SESSION_PIN_LIMIT;
+
+  const togglePin = useCallback(
+    (session: SessionSummary) => {
+      setPinned({ session, pinned: session.pinnedAt === null });
+    },
+    [setPinned],
+  );
+
+  const renameTo = useCallback(
+    (session: SessionSummary, title: string) => {
+      rename({ sessionId: session.id, title });
+    },
+    [rename],
+  );
+
+  const renderRow = (session: SessionSummary) => (
+    <SessionRow
+      key={session.id}
+      session={session}
+      active={params.sessionId === session.id}
+      pinLimitReached={pinLimitReached}
+      onTogglePin={togglePin}
+      onRename={renameTo}
+      onDelete={setDeleting}
+      onNavigate={onNavigate}
+    />
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-panel">
-      <div className="flex flex-col gap-3 px-3.5 pt-4.5 pb-3.5">
+      <div className="flex min-h-7 items-center justify-between gap-2 px-3.5 pt-3.5 pb-2">
         <Link
           to="/"
           className="font-serif text-[1.0625rem] font-medium tracking-[0.01em] text-ink no-underline"
@@ -54,102 +89,63 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
         >
           {PRODUCT_NAME}
         </Link>
-        <Link
-          to="/"
-          onClick={onNavigate}
-          className="flex items-center gap-2 rounded-lg border border-hairline bg-accent-soft px-3 py-2 text-[0.8125rem] text-ink no-underline hover:border-accent"
-        >
-          <IconPencilPlus size={15} />
+        {controls}
+      </div>
+
+      <div className="flex flex-col gap-px px-2">
+        <Link to="/" className={NAV_ROW} onClick={onNavigate}>
+          <IconPencilPlus size={17} stroke={1.6} />
           {t("sessions.new")}
+        </Link>
+        <Link
+          to="/connections"
+          className={`${NAV_ROW} data-[status=active]:bg-raised`}
+          onClick={onNavigate}
+        >
+          <IconPlug size={17} stroke={1.6} />
+          {t("connections.title")}
         </Link>
       </div>
 
       <nav
-        className="min-h-0 flex-1 overflow-y-auto px-2 pb-4"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3"
         aria-label={t("sessions.title")}
       >
-        {list.isPending ? (
-          <div className="px-1.5 py-3">
-            <Loader size="xs" />
-          </div>
-        ) : null}
+        {pinned.length === 0 ? null : (
+          <section>
+            <h2 className={HEADING}>{t("sessions.pinned")}</h2>
+            <ul className="flex flex-col gap-px">{pinned.map(renderRow)}</ul>
+          </section>
+        )}
 
-        {!list.isPending && sessions.length === 0 ? (
-          <p className="px-1.5 py-3 text-[0.8125rem] text-ink-dim">
-            {t("sessions.empty")}
-          </p>
-        ) : null}
+        <section>
+          <h2 className={HEADING}>{t("sessions.recents")}</h2>
+          {list.isPending ? (
+            <div className="px-3 py-2">
+              <Loader size="xs" />
+            </div>
+          ) : null}
 
-        {sessions.map((session) => (
-          <SessionRow
-            key={session.id}
-            session={session}
-            active={params.sessionId === session.id}
-            onRename={(target) => {
-              setDraft(target.title ?? "");
-              setRenaming(target);
-            }}
-            onDelete={setDeleting}
-            onNavigate={onNavigate}
-          />
-        ))}
+          {!list.isPending && recents.length === 0 ? (
+            <p className="px-3 py-2 text-[0.8125rem] text-ink-dim">
+              {t("sessions.empty")}
+            </p>
+          ) : null}
 
-        <div ref={sentinel} aria-hidden />
-        {list.isFetchingNextPage ? (
-          <div className="px-1.5 py-3">
-            <Loader size="xs" />
-          </div>
-        ) : null}
+          <ul className="flex flex-col gap-px">{recents.map(renderRow)}</ul>
+
+          <div ref={sentinel} aria-hidden />
+          {list.isFetchingNextPage ? (
+            <div className="px-3 py-2">
+              <Loader size="xs" />
+            </div>
+          ) : null}
+        </section>
       </nav>
 
-      <div className="border-t border-hairline px-3.5 py-2.5">
-        <Link
-          to="/connections"
-          onClick={onNavigate}
-          className="mb-1.5 flex items-center gap-2 rounded-md px-1 py-1.5 text-sm text-ink-dim hover:bg-accent-soft"
-        >
-          <IconPlug size={15} />
-          {t("connections.title")}
-        </Link>
+      <div className="border-t border-hairline px-2 py-2">
         <AccountMenu />
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <LocaleSwitcher />
-          <ThemeSwitcher />
-        </div>
       </div>
-
-      <Modal
-        opened={renaming !== undefined}
-        onClose={() => {
-          setRenaming(undefined);
-        }}
-        title={t("sessions.rename")}
-        centered
-      >
-        <TextInput
-          value={draft}
-          maxLength={SESSION_TITLE_MAX_LENGTH}
-          autoFocus
-          aria-label={t("sessions.titleLabel")}
-          onChange={(event) => {
-            setDraft(event.currentTarget.value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              submitRename();
-            }
-          }}
-        />
-        <Button
-          mt="md"
-          fullWidth
-          disabled={draft.trim().length === 0}
-          loading={rename.isPending}
-          onClick={submitRename}
-        >
-          {t("sessions.save")}
-        </Button>
-      </Modal>
 
       <Modal
         opened={deleting !== undefined}
@@ -176,16 +172,6 @@ export function SessionSidebar({ onNavigate }: SessionSidebarProps) {
       </Modal>
     </div>
   );
-
-  function submitRename() {
-    const target = renaming;
-    const title = draft.trim();
-    if (target === undefined || title.length === 0) {
-      return;
-    }
-    rename.mutate({ sessionId: target.id, title });
-    setRenaming(undefined);
-  }
 
   /**
    * Guard: deleting the conversation on screen navigates away first. Its route

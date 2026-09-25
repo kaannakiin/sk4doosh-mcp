@@ -97,6 +97,8 @@ export interface SessionRow {
   readonly messageCount: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly lastOpenedAt: Date;
+  readonly pinnedAt: Date | null;
 }
 
 export interface MessageRow {
@@ -128,14 +130,14 @@ export interface SessionUsage {
 }
 
 /**
- * A page of sessions ordered newest first.
+ * A page of unpinned sessions, most recently opened first.
  *
- * Guard: the cursor carries `updatedAt` plus the session's public id, never the
+ * Guard: the cursor carries `lastOpenedAt` plus the session's public id, never the
  * `BigInt` surrogate. A surrogate in an opaque-looking cursor is still base64,
  * so it would leak how many sessions exist across every user.
  */
 export interface SessionPage {
   readonly sessions: readonly SessionRow[];
   readonly nextCursor:
-    { readonly updatedAt: Date; readonly id: string } | undefined;
+    { readonly openedAt: Date; readonly id: string } | undefined;
 }

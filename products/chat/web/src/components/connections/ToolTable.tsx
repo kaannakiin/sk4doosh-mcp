@@ -14,6 +14,7 @@ import { Button, Checkbox, SegmentedControl, Skeleton } from "@mantine/core";
 import { useCallback, useDeferredValue, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { FilterStrip } from "./FilterStrip";
 import { SearchField } from "./SearchField";
 import { filterTools, isToolFilter, type ToolFilter } from "./tool-filter";
 import { TOOL_GRID, ToolRow } from "./ToolRow";
@@ -164,28 +165,29 @@ export function ToolTable({
           placeholder={t("connections.toolList.search.placeholder")}
           onChange={onQuery}
         />
-        <SegmentedControl
-          size="xs"
-          radius="md"
-          className="self-start sm:ms-auto sm:self-auto"
-          aria-label={t("connections.toolList.filter.label")}
-          value={filter}
-          data={[
-            { value: "all", label: t("connections.toolList.filter.all") },
-            {
-              value: "destructive",
-              label: t("connections.toolList.filter.destructive"),
-            },
-            {
-              value: "overridden",
-              label: t("connections.toolList.filter.overridden"),
-            },
-            { value: "stale", label: t("connections.toolList.filter.stale") },
-          ]}
-          onChange={(value) => {
-            onFilter(isToolFilter(value) ? value : "all");
-          }}
-        />
+        <FilterStrip className="sm:ms-auto">
+          <SegmentedControl
+            size="xs"
+            radius="md"
+            aria-label={t("connections.toolList.filter.label")}
+            value={filter}
+            data={[
+              { value: "all", label: t("connections.toolList.filter.all") },
+              {
+                value: "destructive",
+                label: t("connections.toolList.filter.destructive"),
+              },
+              {
+                value: "overridden",
+                label: t("connections.toolList.filter.overridden"),
+              },
+              { value: "stale", label: t("connections.toolList.filter.stale") },
+            ]}
+            onChange={(value) => {
+              onFilter(isToolFilter(value) ? value : "all");
+            }}
+          />
+        </FilterStrip>
       </div>
 
       <div

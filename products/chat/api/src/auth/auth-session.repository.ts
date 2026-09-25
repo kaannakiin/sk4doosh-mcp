@@ -1,12 +1,57 @@
 import { Injectable } from "@nestjs/common";
 
 import { DbService } from "../db/db.service.ts";
-import { createSessionForUser, toSession, userInclude } from "./auth-rows.ts";
+import {
+  createSessionForUser,
+  toSession,
+  userInclude,
+  type Tx,
+} from "./auth-rows.ts";
 import type {
   AuthSessionRow,
   RefreshOutcome,
   SessionSeed,
 } from "./auth.types.ts";
+
+/**
+ * Guard: a consumed token presented again within this window, while its
+ * successor is still unused, is two requests racing for one rotation — two tabs,
+ * or a response lost to a reload — not a stolen token. Revoking there signs the
+ * reader out of a healthy session; the cost is that a thief replaying inside the
+ * same window is refused without being detected.
+ */
+const REFRESH_REUSE_GRACE_MS = 10_000;
+
+interface RefreshTokenRef {
+  readonly id: bigint;
+  readonly sessionId: bigint;
+  readonly generation: number;
+}
+
+async function isConcurrentRotation(
+  tx: Tx,
+  token: RefreshTokenRef,
+  now: Date,
+): Promise<boolean> {
+  const settled = await tx.authRefreshToken.findUnique({
+    where: { id: token.id },
+    select: { consumedAt: true },
+  });
+  const successor = await tx.authRefreshToken.findFirst({
+    where: { sessionId: token.sessionId, generation: token.generation + 1 },
+    select: { consumedAt: true },
+  });
+  if (
+    settled === null ||
+    settled.consumedAt === null ||
+    successor === null ||
+    successor.consumedAt !== null
+  ) {
+    return false;
+  }
+
+  return now.getTime() - settled.consumedAt.getTime() <= REFRESH_REUSE_GRACE_MS;
+}
 
 @Injectable()
 export class AuthSessionRepository {
@@ -71,6 +116,9 @@ export class AuthSessionRepository {
         data: { consumedAt: now },
       });
       if (consumed.count !== 1) {
+        if (await isConcurrentRotation(tx, current, now)) {
+          return { kind: "superseded" };
+        }
         await tx.authSession.update({
           where: { id: current.sessionId },
           data: { revokedAt: now },

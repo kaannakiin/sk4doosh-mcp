@@ -41,51 +41,61 @@ export function ApprovedToolList({
       {approvals.data.map((approval, index) => (
         <li
           key={`${approval.subjectKey}:${approval.scope}:${String(index)}`}
-          className="flex flex-wrap items-center gap-2 py-2"
+          className="flex items-center gap-3 py-2"
         >
-          <span className="min-w-0 grow truncate font-mono text-xs">
-            {approval.toolName}
-          </span>
-          <Badge size="xs" variant="light" color="var(--color-ink-dim)">
-            {approval.conversation !== null &&
-            approval.conversation.title !== null
-              ? t("connections.approvals.scope.sessionNamed", {
-                  title: approval.conversation.title,
-                })
-              : approval.scope === "session"
-                ? t("connections.approvals.scope.session")
-                : t("connections.approvals.scope.global")}
-          </Badge>
-          {approval.expired ? (
-            <Badge size="xs" variant="light" color="var(--color-ink-dim)">
-              {t("connections.approvals.expired")}
-            </Badge>
-          ) : null}
-          {approval.destructive ? (
-            <Badge size="xs" variant="light" color="var(--color-amber)">
-              {t("connections.approvals.destructive")}
-            </Badge>
-          ) : null}
-          {approval.definitionChanged ? (
-            <Badge size="xs" variant="light" color="var(--color-amber)">
-              {t("connections.approvals.changed")}
-            </Badge>
-          ) : null}
-          {approval.available ? null : (
-            <Badge size="xs" variant="light" color="var(--color-ink-dim)">
-              {t("connections.approvals.withdrawn")}
-            </Badge>
-          )}
-          <span className="text-xs whitespace-nowrap text-ink-dim">
-            {approval.expiresAt === null || approval.expired
-              ? t("connections.approvals.grantedAt", {
-                  when: formatRelative(approval.approvedAt, locale),
-                })
-              : t("connections.approvals.expiresAt", {
-                  when: formatRelative(approval.expiresAt, locale),
-                })}
-          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+            <span className="min-w-0 truncate font-mono text-xs sm:grow">
+              {approval.toolName}
+            </span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Badge
+                className="max-w-full"
+                size="xs"
+                variant="light"
+                color="var(--color-ink-dim)"
+              >
+                {approval.conversation !== null &&
+                approval.conversation.title !== null
+                  ? t("connections.approvals.scope.sessionNamed", {
+                      title: approval.conversation.title,
+                    })
+                  : approval.scope === "session"
+                    ? t("connections.approvals.scope.session")
+                    : t("connections.approvals.scope.global")}
+              </Badge>
+              {approval.expired ? (
+                <Badge size="xs" variant="light" color="var(--color-ink-dim)">
+                  {t("connections.approvals.expired")}
+                </Badge>
+              ) : null}
+              {approval.destructive ? (
+                <Badge size="xs" variant="light" color="var(--color-amber)">
+                  {t("connections.approvals.destructive")}
+                </Badge>
+              ) : null}
+              {approval.definitionChanged ? (
+                <Badge size="xs" variant="light" color="var(--color-amber)">
+                  {t("connections.approvals.changed")}
+                </Badge>
+              ) : null}
+              {approval.available ? null : (
+                <Badge size="xs" variant="light" color="var(--color-ink-dim)">
+                  {t("connections.approvals.withdrawn")}
+                </Badge>
+              )}
+              <span className="text-xs whitespace-nowrap text-ink-dim">
+                {approval.expiresAt === null || approval.expired
+                  ? t("connections.approvals.grantedAt", {
+                      when: formatRelative(approval.approvedAt, locale),
+                    })
+                  : t("connections.approvals.expiresAt", {
+                      when: formatRelative(approval.expiresAt, locale),
+                    })}
+              </span>
+            </div>
+          </div>
           <Button
+            className="shrink-0"
             size="xs"
             radius="md"
             variant="subtle"

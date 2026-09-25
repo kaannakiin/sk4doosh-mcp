@@ -69,7 +69,8 @@ export interface PasswordLoginRow {
 export type RefreshOutcome =
   | { readonly kind: "rotated"; readonly session: AuthSessionRow }
   | { readonly kind: "invalid" }
-  | { readonly kind: "replayed" };
+  | { readonly kind: "replayed" }
+  | { readonly kind: "superseded" };
 
 export type VerificationContact =
   { readonly email: string } | { readonly phoneE164: string };

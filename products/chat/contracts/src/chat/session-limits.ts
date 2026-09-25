@@ -13,3 +13,5 @@ export const SESSION_HISTORY_LIMIT_DEFAULT = 200;
 export const SESSION_HISTORY_LIMIT_HARD = 500;
 
 export const SESSION_TITLE_MAX_LENGTH = 60;
+
+export const SESSION_PIN_LIMIT = 20;

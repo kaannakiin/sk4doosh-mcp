@@ -35,6 +35,12 @@ export type ToolApprovalPolicy = z.infer<typeof toolApprovalPolicySchema>;
  * reader connected themselves and returns names, so there is nothing to consent
  * to; asking spent a step and a prompt on every turn that had any server
  * connected.
+ *
+ * Guard: a reader tool is `auto` only when its answer carries no cell or node
+ * content — file names, ranges, anchors, counts. `get_tables` looks structural
+ * but returns the header row's text, and `get_data_validations` and
+ * `get_conditional_formats` return list items and thresholds as written, so all
+ * three ask like any other read.
  */
 export const CHAT_TOOL_POLICY: Record<ChatToolName, ToolApprovalPolicy> = {
   describe_workbook: "auto",
@@ -49,6 +55,16 @@ export const CHAT_TOOL_POLICY: Record<ChatToolName, ToolApprovalPolicy> = {
   describe_pdf: "auto",
   read_pdf_pages: "askable",
   find_in_pdf: "askable",
+  list_workbooks: "auto",
+  list_documents: "auto",
+  list_pdfs: "auto",
+  get_merged_ranges: "auto",
+  get_images: "auto",
+  get_tables: "askable",
+  get_data_validations: "askable",
+  get_conditional_formats: "askable",
+  find_in_document: "askable",
+  aggregate_document: "askable",
   codex_task: "always",
 };
 

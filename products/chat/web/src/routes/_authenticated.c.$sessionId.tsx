@@ -1,8 +1,10 @@
 import { isSessionId, type SessionId } from "@chat/contracts/chat/session";
 import type { Locale } from "@chat/contracts/common/locale";
 import { useSessionDetail } from "@chat/queries/sessions/detail";
+import { useOpenSession } from "@chat/queries/sessions/mutations";
 import { Loader } from "@mantine/core";
 import { ClientOnly, createFileRoute, notFound } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { NotFoundPane } from "~/components/app/NotFound";
 import { ChatSurface } from "~/components/chat/ChatSurface";
@@ -39,6 +41,18 @@ function LoadedChat({
   sessionId,
 }: Readonly<{ locale: Locale; sessionId: SessionId }>) {
   const detail = useSessionDetail(sessionId, locale);
+  const { mutate: open } = useOpenSession(locale);
+  const persisted = detail.data?.fresh === false;
+
+  /**
+   * Guard: an open is recorded only for a conversation the api has stored. A
+   * fresh id has no row yet, and its first turn bumps the order on its own.
+   */
+  useEffect(() => {
+    if (persisted) {
+      open(sessionId);
+    }
+  }, [persisted, sessionId, open]);
 
   if (detail.data === undefined) {
     return <Pending />;

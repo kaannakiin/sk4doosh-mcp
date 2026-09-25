@@ -1,5 +1,6 @@
 import { describePdfInputSchema } from "./describe-pdf.ts";
 import { findInPdfInputSchema } from "./find-in-pdf.ts";
+import { listPdfsInputSchema } from "./list-pdfs.ts";
 import { readPdfPagesInputSchema } from "./read-pdf-pages.ts";
 
 /**
@@ -11,9 +12,8 @@ import { readPdfPagesInputSchema } from "./read-pdf-pages.ts";
  * one object — under a shared key one reader silently replaces the other. The
  * description is replaced along with the name, because the server's own text
  * points the model at `describe_document` and `read_pages`, which in this product
- * name a different reader or nothing.
- *
- * `list_documents` is left out: the manifest already lists the session's files.
+ * name a different reader or nothing. `list_documents` is renamed for the same
+ * collision: the XML reader exposes a tool of that name.
  */
 export const PDF_TOOL_SCHEMAS = {
   describe_pdf: {
@@ -33,6 +33,12 @@ export const PDF_TOOL_SCHEMAS = {
     description:
       "Find literal text in an attached PDF and return each match with its page number and surrounding context. The query is matched literally, never as a regular expression. Pages without readable text are counted in unsearchablePages: when coverageComplete is false, no match means the text was not found in the pages that could be read, not that it is absent from the document.",
     inputSchema: findInPdfInputSchema,
+  },
+  list_pdfs: {
+    serverName: "list_documents",
+    description:
+      "List the PDF documents attached to this conversation. Returns filePath values that the other PDF tools accept verbatim. A listed path is a candidate: the listing never opens the file.",
+    inputSchema: listPdfsInputSchema,
   },
 } as const;
 

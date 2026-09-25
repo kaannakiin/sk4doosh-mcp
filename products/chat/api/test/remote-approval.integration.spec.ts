@@ -20,6 +20,7 @@ import { ToolApprovalService } from "../src/connections/tool-approval.service.ts
 import { DbService } from "../src/db/db.service.ts";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { IntegrationApprovalSetting } from "@chat/contracts/integration/tool-approval-mode";
+import { chatToolNameSchema } from "@chat/contracts/tools/tool-name";
 
 import type { UserId } from "../src/db/ids.ts";
 import { GLOBAL_SCOPE } from "../src/connections/tool-approval.repository.ts";
@@ -468,7 +469,7 @@ withDatabase("remote tool approvals", () => {
       (await approvals.chatToolsFor(userId)).map((tool) => [tool.name, tool]),
     );
 
-    expect(tools.size).toBe(13);
+    expect(tools.size).toBe(chatToolNameSchema.options.length);
     expect(tools.get("describe_pdf")).toMatchObject({
       policy: "auto",
       override: "inherit",

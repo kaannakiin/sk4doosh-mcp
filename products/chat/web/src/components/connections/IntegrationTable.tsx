@@ -25,16 +25,17 @@ export function IntegrationTable({
   const { t } = useTranslation();
 
   return (
-    <table className="w-full table-fixed border-collapse text-sm">
-      <thead>
+    <table className="w-full table-auto border-collapse text-sm sm:table-fixed">
+      <thead className="max-sm:hidden">
         <tr>
-          <th scope="col" className={`${HEAD} ps-4 text-start`}>
+          <th scope="col" className={`${HEAD} ps-4 text-start max-sm:w-full`}>
             {t("connections.table.name")}
           </th>
-          <th scope="col" className={`${HEAD} w-10 text-start sm:w-48`}>
-            <span className="sr-only sm:not-sr-only">
-              {t("connections.table.status")}
-            </span>
+          <th
+            scope="col"
+            className={`${HEAD} hidden w-48 text-start sm:table-cell`}
+          >
+            {t("connections.table.status")}
           </th>
           <th
             scope="col"
@@ -54,7 +55,7 @@ export function IntegrationTable({
           >
             {t("connections.table.lastUsed")}
           </th>
-          <th scope="col" className={`${HEAD} w-32 sm:w-36`}>
+          <th scope="col" className={`${HEAD} w-px sm:w-36`}>
             <span className="sr-only">{t("connections.table.actions")}</span>
           </th>
         </tr>

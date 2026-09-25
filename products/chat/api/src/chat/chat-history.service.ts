@@ -9,6 +9,7 @@ import type {
   SessionListResponse,
 } from "@chat/contracts/chat/session-page";
 import type { SessionSummary } from "@chat/contracts/chat/session-record";
+import type { SessionRow } from "@chat/db";
 import { Injectable, Logger } from "@nestjs/common";
 import type { UIMessage } from "ai";
 
@@ -110,36 +111,68 @@ export class ChatHistoryService {
         ? undefined
         : decodeSessionCursor(query.cursor);
 
-    const page = await this.sessions.listSessions(userId, {
-      limit: query.limit,
-      ...(cursor === undefined
-        ? {}
-        : { cursor: { updatedAt: new Date(cursor.updatedAt), id: cursor.id } }),
-    });
+    const [page, pinned] = await Promise.all([
+      this.sessions.listSessions(userId, {
+        limit: query.limit,
+        ...(cursor === undefined
+          ? {}
+          : { cursor: { openedAt: new Date(cursor.openedAt), id: cursor.id } }),
+      }),
+      cursor === undefined ? this.sessions.listPinned(userId) : undefined,
+    ]);
 
-    const counts = await this.sessions.attachmentCounts(
-      userId,
-      page.sessions.map((session) => session.id),
-    );
+    const counts = await this.sessions.attachmentCounts(userId, [
+      ...(pinned ?? []).map((session) => session.id),
+      ...page.sessions.map((session) => session.id),
+    ]);
+    const summarize = (row: SessionRow) =>
+      toSummary(row, counts.get(row.id) ?? 0);
 
     return {
-      sessions: page.sessions.map((session): SessionSummary => ({
-        id: session.id,
-        title: session.title,
-        messageCount: session.messageCount,
-        attachmentCount: counts.get(session.id) ?? 0,
-        createdAt: session.createdAt.toISOString(),
-        updatedAt: session.updatedAt.toISOString(),
-      })),
+      ...(pinned === undefined ? {} : { pinned: pinned.map(summarize) }),
+      sessions: page.sessions.map(summarize),
       ...(page.nextCursor === undefined
         ? {}
         : {
             nextCursor: encodeSessionCursor({
-              updatedAt: page.nextCursor.updatedAt.toISOString(),
+              openedAt: page.nextCursor.openedAt.toISOString(),
               id: page.nextCursor.id,
             }),
           }),
     };
+  }
+
+  async open(userId: UserId, session: SessionId): Promise<void> {
+    await this.sessions.markOpened(userId, session);
+  }
+
+  /**
+   * Pins a conversation.
+   *
+   * @returns the pinned summary, `"limit"` at the pin cap, or `undefined` when
+   * the session does not exist for this user
+   */
+  async pin(
+    userId: UserId,
+    session: SessionId,
+  ): Promise<SessionSummary | "limit" | undefined> {
+    const outcome = await this.sessions.pinSession(userId, session);
+    if (outcome.kind === "limit") {
+      return "limit";
+    }
+
+    return outcome.kind === "not_found"
+      ? undefined
+      : this.summaryOf(userId, session);
+  }
+
+  async unpin(
+    userId: UserId,
+    session: SessionId,
+  ): Promise<SessionSummary | undefined> {
+    const unpinned = await this.sessions.unpinSession(userId, session);
+
+    return unpinned === undefined ? undefined : this.summaryOf(userId, session);
   }
 
   /**
@@ -210,15 +243,21 @@ export class ChatHistoryService {
     }
     const counts = await this.sessions.attachmentCounts(userId, [session]);
 
-    return {
-      id: row.id,
-      title: row.title,
-      messageCount: row.messageCount,
-      attachmentCount: counts.get(session) ?? 0,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    };
+    return toSummary(row, counts.get(session) ?? 0);
   }
+}
+
+function toSummary(row: SessionRow, attachmentCount: number): SessionSummary {
+  return {
+    id: row.id,
+    title: row.title,
+    messageCount: row.messageCount,
+    attachmentCount,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    lastOpenedAt: row.lastOpenedAt.toISOString(),
+    pinnedAt: row.pinnedAt?.toISOString() ?? null,
+  };
 }
 
 function createdAtOf(

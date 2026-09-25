@@ -4,8 +4,8 @@
     "tools": {
       "none": "No tool is available in this conversation, so nothing here has been read or run. You may explain what this product does and what you would need, but do not answer a question about a file, a system or a record from memory. Ask the user to attach a spreadsheet, an XML document or a PDF, or to connect an MCP server on the connections page.",
       "readers": "Reader tools are available for the files listed in this conversation. Use only those file paths, exactly as written — no other path can be read. Learn a file's structure before you read data from it, read the least you need to answer, and report what a tool returned rather than what you expected.",
-      "workbook": "For a workbook: call describe_workbook first to learn its sheets and columns. To total, count or group rows, call aggregate_sheet — it is far cheaper than paging the same rows through read_sheet. Use read_sheet for the cells themselves, and follow its cursor when a sheet is larger than one page. Use find_in_sheet to locate a value you cannot address by row.",
-      "document": "For an XML document: call describe_document first to learn its element structure. read_node takes a segment address from that description, not an XPath. Use select_xpath for an XPath 1.0 expression, and project_records to read a repeating element as rows.",
+      "workbook": "For a workbook: call describe_workbook first to learn its sheets and columns. To total, count or group rows, call aggregate_sheet — it is far cheaper than paging the same rows through read_sheet. Use read_sheet for the cells themselves, and follow its cursor when a sheet is larger than one page. Use find_in_sheet to locate a value you cannot address by row. Before reading a sheet whose layout is unclear, get_tables names its Excel Tables and their header rows, get_merged_ranges its merged cells, and get_data_validations the values a column accepts; get_conditional_formats and get_images report highlight rules and pictures.",
+      "document": "For an XML document: call describe_document first to learn its element structure. read_node takes a segment address from that description, not an XPath. Use select_xpath for an XPath 1.0 expression, and project_records to read a repeating element as rows. Use find_in_document to locate literal text, and aggregate_document to count or total a repeating element instead of paging its records.",
       "pdf": "For a PDF: read_pdf_pages returns pages as Markdown and find_in_pdf locates literal text with its page number; call describe_pdf first when you need the page count or which pages are scanned. A scanned page has no text until it is transcribed with ocr true, which is slow — ask for it only for the pages you need, and only when describe_pdf reports OCR as available."
     },
     "images": "The user attached images. No tool can open them and you cannot see them. If an answer depends on one, say so and ask the user to describe it.",
@@ -26,6 +26,11 @@
       "project_records": "Wants to read the document's records as rows.",
       "read_pdf_pages": "Wants to read pages of the PDF.",
       "find_in_pdf": "Wants to search the PDF's text.",
+      "get_tables": "Wants to read the sheet's tables and their header names.",
+      "get_data_validations": "Wants to read the sheet's data validation rules and allowed values.",
+      "get_conditional_formats": "Wants to read the sheet's conditional formatting rules.",
+      "find_in_document": "Wants to search the document's text.",
+      "aggregate_document": "Wants to read the document's records to compute totals.",
       "codex_task": "Wants to run a coding agent that may create and edit files in its own sandboxed directory."
     }
   },
@@ -43,7 +48,8 @@
     "stream_failed": "The assistant could not finish the answer.",
     "file_missing": "No file was sent.",
     "attachment_not_found": "That attachment is no longer available.",
-    "session_not_found": "That conversation is not available."
+    "session_not_found": "That conversation is not available.",
+    "pin_limit_reached": "You have pinned as many conversations as you can. Unpin one to pin another."
   },
   "tools": {
     "denied": {

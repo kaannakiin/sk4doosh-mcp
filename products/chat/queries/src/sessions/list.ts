@@ -12,13 +12,19 @@ import { chatKeys } from "../keys.ts";
 import { withQuery } from "../path.ts";
 import { useChatClient } from "../provider.tsx";
 
+export interface SessionListView {
+  readonly pinned: readonly SessionSummary[];
+  readonly recents: readonly SessionSummary[];
+}
+
 export interface SessionListParams {
   locale: Locale;
   limit?: number;
 }
 
 /**
- * The owner's sessions, newest first, paged by the api's keyset cursor.
+ * The owner's pinned sessions, then the rest most recently opened first, paged
+ * by the api's keyset cursor.
  *
  * Guard: the locale is not part of the query key. It reaches the api only so a
  * failure comes back in the visitor's language; every field in the response is
@@ -26,7 +32,8 @@ export interface SessionListParams {
  * whole list away on a language switch.
  *
  * `select` flattens the pages, so subscribers re-render on a changed session
- * rather than on a changed page envelope.
+ * rather than on a changed page envelope. Pinned rows arrive on the first page
+ * only.
  */
 export function sessionListOptions(
   client: ChatClient,
@@ -42,8 +49,10 @@ export function sessionListOptions(
       ),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page: SessionListResponse) => page.nextCursor,
-    select: (data): readonly SessionSummary[] =>
-      data.pages.flatMap((page) => page.sessions),
+    select: (data): SessionListView => ({
+      pinned: data.pages[0]?.pinned ?? [],
+      recents: data.pages.flatMap((page) => page.sessions),
+    }),
   });
 }
 

@@ -11,6 +11,7 @@
   "invalid_or_expired_challenge": "Doğrulama kodu geçersiz veya süresi dolmuş.",
   "unauthorized": "Kimlik doğrulaması gerekli.",
   "session_expired": "Oturumun süresi dolmuş.",
+  "refresh_superseded": "Oturum başka bir istek tarafından yenilendi. Yeni oturumla tekrar dene.",
   "oauth_provider_unavailable": "Bu giriş sağlayıcısı yapılandırılmamış.",
   "oauth_state_invalid": "Harici giriş isteği geçersiz veya süresi dolmuş.",
   "oauth_link_required": "Bu sağlayıcıyı bağlamadan önce mevcut hesaba giriş yapın.",

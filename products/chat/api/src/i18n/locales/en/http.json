@@ -11,6 +11,7 @@
   "invalid_or_expired_challenge": "The verification code is invalid or expired.",
   "unauthorized": "Authentication is required.",
   "session_expired": "The session has expired.",
+  "refresh_superseded": "The session was renewed by another request. Retry with the new session.",
   "oauth_provider_unavailable": "That sign-in provider is not configured.",
   "oauth_state_invalid": "The external sign-in request is invalid or expired.",
   "oauth_link_required": "Sign in to the existing account before linking this provider.",

@@ -3,7 +3,7 @@ import { AUTH_PATHS } from "@chat/queries/auth/path";
 import type { ContractSchema } from "@chat/queries/client";
 
 import { unwrap } from "./api-response";
-import { refreshSession } from "./auth-refresh";
+import { refreshSession, sessionEpoch } from "./auth-refresh";
 import { env } from "./env";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -24,7 +24,7 @@ export function chatEndpoint(path: string): string {
 }
 
 export interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   locale: Locale;
   body?: unknown;
   signal?: AbortSignal;
@@ -67,11 +67,12 @@ export async function requestNoContent(
  * anonymous reader from a failure.
  */
 async function send(path: string, options: RequestOptions): Promise<unknown> {
+  const since = await sessionEpoch();
   const response = await dispatch(path, options);
   if (response.status !== 401 || !isRefreshable(path)) {
     return unwrap(response);
   }
-  if (!(await refreshSession(options.locale))) {
+  if (!(await refreshSession(options.locale, since))) {
     return unwrap(response);
   }
   await response.body?.cancel();
@@ -118,12 +119,13 @@ function isRefreshable(path: string): boolean {
  */
 export const authFetch: typeof fetch = async (input, init) => {
   const credentialed = { ...init, credentials: CREDENTIALS };
+  const since = await sessionEpoch();
   const response = await fetch(input, credentialed);
   if (response.status !== 401) {
     return response;
   }
   const locale = localeOf(init);
-  if (locale === undefined || !(await refreshSession(locale))) {
+  if (locale === undefined || !(await refreshSession(locale, since))) {
     return response;
   }
   await response.body?.cancel();

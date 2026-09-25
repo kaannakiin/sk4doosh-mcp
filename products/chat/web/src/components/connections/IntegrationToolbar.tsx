@@ -2,6 +2,7 @@ import type { IntegrationOrigin } from "@chat/contracts/integration/integration"
 import { SegmentedControl } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
+import { FilterStrip } from "./FilterStrip";
 import {
   isIntegrationOrigin,
   isStatusGroup,
@@ -39,7 +40,7 @@ export function IntegrationToolbar({
         placeholder={t("connections.search.placeholder")}
         onChange={onQuery}
       />
-      <div className="flex flex-wrap items-center gap-2 lg:ms-auto">
+      <FilterStrip className="lg:ms-auto">
         <SegmentedControl
           size="xs"
           radius="md"
@@ -83,7 +84,7 @@ export function IntegrationToolbar({
             }}
           />
         ) : null}
-      </div>
+      </FilterStrip>
     </div>
   );
 }

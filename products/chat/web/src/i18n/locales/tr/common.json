@@ -2,6 +2,12 @@
   "app": {
     "subtitle": "Dosyaların ve bağladığın sistemler hakkında soru sor."
   },
+  "shell": {
+    "open": "Kenar çubuğunu aç",
+    "close": "Kenar çubuğunu kapat",
+    "collapse": "Kenar çubuğunu daralt",
+    "expand": "Kenar çubuğunu genişlet"
+  },
   "sessions": {
     "title": "Sohbetler",
     "new": "Yeni sohbet",
@@ -10,9 +16,13 @@
     "rename": "Yeniden adlandır",
     "delete": "Sil",
     "deleteConfirm": "“{{title}}” silinsin mi? Bu geri alınamaz.",
-    "save": "Kaydet",
-    "actions": "Sohbet işlemleri",
-    "titleLabel": "Sohbet başlığı"
+    "titleLabel": "Sohbet başlığı",
+    "pinned": "Sabitlenenler",
+    "recents": "Son sohbetler",
+    "pin": "Sabitle",
+    "unpin": "Sabitlemeyi kaldır",
+    "edit": "Sohbeti düzenle",
+    "pinLimit": "Sabitleme sınırına ulaşıldı — önce birini kaldır"
   },
   "composer": {
     "placeholder": "Bir soru sor",
@@ -69,6 +79,16 @@
       "describe_pdf": "describe_pdf",
       "read_pdf_pages": "read_pdf_pages",
       "find_in_pdf": "find_in_pdf",
+      "list_workbooks": "list_workbooks",
+      "get_tables": "get_tables",
+      "get_data_validations": "get_data_validations",
+      "get_merged_ranges": "get_merged_ranges",
+      "get_conditional_formats": "get_conditional_formats",
+      "get_images": "get_images",
+      "find_in_document": "find_in_document",
+      "aggregate_document": "aggregate_document",
+      "list_documents": "list_documents",
+      "list_pdfs": "list_pdfs",
       "codex_task": "codex_task"
     },
     "remember": "Bir daha sorma",
@@ -543,6 +563,16 @@
         "describe_pdf": "PDF'in sayfa sayısını ve hangi sayfaların OCR gerektirdiğini bildirir.",
         "read_pdf_pages": "Seçilen PDF sayfalarının metnini okur.",
         "find_in_pdf": "PDF metninde arar.",
+        "list_workbooks": "Konuşmaya eklenen hesap tablolarını listeler.",
+        "get_tables": "Sayfadaki Excel Tablolarını aralıkları ve başlık adlarıyla listeler.",
+        "get_data_validations": "Sayfanın her aralığının kabul ettiği değerleri ve kuralları listeler.",
+        "get_merged_ranges": "Sayfadaki birleştirilmiş hücre aralıklarını listeler.",
+        "get_conditional_formats": "Sayfanın koşullu biçimlendirme kurallarını ve eşiklerini listeler.",
+        "get_images": "Sayfaya yerleştirilmiş resimleri konumu ve boyutuyla listeler.",
+        "find_in_document": "XML belgesinin metninde ve öznitelik değerlerinde arar.",
+        "aggregate_document": "Belgede tekrar eden bir öğeyi sayar ve toplar.",
+        "list_documents": "Konuşmaya eklenen XML belgelerini listeler.",
+        "list_pdfs": "Konuşmaya eklenen PDF'leri listeler.",
         "find_tools": "Bağladığın sunucuların araçlarında arar.",
         "codex_task": "Kendi yalıtılmış dizininde bir kodlama ajanı çalıştırır."
       }

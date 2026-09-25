@@ -1,7 +1,9 @@
 import { aggregateSheetInputSchema } from "./aggregate-sheet.ts";
 import { describeWorkbookInputSchema } from "./describe-workbook.ts";
 import { findInSheetInputSchema } from "./find-in-sheet.ts";
+import { listWorkbooksInputSchema } from "./list-workbooks.ts";
 import { readSheetInputSchema } from "./read-sheet.ts";
+import { sheetStructureInputSchema } from "./sheet-structure.ts";
 
 /**
  * The Excel reader's tool surface as this product exposes it, in the shape the
@@ -20,6 +22,12 @@ export const EXCEL_TOOL_SCHEMAS = {
   read_sheet: { inputSchema: readSheetInputSchema },
   aggregate_sheet: { inputSchema: aggregateSheetInputSchema },
   find_in_sheet: { inputSchema: findInSheetInputSchema },
+  list_workbooks: { inputSchema: listWorkbooksInputSchema },
+  get_tables: { inputSchema: sheetStructureInputSchema },
+  get_data_validations: { inputSchema: sheetStructureInputSchema },
+  get_merged_ranges: { inputSchema: sheetStructureInputSchema },
+  get_conditional_formats: { inputSchema: sheetStructureInputSchema },
+  get_images: { inputSchema: sheetStructureInputSchema },
 } as const;
 
 export type ExcelToolSchemas = typeof EXCEL_TOOL_SCHEMAS;

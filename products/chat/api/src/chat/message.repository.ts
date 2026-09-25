@@ -128,6 +128,7 @@ export class MessageRepository {
       await tx.$executeRaw`
         update chat_session
            set updated_at = now(),
+               last_opened_at = now(),
                message_count = ${params.messages.length},
                title = coalesce(title, ${params.title})
          where id = ${session.id}

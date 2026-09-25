@@ -1,3 +1,4 @@
+import { SESSION_PIN_LIMIT } from "@chat/contracts/chat/session-limits";
 import type { SessionPage, SessionRow } from "@chat/db";
 import { Injectable } from "@nestjs/common";
 
@@ -11,6 +12,8 @@ type SessionRecord = {
   messageCount: number;
   createdAt: Date;
   updatedAt: Date;
+  lastOpenedAt: Date;
+  pinnedAt: Date | null;
 };
 
 function toRow(record: SessionRecord): SessionRow {
@@ -20,22 +23,29 @@ function toRow(record: SessionRecord): SessionRow {
     messageCount: record.messageCount,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
+    lastOpenedAt: record.lastOpenedAt,
+    pinnedAt: record.pinnedAt,
   };
 }
 
 export interface SessionListQuery {
   readonly limit: number;
-  readonly cursor?: { readonly updatedAt: Date; readonly id: string };
+  readonly cursor?: { readonly openedAt: Date; readonly id: string };
 }
+
+export type PinOutcome =
+  | { readonly kind: "pinned"; readonly row: SessionRow }
+  | { readonly kind: "not_found" }
+  | { readonly kind: "limit" };
 
 @Injectable()
 export class ChatSessionRepository {
   constructor(private readonly db: DbService) {}
 
   /**
-   * One page of a user's conversations, newest first.
+   * One page of a user's unpinned conversations, most recently opened first.
    *
-   * Guard: the keyset compares `(updated_at, id)` against the cursor's position,
+   * Guard: the keyset compares `(last_opened_at, id)` against the cursor's position,
    * and the cursor's public id is resolved to its surrogate in the same statement.
    * Ordering on the surrogate rather than on the public id is what lets
    * `chat_session_user_recent_idx` satisfy the sort without a sort node, while the
@@ -53,19 +63,20 @@ export class ChatSessionRepository {
       where: {
         userId: user,
         deletedAt: null,
+        pinnedAt: null,
         ...(cursor === undefined
           ? {}
           : {
               OR: [
-                { updatedAt: { lt: cursor.updatedAt } },
+                { lastOpenedAt: { lt: cursor.openedAt } },
                 {
-                  updatedAt: cursor.updatedAt,
+                  lastOpenedAt: cursor.openedAt,
                   id: { lt: await this.surrogateOf(user, cursor.id) },
                 },
               ],
             }),
       },
-      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      orderBy: [{ lastOpenedAt: "desc" }, { id: "desc" }],
       take: query.limit + 1,
     });
 
@@ -76,9 +87,97 @@ export class ChatSessionRepository {
       sessions: page.map(toRow),
       nextCursor:
         records.length > query.limit && last !== undefined
-          ? { updatedAt: last.updatedAt, id: last.publicId }
+          ? { openedAt: last.lastOpenedAt, id: last.publicId }
           : undefined,
     };
+  }
+
+  async listPinned(userId: UserId): Promise<readonly SessionRow[]> {
+    const records = await this.db.client.chatSession.findMany({
+      where: {
+        userId: BigInt(userId),
+        deletedAt: null,
+        pinnedAt: { not: null },
+      },
+      orderBy: [{ pinnedAt: "desc" }, { id: "desc" }],
+      take: SESSION_PIN_LIMIT,
+    });
+
+    return records.map(toRow);
+  }
+
+  /**
+   * Moves a conversation to the head of the list.
+   *
+   * Guard: `last_opened_at` only ever moves forward, so a bumped row leaves the
+   * region below every cursor already handed out. Pages the visitor has loaded
+   * can therefore never repeat or skip it, which is what makes a sort key that
+   * changes on every open safe to page over.
+   *
+   * Guard: `now()` is the database's clock, the same one the turn reconcile
+   * writes with. Mixing in the api's clock would let an open and a turn a few
+   * milliseconds apart land in the wrong order.
+   */
+  async markOpened(userId: UserId, sessionId: string): Promise<void> {
+    await this.db.client.$executeRaw`
+      update chat_session
+         set last_opened_at = now()
+       where public_id = ${sessionId}::uuid
+         and user_id = ${BigInt(userId)}
+         and deleted_at is null
+    `;
+  }
+
+  /**
+   * Pins a conversation, up to `SESSION_PIN_LIMIT` per user.
+   *
+   * Guard: the user row is locked before the count. Without the lock two pins
+   * racing at the cap both read one below it and both write, which leaves the
+   * limit advisory and the pinned list longer than the page that carries it.
+   */
+  async pinSession(userId: UserId, sessionId: string): Promise<PinOutcome> {
+    const user = BigInt(userId);
+
+    return this.db.client.$transaction(async (tx) => {
+      await tx.$queryRaw<{ id: bigint }[]>`
+        select id from app_user where id = ${user} for update
+      `;
+      const target = await tx.chatSession.findFirst({
+        where: { publicId: sessionId, userId: user, deletedAt: null },
+      });
+      if (target === null) {
+        return { kind: "not_found" };
+      }
+      if (target.pinnedAt !== null) {
+        return { kind: "pinned", row: toRow(target) };
+      }
+
+      const pinned = await tx.chatSession.count({
+        where: { userId: user, deletedAt: null, pinnedAt: { not: null } },
+      });
+      if (pinned >= SESSION_PIN_LIMIT) {
+        return { kind: "limit" };
+      }
+
+      const updated = await tx.chatSession.update({
+        where: { id: target.id },
+        data: { pinnedAt: new Date() },
+      });
+
+      return { kind: "pinned", row: toRow(updated) };
+    });
+  }
+
+  async unpinSession(
+    userId: UserId,
+    sessionId: string,
+  ): Promise<SessionRow | undefined> {
+    const { count } = await this.db.client.chatSession.updateMany({
+      where: { publicId: sessionId, userId: BigInt(userId), deletedAt: null },
+      data: { pinnedAt: null },
+    });
+
+    return count === 0 ? undefined : this.findSession(userId, sessionId);
   }
 
   private async surrogateOf(userId: bigint, publicId: string): Promise<bigint> {

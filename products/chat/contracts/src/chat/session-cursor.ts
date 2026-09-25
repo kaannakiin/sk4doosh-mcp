@@ -6,15 +6,15 @@ const CURSOR_MAX_CHARS = 512;
 
 /**
  * Guard: the session list cursor is a keyset, not an offset. The list is ordered
- * by `updatedAt` descending and any turn in any session rewrites that session's
- * `updatedAt`, so an offset page skips or repeats rows whenever the visitor is
- * still chatting while paging. Both halves are carried because `updatedAt` is not
- * unique, and the tiebreaker is the public id rather than the table's surrogate —
- * a surrogate inside a base64 string is still readable, and would leak how many
- * sessions exist across every user.
+ * by `lastOpenedAt` descending and every open or turn rewrites it, so an offset
+ * page skips or repeats rows whenever the visitor keeps working while paging.
+ * Both halves are carried because `lastOpenedAt` is not unique, and the
+ * tiebreaker is the public id rather than the table's surrogate — a surrogate
+ * inside a base64 string is still readable, and would leak how many sessions
+ * exist across every user.
  */
 export const sessionCursorSchema = z.object({
-  updatedAt: z.iso.datetime(),
+  openedAt: z.iso.datetime(),
   id: sessionIdSchema,
 });
 

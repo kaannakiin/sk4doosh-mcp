@@ -3,13 +3,17 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "~/components/app/AppShell";
 import { authTransport } from "~/lib/auth-transport";
+import { resolveNavbarCollapsed } from "~/lib/navbar";
 import { internalHref } from "~/lib/redirect-target";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ context, location }) => {
-    const user = await context.queryClient.ensureQueryData(
-      currentUserOptions(authTransport(), context.locale),
-    );
+    const [user, navbarCollapsed] = await Promise.all([
+      context.queryClient.ensureQueryData(
+        currentUserOptions(authTransport(), context.locale),
+      ),
+      resolveNavbarCollapsed(),
+    ]);
 
     /**
      * Guard: the bounce carries the requested href, not the root. A reader
@@ -24,7 +28,13 @@ export const Route = createFileRoute("/_authenticated")({
       });
     }
 
-    return { user };
+    return { user, navbarCollapsed };
   },
-  component: AppShell,
+  component: AuthenticatedLayout,
 });
+
+function AuthenticatedLayout() {
+  const { navbarCollapsed } = Route.useRouteContext();
+
+  return <AppShell initialCollapsed={navbarCollapsed} />;
+}

@@ -14,6 +14,11 @@ model ChatSession {
   updatedAt    DateTime  @default(now()) @map("updated_at") @db.Timestamptz
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
 
+  /// The sidebar's sort key: bumped when the reader opens the conversation and
+  /// on every turn. Kept apart from `updatedAt`, which only a turn may move.
+  lastOpenedAt DateTime  @default(now()) @map("last_opened_at") @db.Timestamptz
+  pinnedAt     DateTime? @map("pinned_at") @db.Timestamptz
+
   /// The Codex thread this conversation continues, as the agent's own runtime
   /// named it. It is a handle into `$CODEX_HOME/sessions`, not an identifier
   /// this product mints, so it is never projected into a row type and never
@@ -33,6 +38,6 @@ model ChatSession {
   messages    ChatMessage[]
   attachments ChatAttachment[]
 
-  @@index([userId, updatedAt(sort: Desc), id(sort: Desc)], map: "chat_session_user_recent_idx")
+  @@index([userId, lastOpenedAt(sort: Desc), id(sort: Desc)], map: "chat_session_user_recent_idx")
   @@map("chat_session")
 }

@@ -1,5 +1,5 @@
 import { SUPPORTED_MEDIA_TYPES } from "@chat/contracts/attachment/media-type";
-import { ActionIcon, Tooltip, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Tooltip } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
 import {
   IconArrowUp,
@@ -90,7 +90,7 @@ export function Composer({
    * stadium, for 150ms, on every long paste.
    */
   const grown = multiline || attached;
-  const showExpand = overflowing || expanded;
+  const showExpand = grown && (overflowing || expanded);
 
   return (
     <div
@@ -109,7 +109,7 @@ export function Composer({
       >
         {children}
 
-        <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1 [grid-template-areas:'attach_input_send'] group-data-grown/composer:grid-cols-[auto_minmax(0,1fr)] group-data-grown/composer:gap-y-1.5 group-data-grown/composer:[grid-template-areas:'input_input''attach_send']">
+        <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1 [grid-template-areas:'attach_input_send'] group-data-grown/composer:grid-cols-[auto_minmax(0,1fr)_auto_auto] group-data-grown/composer:gap-y-1.5 group-data-grown/composer:[grid-template-areas:'input_input_input_input''attach_._expand_send']">
           <Tooltip label={t("attachments.add")} withArrow>
             <ActionIcon
               className="[grid-area:attach]"
@@ -126,7 +126,7 @@ export function Composer({
 
           <textarea
             ref={input}
-            className="min-h-6 resize-none overflow-y-auto border-0 bg-transparent px-1 py-1.5 font-sans text-[0.9375rem] leading-normal text-inherit [grid-area:input] scrollbar-thin placeholder:text-ink-dim focus:outline-none group-data-grown/composer:pe-7"
+            className="min-h-6 resize-none overflow-y-auto border-0 bg-transparent px-1 py-1.5 font-sans text-[0.9375rem] leading-normal text-inherit [grid-area:input] scrollbar-thin placeholder:text-ink-dim focus:outline-none"
             rows={1}
             placeholder={t("composer.placeholder")}
             aria-label={t("composer.placeholder")}
@@ -136,6 +136,34 @@ export function Composer({
             }}
             onKeyDown={onKeyDown}
           />
+
+          {showExpand ? (
+            <Tooltip
+              label={t(expanded ? "composer.collapse" : "composer.expand")}
+              withArrow
+            >
+              <ActionIcon
+                className="[grid-area:expand]"
+                variant="subtle"
+                color="gray"
+                radius="xl"
+                size="lg"
+                aria-label={t(
+                  expanded ? "composer.collapse" : "composer.expand",
+                )}
+                aria-expanded={expanded}
+                onClick={() => {
+                  setExpanded((open) => !open);
+                }}
+              >
+                {expanded ? (
+                  <IconArrowsDiagonalMinimize2 size={16} />
+                ) : (
+                  <IconArrowsDiagonal size={16} />
+                )}
+              </ActionIcon>
+            </Tooltip>
+          ) : null}
 
           <div className="justify-self-end [grid-area:send]">
             {busy ? (
@@ -162,23 +190,6 @@ export function Composer({
             )}
           </div>
         </div>
-
-        {showExpand ? (
-          <UnstyledButton
-            className="absolute inset-e-2 top-2 grid size-6 place-items-center rounded-md bg-panel text-ink-dim hover:bg-raised hover:text-ink"
-            aria-label={t(expanded ? "composer.collapse" : "composer.expand")}
-            aria-expanded={expanded}
-            onClick={() => {
-              setExpanded((open) => !open);
-            }}
-          >
-            {expanded ? (
-              <IconArrowsDiagonalMinimize2 size={14} />
-            ) : (
-              <IconArrowsDiagonal size={14} />
-            )}
-          </UnstyledButton>
-        ) : null}
       </Dropzone>
 
       <p className="mt-1.5 text-center text-[0.6875rem] tracking-wide text-ink-dim opacity-0 transition-opacity duration-150 group-focus-within/composer:opacity-100">

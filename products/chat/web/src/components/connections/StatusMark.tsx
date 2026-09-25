@@ -11,10 +11,9 @@ const DOT = {
 
 interface StatusMarkProps {
   readonly integration: IntegrationSummary;
-  readonly compact?: boolean;
 }
 
-export function StatusMark({ integration, compact = false }: StatusMarkProps) {
+export function StatusMark({ integration }: StatusMarkProps) {
   const { t } = useTranslation();
   const group = statusGroupOf(integration);
 
@@ -24,9 +23,7 @@ export function StatusMark({ integration, compact = false }: StatusMarkProps) {
         className={`size-1.5 shrink-0 rounded-full ${DOT[group]}`}
         aria-hidden
       />
-      <span
-        className={`${compact ? "sr-only sm:not-sr-only" : ""} ${group === "attention" ? "text-amber" : "text-ink-dim"}`}
-      >
+      <span className={group === "attention" ? "text-amber" : "text-ink-dim"}>
         {integration.authMode === "none"
           ? t("connections.status.open")
           : t(

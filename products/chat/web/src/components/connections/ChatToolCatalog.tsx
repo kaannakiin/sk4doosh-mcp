@@ -4,17 +4,21 @@ import {
   toolOverrideSettingSchema,
   type ToolApprovalMode,
 } from "@chat/contracts/integration/tool-approval-mode";
-import { toolPosture } from "@chat/contracts/tools/approval-decision";
+import {
+  toolPosture,
+  type ToolPostureAnswer,
+} from "@chat/contracts/tools/approval-decision";
 import {
   CHAT_TOOL_FAMILIES,
   CHAT_TOOL_FAMILY,
+  type ChatToolFamily,
 } from "@chat/contracts/tools/tool-name";
 import {
   useChatToolApprovals,
   useChatTools,
 } from "@chat/queries/connections/approvals";
 import { useSetToolOverride } from "@chat/queries/connections/mutations";
-import { Badge, SegmentedControl, Skeleton } from "@mantine/core";
+import { Accordion, Badge, SegmentedControl, Skeleton } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { EffectivePosture } from "./EffectivePosture";
@@ -25,6 +29,48 @@ const ROW =
 interface ChatToolCatalogProps {
   readonly readerMode: ToolApprovalMode | undefined;
   readonly locale: Locale;
+}
+
+interface ToolFamilyGroup {
+  readonly family: ChatToolFamily;
+  readonly members: readonly ChatToolEntry[];
+  readonly stale: boolean;
+}
+
+function postureOf(
+  tool: ChatToolEntry,
+  readerMode: ToolApprovalMode | undefined,
+): ToolPostureAnswer | undefined {
+  return tool.policy === "askable" && readerMode !== undefined
+    ? toolPosture({
+        override: tool.override,
+        overrideStale: tool.overrideStale,
+        destructive: false,
+        integrationMode: "inherit",
+        readerMode,
+      })
+    : undefined;
+}
+
+function groupTools(
+  tools: readonly ChatToolEntry[],
+): readonly ToolFamilyGroup[] {
+  return CHAT_TOOL_FAMILIES.flatMap((family) => {
+    const members = tools.filter(
+      (tool) => CHAT_TOOL_FAMILY[tool.name] === family,
+    );
+    if (members.length === 0) {
+      return [];
+    }
+
+    return [
+      {
+        family,
+        members,
+        stale: members.some((tool) => tool.overrideStale),
+      },
+    ];
+  });
 }
 
 export function ChatToolCatalog({ readerMode, locale }: ChatToolCatalogProps) {
@@ -44,9 +90,9 @@ export function ChatToolCatalog({ readerMode, locale }: ChatToolCatalogProps) {
       </p>
     ) : (
       <div className="mt-3 flex flex-col gap-2" aria-busy>
-        <Skeleton height={56} radius="md" />
-        <Skeleton height={56} radius="md" />
-        <Skeleton height={56} radius="md" />
+        <Skeleton height={44} radius="md" />
+        <Skeleton height={44} radius="md" />
+        <Skeleton height={44} radius="md" />
       </div>
     );
   }
@@ -56,47 +102,64 @@ export function ChatToolCatalog({ readerMode, locale }: ChatToolCatalogProps) {
       approval.expired ? [] : [approval.toolName],
     ),
   );
-  const families = CHAT_TOOL_FAMILIES.flatMap((family) => {
-    const members = (tools.data ?? []).filter(
-      (tool) => CHAT_TOOL_FAMILY[tool.name] === family,
-    );
-
-    return members.length === 0 ? [] : [{ family, members }];
-  });
+  const groups = groupTools(tools.data);
 
   return (
-    <div className="mt-3 flex flex-col gap-6">
-      {families.map(({ family, members }) => (
-        <div key={family}>
-          <h3 className="px-1 pb-2 text-sm font-medium">
-            {t(`connections.chatTools.families.${family}`)}
-            <span className="ms-2 font-mono text-xs font-normal text-ink-dim tabular-nums">
-              {members.length}
+    <Accordion
+      multiple
+      order={3}
+      chevronPosition="left"
+      defaultValue={groups.flatMap(({ family, stale }) =>
+        stale ? [family] : [],
+      )}
+      className="mt-3 border-t border-hairline"
+      classNames={{
+        item: "border-b border-hairline",
+        control: "px-1 hover:bg-panel",
+        chevron: "text-ink-dim",
+        label: "py-3",
+        content: "px-0 pt-0 pb-2",
+      }}
+    >
+      {groups.map(({ family, members, stale }) => (
+        <Accordion.Item
+          key={family}
+          value={family}
+          className={stale ? "shadow-[inset_2px_0_0_var(--color-amber)]" : ""}
+        >
+          <Accordion.Control>
+            <span className="text-sm font-medium">
+              {t(`connections.chatTools.families.${family}`)}
+              <span className="ms-2 font-mono text-xs font-normal text-ink-dim tabular-nums">
+                {members.length}
+              </span>
             </span>
-          </h3>
-          <ul className="border-b border-hairline">
-            {members.map((tool) => (
-              <ChatToolRow
-                key={tool.name}
-                tool={tool}
-                readerMode={readerMode}
-                remembered={remembered.has(tool.name)}
-                disabled={isPending && variables?.exposedName === tool.name}
-                onChoose={(mode) => {
-                  overrideTool({ exposedName: tool.name, mode });
-                }}
-              />
-            ))}
-          </ul>
-        </div>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <ul>
+              {members.map((tool) => (
+                <ChatToolRow
+                  key={tool.name}
+                  tool={tool}
+                  posture={postureOf(tool, readerMode)}
+                  remembered={remembered.has(tool.name)}
+                  disabled={isPending && variables?.exposedName === tool.name}
+                  onChoose={(mode) => {
+                    overrideTool({ exposedName: tool.name, mode });
+                  }}
+                />
+              ))}
+            </ul>
+          </Accordion.Panel>
+        </Accordion.Item>
       ))}
-    </div>
+    </Accordion>
   );
 }
 
 interface ChatToolRowProps {
   readonly tool: ChatToolEntry;
-  readonly readerMode: ToolApprovalMode | undefined;
+  readonly posture: ToolPostureAnswer | undefined;
   readonly remembered: boolean;
   readonly disabled: boolean;
   readonly onChoose: (mode: ChatToolEntry["override"]) => void;
@@ -104,25 +167,15 @@ interface ChatToolRowProps {
 
 function ChatToolRow({
   tool,
-  readerMode,
+  posture,
   remembered,
   disabled,
   onChoose,
 }: ChatToolRowProps) {
   const { t } = useTranslation();
   const askable = tool.policy === "askable";
-  const answer =
-    askable && readerMode !== undefined
-      ? toolPosture({
-          override: tool.override,
-          overrideStale: tool.overrideStale,
-          destructive: false,
-          integrationMode: "inherit",
-          readerMode,
-        })
-      : undefined;
-  const posture =
-    answer === undefined ? (
+  const behaviour =
+    posture === undefined ? (
       <p className="font-mono text-[0.6875rem] leading-snug">
         <span
           className={tool.policy === "always" ? "text-ink-dim" : "text-ink"}
@@ -137,7 +190,7 @@ function ChatToolRow({
         </span>
       </p>
     ) : (
-      <EffectivePosture answer={answer} destructive={false} />
+      <EffectivePosture answer={posture} destructive={false} />
     );
 
   return (
@@ -161,10 +214,10 @@ function ChatToolRow({
         <p className="mt-0.5 text-xs text-ink-dim">
           {t(`connections.chatTools.descriptions.${tool.name}`)}
         </p>
-        <div className="mt-1.5 lg:hidden">{posture}</div>
+        <div className="mt-1.5 lg:hidden">{behaviour}</div>
       </div>
 
-      <div className="hidden pt-1 lg:block">{posture}</div>
+      <div className="hidden pt-1 lg:block">{behaviour}</div>
 
       {askable ? (
         <SegmentedControl
