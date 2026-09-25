@@ -20,6 +20,7 @@ export const healthResponseSchema = z.object({
   readers: z.object({
     workbook: readinessSchema,
     document: readinessSchema,
+    pdf: readinessSchema,
   }),
   codex: readinessSchema,
 });

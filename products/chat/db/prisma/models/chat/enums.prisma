@@ -6,6 +6,7 @@ enum MessageRole {
 enum ReaderFamily {
   workbook
   document
+  pdf
 }
 
 enum TurnOutcome {

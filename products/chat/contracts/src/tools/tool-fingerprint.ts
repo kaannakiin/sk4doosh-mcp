@@ -3,12 +3,14 @@ import { z } from "zod";
 import { CODEX_TOOL_SCHEMAS } from "./codex/catalog.ts";
 import { DISCOVERY_TOOL_SCHEMAS } from "./discovery/catalog.ts";
 import { EXCEL_TOOL_SCHEMAS } from "./excel/catalog.ts";
+import { PDF_TOOL_SCHEMAS } from "./pdf/catalog.ts";
 import type { ChatToolName } from "./tool-name.ts";
 import { XML_TOOL_SCHEMAS } from "./xml/catalog.ts";
 
 const SCHEMAS: Record<ChatToolName, { inputSchema: z.ZodType }> = {
   ...EXCEL_TOOL_SCHEMAS,
   ...XML_TOOL_SCHEMAS,
+  ...PDF_TOOL_SCHEMAS,
   ...DISCOVERY_TOOL_SCHEMAS,
   ...CODEX_TOOL_SCHEMAS,
 };

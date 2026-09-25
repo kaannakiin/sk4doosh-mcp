@@ -14,6 +14,12 @@ export const XML_TOOL_NAMES = [
   "project_records",
 ] as const;
 
+export const PDF_TOOL_NAMES = [
+  "describe_pdf",
+  "read_pdf_pages",
+  "find_in_pdf",
+] as const;
+
 export const DISCOVERY_TOOL_NAMES = ["find_tools"] as const;
 
 export const CODEX_TOOL_NAMES = ["codex_task"] as const;
@@ -21,6 +27,7 @@ export const CODEX_TOOL_NAMES = ["codex_task"] as const;
 export const chatToolNameSchema = z.enum([
   ...EXCEL_TOOL_NAMES,
   ...XML_TOOL_NAMES,
+  ...PDF_TOOL_NAMES,
   ...DISCOVERY_TOOL_NAMES,
   ...CODEX_TOOL_NAMES,
 ]);

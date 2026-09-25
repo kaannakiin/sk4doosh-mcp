@@ -247,6 +247,9 @@ export const apiEnvSchema = z.preprocess(
 
       CHAT_MCP_EXCEL_CMD: mcpCommandSchema,
       CHAT_MCP_XML_CMD: mcpCommandSchema,
+      CHAT_MCP_PDF_CMD: mcpCommandSchema,
+      CHAT_MCP_PDF_OCR_URL: z.url().optional(),
+      CHAT_MCP_PDF_OCR_MODEL: z.string().trim().min(1).optional(),
       CHAT_MCP_MAX_SESSIONS: z.coerce
         .number()
         .int()

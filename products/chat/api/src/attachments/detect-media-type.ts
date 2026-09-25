@@ -11,6 +11,8 @@ export type Detection =
 
 const ZIP_SIGNATURE = [0x50, 0x4b, 0x03, 0x04];
 
+const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46, 0x2d];
+
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 /**
@@ -113,7 +115,7 @@ function looksLikeText(bytes: Uint8Array): boolean {
 /**
  * The byte proof each media type owes.
  *
- * Guard: a table rather than a chain, because nine types do not fit in a nested
+ * Guard: a table rather than a chain, because ten types do not fit in a nested
  * ternary and because each entry naming its own proof is what the per-family
  * philosophy actually says. Magic bytes do not make an upload safe — a
  * signature-valid png can still be a decompression bomb — which is why no
@@ -130,6 +132,7 @@ const PROOF_BY_MEDIA_TYPE: Readonly<
   "text/csv": looksLikeText,
   "application/xml": looksLikeMarkup,
   "text/xml": looksLikeMarkup,
+  "application/pdf": (bytes) => startsWith(bytes, PDF_SIGNATURE),
   "image/png": (bytes) => startsWith(bytes, PNG_SIGNATURE),
   "image/jpeg": (bytes) => startsWith(bytes, JPEG_SIGNATURE),
   "image/gif": isGif,

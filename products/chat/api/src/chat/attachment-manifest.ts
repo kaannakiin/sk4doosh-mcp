@@ -8,6 +8,7 @@ const KIND_BY_MEDIA_TYPE: Readonly<Record<SupportedMediaType, string>> = {
   "text/csv": "csv table",
   "application/xml": "xml document",
   "text/xml": "xml document",
+  "application/pdf": "pdf document",
   "image/png": "png image",
   "image/jpeg": "jpeg image",
   "image/webp": "webp image",

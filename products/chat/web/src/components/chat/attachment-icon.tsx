@@ -5,6 +5,7 @@ import {
 import {
   IconFileSpreadsheet,
   IconFileTypeCsv,
+  IconFileTypePdf,
   IconFileTypeXml,
   IconPaperclip,
   IconPhoto,
@@ -22,6 +23,7 @@ const BY_EXTENSION: Readonly<Record<string, typeof IconPaperclip>> = {
   xlsm: IconFileSpreadsheet,
   csv: IconFileTypeCsv,
   xml: IconFileTypeXml,
+  pdf: IconFileTypePdf,
   png: IconPhoto,
   jpg: IconPhoto,
   webp: IconPhoto,

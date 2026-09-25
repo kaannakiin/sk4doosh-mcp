@@ -6,6 +6,7 @@ export const SUPPORTED_MEDIA_TYPES = [
   "text/csv",
   "application/xml",
   "text/xml",
+  "application/pdf",
   "image/png",
   "image/jpeg",
   "image/webp",
@@ -24,6 +25,7 @@ export const EXTENSION_BY_MEDIA_TYPE: Readonly<
   "text/csv": "csv",
   "application/xml": "xml",
   "text/xml": "xml",
+  "application/pdf": "pdf",
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
@@ -47,6 +49,7 @@ export const MEDIA_TYPE_BY_EXTENSION: Readonly<
   xlsm: "application/vnd.ms-excel.sheet.macroEnabled.12",
   csv: "text/csv",
   xml: "application/xml",
+  pdf: "application/pdf",
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
@@ -58,7 +61,7 @@ export const SUPPORTED_EXTENSIONS = Object.keys(
   MEDIA_TYPE_BY_EXTENSION,
 ) as readonly string[];
 
-export const readerFamilySchema = z.enum(["workbook", "document"]);
+export const readerFamilySchema = z.enum(["workbook", "document", "pdf"]);
 
 export type ReaderFamily = z.infer<typeof readerFamilySchema>;
 
@@ -66,11 +69,10 @@ export type ReaderFamily = z.infer<typeof readerFamilySchema>;
  * Which MCP server can read a media type, or `null` when none can.
  *
  * Guard: images map to `null` rather than to an `"image"` family. `ReaderFamily`
- * names a reader process, and adding a third value that has none is silently
- * wrong in two places at once: the reader lookup is a two-branch ternary, so the
- * new value falls through to the XML command and spawns that process for a
- * session holding only a picture; and the schema table has no entry for it, so
- * the client is asked for its tools with no schemas and falls back to dynamic
+ * names a reader process, and the command and catalog tables are total over it,
+ * so a value with no process behind it has to be handed some command and some
+ * catalog — a borrowed command spawns another reader for a session holding only
+ * a picture, and an empty catalog makes the client fall back to dynamic
  * discovery, exposing the whole reader surface the catalog deliberately
  * withholds. Nullability makes the same mistake a compile error instead, because
  * indexing the schema table with `ReaderFamily | null` does not type-check until
@@ -85,6 +87,7 @@ export const READER_FAMILY_BY_MEDIA_TYPE: Readonly<
   "text/csv": "workbook",
   "application/xml": "document",
   "text/xml": "document",
+  "application/pdf": "pdf",
   "image/png": null,
   "image/jpeg": null,
   "image/webp": null,

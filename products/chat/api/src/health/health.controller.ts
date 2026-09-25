@@ -22,11 +22,12 @@ export class HealthController {
 
   @Get()
   async check(@Req() request: RequestWithLocale): Promise<HealthResponse> {
-    const [llm, database, workbook, document] = await Promise.all([
+    const [llm, database, workbook, document, pdf] = await Promise.all([
       this.llm.probe(),
       this.db.probe(),
       this.readers.probe("workbook"),
       this.readers.probe("document"),
+      this.readers.probe("pdf"),
     ]);
 
     return {
@@ -36,7 +37,7 @@ export class HealthController {
       llm,
       database,
       objects: this.objects.probe(),
-      readers: { workbook, document },
+      readers: { workbook, document, pdf },
       codex: this.codex.status(),
     };
   }

@@ -1,8 +1,6 @@
 import type { ReaderFamily } from "@chat/contracts/attachment/media-type";
 import type { SessionId } from "@chat/contracts/chat/session";
 import type { Readiness } from "@chat/contracts/http/health";
-import { EXCEL_TOOL_SCHEMAS } from "@chat/contracts/tools/excel/catalog";
-import { XML_TOOL_SCHEMAS } from "@chat/contracts/tools/xml/catalog";
 import type { UserId } from "../db/ids.ts";
 import { createMCPClient, type MCPClient } from "@ai-sdk/mcp";
 import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
@@ -22,14 +20,10 @@ import type {
   SessionConfig,
 } from "../config/configuration.ts";
 import { withMaterialization } from "./materializing-tools.ts";
+import { exposedToolsOf, serverSchemasOf } from "./reader-catalog.ts";
 import { readerCommandFor } from "./reader-command.ts";
 
 const SWEEP_INTERVAL_MS = 60_000;
-
-const SCHEMAS_BY_FAMILY = {
-  workbook: EXCEL_TOOL_SCHEMAS,
-  document: XML_TOOL_SCHEMAS,
-} as const;
 
 @Injectable()
 export class ReaderSessionService implements OnModuleDestroy {
@@ -98,7 +92,7 @@ export class ReaderSessionService implements OnModuleDestroy {
 
     const root = await mkdtemp(join(tmpdir(), "chat-reader-probe-"));
     try {
-      const client = await this.connect(raw, root);
+      const client = await this.connect(family, raw, root);
       try {
         await client.listTools();
         this.readiness.set(family, "ready");
@@ -163,7 +157,7 @@ export class ReaderSessionService implements OnModuleDestroy {
         const root = await this.cache.readableRootFor(session);
         this.cache.pin(session);
 
-        return this.connect(raw, root);
+        return this.connect(family, raw, root);
       })();
     this.clients.set(key, pending);
 
@@ -172,9 +166,10 @@ export class ReaderSessionService implements OnModuleDestroy {
       this.readiness.set(family, "ready");
 
       return withMaterialization(
-        (await client.tools({
-          schemas: SCHEMAS_BY_FAMILY[family],
-        })) as ToolSet,
+        exposedToolsOf(
+          family,
+          (await client.tools({ schemas: serverSchemasOf(family) })) as ToolSet,
+        ),
         (filePath) => this.store.resolveForTool(userId, session, filePath),
       );
     } catch (cause) {
@@ -188,7 +183,11 @@ export class ReaderSessionService implements OnModuleDestroy {
     }
   }
 
-  private async connect(raw: string, root: string): Promise<MCPClient> {
+  private async connect(
+    family: ReaderFamily,
+    raw: string,
+    root: string,
+  ): Promise<MCPClient> {
     const parsed = readerCommandFor(raw, root);
     if (parsed === undefined) {
       throw new Error("empty reader command");
@@ -198,15 +197,14 @@ export class ReaderSessionService implements OnModuleDestroy {
       transport: new Experimental_StdioMCPTransport({
         command: parsed.command,
         args: parsed.args,
+        env: { ...this.readers[family].env },
         stderr: "inherit",
       }),
     });
   }
 
   private commandOf(family: ReaderFamily): string | undefined {
-    return family === "workbook"
-      ? this.readers.workbookCommand
-      : this.readers.documentCommand;
+    return this.readers[family].command;
   }
 
   private async evictOverflow(active: SessionId): Promise<void> {

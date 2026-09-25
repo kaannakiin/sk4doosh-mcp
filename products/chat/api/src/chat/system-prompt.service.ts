@@ -1,6 +1,7 @@
 import type { Locale } from "@chat/contracts/common/locale";
 import {
   EXCEL_TOOL_NAMES,
+  PDF_TOOL_NAMES,
   XML_TOOL_NAMES,
 } from "@chat/contracts/tools/tool-name";
 import { Injectable } from "@nestjs/common";
@@ -15,6 +16,7 @@ export const SYSTEM_PROMPT_KEYS = [
   "system.tools.readers",
   "system.tools.workbook",
   "system.tools.document",
+  "system.tools.pdf",
   "system.images",
   "system.readers_unavailable",
   "system.no_files",
@@ -58,7 +60,8 @@ export class SystemPromptService {
     const has = new Set(input.toolNames);
     const workbook = EXCEL_TOOL_NAMES.some((name) => has.has(name));
     const document = XML_TOOL_NAMES.some((name) => has.has(name));
-    const readers = workbook || document;
+    const pdf = PDF_TOOL_NAMES.some((name) => has.has(name));
+    const readers = workbook || document || pdf;
 
     const sections: string[] = [];
     if (has.size === 0 && input.remote === undefined) {
@@ -70,6 +73,9 @@ export class SystemPromptService {
       }
       if (document) {
         sections.push(this.text("system.tools.document", locale));
+      }
+      if (pdf) {
+        sections.push(this.text("system.tools.pdf", locale));
       }
     }
 

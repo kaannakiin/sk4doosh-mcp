@@ -66,6 +66,9 @@
       "read_node": "read_node",
       "select_xpath": "select_xpath",
       "project_records": "project_records",
+      "describe_pdf": "describe_pdf",
+      "read_pdf_pages": "read_pdf_pages",
+      "find_in_pdf": "find_in_pdf",
       "codex_task": "codex_task"
     },
     "remember": "Bir daha sorma",

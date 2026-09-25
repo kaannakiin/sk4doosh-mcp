@@ -46,6 +46,9 @@ export const CHAT_TOOL_POLICY: Record<ChatToolName, ToolApprovalPolicy> = {
   read_node: "askable",
   select_xpath: "askable",
   project_records: "askable",
+  describe_pdf: "auto",
+  read_pdf_pages: "askable",
+  find_in_pdf: "askable",
   codex_task: "always",
 };
 

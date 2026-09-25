@@ -1,3 +1,4 @@
+import type { ReaderFamily } from "@chat/contracts/attachment/media-type";
 import { apiEnvSchema } from "@chat/contracts/config/api-env";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -74,10 +75,12 @@ export interface SessionConfig {
   maxSessions: number;
 }
 
-export interface ReaderConfig {
-  workbookCommand?: string;
-  documentCommand?: string;
+export interface ReaderProcess {
+  command: string | undefined;
+  env: Readonly<Record<string, string>>;
 }
+
+export type ReaderConfig = Readonly<Record<ReaderFamily, ReaderProcess>>;
 
 /**
  * Guard: there is no `apiKey` here and there must never be one. `home` is the
@@ -144,6 +147,23 @@ function providerConfig(
     redirectUri === undefined
     ? undefined
     : { clientId, clientSecret, redirectUri };
+}
+
+/**
+ * Guard: the OCR binding's host and model are handed to the PDF reader as its
+ * own environment because nothing else reaches it. The stdio transport starts a
+ * reader with `HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM` and `USER` only, so a
+ * `SKMCP_PDF_OCR_URL` exported to the api is dropped and the binding falls back
+ * to `127.0.0.1`, where no OCR model runs.
+ */
+function pdfReaderEnv(
+  url: string | undefined,
+  model: string | undefined,
+): Record<string, string> {
+  return {
+    ...(url === undefined ? {} : { SKMCP_PDF_OCR_URL: url }),
+    ...(model === undefined ? {} : { SKMCP_PDF_OCR_MODEL: model }),
+  };
 }
 
 export function loadConfig(): AppConfig {
@@ -222,8 +242,15 @@ export function loadConfig(): AppConfig {
       maxSessions: env.CHAT_MCP_MAX_SESSIONS,
     },
     readers: {
-      workbookCommand: env.CHAT_MCP_EXCEL_CMD,
-      documentCommand: env.CHAT_MCP_XML_CMD,
+      workbook: { command: env.CHAT_MCP_EXCEL_CMD, env: {} },
+      document: { command: env.CHAT_MCP_XML_CMD, env: {} },
+      pdf: {
+        command: env.CHAT_MCP_PDF_CMD,
+        env: pdfReaderEnv(
+          env.CHAT_MCP_PDF_OCR_URL,
+          env.CHAT_MCP_PDF_OCR_MODEL,
+        ),
+      },
     },
     codex: {
       /**
