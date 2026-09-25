@@ -297,7 +297,9 @@
       "placeholder": "https://ornek.com/mcp",
       "submit": "Ekle",
       "hint": "Sunucuya hemen bağlanılır; birkaç saniye sürebilir.",
-      "mode": "Bu sunucu için onay"
+      "mode": "Bu sunucu için onay",
+      "open": "Sunucu ekle",
+      "title": "MCP sunucusu ekle"
     },
     "status": {
       "disconnected": "Bağlı değil",
@@ -319,7 +321,8 @@
     },
     "confirm": {
       "removeTitle": "Bu entegrasyon kaldırılsın mı?",
-      "removeBody": "Bağlantı sağlayıcı tarafında iptal edilir ve sunucu listenden kalkar."
+      "removeBody": "Bağlantı sağlayıcı tarafında iptal edilir ve sunucu listenden kalkar.",
+      "cancel": "Vazgeç"
     },
     "outcome": {
       "connected": "Bağlandı.",
@@ -339,8 +342,6 @@
       "integration_too_large": "Sunucunun yanıtı, bu ürünün okuyacağı boyuttan büyük."
     },
     "approvals": {
-      "show": "Araçlar ve onaylar",
-      "hide": "Gizle",
       "empty": "Bu sunucu için hatırlanan onay yok.",
       "loading": "Hatırlanan onaylar yükleniyor…",
       "grantedAt": "{{when}} onaylandı",
@@ -388,7 +389,7 @@
       "remember": "Hatırla",
       "auto": "Sorma",
       "hint": {
-        "inherit": "Yukarıdaki araç onayı ayarınızı izler.",
+        "inherit": "Onay tercihlerindeki varsayılanını izler.",
         "always_ask": "Bu sunucunun araçlarına yapılan her çağrı için sorulur.",
         "remember": "“Bir daha sorma” ile onayladığınız araç, tanımı değişene kadar sormadan çalışır.",
         "auto": "Bu sunucunun araçları sormadan çalışır. Sunucunun veri değiştirebilir ya da silebilir dediği araçlar, aşağıda tek tek izin vermediğiniz sürece yine sorar."
@@ -410,7 +411,141 @@
         "confirm": "Sormadan çalıştır",
         "cancel": "Vazgeç"
       },
-      "autoWarning": "Veri değiştirebildiği halde sormadan çalışır."
+      "autoWarning": "Veri değiştirebildiği halde sormadan çalışır.",
+      "search": {
+        "label": "Araçlarda ara",
+        "placeholder": "Ada ya da açıklamaya göre ara"
+      },
+      "filter": {
+        "label": "Araçları filtrele",
+        "all": "Tümü",
+        "destructive": "Veri değiştirebilir",
+        "overridden": "Özelleştirilmiş",
+        "stale": "Değişmiş"
+      },
+      "columns": {
+        "tool": "Araç",
+        "posture": "Davranış",
+        "override": "Özel ayar"
+      },
+      "shownOf": "{{shown}} / {{total}}",
+      "noResults": "Uyan araç yok.",
+      "select": "{{name}} seç",
+      "selectAll": "Gösterilen tüm araçları seç",
+      "overrideFor": "{{name}} için özel ayar"
+    },
+    "emptyHint": "Bir MCP sunucusunu adresiyle ekle; araçları sohbette kullanılabilir olur.",
+    "tabs": {
+      "label": "Entegrasyon bölümleri",
+      "integrations": "Entegrasyonlar",
+      "preferences": "Onay tercihleri"
+    },
+    "summary": {
+      "connected_one": "{{count}} bağlı",
+      "connected_other": "{{count}} bağlı",
+      "attention_one": "{{count}} dikkat bekliyor",
+      "attention_other": "{{count}} dikkat bekliyor"
+    },
+    "list": {
+      "failed": "Entegrasyonlar yüklenemedi.",
+      "retry": "Tekrar dene"
+    },
+    "search": {
+      "label": "Entegrasyonlarda ara",
+      "placeholder": "Ada ya da adrese göre ara"
+    },
+    "filters": {
+      "status": {
+        "label": "Duruma göre filtrele",
+        "all": "Tümü",
+        "attention": "Dikkat gerekiyor",
+        "connected": "Bağlı",
+        "disconnected": "Bağlı değil"
+      },
+      "origin": {
+        "label": "Kaynağa göre filtrele",
+        "all": "Tümü",
+        "partner": "Hazır",
+        "user": "Eklediklerim"
+      },
+      "clear": "Filtreleri temizle",
+      "noResults": "Bu filtrelere uyan entegrasyon yok."
+    },
+    "groups": {
+      "attention": "Dikkat gerekiyor",
+      "connected": "Bağlı",
+      "disconnected": "Bağlı değil"
+    },
+    "table": {
+      "name": "Ad",
+      "status": "Durum",
+      "tools": "Araç",
+      "approval": "Onay",
+      "lastUsed": "Son kullanım",
+      "actions": "İşlemler",
+      "actionsFor": "{{name}} için işlemler",
+      "never": "Hiç"
+    },
+    "detail": {
+      "back": "Tüm entegrasyonlar",
+      "approval": "Bu sunucu için onay",
+      "lastUsed": "Son kullanım {{when}}",
+      "neverUsed": "Hiç kullanılmadı"
+    },
+    "preferences": {
+      "defaults": "Tüm sunucular için varsayılanlar"
+    },
+    "posture": {
+      "ask": "Sorar",
+      "grants": "Hatırlanana kadar sorar",
+      "allow": "Sormadan çalışır",
+      "source": {
+        "override": "bu araçta ayarlı",
+        "definition_changed": "tanım değişti",
+        "declared_destructive": "veri değiştirebilir",
+        "integration": "sunucu ayarı",
+        "reader": "varsayılanın"
+      }
+    },
+    "bulk": {
+      "label": "Toplu işlemler",
+      "selected_one": "{{count}} seçili",
+      "selected_other": "{{count}} seçili",
+      "apply": "Ayarla:",
+      "clear": "Seçimi temizle",
+      "confirmAuto_one": "Seçili araçlardan {{count}} tanesi veri değiştirebilir ya da silebilir. Seçim sormadan çalıştırılsın mı?",
+      "confirmAuto_other": "Seçili araçlardan {{count}} tanesi veri değiştirebilir ya da silebilir. Seçim sormadan çalıştırılsın mı?"
+    },
+    "chatTools": {
+      "failed": "Araç listesi yüklenemedi.",
+      "remembered": "Hatırlanıyor",
+      "families": {
+        "excel": "Tablolar",
+        "xml": "XML belgeleri",
+        "pdf": "PDF belgeleri",
+        "discovery": "Araç arama",
+        "codex": "Kodlama ajanı"
+      },
+      "policy": {
+        "auto": "Sormadan çalışır",
+        "always": "Her seferinde sorar",
+        "fixed": "ürün tarafından sabit"
+      },
+      "descriptions": {
+        "describe_workbook": "Çalışma kitabının sayfalarını, sütunlarını ve boyutunu listeler.",
+        "read_sheet": "Bir sayfadaki hücre değerlerini okur.",
+        "aggregate_sheet": "Sayfa satırları üzerinde toplam, sayım ve gruplama hesaplar.",
+        "find_in_sheet": "Sayfanın hücre değerlerinde arar.",
+        "describe_document": "XML belgesinin yapısını özetler.",
+        "read_node": "XML belgesinden öğe ve metin okur.",
+        "select_xpath": "Belge üzerinde XPath ifadesi çalıştırır.",
+        "project_records": "Belgedeki tekrar eden kayıtları satır olarak okur.",
+        "describe_pdf": "PDF'in sayfa sayısını ve hangi sayfaların OCR gerektirdiğini bildirir.",
+        "read_pdf_pages": "Seçilen PDF sayfalarının metnini okur.",
+        "find_in_pdf": "PDF metninde arar.",
+        "find_tools": "Bağladığın sunucuların araçlarında arar.",
+        "codex_task": "Kendi yalıtılmış dizininde bir kodlama ajanı çalıştırır."
+      }
     }
   },
   "agents": {

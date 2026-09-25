@@ -21,8 +21,9 @@ export function getRouter() {
    * Guard: `notFoundMode` is pinned to `"root"`. Under the `"fuzzy"` default the
    * router walks a missed url up to the deepest matched route that has children
    * and hands the not-found to that route instead of the root — and
-   * `_authenticated.connections.tsx` renders no `<Outlet/>`, so `/connections/x`
-   * rendered the full Connections page with nothing announcing the miss.
+   * `_authenticated.connections.tsx` is a layout that renders only an
+   * `<Outlet/>`, so `/connections/x/y` rendered an empty frame with nothing
+   * announcing the miss.
    */
   const router = createRouter({
     routeTree,

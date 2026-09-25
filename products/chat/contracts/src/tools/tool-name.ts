@@ -37,3 +37,33 @@ export type ChatToolName = z.infer<typeof chatToolNameSchema>;
 export function isChatToolName(value: unknown): value is ChatToolName {
   return chatToolNameSchema.safeParse(value).success;
 }
+
+export const CHAT_TOOL_FAMILIES = [
+  "excel",
+  "xml",
+  "pdf",
+  "discovery",
+  "codex",
+] as const;
+
+export type ChatToolFamily = (typeof CHAT_TOOL_FAMILIES)[number];
+
+/**
+ * Guard: a total `Record`, so a tool added to `ChatToolName` without a family
+ * fails the build instead of landing in whichever group a fallback names.
+ */
+export const CHAT_TOOL_FAMILY: Record<ChatToolName, ChatToolFamily> = {
+  describe_workbook: "excel",
+  read_sheet: "excel",
+  aggregate_sheet: "excel",
+  find_in_sheet: "excel",
+  describe_document: "xml",
+  read_node: "xml",
+  select_xpath: "xml",
+  project_records: "xml",
+  describe_pdf: "pdf",
+  read_pdf_pages: "pdf",
+  find_in_pdf: "pdf",
+  find_tools: "discovery",
+  codex_task: "codex",
+};

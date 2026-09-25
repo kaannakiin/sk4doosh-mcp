@@ -297,7 +297,9 @@
       "placeholder": "https://example.com/mcp",
       "submit": "Add",
       "hint": "The server is contacted now, so this can take a few seconds.",
-      "mode": "Approval for this server"
+      "mode": "Approval for this server",
+      "open": "Add server",
+      "title": "Add an MCP server"
     },
     "status": {
       "disconnected": "Not connected",
@@ -319,7 +321,8 @@
     },
     "confirm": {
       "removeTitle": "Remove this integration?",
-      "removeBody": "The connection is withdrawn at the provider and the server is removed from your list."
+      "removeBody": "The connection is withdrawn at the provider and the server is removed from your list.",
+      "cancel": "Cancel"
     },
     "outcome": {
       "connected": "Connected.",
@@ -339,8 +342,6 @@
       "integration_too_large": "That server's answer was larger than this product will read."
     },
     "approvals": {
-      "show": "Tools and approvals",
-      "hide": "Hide",
       "empty": "No remembered approvals for this server.",
       "loading": "Loading remembered approvals…",
       "grantedAt": "Approved {{when}}",
@@ -388,7 +389,7 @@
       "remember": "Remember",
       "auto": "Don't ask",
       "hint": {
-        "inherit": "Follows your tool approval setting above.",
+        "inherit": "Follows your default in Approval preferences.",
         "always_ask": "Every call to this server's tools is asked about.",
         "remember": "A tool you approve with “Don't ask again” runs without asking, until its definition changes.",
         "auto": "This server's tools run without asking. Tools the server marks as able to change or delete data still ask, unless you allow one below."
@@ -410,7 +411,141 @@
         "confirm": "Run without asking",
         "cancel": "Cancel"
       },
-      "autoWarning": "Runs without asking even though it can change data."
+      "autoWarning": "Runs without asking even though it can change data.",
+      "search": {
+        "label": "Search tools",
+        "placeholder": "Search by name or description"
+      },
+      "filter": {
+        "label": "Filter tools",
+        "all": "All",
+        "destructive": "Can change data",
+        "overridden": "Overridden",
+        "stale": "Changed"
+      },
+      "columns": {
+        "tool": "Tool",
+        "posture": "Behaviour",
+        "override": "Override"
+      },
+      "shownOf": "{{shown}} of {{total}}",
+      "noResults": "No tool matches.",
+      "select": "Select {{name}}",
+      "selectAll": "Select all shown tools",
+      "overrideFor": "Override for {{name}}"
+    },
+    "emptyHint": "Add an MCP server by its address and its tools become available in chat.",
+    "tabs": {
+      "label": "Integration sections",
+      "integrations": "Integrations",
+      "preferences": "Approval preferences"
+    },
+    "summary": {
+      "connected_one": "{{count}} connected",
+      "connected_other": "{{count}} connected",
+      "attention_one": "{{count}} needs attention",
+      "attention_other": "{{count}} need attention"
+    },
+    "list": {
+      "failed": "The integrations could not be loaded.",
+      "retry": "Try again"
+    },
+    "search": {
+      "label": "Search integrations",
+      "placeholder": "Search by name or address"
+    },
+    "filters": {
+      "status": {
+        "label": "Filter by status",
+        "all": "All",
+        "attention": "Needs attention",
+        "connected": "Connected",
+        "disconnected": "Not connected"
+      },
+      "origin": {
+        "label": "Filter by source",
+        "all": "All",
+        "partner": "Built-in",
+        "user": "Added by me"
+      },
+      "clear": "Clear filters",
+      "noResults": "No integration matches these filters."
+    },
+    "groups": {
+      "attention": "Needs attention",
+      "connected": "Connected",
+      "disconnected": "Not connected"
+    },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "tools": "Tools",
+      "approval": "Approval",
+      "lastUsed": "Last used",
+      "actions": "Actions",
+      "actionsFor": "Actions for {{name}}",
+      "never": "Never"
+    },
+    "detail": {
+      "back": "All integrations",
+      "approval": "Approval for this server",
+      "lastUsed": "Last used {{when}}",
+      "neverUsed": "Never used"
+    },
+    "preferences": {
+      "defaults": "Defaults for every server"
+    },
+    "posture": {
+      "ask": "Asks",
+      "grants": "Asks until remembered",
+      "allow": "Runs unasked",
+      "source": {
+        "override": "set on this tool",
+        "definition_changed": "definition changed",
+        "declared_destructive": "can change data",
+        "integration": "server setting",
+        "reader": "your default"
+      }
+    },
+    "bulk": {
+      "label": "Bulk actions",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "apply": "Set to",
+      "clear": "Clear selection",
+      "confirmAuto_one": "{{count}} of the selected tools can change or delete data. Run the selection without asking?",
+      "confirmAuto_other": "{{count}} of the selected tools can change or delete data. Run the selection without asking?"
+    },
+    "chatTools": {
+      "failed": "The tool list could not be loaded.",
+      "remembered": "Remembered",
+      "families": {
+        "excel": "Spreadsheets",
+        "xml": "XML documents",
+        "pdf": "PDF documents",
+        "discovery": "Tool search",
+        "codex": "Coding agent"
+      },
+      "policy": {
+        "auto": "Runs unasked",
+        "always": "Asks every time",
+        "fixed": "fixed by the product"
+      },
+      "descriptions": {
+        "describe_workbook": "Lists a workbook's sheets, columns and size.",
+        "read_sheet": "Reads cell values from a sheet.",
+        "aggregate_sheet": "Computes totals, counts and groups over a sheet's rows.",
+        "find_in_sheet": "Searches a sheet's cell values.",
+        "describe_document": "Outlines an XML document's structure.",
+        "read_node": "Reads elements and text from an XML document.",
+        "select_xpath": "Evaluates an XPath expression over a document.",
+        "project_records": "Reads a document's repeating records as rows.",
+        "describe_pdf": "Reports a PDF's page count and which pages need OCR.",
+        "read_pdf_pages": "Reads the text of selected PDF pages.",
+        "find_in_pdf": "Searches a PDF's text.",
+        "find_tools": "Searches the tools of the servers you connected.",
+        "codex_task": "Runs a coding agent in its own sandboxed directory."
+      }
     }
   },
   "agents": {

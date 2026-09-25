@@ -2,6 +2,7 @@ import type { GrantTtl } from "@chat/contracts/integration/grant-scope";
 import type { IntegrationId } from "@chat/contracts/integration/integration";
 import type {
   ApprovedTool,
+  ChatToolEntry,
   IntegrationTool,
 } from "@chat/contracts/integration/tool-approval";
 import type {
@@ -9,7 +10,10 @@ import type {
   ToolOverrideSetting,
 } from "@chat/contracts/integration/tool-approval-mode";
 import { policyFor } from "@chat/contracts/tools/approval-policy";
-import { isChatToolName } from "@chat/contracts/tools/tool-name";
+import {
+  chatToolNameSchema,
+  isChatToolName,
+} from "@chat/contracts/tools/tool-name";
 import { Injectable } from "@nestjs/common";
 
 import type { UserId } from "../db/ids.ts";
@@ -133,6 +137,23 @@ export class ToolApprovalService {
   }
 
   /**
+   * @returns whether the integration is visible and offers every named tool
+   */
+  overrideMany(
+    userId: UserId,
+    integrationId: IntegrationId,
+    toolNames: readonly string[],
+    setting: ToolOverrideSetting,
+  ): Promise<boolean> {
+    return this.approvals.overrideRemoteMany(
+      userId,
+      integrationId,
+      toolNames,
+      setting,
+    );
+  }
+
+  /**
    * @returns the integration's tools, or `undefined` when no such integration is visible
    */
   async toolsFor(
@@ -145,6 +166,7 @@ export class ToolApprovalService {
       exposedName: exposedToolNameFor(integrationId, row.name),
       name: row.name,
       title: row.title,
+      description: row.description,
       destructive: row.destructive,
       override: row.override,
       overrideStale: row.overrideStale,
@@ -188,6 +210,21 @@ export class ToolApprovalService {
     return rows?.map((row) =>
       project(row, exposedToolNameFor(integrationId, row.toolName), false),
     );
+  }
+
+  async chatToolsFor(userId: UserId): Promise<readonly ChatToolEntry[]> {
+    const overrides = await this.approvals.chatToolOverrides(userId);
+
+    return chatToolNameSchema.options.map((name) => {
+      const override = overrides.get(name);
+
+      return {
+        name,
+        policy: policyFor(name),
+        override: override?.mode ?? "inherit",
+        overrideStale: override?.stale ?? false,
+      };
+    });
   }
 
   /**

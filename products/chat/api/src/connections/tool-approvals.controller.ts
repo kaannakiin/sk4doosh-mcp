@@ -6,6 +6,7 @@ import {
   updateToolApprovalModeSchema,
   updateToolOverrideSchema,
   type ApprovedToolListResponse,
+  type ChatToolListResponse,
   type RememberTool,
   type ToolApprovalParams,
   type UpdateGrantTtl,
@@ -71,6 +72,13 @@ export class ToolApprovalsController {
     );
 
     return { approvals: [...approvals] };
+  }
+
+  @Get("tools")
+  async tools(@Req() request: RequestWithAuth): Promise<ChatToolListResponse> {
+    return {
+      tools: [...(await this.approvals.chatToolsFor(this.userIdOf(request)))],
+    };
   }
 
   /**

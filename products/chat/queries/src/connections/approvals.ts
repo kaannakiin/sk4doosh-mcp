@@ -1,8 +1,10 @@
 import type { Locale } from "@chat/contracts/common/locale";
 import {
   approvedToolListResponseSchema,
+  chatToolListResponseSchema,
   integrationToolListResponseSchema,
   type ApprovedTool,
+  type ChatToolEntry,
   type IntegrationTool,
 } from "@chat/contracts/integration/tool-approval";
 import { queryOptions, useQuery } from "@tanstack/react-query";
@@ -75,6 +77,25 @@ export function useChatToolApprovals(locale: Locale, enabled: boolean) {
     ...chatToolApprovalsOptions(useChatClient(), locale),
     enabled,
   });
+}
+
+export function chatToolsOptions(client: ChatClient, locale: Locale) {
+  return queryOptions({
+    queryKey: connectionKeys.chatTools(),
+    queryFn: async ({ signal }): Promise<readonly ChatToolEntry[]> => {
+      const { tools } = await client.request(
+        `${INTEGRATION_PATHS.approvals}/tools`,
+        chatToolListResponseSchema,
+        { locale, signal },
+      );
+
+      return tools;
+    },
+  });
+}
+
+export function useChatTools(locale: Locale) {
+  return useQuery(chatToolsOptions(useChatClient(), locale));
 }
 
 /**

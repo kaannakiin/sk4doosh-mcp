@@ -1,6 +1,9 @@
 import type {
   IntegrationApprovalMode,
+  IntegrationApprovalSetting,
+  ToolApprovalMode,
   ToolOverrideMode,
+  ToolOverrideSetting,
 } from "../integration/tool-approval-mode.ts";
 import type { ToolApprovalPolicy } from "./approval-policy.ts";
 
@@ -44,6 +47,28 @@ export interface ToolOverride {
   readonly digest: string | undefined;
 }
 
+export type ToolPosture = "ask" | "grants" | "allow";
+
+export type ToolPostureSource =
+  | "override"
+  | "definition_changed"
+  | "declared_destructive"
+  | "integration"
+  | "reader";
+
+export interface ToolPostureRequest {
+  readonly override: ToolOverrideSetting;
+  readonly overrideStale: boolean;
+  readonly destructive: boolean;
+  readonly integrationMode: IntegrationApprovalSetting;
+  readonly readerMode: ToolApprovalMode;
+}
+
+export interface ToolPostureAnswer {
+  readonly posture: ToolPosture;
+  readonly source: ToolPostureSource;
+}
+
 export interface ToolApprovalRequest {
   readonly policy: ToolApprovalPolicy;
   /** The integration's mode when the reader set one, else their own. */
@@ -60,10 +85,7 @@ export interface ToolApprovalRequest {
  * than inherit one by falling through. A `switch` would return `undefined` for
  * an unhandled mode, and an absent answer reads downstream as permission.
  */
-const MODE_POSTURE: Record<
-  IntegrationApprovalMode,
-  "ask" | "grants" | "allow"
-> = {
+const MODE_POSTURE: Record<IntegrationApprovalMode, ToolPosture> = {
   always_ask: "ask",
   remember: "grants",
   auto: "allow",
@@ -180,4 +202,36 @@ export function grantCanApply(
     !request.destructive &&
     MODE_POSTURE[request.mode] === "grants"
   );
+}
+
+/**
+ * What a discovered tool does when called, before any remembered grant is read,
+ * and which setting decided it.
+ *
+ * Guard: answered in the order `decideToolApproval` reads the same settings and
+ * through the same `MODE_POSTURE`, so the settings page cannot show a tool as
+ * running unasked while the gate asks. A stale `auto` override asks, exactly as
+ * the digest comparison there does.
+ *
+ * @param request the tool's override, its destructive hint and both modes
+ * @returns the posture and the setting it came from
+ */
+export function toolPosture(request: ToolPostureRequest): ToolPostureAnswer {
+  if (request.override === "always_ask") {
+    return { posture: "ask", source: "override" };
+  }
+
+  if (request.override === "auto") {
+    return request.overrideStale
+      ? { posture: "ask", source: "definition_changed" }
+      : { posture: "allow", source: "override" };
+  }
+
+  if (request.destructive) {
+    return { posture: "ask", source: "declared_destructive" };
+  }
+
+  return request.integrationMode === "inherit"
+    ? { posture: MODE_POSTURE[request.readerMode], source: "reader" }
+    : { posture: MODE_POSTURE[request.integrationMode], source: "integration" };
 }

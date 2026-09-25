@@ -382,6 +382,105 @@ withDatabase("remote tool approvals", () => {
     expect(await ask(userId, exposed)).toBe(false);
   });
 
+  it("overrides several tools of one integration in one request", async () => {
+    const userId = await owner();
+    const integration = await connect(userId, [
+      { name: "list_zones", description: "Lists zones." },
+      { name: "get_zone" },
+      { name: "delete_zone", annotations: { destructiveHint: true } },
+    ]);
+
+    expect(
+      await approvals.overrideMany(
+        userId,
+        integration.id,
+        ["list_zones", "delete_zone"],
+        "auto",
+      ),
+    ).toBe(true);
+    expect(
+      await ask(userId, exposedToolNameFor(integration.id, "delete_zone")),
+    ).toBe(false);
+
+    const listed = new Map(
+      ((await approvals.toolsFor(userId, integration.id)) ?? []).map((tool) => [
+        tool.name,
+        tool,
+      ]),
+    );
+    expect(listed.get("list_zones")?.override).toBe("auto");
+    expect(listed.get("list_zones")?.description).toBe("Lists zones.");
+    expect(listed.get("get_zone")?.override).toBe("inherit");
+    expect(listed.get("delete_zone")?.overrideStale).toBe(false);
+
+    await approvals.overrideMany(
+      userId,
+      integration.id,
+      ["list_zones", "delete_zone"],
+      "inherit",
+    );
+    expect(
+      await db.client.toolApprovalOverride.count({
+        where: { userId: BigInt(userId) },
+      }),
+    ).toBe(0);
+  });
+
+  it("writes nothing when one named tool is not offered", async () => {
+    const userId = await owner();
+    const integration = await connect(userId, [{ name: "list_zones" }]);
+
+    expect(
+      await approvals.overrideMany(
+        userId,
+        integration.id,
+        ["list_zones", "drop_everything"],
+        "always_ask",
+      ),
+    ).toBe(false);
+    expect(
+      await db.client.toolApprovalOverride.count({
+        where: { userId: BigInt(userId) },
+      }),
+    ).toBe(0);
+  });
+
+  it("refuses a bulk override on another reader's integration", async () => {
+    const userId = await owner();
+    const stranger = await owner();
+    const integration = await connect(userId, [{ name: "list_zones" }]);
+
+    expect(
+      await approvals.overrideMany(
+        stranger,
+        integration.id,
+        ["list_zones"],
+        "auto",
+      ),
+    ).toBe(false);
+  });
+
+  it("lists every shipped tool, remembered or not, with its override", async () => {
+    const userId = await owner();
+    await approvals.override(userId, "read_pdf_pages", "always_ask");
+
+    const tools = new Map(
+      (await approvals.chatToolsFor(userId)).map((tool) => [tool.name, tool]),
+    );
+
+    expect(tools.size).toBe(13);
+    expect(tools.get("describe_pdf")).toMatchObject({
+      policy: "auto",
+      override: "inherit",
+    });
+    expect(tools.get("codex_task")?.policy).toBe("always");
+    expect(tools.get("read_pdf_pages")).toMatchObject({
+      policy: "askable",
+      override: "always_ask",
+      overrideStale: false,
+    });
+  });
+
   it("refuses to override a tool the product always asks about", async () => {
     const userId = await owner();
 

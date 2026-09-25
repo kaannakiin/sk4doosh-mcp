@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { exposedToolNameSchema } from "../chat/exposed-tool-name.ts";
 import { sessionIdSchema } from "../chat/session.ts";
+import { toolApprovalPolicySchema } from "../tools/approval-policy.ts";
+import { chatToolNameSchema } from "../tools/tool-name.ts";
 import { grantScopeSchema, grantTtlSchema } from "./grant-scope.ts";
 import {
   integrationApprovalSettingSchema,
@@ -121,6 +123,21 @@ export const updateToolOverrideSchema = z.object({
 export type UpdateToolOverride = z.infer<typeof updateToolOverrideSchema>;
 
 /**
+ * One standing decision applied to several tools of one integration, named by
+ * the remote name each tool carries on that server.
+ *
+ * Guard: all or nothing. A name the integration does not offer refuses the whole
+ * request, so a bulk change the reader confirmed is never recorded for a part of
+ * the selection they did not see fail.
+ */
+export const updateToolOverridesSchema = z.object({
+  mode: toolOverrideSettingSchema,
+  names: z.array(z.string().min(1).max(128)).min(1).max(1000),
+});
+
+export type UpdateToolOverrides = z.infer<typeof updateToolOverridesSchema>;
+
+/**
  * One tool of an integration, with the reader's standing decision about it.
  *
  * Guard: `overrideStale` is answered rather than left to the page. An `auto`
@@ -131,6 +148,7 @@ export const integrationToolSchema = z.object({
   exposedName: exposedToolNameSchema,
   name: z.string().min(1).max(128),
   title: z.string().nullable(),
+  description: z.string().nullable(),
   destructive: z.boolean(),
   override: toolOverrideSettingSchema,
   overrideStale: z.boolean(),
@@ -145,3 +163,26 @@ export const integrationToolListResponseSchema = z.object({
 export type IntegrationToolListResponse = z.infer<
   typeof integrationToolListResponseSchema
 >;
+
+/**
+ * One tool this product ships, with its fixed posture and the reader's standing
+ * decision about it.
+ *
+ * Guard: every shipped tool is listed, not only the remembered ones. A tool that
+ * never asks and one that always asks can carry no grant, so a page built from
+ * grants alone could never show the reader either of them.
+ */
+export const chatToolEntrySchema = z.object({
+  name: chatToolNameSchema,
+  policy: toolApprovalPolicySchema,
+  override: toolOverrideSettingSchema,
+  overrideStale: z.boolean(),
+});
+
+export type ChatToolEntry = z.infer<typeof chatToolEntrySchema>;
+
+export const chatToolListResponseSchema = z.object({
+  tools: z.array(chatToolEntrySchema),
+});
+
+export type ChatToolListResponse = z.infer<typeof chatToolListResponseSchema>;

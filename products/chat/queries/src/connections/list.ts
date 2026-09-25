@@ -34,3 +34,11 @@ export function integrationListOptions(client: ChatClient, locale: Locale) {
 export function useIntegrationList(locale: Locale) {
   return useQuery(integrationListOptions(useChatClient(), locale));
 }
+
+export function useIntegration(integrationId: string, locale: Locale) {
+  return useQuery({
+    ...integrationListOptions(useChatClient(), locale),
+    select: (integrations) =>
+      integrations.find((integration) => integration.id === integrationId),
+  });
+}

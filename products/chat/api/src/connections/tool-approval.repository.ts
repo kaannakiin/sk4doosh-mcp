@@ -9,6 +9,7 @@ import type {
   IntegrationApprovalMode,
   IntegrationApprovalSetting,
   ToolApprovalMode,
+  ToolOverrideMode,
   ToolOverrideSetting,
 } from "@chat/contracts/integration/tool-approval-mode";
 import type {
@@ -67,9 +68,15 @@ export interface ApprovalContext {
 export interface IntegrationToolRow {
   readonly name: string;
   readonly title: string | null;
+  readonly description: string | null;
   readonly destructive: boolean;
   readonly override: ToolOverrideSetting;
   readonly overrideStale: boolean;
+}
+
+export interface ChatToolOverrideRow {
+  readonly mode: ToolOverrideMode;
+  readonly stale: boolean;
 }
 
 interface OverrideSubject {
@@ -337,22 +344,69 @@ export class ToolApprovalRepository {
     return true;
   }
 
-  private async writeOverride(
+  /**
+   * Guard: one transaction for the whole selection, and the tools are read from
+   * the integration rather than trusted from the caller. A name it does not
+   * offer refuses the request before anything is written, so a bulk change never
+   * lands on part of what the reader selected.
+   *
+   * @returns whether the integration is visible and offers every named tool
+   */
+  async overrideRemoteMany(
+    userId: UserId,
+    integrationId: IntegrationId,
+    toolNames: readonly string[],
+    setting: ToolOverrideSetting,
+  ): Promise<boolean> {
+    const names = [...new Set(toolNames)];
+    const integration = await this.db.client.integration.findFirst({
+      where: visibleToUser(userId, integrationId),
+      select: {
+        id: true,
+        tools: {
+          where: { name: { in: names } },
+          select: { name: true, definitionDigest: true },
+        },
+      },
+    });
+
+    if (integration === null || integration.tools.length !== names.length) {
+      return false;
+    }
+
+    await this.db.client.$transaction(
+      integration.tools.map((tool) =>
+        this.writeOverride(
+          userId,
+          {
+            subjectKey: approvalKey(integrationId, tool.name),
+            integrationId: integration.id,
+            toolName: tool.name,
+            digest: Uint8Array.from(tool.definitionDigest),
+          },
+          setting,
+        ),
+      ),
+    );
+
+    return true;
+  }
+
+  private writeOverride(
     userId: UserId,
     subject: OverrideSubject,
     setting: ToolOverrideSetting,
-  ): Promise<void> {
+  ) {
     const owner = BigInt(userId);
     if (setting === "inherit") {
-      await this.db.client.toolApprovalOverride.deleteMany({
+      return this.db.client.toolApprovalOverride.deleteMany({
         where: { userId: owner, subjectKey: subject.subjectKey },
       });
-
-      return;
     }
 
     const digest = setting === "auto" ? subject.digest : null;
-    await this.db.client.toolApprovalOverride.upsert({
+
+    return this.db.client.toolApprovalOverride.upsert({
       where: {
         userId_subjectKey: { userId: owner, subjectKey: subject.subjectKey },
       },
@@ -416,6 +470,7 @@ export class ToolApprovalRepository {
           select: {
             name: true,
             title: true,
+            description: true,
             destructive: true,
             definitionDigest: true,
           },
@@ -440,6 +495,7 @@ export class ToolApprovalRepository {
       return {
         name: tool.name,
         title: tool.title,
+        description: tool.description,
         destructive: tool.destructive,
         override: override?.mode ?? "inherit",
         overrideStale:
@@ -663,6 +719,41 @@ export class ToolApprovalRepository {
    * belongs to the reader and still has to be listable, or it becomes consent
    * they cannot withdraw.
    */
+  /**
+   * The reader's overrides on the tools this product ships, keyed by tool name.
+   *
+   * @returns each override's mode and whether an `auto` one has gone stale
+   */
+  async chatToolOverrides(
+    userId: UserId,
+  ): Promise<ReadonlyMap<ChatToolName, ChatToolOverrideRow>> {
+    const rows = await this.db.client.toolApprovalOverride.findMany({
+      where: { userId: BigInt(userId), integrationId: null },
+      select: { toolName: true, mode: true, definitionDigest: true },
+    });
+
+    return new Map(
+      rows.flatMap((row) =>
+        isChatToolName(row.toolName)
+          ? [
+              [
+                row.toolName,
+                {
+                  mode: row.mode,
+                  stale:
+                    row.mode === "auto" &&
+                    (row.definitionDigest === null ||
+                      !Buffer.from(row.definitionDigest).equals(
+                        chatToolDigest(row.toolName),
+                      )),
+                },
+              ] as const,
+            ]
+          : [],
+      ),
+    );
+  }
+
   async listChatTools(userId: UserId): Promise<readonly ApprovalRow[]> {
     const rows = await this.db.client.toolApproval.findMany({
       where: { userId: BigInt(userId), integrationId: null },

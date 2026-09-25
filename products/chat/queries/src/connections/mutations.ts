@@ -24,6 +24,7 @@ import {
   INTEGRATION_PATHS,
   integrationPath,
   toolApprovalPath,
+  toolOverridesPath,
 } from "./path.ts";
 
 /**
@@ -59,9 +60,7 @@ export function useRemoveIntegration(locale: Locale) {
         locale,
       }),
     onSettled: (_data, _error, _id, _context, { client: queryClient }) =>
-      void queryClient.invalidateQueries({
-        queryKey: connectionKeys.integrations(),
-      }),
+      void queryClient.invalidateQueries({ queryKey: connectionKeys.all }),
   });
 }
 
@@ -87,7 +86,8 @@ export function useDisconnect(locale: Locale) {
  *
  * Guard: the api answers with the whole list rather than the one row, because a
  * server that closed moves its integration onto the authorization path and the
- * card has to change with it.
+ * card has to change with it. The whole prefix is swept, not only the list: the
+ * tool rows and the grants' availability were read from the old catalogue.
  */
 export function useRefreshTools(locale: Locale) {
   const client = useChatClient();
@@ -100,9 +100,7 @@ export function useRefreshTools(locale: Locale) {
         { method: "POST", locale },
       ),
     onSettled: (_data, _error, _id, _context, { client: queryClient }) =>
-      void queryClient.invalidateQueries({
-        queryKey: connectionKeys.integrations(),
-      }),
+      void queryClient.invalidateQueries({ queryKey: connectionKeys.all }),
   });
 }
 
@@ -231,6 +229,30 @@ export function useSetToolOverride(locale: Locale) {
         method: "PUT",
         locale,
         body: { mode },
+      }),
+    onSettled: (_data, _error, _input, _context, { client: queryClient }) =>
+      void queryClient.invalidateQueries({
+        queryKey: connectionKeys.approvalsAll(),
+      }),
+  });
+}
+
+export interface SetToolOverridesInput {
+  readonly integrationId: string;
+  /** Remote tool names, as the integration's tool list carries them. */
+  readonly names: readonly string[];
+  readonly mode: ToolOverrideSetting;
+}
+
+export function useSetToolOverrides(locale: Locale) {
+  const client = useChatClient();
+
+  return useMutation<void, Error, SetToolOverridesInput>({
+    mutationFn: ({ integrationId, names, mode }) =>
+      client.requestNoContent(toolOverridesPath(integrationId), {
+        method: "PUT",
+        locale,
+        body: { mode, names },
       }),
     onSettled: (_data, _error, _input, _context, { client: queryClient }) =>
       void queryClient.invalidateQueries({

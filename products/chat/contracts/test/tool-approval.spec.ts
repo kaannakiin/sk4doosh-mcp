@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   decideToolApproval,
   grantCanApply,
+  toolPosture,
+  type ToolPostureRequest,
 } from "../src/tools/approval-decision.ts";
 import {
   CHAT_TOOL_POLICY,
@@ -200,6 +202,107 @@ describe("grantCanApply", () => {
         override: { mode: "always_ask", digest: undefined },
       }),
     ).toBe(false);
+  });
+});
+
+describe("toolPosture", () => {
+  const posture = {
+    override: "inherit",
+    overrideStale: false,
+    destructive: false,
+    integrationMode: "inherit",
+    readerMode: "remember",
+  } as const;
+
+  it("reads the reader's mode when the integration inherits", () => {
+    expect(toolPosture(posture)).toEqual({
+      posture: "grants",
+      source: "reader",
+    });
+  });
+
+  it("prefers the integration's mode over the reader's", () => {
+    expect(toolPosture({ ...posture, integrationMode: "auto" })).toEqual({
+      posture: "allow",
+      source: "integration",
+    });
+  });
+
+  it("asks for a destructive tool whatever the integration trusts", () => {
+    expect(
+      toolPosture({ ...posture, destructive: true, integrationMode: "auto" }),
+    ).toEqual({ posture: "ask", source: "declared_destructive" });
+  });
+
+  it("lets an auto override outrank the destructive hint", () => {
+    expect(
+      toolPosture({ ...posture, destructive: true, override: "auto" }),
+    ).toEqual({ posture: "allow", source: "override" });
+  });
+
+  it("asks again once an auto override has gone stale", () => {
+    expect(
+      toolPosture({ ...posture, override: "auto", overrideStale: true }),
+    ).toEqual({ posture: "ask", source: "definition_changed" });
+  });
+
+  it("agrees with the gate for every combination of settings", () => {
+    const overrides = ["inherit", "always_ask", "auto"] as const;
+    const integrationModes = [
+      "inherit",
+      "always_ask",
+      "remember",
+      "auto",
+    ] as const;
+    const readerModes = ["always_ask", "remember"] as const;
+    const flags = [false, true] as const;
+
+    for (const override of overrides) {
+      for (const integrationMode of integrationModes) {
+        for (const readerMode of readerModes) {
+          for (const destructive of flags) {
+            for (const overrideStale of flags) {
+              const request: ToolPostureRequest = {
+                override,
+                overrideStale,
+                destructive,
+                integrationMode,
+                readerMode,
+              };
+              const gate = (remembered: boolean) =>
+                decideToolApproval({
+                  ...base,
+                  mode:
+                    integrationMode === "inherit"
+                      ? readerMode
+                      : integrationMode,
+                  override:
+                    override === "inherit"
+                      ? undefined
+                      : {
+                          mode: override,
+                          digest: overrideStale ? OTHER : DIGEST,
+                        },
+                  destructive,
+                  grants: remembered
+                    ? [{ digest: DIGEST, expiresAt: undefined }]
+                    : [],
+                }).outcome;
+              const expected = {
+                ask: ["ask", "ask"],
+                grants: ["ask", "allow"],
+                allow: ["allow", "allow"],
+              }[toolPosture(request).posture];
+
+              expect(
+                [gate(false), gate(true)],
+                JSON.stringify(request),
+              ).toEqual(expected);
+            }
+          }
+        }
+      }
+    }
   });
 });
 

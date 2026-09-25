@@ -7,6 +7,10 @@ export function integrationPath(integrationId: string, suffix = ""): string {
   return `${INTEGRATION_PATHS.root}/${encodeURIComponent(integrationId)}${suffix}`;
 }
 
+export function toolOverridesPath(integrationId: string): string {
+  return integrationPath(integrationId, "/tools/overrides");
+}
+
 /**
  * Guard: an approval is addressed by the name the model was offered the tool
  * under, not by an integration and a tool name. The approval part the AI SDK

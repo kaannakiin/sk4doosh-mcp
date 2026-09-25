@@ -5,9 +5,11 @@ import {
 } from "@chat/contracts/integration/connect";
 import {
   updateIntegrationApprovalModeSchema,
+  updateToolOverridesSchema,
   type ApprovedToolListResponse,
   type IntegrationToolListResponse,
   type UpdateIntegrationApprovalMode,
+  type UpdateToolOverrides,
 } from "@chat/contracts/integration/tool-approval";
 import {
   createIntegrationSchema,
@@ -26,6 +28,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Req,
   UseGuards,
   UseInterceptors,
@@ -154,6 +157,25 @@ export class IntegrationsController {
     }
 
     return { tools: [...tools] };
+  }
+
+  @Put(":integrationId/tools/overrides")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setToolOverrides(
+    @Param({ schema: connectParamsSchema }) params: ConnectParams,
+    @Body({ schema: updateToolOverridesSchema }) body: UpdateToolOverrides,
+    @Req() request: RequestWithAuth,
+  ): Promise<void> {
+    const applied = await this.toolApprovals.overrideMany(
+      this.userIdOf(request),
+      params.integrationId,
+      body.names,
+      body.mode,
+    );
+
+    if (!applied) {
+      throw this.fail("tool_not_offered", HttpStatus.NOT_FOUND);
+    }
   }
 
   @Patch(":integrationId/approval-mode")
