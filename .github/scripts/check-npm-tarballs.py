@@ -49,6 +49,9 @@ def check(path):
         binaries = [name for name in names if name.endswith("/secure.node")]
         if not binaries:
             problems += fail(f"{path.name} has no secure filesystem binary")
+        strays = [name for name in names if name.startswith("package/prebuilds/") and not name.endswith("/secure.node")]
+        for stray in strays:
+            problems += fail(f"{path.name} ships a build intermediate: {stray}")
         if os.environ.get("LIAISO_REQUIRE_ALL_PREBUILDS") == "1":
             for target in targets:
                 if f"package/prebuilds/{target}/secure.node" not in names:

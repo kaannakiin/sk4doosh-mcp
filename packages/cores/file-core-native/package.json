@@ -33,7 +33,7 @@
   "files": [
     "index.js",
     "index.d.ts",
-    "prebuilds",
+    "prebuilds/*/secure.node",
     "README.md"
   ],
   "scripts": {
