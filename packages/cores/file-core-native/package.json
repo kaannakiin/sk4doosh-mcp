@@ -2,6 +2,14 @@
   "name": "@liaiso/file-core-native",
   "version": "0.2.0",
   "description": "Handle-relative filesystem access for file-core (Node-API).",
+  "keywords": [
+    "node-api",
+    "napi",
+    "native",
+    "filesystem",
+    "sandbox",
+    "liaiso"
+  ],
   "type": "module",
   "license": "MIT",
   "repository": {

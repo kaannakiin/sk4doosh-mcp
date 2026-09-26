@@ -2,6 +2,16 @@
   "name": "@liaiso/file-core",
   "version": "0.3.0",
   "description": "Shared machinery for read-only, sandboxed, file-backed MCP servers.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-framework",
+    "liaiso",
+    "mcp-server",
+    "filesystem",
+    "sandbox",
+    "read-only"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

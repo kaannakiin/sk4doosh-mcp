@@ -1,7 +1,23 @@
 {
   "name": "@liaiso/mssql-mcp",
   "version": "0.1.0",
-  "description": "Read-only MCP server for Microsoft SQL Server.",
+  "description": "Read-only MCP server that lets AI agents explore and query Microsoft SQL Server: catalogue search, schema introspection and read-only queries.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agents",
+    "llm",
+    "claude",
+    "liaiso",
+    "mssql",
+    "sql-server",
+    "sql",
+    "database",
+    "schema",
+    "text-to-sql",
+    "read-only"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

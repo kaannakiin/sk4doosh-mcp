@@ -2,6 +2,17 @@
   "name": "@liaiso/db-core",
   "version": "0.1.0",
   "description": "Shared machinery for read-only, dialect-agnostic, database-backed MCP servers.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-framework",
+    "liaiso",
+    "mcp-server",
+    "database",
+    "sql",
+    "connection-pool",
+    "read-only"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

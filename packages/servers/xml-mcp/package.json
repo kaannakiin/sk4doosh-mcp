@@ -1,7 +1,22 @@
 {
   "name": "@liaiso/xml-mcp",
   "version": "0.4.0",
-  "description": "Read-only MCP server for XML documents.",
+  "description": "Read-only MCP server that lets AI agents query local XML documents with XPath, paged and sandboxed to one folder.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agents",
+    "llm",
+    "claude",
+    "liaiso",
+    "xml",
+    "xpath",
+    "xml-query",
+    "libxml2",
+    "read-only",
+    "sandbox"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -2,6 +2,16 @@
   "name": "@liaiso/pdf-raster-pdfjs",
   "version": "0.1.0",
   "description": "PageRasterizer for @liaiso/pdf-mcp, backed by pdf.js and a Node canvas.",
+  "keywords": [
+    "pdf",
+    "pdfjs",
+    "rasterize",
+    "pdf-to-image",
+    "canvas",
+    "pdf-mcp",
+    "mcp",
+    "liaiso"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

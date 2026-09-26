@@ -2,6 +2,15 @@
   "name": "@liaiso/ocr-ollama",
   "version": "0.1.0",
   "description": "OcrProvider for @liaiso/pdf-mcp, backed by an Ollama vision model.",
+  "keywords": [
+    "ocr",
+    "ollama",
+    "vision",
+    "pdf",
+    "pdf-mcp",
+    "mcp",
+    "liaiso"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
