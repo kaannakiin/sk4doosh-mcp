@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.IdentityModel.Tokens;
 
-namespace SkMcp.Samples.DemoAuthServer;
+namespace Liaiso.Samples.DemoAuthServer;
 
 public static class DemoAuthServerEndpoints
 {

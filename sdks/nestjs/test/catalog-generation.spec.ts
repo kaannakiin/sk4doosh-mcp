@@ -16,20 +16,20 @@ import {
 import type { Request, Response } from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CallerScopeResolver } from "../src/cache.js";
-import { SkMcpCatalog } from "../src/catalog.js";
+import { LiaisoCatalog } from "../src/catalog.js";
 import { McpTool } from "../src/decorators.js";
-import { SkMcpDispatcher } from "../src/dispatcher.js";
+import { LiaisoDispatcher } from "../src/dispatcher.js";
 import { extensionTokens } from "../src/extension-points.js";
 import type { InvokeResultMapper } from "../src/invoke-result-mapper.js";
 import {
   catalogGenerationMetaKey,
-  registerSkMcpTools,
+  registerLiaisoTools,
 } from "../src/meta-tools.js";
-import { SK_MCP_OPTIONS, type SkMcpOptions } from "../src/options.js";
-import { SkMcpModule } from "../src/sk-mcp.module.js";
+import { LIAISO_OPTIONS, type LiaisoOptions } from "../src/options.js";
+import { LiaisoModule } from "../src/liaiso.module.js";
 import {
-  SkMcpStreamableHttp,
-  type SkMcpRequestHandler,
+  LiaisoStreamableHttp,
+  type LiaisoRequestHandler,
 } from "../src/transport/streamable-http.js";
 import { CallerVisibilityProvider } from "../src/visibility/provider.js";
 
@@ -58,27 +58,27 @@ class EchoController {
 
 let mapper: InvokeResultMapper | undefined;
 let scopes: CallerScopeResolver | undefined;
-let options: SkMcpOptions | undefined;
+let options: LiaisoOptions | undefined;
 
 @Controller()
 class GenerationMcpController {
-  private readonly serve: SkMcpRequestHandler;
+  private readonly serve: LiaisoRequestHandler;
 
   constructor(
-    private readonly streamableHttp: SkMcpStreamableHttp,
-    private readonly catalog: SkMcpCatalog,
-    private readonly dispatcher: SkMcpDispatcher,
+    private readonly streamableHttp: LiaisoStreamableHttp,
+    private readonly catalog: LiaisoCatalog,
+    private readonly dispatcher: LiaisoDispatcher,
     private readonly visibility: CallerVisibilityProvider,
   ) {
     this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "generation", version: "0.0.0" });
-      registerSkMcpTools(server, {
+      registerLiaisoTools(server, {
         catalog: this.catalog,
         dispatcher: this.dispatcher,
         mapper: mapper as InvokeResultMapper,
         visibility: this.visibility,
         scopes: scopes as CallerScopeResolver,
-        options: options as SkMcpOptions,
+        options: options as LiaisoOptions,
       });
       return server;
     });
@@ -106,7 +106,7 @@ async function waitFor(
 describe("nest catalog generation and connection reflection", () => {
   let app: INestApplication;
   let baseUrl: string;
-  let catalog: SkMcpCatalog;
+  let catalog: LiaisoCatalog;
   let client: Client;
   let notifications = 0;
 
@@ -119,7 +119,7 @@ describe("nest catalog generation and connection reflection", () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [SkMcpModule.forRoot()],
+      imports: [LiaisoModule.forRoot()],
       controllers: [EchoController, GenerationMcpController],
     }).compile();
     app = moduleRef.createNestApplication({ logger: false });
@@ -127,10 +127,10 @@ describe("nest catalog generation and connection reflection", () => {
     await app.listen(0);
     baseUrl = await app.getUrl();
 
-    catalog = app.get(SkMcpCatalog);
+    catalog = app.get(LiaisoCatalog);
     mapper = app.get<InvokeResultMapper>(extensionTokens.invokeResultMapper);
     scopes = app.get<CallerScopeResolver>(extensionTokens.callerScopeResolver);
-    options = app.get<SkMcpOptions>(SK_MCP_OPTIONS);
+    options = app.get<LiaisoOptions>(LIAISO_OPTIONS);
 
     client = new Client(
       { name: "generation-probe", version: "0.0.0" },

@@ -1,4 +1,4 @@
-import type { SourceMode } from "@sk-mcp/file-core";
+import type { SourceMode } from "@liaiso/file-core";
 import type { DocumentFormat } from "./formats.js";
 
 export interface XmlCapabilities {

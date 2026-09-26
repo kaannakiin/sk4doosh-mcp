@@ -7,7 +7,7 @@ import { buildGatewayCatalog, configSchema, summarize } from "../src/index.js";
  * repository; this suite runs only when a path to it is given, and prints its report instead of
  * pinning a snapshot that would copy that surface into the tree.
  */
-const documentPath = process.env["SKMCP_OPENAPI_ACCEPTANCE_DOC"];
+const documentPath = process.env["LIAISO_OPENAPI_ACCEPTANCE_DOC"];
 
 describe.skipIf(documentPath === undefined || documentPath === "")(
   "acceptance: a real backend's document",

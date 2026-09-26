@@ -1,7 +1,7 @@
 import { mkdir, open, readFile, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import type { ErrorFactory } from "@sk-mcp/mcp-core";
-import type { SkMcpLlmErrorCode } from "./errors.js";
+import type { ErrorFactory } from "@liaiso/mcp-core";
+import type { LiaisoLlmErrorCode } from "./errors.js";
 
 declare const workspaceBrand: unique symbol;
 
@@ -77,7 +77,7 @@ function isTaken(error: unknown): boolean {
  */
 export async function openWorkspace(
   raw: string,
-  fail: ErrorFactory<SkMcpLlmErrorCode>,
+  fail: ErrorFactory<LiaisoLlmErrorCode>,
   outputDir = ".llm-mcp/out",
 ): Promise<Workspace> {
   const root = await realpath(resolve(raw));
@@ -163,7 +163,7 @@ export async function openWorkspace(
    * to the workspace.
    *
    * Guard: this is the only write the server performs, and it keeps the four
-   * promises the `ownOutput` annotation from `@sk-mcp/mcp-core` makes:
+   * promises the `ownOutput` annotation from `@liaiso/mcp-core` makes:
    * the directory is re-checked on its realpath so a symlink cannot move it
    * outside; the name is the server's, reduced to a safe alphabet with a fixed
    * extension, so no input can place an `AGENTS.md` or climb a directory; `wx`

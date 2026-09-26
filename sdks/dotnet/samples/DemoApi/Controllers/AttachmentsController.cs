@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SkMcp.AspNetCore.Discovery;
+using Liaiso.AspNetCore.Discovery;
 
 namespace DemoApi.Controllers;
 

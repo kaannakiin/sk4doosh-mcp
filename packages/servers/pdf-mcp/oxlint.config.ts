@@ -1,9 +1,9 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/base";
-import { casing } from "@sk-mcp/oxlint-config/casing";
+import { config } from "@liaiso/oxlint-config/base";
+import { casing } from "@liaiso/oxlint-config/casing";
 
 const platformMessage =
-  "The platform layer is the @sk-mcp/file-core and node boundary; it may not import a layer above it.";
+  "The platform layer is the @liaiso/file-core and node boundary; it may not import a layer above it.";
 const engineMessage =
   "The engine layer is the only pdf-inspector adapter; it answers in this server's own vocabulary and never reaches the layers above it.";
 const documentMessage =

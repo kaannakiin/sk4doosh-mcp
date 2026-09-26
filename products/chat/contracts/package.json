@@ -24,8 +24,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "oxlint": "1.85.0",
     "typescript": "7.0.2",
     "vitest": "^3.2.4"

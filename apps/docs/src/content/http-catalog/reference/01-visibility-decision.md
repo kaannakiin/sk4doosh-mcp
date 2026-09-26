@@ -48,7 +48,7 @@ of any uncertainty elsewhere.
 Rules 3 through 6 all produce `unknown`; their relative order does not change the outcome and is
 fixed for readability.
 
-A policy that reported no result is never treated as `allow`. sk-mcp does not invent values —
+A policy that reported no result is never treated as `allow`. liaiso does not invent values —
 rule 6 for policies, rule 5 for identity, rule 4 for anonymity are the same principle three times.
 
 ## Anonymity is three-valued

@@ -1,16 +1,16 @@
-# @sk-mcp/openapi-mcp
+# @liaiso/openapi-mcp
 
-MCP server that exposes an OpenAPI (Swagger 2.0 / OpenAPI 3.0–3.2) document as sk-mcp's
+MCP server that exposes an OpenAPI (Swagger 2.0 / OpenAPI 3.0–3.2) document as liaiso's
 search-first tool catalog — `search_tools`, `load_tool`, `invoke_tool` — over a **remote**
 backend, calling it with `fetch`.
 
-> Status: `0.0.0`, `private: true` (it depends on the private `@sk-mcp/core`, and a published
+> Status: `0.0.0`, `private: true` (it depends on the private `@liaiso/core`, and a published
 > package may never depend on a private one — `pnpm publish` would silently rewrite the
 > dependency and the failure would surface in a consumer's `install`).
 
 ## How this differs from the embedded SDKs
 
-`SkMcp.AspNetCore` and the NestJS SDK sit **inside** your backend process: they discover
+`Liaiso.AspNetCore` and the NestJS SDK sit **inside** your backend process: they discover
 endpoints from your own controllers/routes and replay each MCP call through your existing
 pipeline, so your authentication and authorization run exactly as they do today.
 
@@ -23,11 +23,11 @@ embedded SDK integrated into it.
 
 ## Quick start
 
-The server reads its configuration from the file named by `SKMCP_OPENAPI_CONFIG`. Build the
-package first (this repository never runs `@sk-mcp/core`'s consumers against a stale `dist`):
+The server reads its configuration from the file named by `LIAISO_OPENAPI_CONFIG`. Build the
+package first (this repository never runs `@liaiso/core`'s consumers against a stale `dist`):
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/openapi-mcp
+pnpm turbo run build --filter=@liaiso/openapi-mcp
 ```
 
 A minimal config — a local document, opt-in selection so at least one operation is exposed,
@@ -41,7 +41,7 @@ default `stdio` transport:
 ```
 
 ```bash
-SKMCP_OPENAPI_CONFIG=/absolute/path/to/config.json node packages/servers/openapi-mcp/dist/cli.js
+LIAISO_OPENAPI_CONFIG=/absolute/path/to/config.json node packages/servers/openapi-mcp/dist/cli.js
 ```
 
 `source` is either a path (resolved relative to the config file's own directory) or an
@@ -56,7 +56,7 @@ diagnostic, or a catalog with a fatal diagnostic (`name_collision`, `invalid_nam
 
 ## Configuration
 
-All keys below are read from the `SKMCP_OPENAPI_CONFIG` JSON file and validated with a `zod`
+All keys below are read from the `LIAISO_OPENAPI_CONFIG` JSON file and validated with a `zod`
 schema (`src/platform/config.ts`) that rejects unknown keys.
 
 | Key                              | Type                                       | Default        | Notes                                                                                                                                                                          |
@@ -126,25 +126,25 @@ and shared.
 ## Development
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/openapi-mcp
-pnpm turbo run lint --filter=@sk-mcp/openapi-mcp
-pnpm turbo run check-types --filter=@sk-mcp/openapi-mcp
-pnpm turbo run test --filter=@sk-mcp/openapi-mcp
+pnpm turbo run build --filter=@liaiso/openapi-mcp
+pnpm turbo run lint --filter=@liaiso/openapi-mcp
+pnpm turbo run check-types --filter=@liaiso/openapi-mcp
+pnpm turbo run test --filter=@liaiso/openapi-mcp
 ```
 
-Run these through Turbo, not `pnpm --filter @sk-mcp/openapi-mcp <task>` — the bare filter skips
+Run these through Turbo, not `pnpm --filter @liaiso/openapi-mcp <task>` — the bare filter skips
 `dependsOn: ["build"]` and the test task would run against a stale `dist`.
 
 `test/` holds four suites:
 
 - `gateway.spec.ts`, `http.spec.ts` — unit tests, no environment variables needed.
-- `acceptance.spec.ts` — skipped unless `SKMCP_OPENAPI_ACCEPTANCE_DOC` names a path to a real
+- `acceptance.spec.ts` — skipped unless `LIAISO_OPENAPI_ACCEPTANCE_DOC` names a path to a real
   backend's OpenAPI document. The document itself never enters the repository; the suite ingests
   it, builds a catalog, asserts there is no fatal diagnostic, and prints the diagnostic summary
   instead of pinning a snapshot that would copy that backend's surface into the tree.
-- `parity.spec.ts` — skipped unless `SKMCP_PARITY_DIR` names a directory of fixtures written by
-  `sdks/dotnet/tests/SkMcp.Tests/OpenApiParityDump.cs`, comparing this ingestion's output against
+- `parity.spec.ts` — skipped unless `LIAISO_PARITY_DIR` names a directory of fixtures written by
+  `sdks/dotnet/tests/Liaiso.Tests/OpenApiParityDump.cs`, comparing this ingestion's output against
   the .NET SDK's.
 
-Both `SKMCP_OPENAPI_ACCEPTANCE_DOC` and `SKMCP_PARITY_DIR` are declared in `turbo.json`'s `test`
+Both `LIAISO_OPENAPI_ACCEPTANCE_DOC` and `LIAISO_PARITY_DIR` are declared in `turbo.json`'s `test`
 task so Turbo passes them through.

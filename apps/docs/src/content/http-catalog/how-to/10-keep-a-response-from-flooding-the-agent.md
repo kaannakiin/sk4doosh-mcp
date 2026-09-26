@@ -4,7 +4,7 @@ A list endpoint with no pagination is harmless to your backend and fatal to an a
 `GET /orders` that returns 40 000 rows does not slow the server down; it fills the agent's context,
 and the agent cannot undo that. The damage is done by the time the call returns.
 
-sk-mcp puts a budget and a deadline on every invocation. Both have defaults that work, so this page
+liaiso puts a budget and a deadline on every invocation. Both have defaults that work, so this page
 is mostly about what the agent sees when a guard fires, and when to change the numbers.
 
 ## What the agent gets when a response is too large
@@ -51,7 +51,7 @@ so the leak-prevention rules hold by construction.
 ```
 
 Read the second sentence literally. **A timeout frees the agent; it does not cancel your handler.**
-sk-mcp delivers a cancellation signal — a client disconnect on Node, `RequestAborted` on ASP.NET —
+liaiso delivers a cancellation signal — a client disconnect on Node, `RequestAborted` on ASP.NET —
 but neither runtime preempts running code. A handler that does not observe its signal runs to
 completion and its result is discarded. A write it already committed stays committed.
 
@@ -83,14 +83,14 @@ interceptor with `takeUntil(fromEvent(request, "close"))`.
 ## Changing the numbers
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.invoke.maxResponseBytes = 512 * 1024;
   options.invoke.timeoutMs = 10_000;
 });
 ```
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Invoke.MaxResponseBytes = 512 * 1024;
     options.Invoke.Timeout = TimeSpan.FromSeconds(10);
@@ -130,4 +130,4 @@ flood the agent on its own, and no argument narrows a schema. If you hit that, t
 depth budget, not a larger response budget.
 
 The normative rules are in
-[invoke-semantics.md](https://github.com/kaannakiin/sk-mcp/blob/main/packages/http/spec/invoke-semantics.md).
+[invoke-semantics.md](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/invoke-semantics.md).

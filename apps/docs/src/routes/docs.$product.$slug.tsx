@@ -16,7 +16,11 @@ export const Route = createFileRoute("/docs/$product/$slug")({
   },
   head: ({ loaderData }) => ({
     meta: loaderData
-      ? [{ title: `${loaderData.title} — ${loaderData.productLabel} — sk-mcp` }]
+      ? [
+          {
+            title: `${loaderData.title} — ${loaderData.productLabel} — liaiso`,
+          },
+        ]
       : [],
   }),
   component: DocPage,

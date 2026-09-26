@@ -1,4 +1,4 @@
-import { classifyContainerMagic } from "@sk-mcp/ooxml-core";
+import { classifyContainerMagic } from "@liaiso/ooxml-core";
 import {
   createSandboxRoot,
   listSources,
@@ -7,14 +7,14 @@ import {
   type SandboxRoot,
   type SourceEntry,
   type SourceListing,
-} from "@sk-mcp/file-core";
-import { SkMcpExcelError, fail } from "./errors.js";
+} from "@liaiso/file-core";
+import { LiaisoExcelError, fail } from "./errors.js";
 import { formats } from "./formats.js";
 import { limits } from "./limits.js";
 import { vocabulary } from "./vocabulary.js";
 
-export { isContained } from "@sk-mcp/file-core";
-export type { ListOptions, SandboxedPath } from "@sk-mcp/file-core";
+export { isContained } from "@liaiso/file-core";
+export type { ListOptions, SandboxedPath } from "@liaiso/file-core";
 
 export type WorkbookRoot = SandboxRoot;
 export type WorkbookEntry = SourceEntry;
@@ -38,13 +38,13 @@ export function assertReadableFormat(magic: Buffer, requested: string): void {
   const kind = classifyContainerMagic(magic);
   if (kind === "zip") return;
   if (kind === "cfb") {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "encrypted_workbook",
       `'${requested}' is password-protected or stored in the legacy binary format.`,
       "Save an unprotected copy in .xlsx format.",
     );
   }
-  throw new SkMcpExcelError(
+  throw new LiaisoExcelError(
     "not_a_workbook",
     `'${requested}' is not a .xlsx container; it does not begin with a zip header.`,
     "Check what the file really is; the extension does not match its content.",

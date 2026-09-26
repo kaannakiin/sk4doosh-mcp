@@ -1,4 +1,4 @@
-# SkMcp.AspNetCore
+# Liaiso.AspNetCore
 
 An MCP layer that embeds into your existing ASP.NET Core backend. It exposes your endpoints to
 agents as a search-first tool catalog and replays each call through **your own** pipeline, so your
@@ -18,18 +18,18 @@ duplicated business logic.
 The alpha ships from a local nupkg feed; it is not on nuget.org.
 
 ```bash
-# in the sk-mcp repository
-pnpm turbo run pack --filter=@sk-mcp/sdk-dotnet
-# → sdks/dotnet/local/nupkg-feed/SkMcp.AspNetCore.0.1.0-alpha.2.nupkg
+# in the liaiso repository
+pnpm turbo run pack --filter=@liaiso/sdk-dotnet
+# → sdks/dotnet/local/nupkg-feed/Liaiso.AspNetCore.0.1.0-alpha.2.nupkg
 ```
 
 ```bash
 # in your own project
-dotnet nuget add source /absolute/path/to/sk-mcp/sdks/dotnet/local/nupkg-feed --name sk-mcp-local
-dotnet add package SkMcp.AspNetCore --version 0.1.0-alpha.2
+dotnet nuget add source /absolute/path/to/liaiso/sdks/dotnet/local/nupkg-feed --name liaiso-local
+dotnet add package Liaiso.AspNetCore --version 0.1.0-alpha.2
 ```
 
-Do not wire it with a `ProjectReference`. SkMcp multi-targets (`net8.0;net10.0`) and a
+Do not wire it with a `ProjectReference`. Liaiso multi-targets (`net8.0;net10.0`) and a
 `ProjectReference` evaluates every target during restore, which produces `NETSDK1045` on a host
 that pins an older SDK through `global.json`. The package path does not have this problem: the
 host's SDK picks whichever target it can build.
@@ -37,41 +37,41 @@ host's SDK picks whichever target it can build.
 ## 2. Wiring — three calls
 
 ```csharp
-using SkMcp.AspNetCore;
+using Liaiso.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddSkMcp();
+builder.Services.AddLiaiso();
 
 var app = builder.Build();
 
-app.UseSkMcpCapture();
+app.UseLiaisoCapture();
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapSkMcp("/mcp");
+app.MapLiaiso("/mcp");
 
 app.Run();
 ```
 
-Leave your existing `AddAuthentication`/`AddAuthorization` setup alone — SkMcp installs no identity
+Leave your existing `AddAuthentication`/`AddAuthorization` setup alone — Liaiso installs no identity
 scheme of its own and uses yours.
 
-> **Order is critical.** `UseSkMcpCapture()` captures the pipeline **from that point onward** and
+> **Order is critical.** `UseLiaisoCapture()` captures the pipeline **from that point onward** and
 > injects agent calls into it. Put it **before** `UseRouting`/`UseAuthentication`/`UseAuthorization`,
 > as early as you can. Placed after them, agent requests never see your authentication layer. Omit
-> it entirely and `MapSkMcp()` throws at startup.
+> it entirely and `MapLiaiso()` throws at startup.
 
 ## 3. Which endpoints become visible?
 
 The default is **opt-in**: nothing is exposed, and what you mark with `[McpTool]` is.
 
 ```csharp
-using SkMcp.AspNetCore.Discovery;
+using Liaiso.AspNetCore.Discovery;
 
 [ApiController]
 [Route("orders")]
@@ -83,7 +83,7 @@ On a backend with hundreds of endpoints the attribute path is impractical; switc
 close individual exceptions with `[McpIgnore]`:
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Selection.Default = SelectionDefault.Include;
 });
@@ -93,7 +93,7 @@ For a subtree that is categorically off limits — or one you cannot decorate, s
 or third-party controller — put the decision in configuration instead:
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Selection.Default = SelectionDefault.Include;
     options.Selection.Rules.Add(new SelectionRule(SelectionDefault.Exclude, Route: "/admin/**"));
@@ -198,7 +198,7 @@ them changes ranking — see the how-to on grouping operations.
 To protect `/mcp`, attach your own authorization:
 
 ```csharp
-app.MapSkMcp("/mcp").RequireAuthorization();
+app.MapLiaiso("/mcp").RequireAuthorization();
 ```
 
 This repository's `sdks/nestjs/samples/agent-client` is a ready-made client:
@@ -214,8 +214,8 @@ tokenization.
 
 | Symptom                                                       | Cause                                                                       | Fix                                                                                     |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `MapSkMcp() requires app.UseSkMcpCapture()...` at startup     | Capture was never called                                                     | Add `app.UseSkMcpCapture()`, before routing                                             |
-| `sk-mcp pipeline is not captured` on the first tool call      | Capture is registered but the host has not served a request yet              | Start the host; if it persists, check where capture sits                                 |
+| `MapLiaiso() requires app.UseLiaisoCapture()...` at startup     | Capture was never called                                                     | Add `app.UseLiaisoCapture()`, before routing                                             |
+| `liaiso pipeline is not captured` on the first tool call      | Capture is registered but the host has not served a request yet              | Start the host; if it persists, check where capture sits                                 |
 | Tools work but authorization never runs                       | Capture is **after** `UseAuthentication`/`UseAuthorization`                  | Move capture to the top of the pipeline                                                  |
 | `search_tools` always empty                                   | `Selection.Default` defaults to `Exclude` and no `[McpTool]` was applied     | Add `[McpTool]`, or set `Selection.Default = Include`                                    |
 | Every request to `/mcp` returns 401                           | `.RequireAuthorization()` is on and the client sends no token                | Send a bearer token, or drop `.RequireAuthorization()` during development                |
@@ -223,6 +223,6 @@ tokenization.
 
 ## 6. What's next
 
-- The docs site: `pnpm --filter @sk-mcp/docs dev` → `http://localhost:5180`
+- The docs site: `pnpm --filter @liaiso/docs dev` → `http://localhost:5180`
 - Sample: [samples/DemoApi](samples/DemoApi) — policy, role, imperative ownership checks and
   anonymous endpoints in a single controller

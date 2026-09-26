@@ -5,7 +5,7 @@ import {
   type ToolDefinitions,
   type ToolInputOf,
   type ToolNameOf,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { z } from "zod";
 import { limits } from "../platform/limits.js";
 import {

@@ -1,6 +1,6 @@
 import { assertUniqueArgumentNames } from "./argument-names.js";
 import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
-import { SkMcpTemplateError } from "./errors.js";
+import { LiaisoTemplateError } from "./errors.js";
 import type {
   IdentityCarrier,
   Parameter,
@@ -162,7 +162,7 @@ const delimiters: Readonly<Record<ArrayStyle, string>> = {
  *
  * @param explode defaults the way OpenAPI does: `true` for `form`, `false` for every other style.
  * @returns the delimiter to join array items with, or `undefined` to repeat the key.
- * @throws SkMcpTemplateError `unsupported_array_style` for a pairing that has no wire form.
+ * @throws LiaisoTemplateError `unsupported_array_style` for a pairing that has no wire form.
  */
 export function arraySeparatorFor(
   style: ParameterStyle | undefined,
@@ -171,7 +171,7 @@ export function arraySeparatorFor(
 ): string | undefined {
   const resolved = style ?? "form";
   if (resolved === "deepObject") {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_array_style",
       `Parameter '${parameterName}' is an array and declares style 'deepObject', which addresses object members and has no array form.`,
     );
@@ -181,7 +181,7 @@ export function arraySeparatorFor(
   }
   if (explode ?? resolved === "form") {
     if (resolved !== "form") {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "unsupported_array_style",
         `Parameter '${parameterName}' declares style '${resolved}' with explode true, which has no wire form; set explode false.`,
       );
@@ -210,8 +210,8 @@ function unsupportedStyle(
   parameterName: string,
   style: string,
   location: ParameterLocation,
-): SkMcpTemplateError {
-  return new SkMcpTemplateError(
+): LiaisoTemplateError {
+  return new LiaisoTemplateError(
     "unsupported_parameter_style",
     `Parameter '${parameterName}' declares style '${style}', which a ${location} parameter cannot carry.`,
   );
@@ -220,7 +220,7 @@ function unsupportedStyle(
 /**
  * Normalises a scalar or array parameter's OpenAPI `style`/`explode` for its location.
  *
- * @throws SkMcpTemplateError `unsupported_parameter_style` for a style the location has no wire
+ * @throws LiaisoTemplateError `unsupported_parameter_style` for a style the location has no wire
  * form for, and every error {@link arraySeparatorFor} raises.
  */
 export function serializationFor(
@@ -235,7 +235,7 @@ export function serializationFor(
     throw unsupportedStyle(parameterName, style, location);
   }
   if (allowReserved === true && location !== "query") {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_parameter_style",
       `Parameter '${parameterName}' declares allowReserved, which only a query parameter can carry.`,
     );
@@ -258,7 +258,7 @@ export function serializationFor(
         ...(allowReserved === true ? { allowReserved: true } : {}),
       };
     case "querystring":
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "unsupported_parameter_content",
         `Parameter '${parameterName}' is a querystring, which is serialized from content, never by style.`,
       );
@@ -277,7 +277,7 @@ export function serializationFor(
        * repeats — which one is not specified — so the other values are lost without an error.
        */
       if (explode === true) {
-        throw new SkMcpTemplateError(
+        throw new LiaisoTemplateError(
           "unsupported_parameter_style",
           `Cookie parameter '${parameterName}' declares explode true, which repeats the cookie name; set explode false.`,
         );
@@ -349,8 +349,8 @@ export interface RequestTemplateInput {
   readonly binaryBody?: boolean;
 }
 
-function bodyShapeError(message: string): SkMcpTemplateError {
-  return new SkMcpTemplateError("unsupported_body_shape", message);
+function bodyShapeError(message: string): LiaisoTemplateError {
+  return new LiaisoTemplateError("unsupported_body_shape", message);
 }
 
 function assertFormMembers(
@@ -521,7 +521,7 @@ function assertConstantFits(binding: ScalarParameterBinding): void {
     binding.rawCookie !== true ||
     items.every((item) => typeof item !== "string" || isCookieOctets(item));
   if (!ok || !cookieSafe) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "invalid_fill_constant",
       `The constant filling '${binding.name}' does not fit a ${binding.isArray === true ? "array of " : ""}${binding.kind} ${binding.location} parameter.`,
     );
@@ -538,19 +538,19 @@ const structuralMemberName = /[[\].]|^\d+$/;
  */
 function assertObjectBinding(binding: ObjectParameterBinding): void {
   if (binding.location !== "query") {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_object_style",
       `Parameter '${binding.name}' is an object, which only a query parameter can be.`,
     );
   }
   if (binding.fill !== undefined) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_object_style",
       `Parameter '${binding.name}' is an object and cannot be hidden or filled.`,
     );
   }
   if (binding.members.length === 0) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_object_style",
       `Parameter '${binding.name}' is an object but declares no members.`,
     );
@@ -558,13 +558,13 @@ function assertObjectBinding(binding: ObjectParameterBinding): void {
   const seen = new Set<string>();
   for (const member of binding.members) {
     if (structuralMemberName.test(member.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "unsupported_object_nesting",
         `Member '${binding.name}.${member.name}' carries a name the notation reads as structure; rename it.`,
       );
     }
     if (seen.has(member.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "unsupported_object_style",
         `Parameter '${binding.name}' declares two members named '${member.name}'.`,
       );
@@ -591,7 +591,7 @@ function assertNoCarrierSlot(
           : carrier.name === parameter.name),
     );
     if (occupied) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "identity_carrier_parameter",
         `${parameter.location} parameter '${parameter.name}' occupies the slot an identity carrier uses; identity is never an argument.`,
       );
@@ -604,7 +604,7 @@ function assertContentBinding(binding: ContentParameterBinding): void {
     binding.mediaType === urlEncodedMediaType &&
     binding.location !== "querystring"
   ) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_parameter_content",
       `Parameter '${binding.name}' is urlencoded content, which only a querystring can carry.`,
     );
@@ -613,7 +613,7 @@ function assertContentBinding(binding: ContentParameterBinding): void {
     binding.location === "querystring" &&
     binding.mediaType === textMediaType
   ) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_parameter_content",
       `Querystring '${binding.name}' is text/plain, which has no query-string form; use JSON or urlencoded content.`,
     );
@@ -623,26 +623,26 @@ function assertContentBinding(binding: ContentParameterBinding): void {
     binding.location === "header" &&
     reservedHeaderNames.has(binding.name.toLowerCase())
   ) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "identity_carrier_argument",
       `Header parameter '${binding.name}' collides with an identity carrier; identity is never an argument.`,
     );
   }
   if (binding.location === "cookie" && !cookieName.test(binding.name)) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "invalid_cookie_name",
       `Cookie parameter '${binding.name}' is not an RFC 6265 cookie name.`,
     );
   }
   if (urlencoded && (binding.members ?? []).length === 0) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_parameter_content",
       `Querystring '${binding.name}' is urlencoded but declares no members to write.`,
     );
   }
   for (const member of binding.members ?? []) {
     if (structuralMemberName.test(member.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "unsupported_object_nesting",
         `Member '${binding.name}.${member.name}' carries a name the query string reads as structure; rename it.`,
       );
@@ -659,7 +659,7 @@ function assertQuerystring(parameters: readonly ParameterBinding[]): void {
     (parameter) => parameter.location === "querystring",
   );
   if (querystrings.length > 1) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "multiple_querystring",
       "An operation declares more than one querystring parameter.",
     );
@@ -668,7 +668,7 @@ function assertQuerystring(parameters: readonly ParameterBinding[]): void {
     querystrings.length === 1 &&
     parameters.some((parameter) => parameter.location === "query")
   ) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "querystring_with_query",
       "An operation declares a querystring parameter beside query parameters.",
     );
@@ -746,7 +746,7 @@ export function createRequestTemplate(
 ): RequestTemplate {
   const method = input.method.toUpperCase();
   if (!input.route || input.route.trim().length === 0) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "empty_route",
       "Route template must not be empty.",
     );
@@ -763,14 +763,14 @@ export function createRequestTemplate(
     input.bodyRoot !== undefined &&
     (input.bodyProperties !== undefined || bodyAllowsAdditionalProperties)
   ) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "conflicting_body_modes",
       "A template cannot declare both a body root argument and body properties.",
     );
   }
 
   if (hasBody && (method === "GET" || method === "HEAD")) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "body_not_allowed",
       `A ${method} request cannot declare a body.`,
     );
@@ -788,7 +788,7 @@ export function createRequestTemplate(
     if (parameter.fill === undefined) {
       const agentName = parameter.argument ?? parameter.name;
       if (agentNames.has(agentName)) {
-        throw new SkMcpTemplateError(
+        throw new LiaisoTemplateError(
           "argument_collision",
           `Curation produces two arguments named '${agentName}'.`,
         );
@@ -808,13 +808,13 @@ export function createRequestTemplate(
       parameter.location === "header" &&
       reservedHeaderNames.has(parameter.name.toLowerCase())
     ) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "identity_carrier_argument",
         `Header parameter '${parameter.name}' collides with an identity carrier; identity is never an argument.`,
       );
     }
     if (parameter.location === "cookie" && !cookieName.test(parameter.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "invalid_cookie_name",
         `Cookie parameter '${parameter.name}' is not an RFC 6265 cookie name.`,
       );
@@ -830,7 +830,7 @@ export function createRequestTemplate(
       parameter.isArray &&
       parameter.arraySeparator === undefined
     ) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "header_parameter_array",
         `Header parameter '${parameter.name}' is an array but repeats the key, which a header cannot carry; declare explode false.`,
       );
@@ -847,7 +847,7 @@ export function createRequestTemplate(
   const placeholders = routePlaceholderNames(input.route);
   for (const parameter of parameters) {
     if (parameter.location === "path" && !placeholders.has(parameter.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "route_placeholder_mismatch",
         `Path parameter '${parameter.name}' has no '{${parameter.name}}' placeholder in route '${input.route}'.`,
       );
@@ -857,7 +857,7 @@ export function createRequestTemplate(
     if (
       !parameters.some((p) => p.location === "path" && p.name === placeholder)
     ) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "route_placeholder_mismatch",
         `Route placeholder '{${placeholder}}' has no declared path parameter.`,
       );
@@ -866,7 +866,7 @@ export function createRequestTemplate(
 
   for (const agentName of input.bodyAliases?.keys() ?? []) {
     if (agentNames.has(agentName)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "argument_collision",
         `Curation produces two arguments named '${agentName}'.`,
       );

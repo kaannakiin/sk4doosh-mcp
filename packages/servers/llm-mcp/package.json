@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/llm-mcp",
+  "name": "@liaiso/llm-mcp",
   "version": "0.1.0",
   "description": "MCP server that lets a planning agent hand bounded language work to a local model.",
   "license": "MIT",
@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "bin": {
-    "sk-mcp-llm": "./dist/cli.js"
+    "liaiso-llm": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "@sk-mcp/mcp-core": "workspace:^",
+    "@liaiso/mcp-core": "workspace:^",
     "zod": "^4.5.4"
   },
   "scripts": {
@@ -39,8 +39,8 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.0.0",
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "3.2.7",
     "oxlint": "1.85.0",

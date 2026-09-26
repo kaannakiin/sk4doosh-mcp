@@ -3,9 +3,9 @@ import {
   asciiLower,
   type ErrorContext as SourceErrorContext,
   type SourceErrorCode,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 
-export type { ErrorFactory } from "@sk-mcp/mcp-core";
+export type { ErrorFactory } from "@liaiso/mcp-core";
 
 export type CoreErrorCode =
   | SourceErrorCode

@@ -7,7 +7,7 @@ import type {
   ScalarKind,
   TypeNode,
   TypeShape,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 
 const load = createRequire(import.meta.url);
 

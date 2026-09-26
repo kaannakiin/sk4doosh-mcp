@@ -5,10 +5,10 @@ import {
   type CoreErrorCode,
   type ErrorContext,
   type ErrorFactory,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { vocabulary } from "./vocabulary.js";
 
-export type SkMcpPdfErrorCode =
+export type LiaisoPdfErrorCode =
   | CoreErrorCode
   | "malformed_pdf"
   | "encrypted_pdf"
@@ -16,28 +16,28 @@ export type SkMcpPdfErrorCode =
   | "ocr_unavailable"
   | "ocr_failed";
 
-export class SkMcpPdfError extends FileSourceError {
-  declare readonly code: SkMcpPdfErrorCode;
+export class LiaisoPdfError extends FileSourceError {
+  declare readonly code: LiaisoPdfErrorCode;
 
-  constructor(code: SkMcpPdfErrorCode, message: string, recovery?: string) {
+  constructor(code: LiaisoPdfErrorCode, message: string, recovery?: string) {
     super(code, message, recovery);
   }
 }
 
-export const fail: ErrorFactory<SkMcpPdfErrorCode> = (
+export const fail: ErrorFactory<LiaisoPdfErrorCode> = (
   code,
   message,
   recovery,
-) => new SkMcpPdfError(code, message, recovery);
+) => new LiaisoPdfError(code, message, recovery);
 
 export function asPdfError(
   error: unknown,
   context: ErrorContext = {},
-): SkMcpPdfError {
-  if (error instanceof SkMcpPdfError) {
+): LiaisoPdfError {
+  if (error instanceof LiaisoPdfError) {
     return error;
   }
-  return new SkMcpPdfError(
+  return new LiaisoPdfError(
     "internal_error",
     internalErrorMessage(error, context),
     internalErrorRecovery(vocabulary),

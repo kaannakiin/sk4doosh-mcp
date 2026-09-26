@@ -1,14 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { EndpointDescriptor } from "@sk-mcp/core";
-import { ingest } from "@sk-mcp/openapi";
+import type { EndpointDescriptor } from "@liaiso/core";
+import { ingest } from "@liaiso/openapi";
 import { describe, expect, it } from "vitest";
 
 /**
  * Compares OpenAPI ingestion with framework discovery on the same controllers. The inputs are
- * written by sdks/dotnet/tests/SkMcp.Tests/OpenApiParityDump.cs into SKMCP_PARITY_DIR.
+ * written by sdks/dotnet/tests/Liaiso.Tests/OpenApiParityDump.cs into LIAISO_PARITY_DIR.
  */
-const directory = process.env["SKMCP_PARITY_DIR"];
+const directory = process.env["LIAISO_PARITY_DIR"];
 
 /**
  * Differences a document cannot avoid: the generator omits a fact the SDK reads from the type.

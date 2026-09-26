@@ -1,5 +1,5 @@
 import { describe, expect, inject, it } from "vitest";
-import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { LiaisoExcelError } from "../src/platform/errors.js";
 import { limits } from "../src/platform/limits.js";
 import {
   createWorkbookRoot,
@@ -42,7 +42,7 @@ async function codeOf(
   try {
     await action();
   } catch (error) {
-    return (error as SkMcpExcelError).code;
+    return (error as LiaisoExcelError).code;
   }
   return "no-error";
 }

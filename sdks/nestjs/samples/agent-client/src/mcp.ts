@@ -79,7 +79,7 @@ async function fetchDemoToken(base: string, user: string): Promise<string> {
 
 function requireToken(token: string | undefined): string {
   if (token === undefined || token.length === 0) {
-    throw new AuthFailure("SKMCP_TOKEN is required when SKMCP_AUTH=bearer");
+    throw new AuthFailure("LIAISO_TOKEN is required when LIAISO_AUTH=bearer");
   }
   return token;
 }
@@ -92,7 +92,10 @@ async function connectWithBearer(
     new URL(`${options.base}/mcp`),
     { requestInit: { headers: { authorization: `Bearer ${bearer}` } } },
   );
-  const client = new Client({ name: "sk-mcp-example-agent", version: "0.0.0" });
+  const client = new Client({
+    name: "liaiso-example-agent",
+    version: "0.0.0",
+  });
   await client.connect(transport);
   return { client, close: () => client.close() };
 }
@@ -103,7 +106,10 @@ async function connectWithOAuth(options: ConnectOptions): Promise<McpSession> {
     loginHint: options.user,
   });
   const mcpUrl = new URL(`${options.base}/mcp`);
-  const client = new Client({ name: "sk-mcp-example-agent", version: "0.0.0" });
+  const client = new Client({
+    name: "liaiso-example-agent",
+    version: "0.0.0",
+  });
 
   try {
     await client.connect(

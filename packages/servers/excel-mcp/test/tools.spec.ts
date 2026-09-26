@@ -44,7 +44,7 @@ describe("tool registration", () => {
     ]);
 
     expect(client.getServerVersion()).toEqual({
-      name: "sk-mcp-excel",
+      name: "liaiso-excel",
       version: manifest.version,
     });
 

@@ -1,4 +1,4 @@
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import { formats } from "../platform/formats.js";
 import { resolveWorkbookPath, type WorkbookRoot } from "../platform/paths.js";
 import type {
@@ -25,7 +25,7 @@ export function createXlsxOpener(
     const resolved = await resolveWorkbookPath(root, path);
     const format = formats.formatFor(resolved);
     if (format !== "xlsx") {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "unsupported_for_format",
         `${tool} is not available for ${format} files; the format cannot carry that information.`,
         "Call describe_workbook and read the capabilities block.",
@@ -33,7 +33,7 @@ export function createXlsxOpener(
     }
     const loaded = await cache.load(resolved);
     if (loaded.format !== "xlsx") {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "unsupported_for_format",
         `${tool} needs a workbook.`,
       );
@@ -46,7 +46,7 @@ export function assertPictureKind(kind: string | undefined): void {
   if (kind === undefined || kind === "picture") {
     return;
   }
-  throw new SkMcpExcelError(
+  throw new LiaisoExcelError(
     "unsupported_object_kind",
     `get_images cannot read ${kind} objects; the reader never unzips xl/charts or xl/pivotCache, so an empty list would be a lie rather than an answer.`,
     "Call describe_workbook and read the capabilities block; charts, pivotTables and sparklines are false for every format.",
@@ -60,7 +60,7 @@ export function rejectForCsv(
   filePath: string,
 ): void {
   if (loaded.format === "csv" && value !== undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "unsupported_for_format",
       `CSV files cannot carry that information; ${field} is not available for '${filePath}'.`,
       `Omit ${field}, or read an .xlsx file.`,
@@ -80,14 +80,14 @@ export function assertHeaderScan(
     return;
   }
   if (args.headerRow !== undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       "headerScan cannot be combined with headerRow.",
       "Pass headerScan to prove the header row, or headerRow to name it.",
     );
   }
   if (args.cursor !== undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       "headerScan cannot be combined with cursor.",
       "The cursor already carries the header row resolved for the first page.",
@@ -95,7 +95,7 @@ export function assertHeaderScan(
   }
   const format = formats.formatFor(path);
   if (format !== "xlsx") {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "unsupported_for_format",
       `headerScan is not available for ${format} files; every cell is text, so no row can be disqualified.`,
       "Pass headerRow explicitly for delimited files.",

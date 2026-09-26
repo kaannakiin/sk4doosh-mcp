@@ -1,5 +1,5 @@
 /**
- * A copy of file-core's asciiLower, because this package declares no `@sk-mcp/*`
+ * A copy of file-core's asciiLower, because this package declares no `@liaiso/*`
  * dependency and the repository forbids locale-dependent casing: toLowerCase
  * would fold the Turkish dotted I differently per locale. OPC compares part
  * names and Default extensions ASCII-case-insensitively, which is exactly the

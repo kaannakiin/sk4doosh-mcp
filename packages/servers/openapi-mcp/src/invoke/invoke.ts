@@ -11,15 +11,15 @@ import {
   notInvocable,
   refuseTimedOutInvoke,
   sdkError,
-  SkMcpArgumentError,
-  SkMcpDispatchAborted,
+  LiaisoArgumentError,
+  LiaisoDispatchAborted,
   textResult,
   untilAbandoned,
   vocabularyOf,
   writeBody,
   type CatalogEntry,
   type MetaResponse,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import type { GatewaySource } from "../catalog/build.js";
 import {
   applyCredentials,
@@ -43,14 +43,14 @@ export interface InvokeLimits {
   readonly maxInlineFileBytes: number;
 }
 
-const userAgent = "sk-mcp-openapi/0.0.0";
+const userAgent = "liaiso-openapi/0.0.0";
 
 /**
  * Guard: a `ref` file argument needs a resolver, and this server binds none, so the composer never
  * offers `ref` and this path is unreachable unless a template was built with one.
  */
 const noRefResolver = (): never => {
-  throw new SkMcpArgumentError(
+  throw new LiaisoArgumentError(
     "invalid_file_argument",
     "This server accepts file contents inline only; send 'text' or 'base64'.",
   );
@@ -80,7 +80,7 @@ export async function invokeEntry(
       maxInlineFileBytes: limits.maxInlineFileBytes,
     });
   } catch (error) {
-    if (error instanceof SkMcpArgumentError) {
+    if (error instanceof LiaisoArgumentError) {
       return errorResult(error.code, error.message);
     }
     throw error;
@@ -102,7 +102,7 @@ export async function invokeEntry(
   try {
     applyCredentials(entry.credentials, slots, exchanged);
   } catch (error) {
-    if (error instanceof SkMcpArgumentError) {
+    if (error instanceof LiaisoArgumentError) {
       return errorResult(error.code, error.message);
     }
     if (error instanceof ExchangedTokenMissing) {
@@ -162,7 +162,7 @@ export async function invokeEntry(
     const abandoned = deadline.reason();
     if (
       abandoned === "timeout" ||
-      (error instanceof SkMcpDispatchAborted && error.reason === "timeout")
+      (error instanceof LiaisoDispatchAborted && error.reason === "timeout")
     ) {
       return { payload: refuseTimedOutInvoke(limits.timeoutMs), isError: true };
     }

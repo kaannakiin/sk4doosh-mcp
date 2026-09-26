@@ -1,4 +1,4 @@
-import { json, measureJson } from "@sk-mcp/file-core";
+import { json, measureJson } from "@liaiso/file-core";
 import { limits, modePolicy } from "../platform/limits.js";
 import {
   listWorkbooks,

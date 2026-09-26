@@ -7,7 +7,7 @@ import {
   assertWithinPageBudget,
 } from "../src/engine/pages.js";
 import { limits } from "../src/platform/limits.js";
-import { SkMcpPdfError } from "../src/platform/errors.js";
+import { LiaisoPdfError } from "../src/platform/errors.js";
 import { pdfWithPages, textPdf } from "./fixtures/pdf.js";
 
 const bytesOf = async (name: string): Promise<Buffer> =>
@@ -17,10 +17,10 @@ const codeOf = async (run: () => Promise<unknown>): Promise<string> => {
   try {
     await run();
   } catch (error) {
-    if (error instanceof SkMcpPdfError) return error.code;
+    if (error instanceof LiaisoPdfError) return error.code;
     throw error;
   }
-  throw new Error("Expected a SkMcpPdfError.");
+  throw new Error("Expected a LiaisoPdfError.");
 };
 
 describe("page numbering", () => {
@@ -89,8 +89,8 @@ describe("failure classification", () => {
       await extractAll(bytes, "encrypted.pdf");
       throw new Error("Expected a refusal.");
     } catch (error) {
-      expect(error).toBeInstanceOf(SkMcpPdfError);
-      expect((error as SkMcpPdfError).message).not.toContain(
+      expect(error).toBeInstanceOf(LiaisoPdfError);
+      expect((error as LiaisoPdfError).message).not.toContain(
         "extract_pages_markdown",
       );
     }
@@ -106,7 +106,7 @@ describe("page selection is validated before the engine sees it", () => {
   it.each([[0], [-1], [4]])("refuses page %i on a 3 page document", (page) => {
     expect(() => {
       assertSelectablePages([page], 3);
-    }).toThrow(SkMcpPdfError);
+    }).toThrow(LiaisoPdfError);
   });
 
   it("accepts every page in range", () => {
@@ -118,7 +118,7 @@ describe("page selection is validated before the engine sees it", () => {
   it("refuses an empty selection", () => {
     expect(() => {
       assertSelectablePages([], 3);
-    }).toThrow(SkMcpPdfError);
+    }).toThrow(LiaisoPdfError);
   });
 });
 
@@ -147,7 +147,7 @@ describe("page budget", () => {
   it("refuses a document with more pages than the server reads", () => {
     expect(() => {
       assertWithinPageBudget(limits.maxPages + 1, "huge.pdf");
-    }).toThrow(SkMcpPdfError);
+    }).toThrow(LiaisoPdfError);
   });
 
   it("admits a document at the ceiling", () => {

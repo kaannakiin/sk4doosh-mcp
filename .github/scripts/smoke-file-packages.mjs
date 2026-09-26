@@ -28,9 +28,9 @@ const archive = (prefix) => {
 };
 /**
  * The PDF engine publishes no darwin-x64 binary, so the native job does not pack
- * @sk-mcp/pdf-mcp on that leg. Its smoke is skipped there rather than failing.
+ * @liaiso/pdf-mcp on that leg. Its smoke is skipped there rather than failing.
  */
-const packedPdf = find("sk-mcp-pdf-mcp-") !== undefined;
+const packedPdf = find("liaiso-pdf-mcp-") !== undefined;
 const directory = await mkdtemp(join(tmpdir(), "file-packages-smoke-"));
 try {
   await writeFile(
@@ -40,23 +40,23 @@ try {
       type: "module",
       dependencies: {
         "@modelcontextprotocol/client": "^2.0.0",
-        "@sk-mcp/file-core-native": archive("sk-mcp-file-core-native-"),
-        "@sk-mcp/mcp-core": archive("sk-mcp-mcp-core-"),
-        "@sk-mcp/db-core": archive("sk-mcp-db-core-"),
-        "@sk-mcp/mssql-mcp": archive("sk-mcp-mssql-mcp-"),
-        "@sk-mcp/llm-mcp": archive("sk-mcp-llm-mcp-"),
-        "@sk-mcp/file-core": archive("sk-mcp-file-core-0"),
-        "@sk-mcp/ooxml-core": archive("sk-mcp-ooxml-core-"),
-        "@sk-mcp/excel-mcp": archive("sk-mcp-excel-mcp-"),
-        "@sk-mcp/xml-mcp": archive("sk-mcp-xml-mcp-"),
-        ...(packedPdf ? { "@sk-mcp/pdf-mcp": archive("sk-mcp-pdf-mcp-") } : {}),
+        "@liaiso/file-core-native": archive("liaiso-file-core-native-"),
+        "@liaiso/mcp-core": archive("liaiso-mcp-core-"),
+        "@liaiso/db-core": archive("liaiso-db-core-"),
+        "@liaiso/mssql-mcp": archive("liaiso-mssql-mcp-"),
+        "@liaiso/llm-mcp": archive("liaiso-llm-mcp-"),
+        "@liaiso/file-core": archive("liaiso-file-core-0"),
+        "@liaiso/ooxml-core": archive("liaiso-ooxml-core-"),
+        "@liaiso/excel-mcp": archive("liaiso-excel-mcp-"),
+        "@liaiso/xml-mcp": archive("liaiso-xml-mcp-"),
+        ...(packedPdf ? { "@liaiso/pdf-mcp": archive("liaiso-pdf-mcp-") } : {}),
       },
       overrides: {
-        "@sk-mcp/file-core-native": "$@sk-mcp/file-core-native",
-        "@sk-mcp/mcp-core": "$@sk-mcp/mcp-core",
-        "@sk-mcp/db-core": "$@sk-mcp/db-core",
-        "@sk-mcp/file-core": "$@sk-mcp/file-core",
-        "@sk-mcp/ooxml-core": "$@sk-mcp/ooxml-core",
+        "@liaiso/file-core-native": "$@liaiso/file-core-native",
+        "@liaiso/mcp-core": "$@liaiso/mcp-core",
+        "@liaiso/db-core": "$@liaiso/db-core",
+        "@liaiso/file-core": "$@liaiso/file-core",
+        "@liaiso/ooxml-core": "$@liaiso/ooxml-core",
       },
     }),
   );
@@ -105,7 +105,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 const require = createRequire(import.meta.url);
-const cli = join(dirname(require.resolve('@sk-mcp/excel-mcp')), 'cli.js');
+const cli = join(dirname(require.resolve('@liaiso/excel-mcp')), 'cli.js');
 const transport = new StdioClientTransport({ command: process.execPath, args: [cli, ${JSON.stringify(data)}] });
 const client = new Client({ name:'packed-smoke', version:'1.0.0' });
 try {
@@ -127,7 +127,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 const require = createRequire(import.meta.url);
-const cli = join(dirname(require.resolve('@sk-mcp/xml-mcp')), 'cli.js');
+const cli = join(dirname(require.resolve('@liaiso/xml-mcp')), 'cli.js');
 const transport = new StdioClientTransport({ command: process.execPath, args: [cli, ${JSON.stringify(data)}] });
 const client = new Client({ name:'packed-xml-smoke', version:'1.0.0' });
 try {
@@ -139,7 +139,7 @@ try {
   assert.ok(body.files.some((file) => file.filePath.endsWith('smoke.xml')));
 } finally { await client.close(); await transport.close(); }
 
-const { createDocumentRoot, resolveDocumentPath, createXmlWorkerPool, createXmlDocumentCache } = await import('@sk-mcp/xml-mcp');
+const { createDocumentRoot, resolveDocumentPath, createXmlWorkerPool, createXmlDocumentCache } = await import('@liaiso/xml-mcp');
 const pool = createXmlWorkerPool();
 try {
   const root = await createDocumentRoot(${JSON.stringify(data)});
@@ -175,7 +175,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 const require = createRequire(import.meta.url);
-const cli = join(dirname(require.resolve('@sk-mcp/pdf-mcp')), 'cli.js');
+const cli = join(dirname(require.resolve('@liaiso/pdf-mcp')), 'cli.js');
 const transport = new StdioClientTransport({ command: process.execPath, args: [cli, ${JSON.stringify(data)}] });
 const client = new Client({ name:'packed-pdf-smoke', version:'1.0.0' });
 try {
@@ -207,7 +207,7 @@ try {
   }
   const manifest = JSON.parse(
     await readFile(
-      join(directory, "node_modules/@sk-mcp/file-core-native/package.json"),
+      join(directory, "node_modules/@liaiso/file-core-native/package.json"),
       "utf8",
     ),
   );

@@ -6,7 +6,7 @@ Converts the backend's HTTP errors into an MCP result the agent can act on **by 
 
 ## Principles
 
-- The backend's HTTP status code is the single source of truth (RFC 9110); sk-mcp adds no interpretation, reduces it to a nine-code dictionary, and forwards whatever is forwardable.
+- The backend's HTTP status code is the single source of truth (RFC 9110); liaiso adds no interpretation, reduces it to a nine-code dictionary, and forwards whatever is forwardable.
 - The leak filter is mechanical and always on — there is no off switch; a host that wants raw output replaces the whole mapper (see below).
 - The SDK's own composition errors (argument mapping, `unknown_tool`, `not_invocable`) and errors returned from the backend's pipeline share the **same envelope**; the agent has exactly one parsing path.
 - `invoke_tool` MUST NOT consult the visibility filter ([visibility.md](visibility.md) invariant 1); this document defines only the _shape of the result_, not who may call.
@@ -125,11 +125,11 @@ Allow-list-by-shape (forwarding only known envelope forms) was deliberately reje
 
 A 401 body is never forwarded under any circumstances — the evidence from the real backend: its `JwtAuthenticationMiddleware` writes a 401 body of `{"error":"Unauthorized","message":"Portal resolution failed: " + ex.Message}`, so an inner exception message could leak straight to the agent. 403 is different: if `detail` passes the leak filter cleanly it is forwarded — a resource-level reason ("someone else's order", "outside business hours") is actionable for an agent, whereas a 401 has no forwardable reason at all: the identity channel is already fixed (the credentials the MCP session carries), and retrying with the same session will not help.
 
-**Rationale ("the SDK does not invent"):** the standard messages state only what the backend declared itself through its status code (RFC 9110) and what sk-mcp knows about itself. Dropping the 401 body is the authentication form of [visibility.md](visibility.md) invariant 4 ("hiding MUST NOT report a reason"); 403 behaving differently does not contradict that principle, because a resource-level rejection has already disclosed existence (the endpoint is visible, the argument shape was correct) and only a reason is added.
+**Rationale ("the SDK does not invent"):** the standard messages state only what the backend declared itself through its status code (RFC 9110) and what liaiso knows about itself. Dropping the 401 body is the authentication form of [visibility.md](visibility.md) invariant 4 ("hiding MUST NOT report a reason"); 403 behaving differently does not contradict that principle, because a resource-level rejection has already disclosed existence (the endpoint is visible, the argument shape was correct) and only a reason is added.
 
 ## 404
 
-The SDK cannot tell a wrong route from a missing resource — because the route was produced by sk-mcp from the catalog and reached with correctly composed arguments (the tool exists, and argument composition passed steps 1-5), **a resource is assumed**: `not_found`, whose guidance is to check identifier arguments. `410` joins the same family (the resource existed and no longer does — from the agent's point of view the distinction is meaningless).
+The SDK cannot tell a wrong route from a missing resource — because the route was produced by liaiso from the catalog and reached with correctly composed arguments (the tool exists, and argument composition passed steps 1-5), **a resource is assumed**: `not_found`, whose guidance is to check identifier arguments. `410` joins the same family (the resource existed and no longer does — from the agent's point of view the distinction is meaningless).
 
 ## 5xx and retrying
 

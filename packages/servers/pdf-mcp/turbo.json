@@ -4,19 +4,19 @@
     "build": {
       "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
       "passThroughEnv": [
-        "SKMCP_PDF_OCR_URL",
-        "SKMCP_PDF_OCR_MODEL",
-        "SKMCP_PDF_OCR_KEEP_ALIVE",
-        "SKMCP_PDF_OCR_DPI"
+        "LIAISO_PDF_OCR_URL",
+        "LIAISO_PDF_OCR_MODEL",
+        "LIAISO_PDF_OCR_KEEP_ALIVE",
+        "LIAISO_PDF_OCR_DPI"
       ]
     },
     "test": {
       "dependsOn": ["build"],
       "passThroughEnv": [
-        "SKMCP_PDF_OCR_URL",
-        "SKMCP_PDF_OCR_MODEL",
-        "SKMCP_PDF_OCR_KEEP_ALIVE",
-        "SKMCP_PDF_OCR_DPI"
+        "LIAISO_PDF_OCR_URL",
+        "LIAISO_PDF_OCR_MODEL",
+        "LIAISO_PDF_OCR_KEEP_ALIVE",
+        "LIAISO_PDF_OCR_DPI"
       ]
     },
     "test:coverage": {

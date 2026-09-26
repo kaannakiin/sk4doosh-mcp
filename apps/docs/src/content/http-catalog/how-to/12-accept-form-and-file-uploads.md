@@ -78,12 +78,12 @@ A file argument carries exactly one source:
 ## Bind a resolver for large files
 
 A `ref` is how a file the user attached, or one another tool stored, reaches your endpoint without
-passing through the agent. sk-mcp names no storage; you implement one method. The two resolvers
+passing through the agent. liaiso names no storage; you implement one method. The two resolvers
 below are the in-memory ones the SDKs' own host tests run against; yours looks the ref up in your
 store instead of a dictionary.
 
 ```csharp
-private sealed class MemoryResolver : ISkMcpFileResolver
+private sealed class MemoryResolver : ILiaisoFileResolver
 {
     public string RefDescription => "An attachment id returned by upload_attachment.";
 
@@ -99,7 +99,7 @@ private sealed class MemoryResolver : ISkMcpFileResolver
     }
 }
 
-builder.Services.AddSingleton<ISkMcpFileResolver>(_resolver);
+builder.Services.AddSingleton<ILiaisoFileResolver>(_resolver);
 ```
 
 ```ts
@@ -127,7 +127,7 @@ class MemoryResolver implements FileResolver {
   }
 }
 
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.files.resolver = resolver;
 });
 ```
@@ -145,7 +145,7 @@ loading.
 
 Four codes are specific to bodies, and each drops only the endpoint it names:
 
-- `unsupported_binding` — a media type sk-mcp has no writer for, such as `application/xml`, or a
+- `unsupported_binding` — a media type liaiso has no writer for, such as `application/xml`, or a
   raw-body binding.
 - `unsupported_body_shape` — a free-form form body, a second level of nesting, an array of objects,
   or a file in a urlencoded body.
@@ -154,7 +154,7 @@ Four codes are specific to bodies, and each drops only the endpoint it names:
 - `body_parser_missing` — Nest has no parser for the media type; `app.useBodyParser("text")` adds
   one for `text/plain`.
 
-sk-mcp never bypasses antiforgery for you. A synthetic request carries no token, and turning off a
+liaiso never bypasses antiforgery for you. A synthetic request carries no token, and turning off a
 security control is your decision.
 
 ## Known gaps

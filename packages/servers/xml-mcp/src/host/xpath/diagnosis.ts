@@ -1,4 +1,4 @@
-import { SkMcpXmlError } from "../platform/errors.js";
+import { LiaisoXmlError } from "../platform/errors.js";
 import type { NamespaceBinding } from "../../model/node.js";
 import { lex } from "./lex.js";
 
@@ -68,20 +68,20 @@ function laterVersionUse(expression: string): string | undefined {
  */
 export function refuseUnsupported(
   expression: string,
-): SkMcpXmlError | undefined {
+): LiaisoXmlError | undefined {
   const lexed = lex(expression);
   const laterVersion = lexed.functions.find((name) =>
     laterVersionFunctions.has(name),
   );
   if (laterVersion !== undefined) {
-    return new SkMcpXmlError(
+    return new LiaisoXmlError(
       "query_not_supported",
       `${laterVersion}() belongs to XPath 2.0 or later and this engine does not provide it.`,
       versionAdvice,
     );
   }
   if (lexed.axes.includes("namespace")) {
-    return new SkMcpXmlError(
+    return new LiaisoXmlError(
       "query_not_supported",
       "The namespace axis returns nodes whose prefix and URI this engine does not expose, so their content cannot be reported.",
       "Read the namespace bindings from describe_document, which lists every namespace with an alias.",
@@ -95,12 +95,12 @@ export function diagnoseQuery(
   detail: string | undefined,
   expression: string,
   bindings: readonly NamespaceBinding[],
-): SkMcpXmlError {
+): LiaisoXmlError {
   const engine = detail ?? "";
 
   const prefixFault = unboundPrefix.exec(engine);
   if (prefixFault !== null) {
-    return new SkMcpXmlError(
+    return new LiaisoXmlError(
       "invalid_argument",
       `The expression uses the namespace prefix ${prefixFault[1] ?? ""}, which is not bound.`,
       aliasAdvice,
@@ -111,12 +111,12 @@ export function diagnoseQuery(
   if (functionFault !== null) {
     const name = functionFault[1] ?? "";
     return laterVersionFunctions.has(name)
-      ? new SkMcpXmlError(
+      ? new LiaisoXmlError(
           "query_not_supported",
           `${name}() belongs to XPath 2.0 or later and this engine does not provide it.`,
           versionAdvice,
         )
-      : new SkMcpXmlError(
+      : new LiaisoXmlError(
           "invalid_argument",
           `There is no XPath 1.0 function named ${name}.`,
           "Check the spelling, or use one of the XPath 1.0 functions.",
@@ -125,7 +125,7 @@ export function diagnoseQuery(
 
   const laterVersion = laterVersionUse(expression);
   if (laterVersion !== undefined) {
-    return new SkMcpXmlError(
+    return new LiaisoXmlError(
       "query_not_supported",
       `${laterVersion}() belongs to XPath 2.0 or later and this engine does not provide it.`,
       versionAdvice,
@@ -135,14 +135,14 @@ export function diagnoseQuery(
   const unbound = missingPrefixes(expression, bindings);
   const firstUnbound = unbound[0];
   if (failure === "xpath_eval" && firstUnbound !== undefined) {
-    return new SkMcpXmlError(
+    return new LiaisoXmlError(
       "invalid_argument",
       `The expression uses the namespace prefix ${firstUnbound}, which is not bound.`,
       aliasAdvice,
     );
   }
 
-  return new SkMcpXmlError(
+  return new LiaisoXmlError(
     "invalid_argument",
     "The expression is not valid XPath 1.0 and the engine reported no position for the fault.",
     "Check the brackets, quotes and axis names; describe_document shows addresses that need no expression at all.",

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { mapInvokeResult, type InvokeResult } from "@sk-mcp/core";
+import { mapInvokeResult, type InvokeResult } from "@liaiso/core";
 import type { DispatchResult } from "./dispatcher.js";
-import { SK_MCP_OPTIONS, SkMcpOptions } from "./options.js";
+import { LIAISO_OPTIONS, LiaisoOptions } from "./options.js";
 
 /** The names a reported field may be canonicalised against. */
 export interface FieldVocabulary {
@@ -19,7 +19,9 @@ export interface InvokeResultMapper {
 
 @Injectable()
 export class DefaultInvokeResultMapper implements InvokeResultMapper {
-  constructor(@Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions) {}
+  constructor(
+    @Inject(LIAISO_OPTIONS) private readonly options: LiaisoOptions,
+  ) {}
 
   map(
     result: DispatchResult,

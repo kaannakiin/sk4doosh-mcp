@@ -16,19 +16,19 @@ import {
 } from "@modelcontextprotocol/client";
 import type { Request, Response } from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { SdkError } from "@sk-mcp/core";
+import type { SdkError } from "@liaiso/core";
 import type { CallerScopeResolver } from "../src/cache.js";
-import { SkMcpCatalog } from "../src/catalog.js";
+import { LiaisoCatalog } from "../src/catalog.js";
 import { McpTool } from "../src/decorators.js";
-import { SkMcpDispatcher } from "../src/dispatcher.js";
+import { LiaisoDispatcher } from "../src/dispatcher.js";
 import { extensionTokens } from "../src/extension-points.js";
 import type { InvokeResultMapper } from "../src/invoke-result-mapper.js";
-import { registerSkMcpTools } from "../src/meta-tools.js";
-import { SK_MCP_OPTIONS, type SkMcpOptions } from "../src/options.js";
-import { SkMcpModule } from "../src/sk-mcp.module.js";
+import { registerLiaisoTools } from "../src/meta-tools.js";
+import { LIAISO_OPTIONS, type LiaisoOptions } from "../src/options.js";
+import { LiaisoModule } from "../src/liaiso.module.js";
 import {
-  SkMcpStreamableHttp,
-  type SkMcpRequestHandler,
+  LiaisoStreamableHttp,
+  type LiaisoRequestHandler,
 } from "../src/transport/streamable-http.js";
 import { CallerVisibilityProvider } from "../src/visibility/provider.js";
 
@@ -65,27 +65,27 @@ interface Wire {
 
 let mapper: InvokeResultMapper | undefined;
 let scopes: CallerScopeResolver | undefined;
-let options: SkMcpOptions | undefined;
+let options: LiaisoOptions | undefined;
 
 @Controller()
 class BudgetMcpController {
-  private readonly serve: SkMcpRequestHandler;
+  private readonly serve: LiaisoRequestHandler;
 
   constructor(
-    private readonly streamableHttp: SkMcpStreamableHttp,
-    private readonly catalog: SkMcpCatalog,
-    private readonly dispatcher: SkMcpDispatcher,
+    private readonly streamableHttp: LiaisoStreamableHttp,
+    private readonly catalog: LiaisoCatalog,
+    private readonly dispatcher: LiaisoDispatcher,
     private readonly visibility: CallerVisibilityProvider,
   ) {
     this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "budget", version: "0.0.0" });
-      registerSkMcpTools(server, {
+      registerLiaisoTools(server, {
         catalog: this.catalog,
         dispatcher: this.dispatcher,
         mapper: mapper as InvokeResultMapper,
         visibility: this.visibility,
         scopes: scopes as CallerScopeResolver,
-        options: options as SkMcpOptions,
+        options: options as LiaisoOptions,
       });
       return server;
     });
@@ -118,7 +118,7 @@ describe("response budget and invoke deadline", () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
-        SkMcpModule.forRoot((opts) => {
+        LiaisoModule.forRoot((opts) => {
           opts.invoke.maxResponseBytes = 4_096;
           opts.invoke.timeoutMs = 150;
         }),
@@ -131,7 +131,7 @@ describe("response budget and invoke deadline", () => {
 
     mapper = app.get<InvokeResultMapper>(extensionTokens.invokeResultMapper);
     scopes = app.get<CallerScopeResolver>(extensionTokens.callerScopeResolver);
-    options = app.get<SkMcpOptions>(SK_MCP_OPTIONS);
+    options = app.get<LiaisoOptions>(LIAISO_OPTIONS);
 
     client = new Client({ name: "budget-probe", version: "0.0.0" });
     await client.connect(
@@ -175,7 +175,7 @@ describe("response budget and invoke deadline", () => {
   });
 
   it("B3 lets a per-endpoint override lower the budget for one tool alone", async () => {
-    const live = options as SkMcpOptions;
+    const live = options as LiaisoOptions;
     live.invoke.maxResponseBytesFor = (target) =>
       target.tool === "exact_size" ? 32 : undefined;
     try {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOllamaBackend } from "../src/backend/ollama.js";
-import { SkMcpLlmError } from "../src/platform/errors.js";
+import { LiaisoLlmError } from "../src/platform/errors.js";
 
 interface Call {
   readonly url: string;
@@ -41,8 +41,8 @@ const backend = () =>
 
 const codeOf = async (work: Promise<unknown>): Promise<string> => {
   const error: unknown = await work.catch((caught: unknown) => caught);
-  expect(error).toBeInstanceOf(SkMcpLlmError);
-  return (error as SkMcpLlmError).code;
+  expect(error).toBeInstanceOf(LiaisoLlmError);
+  return (error as LiaisoLlmError).code;
 };
 
 afterEach(() => {

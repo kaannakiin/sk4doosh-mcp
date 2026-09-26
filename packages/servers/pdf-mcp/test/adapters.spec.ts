@@ -1,16 +1,16 @@
-import { createOllamaOcrProvider } from "@sk-mcp/ocr-ollama";
+import { createOllamaOcrProvider } from "@liaiso/ocr-ollama";
 import type {
   OcrProvider as AdapterOcrProvider,
   RecognizeJob as AdapterRecognizeJob,
   RecognizedPage as AdapterRecognizedPage,
   RenderedPage as AdapterRecognizedInput,
-} from "@sk-mcp/ocr-ollama";
-import { createPdfjsRasterizer } from "@sk-mcp/pdf-raster-pdfjs";
+} from "@liaiso/ocr-ollama";
+import { createPdfjsRasterizer } from "@liaiso/pdf-raster-pdfjs";
 import type {
   PageRasterizer as AdapterPageRasterizer,
   RenderJob as AdapterRenderJob,
   RenderedPage as AdapterRenderedPage,
-} from "@sk-mcp/pdf-raster-pdfjs";
+} from "@liaiso/pdf-raster-pdfjs";
 import { describe, expect, it } from "vitest";
 import { asOcrBinding } from "../src/ocr/load.js";
 import type {
@@ -22,7 +22,7 @@ import type {
   RenderJob,
   RenderedPage,
 } from "../src/ocr/port.js";
-import { SkMcpPdfError } from "../src/platform/errors.js";
+import { LiaisoPdfError } from "../src/platform/errors.js";
 
 /**
  * Port compatibility, checked where method syntax hides it.
@@ -116,7 +116,7 @@ describe("binding validation", () => {
       { rasterizer: { render: () => [] }, provider: { name: "x" } },
     ],
   ])("refuses %s before any document is opened", (_label, value) => {
-    expect(() => asOcrBinding(value, "broken")).toThrow(SkMcpPdfError);
+    expect(() => asOcrBinding(value, "broken")).toThrow(LiaisoPdfError);
   });
 
   it("refuses a provider with no name", () => {

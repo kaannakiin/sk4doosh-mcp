@@ -1,6 +1,6 @@
-import { McpSourceError, type SourceErrorCode } from "@sk-mcp/mcp-core";
+import { McpSourceError, type SourceErrorCode } from "@liaiso/mcp-core";
 
-export type { ErrorFactory, ErrorContext } from "@sk-mcp/mcp-core";
+export type { ErrorFactory, ErrorContext } from "@liaiso/mcp-core";
 
 export type DbErrorCode =
   | SourceErrorCode

@@ -6,14 +6,14 @@ import {
   type SandboxRoot,
   type SourceEntry,
   type SourceListing,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { fail } from "./errors.js";
 import { formats } from "./formats.js";
 import { limits } from "./limits.js";
 import { vocabulary } from "./vocabulary.js";
 
-export { isContained } from "@sk-mcp/file-core";
-export type { ListOptions, SandboxedPath } from "@sk-mcp/file-core";
+export { isContained } from "@liaiso/file-core";
+export type { ListOptions, SandboxedPath } from "@liaiso/file-core";
 
 export type DocumentRoot = SandboxRoot;
 export type DocumentEntry = SourceEntry;

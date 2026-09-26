@@ -35,7 +35,7 @@ executed.
 
 ## Read that number honestly
 
-The bottleneck is not sk-mcp. On that host, every request opens a new NHibernate session — so each
+The bottleneck is not liaiso. On that host, every request opens a new NHibernate session — so each
 probe pays a database session before any authorization runs. A backend with a cheaper request
 prologue would show a much smaller gap.
 
@@ -49,7 +49,7 @@ the budget, and you cannot know that number without measuring your host.
 
 ## Why this makes probe a rescue rather than a default
 
-Turning probing on by default would mean every sk-mcp backend pays its own request prologue
+Turning probing on by default would mean every liaiso backend pays its own request prologue
 multiplied by 25 on every search — including the backends that do not need it at all. A backend
 whose endpoints declare authorization declaratively has nothing to probe: the metadata is already
 readable, `unknown` is rare, and the budget is never touched.

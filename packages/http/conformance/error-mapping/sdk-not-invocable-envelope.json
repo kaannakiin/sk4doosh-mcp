@@ -3,11 +3,11 @@
   "description": "not_invocable ayni zarftan gecer; backend'e hic ulasilmadigi icin status yazilmaz",
   "input": {
     "sdkError": "not_invocable",
-    "message": "Operation 'legacy_report' cannot be invoked through sk-mcp; see the catalog diagnostics."
+    "message": "Operation 'legacy_report' cannot be invoked through liaiso; see the catalog diagnostics."
   },
   "expected": {
     "error": "not_invocable",
-    "message": "Operation 'legacy_report' cannot be invoked through sk-mcp; see the catalog diagnostics.",
+    "message": "Operation 'legacy_report' cannot be invoked through liaiso; see the catalog diagnostics.",
     "retryable": false
   }
 }

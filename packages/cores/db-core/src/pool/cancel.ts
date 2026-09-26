@@ -1,4 +1,4 @@
-import type { ErrorFactory } from "@sk-mcp/mcp-core";
+import type { ErrorFactory } from "@liaiso/mcp-core";
 import type { DbErrorCode } from "../errors.js";
 import type { Lease, PoolLimits } from "../model/connection.js";
 import type { QueryResult, QuerySpec } from "../model/sql.js";

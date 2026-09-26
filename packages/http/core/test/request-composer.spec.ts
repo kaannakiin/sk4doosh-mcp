@@ -2,21 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   compose,
   createRequestTemplate,
-  SkMcpArgumentError,
+  LiaisoArgumentError,
   type RequestTemplate,
-  type SkMcpArgumentErrorCode,
+  type LiaisoArgumentErrorCode,
 } from "../src/index.js";
 
 function expectError(
   fn: () => unknown,
-  code: SkMcpArgumentErrorCode,
-): SkMcpArgumentError {
+  code: LiaisoArgumentErrorCode,
+): LiaisoArgumentError {
   try {
     fn();
   } catch (error) {
-    expect(error).toBeInstanceOf(SkMcpArgumentError);
-    expect((error as SkMcpArgumentError).code).toBe(code);
-    return error as SkMcpArgumentError;
+    expect(error).toBeInstanceOf(LiaisoArgumentError);
+    expect((error as LiaisoArgumentError).code).toBe(code);
+    return error as LiaisoArgumentError;
   }
   return expect.unreachable(`expected ${code}`);
 }

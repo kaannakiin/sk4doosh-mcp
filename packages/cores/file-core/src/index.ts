@@ -15,7 +15,7 @@ export {
   internalErrorRecovery,
   toolNamesOf,
   type ServerIdentity,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 export {
   contentFingerprint,
   decodeCursorPayload,
@@ -25,7 +25,7 @@ export {
   type Cursor,
   type CursorEnvelope,
   type Fingerprint,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 export {
   json,
   readOnly,
@@ -37,14 +37,14 @@ export {
   type ToolDefinitions,
   type ToolInputOf,
   type ToolNameOf,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 export {
   clampJsonField,
   createPageBudget,
   measureJson,
   type PageBudget,
   type PageBudgetSpec,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 export {
   asciiLower,
   asciiUpper,
@@ -52,7 +52,7 @@ export {
   fold,
   truncateUtf8,
   truncateWellFormed,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 export {
   bufferSource,
   createDocumentStore,

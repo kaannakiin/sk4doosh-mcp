@@ -3,7 +3,7 @@ import type { CallToolResult } from "@modelcontextprotocol/client";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ownOutput, readOnly } from "@sk-mcp/mcp-core";
+import { ownOutput, readOnly } from "@liaiso/mcp-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BackendProbe, QueuedBackend } from "../src/backend/port.js";
 import { fail } from "../src/platform/errors.js";

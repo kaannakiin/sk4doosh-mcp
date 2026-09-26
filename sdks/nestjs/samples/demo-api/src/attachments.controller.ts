@@ -9,7 +9,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { McpTool } from "@sk-mcp/sdk-nestjs";
+import { McpTool } from "@liaiso/sdk-nestjs";
 import { IsOptional, IsString } from "class-validator";
 import { JwtGuard, OrdersReadGuard } from "./auth.js";
 

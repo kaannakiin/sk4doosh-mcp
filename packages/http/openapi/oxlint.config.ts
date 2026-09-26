@@ -1,5 +1,5 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/base";
+import { config } from "@liaiso/oxlint-config/base";
 
 const ioMessage =
   "Ingestion performs no I/O: a document and every external reference arrive through the injected DocumentLoader.";

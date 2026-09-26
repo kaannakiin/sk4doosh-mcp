@@ -1,17 +1,17 @@
 # How to protect the MCP endpoint
 
-`/mcp` is an ordinary endpoint in your application. sk-mcp does not authenticate it for you and
+`/mcp` is an ordinary endpoint in your application. liaiso does not authenticate it for you and
 never sets up an identity scheme of its own — it uses yours. This page covers the two things you do
 have to wire: requiring authorization on the endpoint, and advertising where a client should go to
 get a token.
 
 ## Require authorization
 
-On ASP.NET Core, `MapSkMcp` returns an `IEndpointConventionBuilder`, so your usual conventions
+On ASP.NET Core, `MapLiaiso` returns an `IEndpointConventionBuilder`, so your usual conventions
 compose:
 
 ```csharp
-app.MapSkMcp("/mcp").RequireAuthorization();
+app.MapLiaiso("/mcp").RequireAuthorization();
 ```
 
 On NestJS the MCP endpoint is your own controller, so you protect it the way you protect any
@@ -25,10 +25,10 @@ you want.
 ## Advertise the authorization server
 
 MCP clients discover where to authenticate through RFC 9728 Protected Resource Metadata. Give
-sk-mcp the resource identity and it serves that document.
+liaiso the resource identity and it serves that document.
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.ResourceServer.Metadata = new ProtectedResourceMetadata
     {
@@ -41,7 +41,7 @@ builder.Services.AddSkMcp(options =>
 ```
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.resourceServer = {
     resource: demoResourceUrl,
     authorizationServers: [demoIssuerUrl],
@@ -53,7 +53,7 @@ SkMcpModule.forRoot((options) => {
 
 On NestJS the module installs the middleware itself when `resourceServer` is set, including bearer
 verification with an audience check against `resource`. On ASP.NET Core the middleware is part of
-`UseSkMcpCapture()`, so it is already in place.
+`UseLiaisoCapture()`, so it is already in place.
 
 ## The metadata path is derived, not fixed
 
@@ -79,7 +79,7 @@ setup looks broken if you check the wrong URL.
 
 ## Let the 401 carry the pointer
 
-sk-mcp does not issue its own challenge. When _your_ authorization returns `401` on the MCP path,
+liaiso does not issue its own challenge. When _your_ authorization returns `401` on the MCP path,
 the resource-server middleware decorates that response with a `WWW-Authenticate` header naming the
 metadata document:
 
@@ -89,7 +89,7 @@ WWW-Authenticate: Bearer resource_metadata="http://127.0.0.1:5178/.well-known/oa
 
 That is how a client that arrives with no token discovers the authorization server: it gets a
 `401`, reads the header, fetches the metadata, and starts the OAuth flow. The example client in
-this repository does exactly that under `SKMCP_AUTH=oauth`.
+this repository does exactly that under `LIAISO_AUTH=oauth`.
 
 ## Verify the result
 
@@ -106,7 +106,7 @@ that the path includes your MCP route.
 
 ## Scopes stay with your authorization server
 
-sk-mcp models no scopes and grants nothing. `scopes_supported` is passed through from your options
+liaiso models no scopes and grants nothing. `scopes_supported` is passed through from your options
 for clients to read; what a token is allowed to do is decided by your authorization server and your
 endpoints. The normative transport rules are in
 [`packages/http/spec/transport.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/transport.md).

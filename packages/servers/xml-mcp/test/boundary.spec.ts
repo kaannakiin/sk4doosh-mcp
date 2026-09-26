@@ -166,12 +166,12 @@ describe("the inherited context", () => {
   });
 
   it("picks a wrapper prefix that the document has not taken", () => {
-    expect(wrapperPrefix({ namespaces: [] })).toBe("skmcp");
+    expect(wrapperPrefix({ namespaces: [] })).toBe("liaiso");
     expect(
       wrapperPrefix({
-        namespaces: [{ prefix: "skmcp", uri: "urn:x", source: "" }],
+        namespaces: [{ prefix: "liaiso", uri: "urn:x", source: "" }],
       }),
-    ).toBe("skmcp0");
+    ).toBe("liaiso0");
   });
 });
 

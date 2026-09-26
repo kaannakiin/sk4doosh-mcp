@@ -1,6 +1,6 @@
-# @sk-mcp/pdf-mcp
+# @liaiso/pdf-mcp
 
-A read-only, sandboxed MCP server for local PDF documents. It builds on `@sk-mcp/file-core`,
+A read-only, sandboxed MCP server for local PDF documents. It builds on `@liaiso/file-core`,
 which supplies sandbox path resolution, the response budget, the error envelope, cursors and the
 document cache. Text extraction uses `@firecrawl/pdf-inspector`. The server **never reaches the
 network**: OCR is optional, and when it is enabled, the connection decision belongs entirely to
@@ -13,7 +13,7 @@ whoever supplies the two injected ports.
   "mcpServers": {
     "pdf": {
       "command": "npx",
-      "args": ["-y", "@sk-mcp/pdf-mcp", "/path/to/documents"]
+      "args": ["-y", "@liaiso/pdf-mcp", "/path/to/documents"]
     }
   }
 }
@@ -29,7 +29,7 @@ To enable OCR, point `--ocr` at a module whose default export is an `OcrBinding`
       "command": "npx",
       "args": [
         "-y",
-        "@sk-mcp/pdf-mcp",
+        "@liaiso/pdf-mcp",
         "/path/to/documents",
         "--ocr",
         "/path/to/ollama-binding.js"
@@ -53,7 +53,7 @@ If the file path is already known, `describe_document` is optional: `read_pages`
 
 ## Configuration
 
-CLI (`sk-mcp-pdf <pdf-source-root> [--ocr <module>]`):
+CLI (`liaiso-pdf <pdf-source-root> [--ocr <module>]`):
 
 | Argument            | Default  | Meaning                                                                                                                                                                                                                      |
 | ------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -107,18 +107,18 @@ createPdfMcpServer(root, {
 
 CLI binding — a module whose default export matches `OcrBinding`, loaded with `--ocr <module>`
 (see `examples/ollama-binding.ts` in this package for a working example built from
-`@sk-mcp/pdf-raster-pdfjs` and `@sk-mcp/ocr-ollama`):
+`@liaiso/pdf-raster-pdfjs` and `@liaiso/ocr-ollama`):
 
 ```ts
-import { createPdfjsRasterizer } from "@sk-mcp/pdf-raster-pdfjs";
-import { createOllamaOcrProvider } from "@sk-mcp/ocr-ollama";
-import type { OcrBinding } from "@sk-mcp/pdf-mcp";
+import { createPdfjsRasterizer } from "@liaiso/pdf-raster-pdfjs";
+import { createOllamaOcrProvider } from "@liaiso/ocr-ollama";
+import type { OcrBinding } from "@liaiso/pdf-mcp";
 
 const binding: OcrBinding = {
   rasterizer: createPdfjsRasterizer(),
   provider: createOllamaOcrProvider({
-    baseUrl: process.env["SKMCP_PDF_OCR_URL"] ?? "http://127.0.0.1:11434",
-    model: process.env["SKMCP_PDF_OCR_MODEL"] ?? "deepseek-ocr:3b",
+    baseUrl: process.env["LIAISO_PDF_OCR_URL"] ?? "http://127.0.0.1:11434",
+    model: process.env["LIAISO_PDF_OCR_MODEL"] ?? "deepseek-ocr:3b",
   }),
   dpi: 200,
 };
@@ -183,11 +183,11 @@ true`; `empty` is `true` only for a page the engine trusted and found genuinely 
 ## Development
 
 ```sh
-pnpm turbo run build --filter=@sk-mcp/pdf-mcp
+pnpm turbo run build --filter=@liaiso/pdf-mcp
 node packages/servers/pdf-mcp/dist/cli.js /path/to/documents
 ```
 
-Tests: `pnpm turbo run test --filter=@sk-mcp/pdf-mcp` (Vitest). A live-Ollama suite
-(`test/ocr-live.spec.ts`) is skipped unless `SKMCP_PDF_OCR_URL` is set; it also reads
-`SKMCP_PDF_OCR_MODEL` (default `deepseek-ocr:3b`). Everything else in `test/ocr.spec.ts` runs
+Tests: `pnpm turbo run test --filter=@liaiso/pdf-mcp` (Vitest). A live-Ollama suite
+(`test/ocr-live.spec.ts`) is skipped unless `LIAISO_PDF_OCR_URL` is set; it also reads
+`LIAISO_PDF_OCR_MODEL` (default `deepseek-ocr:3b`). Everything else in `test/ocr.spec.ts` runs
 against fake ports; the live suite only proves the two real adapters compose.

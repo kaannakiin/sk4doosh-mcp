@@ -1,4 +1,4 @@
-import { json } from "@sk-mcp/file-core";
+import { json } from "@liaiso/file-core";
 
 import {
   createXmlDocumentCache,
@@ -24,7 +24,7 @@ import { assembleRecordPage } from "../host/page/record.js";
 import { assemblePage } from "../host/page/read.js";
 import { assembleXPath } from "../host/page/xpath.js";
 import { capabilitiesFor } from "../host/platform/capabilities.js";
-import { SkMcpXmlError } from "../host/platform/errors.js";
+import { LiaisoXmlError } from "../host/platform/errors.js";
 import { createGate, type Gate } from "../host/platform/gate.js";
 import { limits, modePolicy } from "../host/platform/limits.js";
 import {
@@ -68,7 +68,7 @@ async function withSlot<T>(
     release = await pool.slots();
   } catch (error) {
     const reason = error instanceof Error ? error.message : "";
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       reason === "queue_full"
         ? "Too many document reads are already waiting."
@@ -117,12 +117,12 @@ export function createHandlers(
     });
     if (!outcome.ok)
       throw outcome.failure === "doctype_not_allowed"
-        ? new SkMcpXmlError(
+        ? new LiaisoXmlError(
             "doctype_not_allowed",
             "A record chunk declares a DOCTYPE.",
             "Remove the DOCTYPE declaration, or read a document that does not use one.",
           )
-        : new SkMcpXmlError(
+        : new LiaisoXmlError(
             "malformed_xml",
             "A record chunk is not well-formed XML.",
             "Fix the markup and read the file again.",
@@ -131,7 +131,7 @@ export function createHandlers(
   };
 
   const refuseChunked = (tool: string, instead: string): never => {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "unsupported_for_format",
       `${tool} is not available for a document read in chunked mode: it needs the whole document resident, and this file is above the ${String(limits.residentMaxBytes)} byte resident budget.`,
       instead,
@@ -141,7 +141,7 @@ export function createHandlers(
   const listings: Gate = createGate(
     deps?.maxConcurrentListings ?? limits.maxConcurrentListings,
     () => {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "resource_limit",
         "Too many listings are already running.",
         "Retry once an earlier list_documents call finishes.",
@@ -508,7 +508,7 @@ export function createHandlers(
           const metrics = metricsOf(args.metrics, specs, numericMode);
           const orderByMetric = args.orderByMetric ?? 1;
           if (orderByMetric > metrics.length) {
-            throw new SkMcpXmlError(
+            throw new LiaisoXmlError(
               "invalid_argument",
               `orderByMetric is ${String(orderByMetric)} but only ${String(metrics.length)} metrics were requested.`,
               "Use a one-based index into metrics.",

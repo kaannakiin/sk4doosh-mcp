@@ -1,7 +1,7 @@
 # Invoke result envelope
 
 `invoke_tool` returns one of three things: a success, an error your backend produced, or an error
-sk-mcp produced before your backend was reached. Telling the last two apart is what this page is
+liaiso produced before your backend was reached. Telling the last two apart is what this page is
 for.
 
 > **Source of truth.** The success and backend-error shapes are
@@ -19,7 +19,7 @@ for.
 
 The presence or absence of `status` is the discriminator. It is the one thing to branch on: an
 envelope with a `status` describes what your backend did; an envelope without one describes what
-sk-mcp refused to send.
+liaiso refused to send.
 
 ## Success
 
@@ -68,7 +68,7 @@ the operation is unusable — a repaired `validation_failed` call is a new reque
 
 ## SDK-side errors
 
-These either never reached your backend, or reached it and got an answer sk-mcp refused to send. Either way there is no HTTP status to report:
+These either never reached your backend, or reached it and got an answer liaiso refused to send. Either way there is no HTTP status to report:
 
 ```json
 {
@@ -103,7 +103,7 @@ The three file codes are described in
 [how to accept form bodies and file uploads](/docs/http-catalog/accept-form-and-file-uploads);
 `file_unresolved` is retryable only when the resolver reported its store unavailable.
 
-`internal_error` means sk-mcp itself failed. An exception your handler does not catch is answered
+`internal_error` means liaiso itself failed. An exception your handler does not catch is answered
 the way your server answers it, a 500 with no body, so it reaches the agent as `backend_error` and
 its message is never forwarded.
 
@@ -129,5 +129,5 @@ frames, exception type names, file paths, connection strings and credential-shap
 truncates anything over 1000 characters.
 
 This is why a `500` reaches the agent as a short mapped message rather than your exception text,
-and why a message may say details were withheld. The filter runs on messages sk-mcp forwards; it
+and why a message may say details were withheld. The filter runs on messages liaiso forwards; it
 is not a substitute for not putting secrets in error text.

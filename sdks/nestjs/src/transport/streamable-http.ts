@@ -5,15 +5,15 @@ import { toNodeHandler } from "@modelcontextprotocol/node";
 import type { Request, Response } from "express";
 import { connectionOf, runWithOuterConnection } from "../outer-connection.js";
 
-export type SkMcpServerFactory = () => McpServer;
+export type LiaisoServerFactory = () => McpServer;
 
-export type SkMcpRequestHandler = (
+export type LiaisoRequestHandler = (
   req: Request,
   res: Response,
 ) => Promise<void>;
 
 interface ServedEndpoint {
-  readonly dispatch: SkMcpRequestHandler;
+  readonly dispatch: LiaisoRequestHandler;
   readonly notifyToolsChanged: () => void;
 }
 
@@ -27,7 +27,7 @@ interface ServedEndpoint {
  * which is the only delivery the 2026 revision has.
  */
 @Injectable()
-export class SkMcpStreamableHttp {
+export class LiaisoStreamableHttp {
   private readonly served: ServedEndpoint[] = [];
 
   /**
@@ -37,10 +37,10 @@ export class SkMcpStreamableHttp {
    * every open `subscriptions/listen` stream is attached to, so building a fresh one per request
    * would leave every subscriber listening to a bus nobody publishes on.
    */
-  serve(createServer: SkMcpServerFactory): SkMcpRequestHandler {
+  serve(createServer: LiaisoServerFactory): LiaisoRequestHandler {
     const handler = createMcpHandler(createServer);
     const dispatchNode = toNodeHandler(handler);
-    const dispatch: SkMcpRequestHandler = async (req, res) =>
+    const dispatch: LiaisoRequestHandler = async (req, res) =>
       runWithOuterConnection(connectionOf(req), async () => {
         await dispatchNode(req, res, req.body);
       });

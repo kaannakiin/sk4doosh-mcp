@@ -13,7 +13,7 @@ import {
   quotedIdentifier,
   sqlText,
 } from "../src/index.js";
-import type { ErrorFactory } from "@sk-mcp/mcp-core";
+import type { ErrorFactory } from "@liaiso/mcp-core";
 import type { DbErrorCode } from "../src/errors.js";
 
 export interface FakeConfig {

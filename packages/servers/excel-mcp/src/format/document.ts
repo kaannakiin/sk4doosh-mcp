@@ -4,7 +4,7 @@ import {
   type OpenedFile,
   type ParseContext,
   type SandboxedPath,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import {
   capabilitiesFor,
   type FormatCapabilities,
@@ -18,7 +18,7 @@ import {
   type CsvTable,
 } from "./csv.js";
 import type { CsvOptions } from "../platform/delimited.js";
-import { SkMcpExcelError, fail } from "../platform/errors.js";
+import { LiaisoExcelError, fail } from "../platform/errors.js";
 import { formats, type DocumentFormat } from "../platform/formats.js";
 import { limits, modePolicy } from "../platform/limits.js";
 import { assertReadableFormat } from "../platform/paths.js";
@@ -134,7 +134,7 @@ export function documentSheet(
 ): SheetView {
   if (loaded.format === "csv") {
     if (sheetName !== undefined && sheetName !== csvSheetName) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "unknown_sheet",
         `A CSV file has no sheet named '${sheetName}'.`,
         `Available sheets: ${csvSheetName}.`,

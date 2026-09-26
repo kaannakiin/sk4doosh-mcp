@@ -45,5 +45,5 @@ A runner names the kinds it runs explicitly; it never walks the directory list. 
 
 - File layout: `conformance/{kind}/{descriptive-name}.json`; one file is one fixture.
 - Field names are in English; `description` contents are free-form.
-- Fixtures are validated against the schema: `pnpm validate` (from the root) or `pnpm --filter @sk-mcp/conformance validate`.
+- Fixtures are validated against the schema: `pnpm validate` (from the root) or `pnpm --filter @liaiso/conformance validate`.
 - If a schema change breaks fixtures, both are updated in the same change; fixtures MUST NOT be "fixed" on their own.

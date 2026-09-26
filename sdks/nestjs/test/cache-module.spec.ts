@@ -4,16 +4,16 @@ import { Test } from "@nestjs/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createCallerScope,
-  MemorySkMcpCache,
-  type SkMcpCache,
-} from "@sk-mcp/core";
+  MemoryLiaisoCache,
+  type LiaisoCache,
+} from "@liaiso/core";
 import {
   extensionTokens,
-  SkMcpCacheInvalidator,
-  SkMcpModule,
-  SkMcpOptions,
-  SK_MCP_CACHE_INVALIDATOR,
-  SK_MCP_OPTIONS,
+  LiaisoCacheInvalidator,
+  LiaisoModule,
+  LiaisoOptions,
+  LIAISO_CACHE_INVALIDATOR,
+  LIAISO_OPTIONS,
   type CallerScopeResolver,
 } from "../src/index.js";
 import { createApp, type TestApp } from "./hosts.js";
@@ -28,7 +28,7 @@ afterEach(async () => {
   currentApp = undefined;
 });
 
-class RecordingCache implements SkMcpCache {
+class RecordingCache implements LiaisoCache {
   readonly removedScopes: string[] = [];
   readonly removedTags: string[] = [];
   cleared = 0;
@@ -53,13 +53,13 @@ class RecordingCache implements SkMcpCache {
 }
 
 describe("cache extension points", () => {
-  it("N1: the default cache is MemorySkMcpCache, sized from options.cache", async () => {
+  it("N1: the default cache is MemoryLiaisoCache, sized from options.cache", async () => {
     current = await createApp((options) => {
       options.cache.lifetimeMs = 1234;
       options.cache.maxCallers = 7;
     });
-    const cache = current.app.get<SkMcpCache>(extensionTokens.cache);
-    expect(cache).toBeInstanceOf(MemorySkMcpCache);
+    const cache = current.app.get<LiaisoCache>(extensionTokens.cache);
+    expect(cache).toBeInstanceOf(MemoryLiaisoCache);
   });
 
   it("N2: overrides.cache accepts useClass, useFactory, and useValue", async () => {
@@ -67,7 +67,7 @@ describe("cache extension points", () => {
       cache: { useClass: RecordingCache },
     });
     expect(
-      useClassApp.app.get<SkMcpCache>(extensionTokens.cache),
+      useClassApp.app.get<LiaisoCache>(extensionTokens.cache),
     ).toBeInstanceOf(RecordingCache);
     await useClassApp.close();
 
@@ -75,7 +75,7 @@ describe("cache extension points", () => {
       cache: { useFactory: () => new RecordingCache() },
     });
     expect(
-      useFactoryApp.app.get<SkMcpCache>(extensionTokens.cache),
+      useFactoryApp.app.get<LiaisoCache>(extensionTokens.cache),
     ).toBeInstanceOf(RecordingCache);
     await useFactoryApp.close();
 
@@ -83,7 +83,7 @@ describe("cache extension points", () => {
     const useValueApp = await createApp(undefined, {
       cache: { useValue: value },
     });
-    expect(useValueApp.app.get<SkMcpCache>(extensionTokens.cache)).toBe(value);
+    expect(useValueApp.app.get<LiaisoCache>(extensionTokens.cache)).toBe(value);
     await useValueApp.close();
   });
 
@@ -111,11 +111,11 @@ describe("cache extension points", () => {
 
     const moduleRef = await Test.createTestingModule({
       imports: [
-        SkMcpModule.forRootAsync({
+        LiaisoModule.forRootAsync({
           imports: [ConfigModule],
           inject: [CONFIG_TOKEN],
           useFactory: (config: { lifetimeMs: number }) => {
-            const options = new SkMcpOptions();
+            const options = new LiaisoOptions();
             options.cache.lifetimeMs = config.lifetimeMs;
             return options;
           },
@@ -125,17 +125,17 @@ describe("cache extension points", () => {
     currentApp = moduleRef.createNestApplication({ logger: false });
     await currentApp.init();
 
-    const options = currentApp.get<SkMcpOptions>(SK_MCP_OPTIONS);
+    const options = currentApp.get<LiaisoOptions>(LIAISO_OPTIONS);
     expect(options.cache.lifetimeMs).toBe(5000);
   });
 
-  it("N5: SkMcpCacheInvalidator is injectable under its class and its token, and delegates to the cache", async () => {
+  it("N5: LiaisoCacheInvalidator is injectable under its class and its token, and delegates to the cache", async () => {
     const cache = new RecordingCache();
     current = await createApp(undefined, { cache: { useValue: cache } });
 
-    const byClass = current.app.get(SkMcpCacheInvalidator);
-    const byToken = current.app.get<SkMcpCacheInvalidator>(
-      SK_MCP_CACHE_INVALIDATOR,
+    const byClass = current.app.get(LiaisoCacheInvalidator);
+    const byToken = current.app.get<LiaisoCacheInvalidator>(
+      LIAISO_CACHE_INVALIDATOR,
     );
     expect(byToken).toBe(byClass);
 

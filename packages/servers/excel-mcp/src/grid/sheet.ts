@@ -1,6 +1,6 @@
-import type { Fingerprint } from "@sk-mcp/file-core";
+import type { Fingerprint } from "@liaiso/file-core";
 import type { CellSnapshot } from "./cell-value.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import type { GridBounds } from "./range.js";
 
 export interface DeclaredTable {
@@ -49,7 +49,7 @@ export interface BoundedSheet {
 
 export function requireSheetBounds(sheet: BoundedSheet): GridBounds {
   if (sheet.bounds === undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "empty_sheet",
       `Sheet '${sheet.name}' has no cells with values.`,
       "Call describe_workbook to see which sheets carry data.",

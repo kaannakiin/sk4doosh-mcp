@@ -6,7 +6,7 @@ import {
 import { loadDocument, sheetSource } from "../src/format/document.js";
 import type { SheetSource } from "../src/grid/sheet.js";
 import { readSheet } from "../src/grid/read-sheet.js";
-import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { LiaisoExcelError } from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
@@ -39,7 +39,7 @@ async function codeOf(
   try {
     await action();
   } catch (error) {
-    return (error as SkMcpExcelError).code;
+    return (error as LiaisoExcelError).code;
   }
   return "no-error";
 }
@@ -440,7 +440,7 @@ describe("merged header cells follow the requested merge policy", () => {
       });
       expect.unreachable();
     } catch (error) {
-      const failure = error as SkMcpExcelError;
+      const failure = error as LiaisoExcelError;
       expect(failure.recovery).toContain('"B"');
       expect(failure.recovery).toContain('"C"');
     }

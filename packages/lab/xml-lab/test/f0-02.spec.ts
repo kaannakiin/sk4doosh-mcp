@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { parseProbeRecord, runProbe } from "../src/record.js";
 import type { ConsumerEnvelope } from "../src/record.js";
 
-const offline = process.env.SKMCP_XML_F0_NO_NETWORK === "1";
+const offline = process.env.LIAISO_XML_F0_NO_NETWORK === "1";
 
 it.skipIf(offline)(
   "installs the engine as an end user would and keeps stdout protocol-clean (F0-02)",

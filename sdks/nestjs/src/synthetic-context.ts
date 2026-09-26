@@ -1,10 +1,10 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
-import { SkMcpDispatchAborted, type DispatchAbortReason } from "@sk-mcp/core";
+import { LiaisoDispatchAborted, type DispatchAbortReason } from "@liaiso/core";
 import type { DispatchResult } from "./dispatcher.js";
 import type { OuterConnection } from "./outer-connection.js";
 
-export { SkMcpDispatchAborted };
+export { LiaisoDispatchAborted };
 export type { DispatchAbortReason };
 
 export interface SyntheticContext {
@@ -153,7 +153,7 @@ export function createSyntheticContext(
         return;
       }
       settled = true;
-      reject(new SkMcpDispatchAborted(reason));
+      reject(new LiaisoDispatchAborted(reason));
       try {
         req.emit("aborted");
         req.emit("close");
@@ -161,7 +161,7 @@ export function createSyntheticContext(
         socket.emit("close");
       } catch (error) {
         process.stderr.write(
-          `sk-mcp: a disconnect listener threw: ${String(error)}\n`,
+          `liaiso: a disconnect listener threw: ${String(error)}\n`,
         );
       }
     };

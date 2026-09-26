@@ -1,6 +1,6 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/base";
-import { casing } from "@sk-mcp/oxlint-config/casing";
+import { config } from "@liaiso/oxlint-config/base";
+import { casing } from "@liaiso/oxlint-config/casing";
 
 const primitivesMessage =
   "primitives/ is the dependency-free leaf; it may not import another layer or a package.";

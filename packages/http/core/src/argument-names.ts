@@ -1,4 +1,4 @@
-import { SkMcpTemplateError } from "./errors.js";
+import { LiaisoTemplateError } from "./errors.js";
 
 export function assertUniqueArgumentNames(
   parameterNames: readonly string[],
@@ -7,7 +7,7 @@ export function assertUniqueArgumentNames(
   const names = new Set<string>();
   for (const name of parameterNames) {
     if (names.has(name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "duplicate_argument",
         `Duplicate argument name '${name}'.`,
       );
@@ -18,7 +18,7 @@ export function assertUniqueArgumentNames(
   const bodyProperties = new Set<string>();
   for (const property of bodyPropertyNames) {
     if (names.has(property)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "argument_collision",
         `Body property '${property}' collides with a parameter name; rename one of them.`,
       );

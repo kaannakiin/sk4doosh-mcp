@@ -1,4 +1,4 @@
-import type { EndpointDescriptor, IdentityCarrier } from "@sk-mcp/core";
+import type { EndpointDescriptor, IdentityCarrier } from "@liaiso/core";
 import type { DiagnosticSink } from "../diagnostics.js";
 import { childPointer, rootPointer, type Brand } from "../ir/brand.js";
 import {

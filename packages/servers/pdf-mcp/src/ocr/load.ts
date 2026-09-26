@@ -1,6 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { isAbsolute, resolve } from "node:path";
-import { SkMcpPdfError } from "../platform/errors.js";
+import { LiaisoPdfError } from "../platform/errors.js";
 import type { OcrBinding } from "./port.js";
 
 function hasMethod(value: unknown, name: string): boolean {
@@ -22,14 +22,14 @@ export function asOcrBinding(value: unknown, specifier: string): OcrBinding {
   const rasterizer = binding?.rasterizer;
   const provider = binding?.provider;
   if (!hasMethod(rasterizer, "render") || !hasMethod(provider, "recognize")) {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "invalid_argument",
       `'${specifier}' does not export an OCR binding.`,
       "The module's default export must be { rasterizer: { render }, provider: { name, recognize } }.",
     );
   }
   if (typeof provider?.name !== "string" || provider.name === "") {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "invalid_argument",
       `The OCR provider from '${specifier}' has no name.`,
       "Name the provider so describe_document can report which one is bound.",
@@ -55,7 +55,7 @@ export async function loadOcrBinding(specifier: string): Promise<OcrBinding> {
     module = (await import(target)) as { default?: unknown };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "invalid_argument",
       `The OCR binding '${specifier}' could not be loaded: ${detail}`,
       "Pass a path to a module, or a package name resolvable from this process.",

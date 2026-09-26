@@ -2,7 +2,7 @@
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import type { DocumentLoader } from "@sk-mcp/openapi";
+import type { DocumentLoader } from "@liaiso/openapi";
 import { buildGatewayCatalog, summarize } from "./catalog/build.js";
 import { createBoundedFetch, HostNotAllowed } from "./net/fetch.js";
 import { asciiLower } from "./platform/ascii.js";
@@ -22,10 +22,10 @@ function stop(message: string, code: number): never {
  * `passThroughEnv`. The secrets a config names are read through the lookup below, the one place
  * this package reads an arbitrary variable, because their names belong to the operator.
  */
-const configPath = process.env["SKMCP_OPENAPI_CONFIG"];
+const configPath = process.env["LIAISO_OPENAPI_CONFIG"];
 if (configPath === undefined || configPath === "") {
   stop(
-    "sk-mcp-openapi reads its config from the file SKMCP_OPENAPI_CONFIG names.",
+    "liaiso-openapi reads its config from the file LIAISO_OPENAPI_CONFIG names.",
     2,
   );
 }
@@ -34,7 +34,7 @@ let raw: unknown;
 try {
   raw = JSON.parse(await readText(configPath));
 } catch (error) {
-  stop(`sk-mcp-openapi cannot read its config: ${(error as Error).message}`, 2);
+  stop(`liaiso-openapi cannot read its config: ${(error as Error).message}`, 2);
 }
 
 const outcome = readConfig(raw, (name) => process.env[name]);
@@ -78,7 +78,7 @@ async function readDocument(url: URL): Promise<string> {
   );
   if (response.status !== 200 || response.body === undefined) {
     throw new Error(
-      `sk-mcp-openapi: ${url.href} answered ${String(response.status)}.`,
+      `liaiso-openapi: ${url.href} answered ${String(response.status)}.`,
     );
   }
   return response.body;
@@ -93,7 +93,7 @@ try {
     : await readText(sourcePath ?? "");
 } catch (error) {
   stop(
-    `sk-mcp-openapi cannot read the document: ${(error as Error).message}`,
+    `liaiso-openapi cannot read the document: ${(error as Error).message}`,
     2,
   );
 }
@@ -108,8 +108,8 @@ const gateway = await buildGatewayCatalog(
 ).catch((error: unknown) =>
   stop(
     error instanceof HostNotAllowed
-      ? `sk-mcp-openapi: the document references a schema on '${error.host}', which is not a reference host; add it to "refHosts" in the config to allow it.`
-      : `sk-mcp-openapi cannot resolve the document: ${(error as Error).message}`,
+      ? `liaiso-openapi: the document references a schema on '${error.host}', which is not a reference host; add it to "refHosts" in the config to allow it.`
+      : `liaiso-openapi cannot resolve the document: ${(error as Error).message}`,
     2,
   ),
 );
@@ -117,13 +117,13 @@ for (const line of summarize(gateway.ingestion, gateway.catalog.diagnostics)) {
   process.stderr.write(`${line}\n`);
 }
 process.stderr.write(
-  `sk-mcp-openapi: ${String(gateway.catalog.entries.length)} tool(s) from ${String(gateway.catalog.selected)} selected operation(s).\n`,
+  `liaiso-openapi: ${String(gateway.catalog.entries.length)} tool(s) from ${String(gateway.catalog.selected)} selected operation(s).\n`,
 );
 if (
   gateway.catalog.fatal.length > 0 ||
   gateway.ingestion.some((d) => d.severity === "fatal")
 ) {
-  stop("sk-mcp-openapi: the catalog has fatal diagnostics; see above.", 1);
+  stop("liaiso-openapi: the catalog has fatal diagnostics; see above.", 1);
 }
 
 const fetcher = createBoundedFetch(gateway.allowedHosts);
@@ -144,7 +144,7 @@ if (config.transport.kind === "http") {
         );
   const listening = await serveHttp(factory, exchange, config.transport);
   process.stderr.write(
-    `sk-mcp-openapi: listening on http://${config.transport.host}:${String(config.transport.port)}${config.transport.path}\n`,
+    `liaiso-openapi: listening on http://${config.transport.host}:${String(config.transport.port)}${config.transport.path}\n`,
   );
   const close = (): void => {
     listening.close();

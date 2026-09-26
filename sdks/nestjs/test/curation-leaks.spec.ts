@@ -3,9 +3,9 @@ import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { IsOptional, IsString } from "class-validator";
 import { beforeAll, describe, expect, it } from "vitest";
-import { SkMcpCatalog } from "../src/catalog.js";
+import { LiaisoCatalog } from "../src/catalog.js";
 import { curate, hidden, McpTool } from "../src/decorators.js";
-import { SkMcpModule } from "../src/sk-mcp.module.js";
+import { LiaisoModule } from "../src/liaiso.module.js";
 import type { CatalogDiagnostic, VisibilityDeclaration } from "../src/index.js";
 
 class AnonymousGuard {
@@ -70,7 +70,7 @@ class NamesNothingCurated {
 }
 
 describe("curation leak diagnostics", () => {
-  let catalog: SkMcpCatalog;
+  let catalog: LiaisoCatalog;
   let diagnostics: readonly CatalogDiagnostic[];
 
   const forTool = (name: string): string[] =>
@@ -81,7 +81,7 @@ describe("curation leak diagnostics", () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [SkMcpModule.forRoot()],
+      imports: [LiaisoModule.forRoot()],
       controllers: [
         LeaksInToolDescription,
         LeaksInArgumentDescription,
@@ -90,7 +90,7 @@ describe("curation leak diagnostics", () => {
     }).compile();
     const app = moduleRef.createNestApplication({ logger: false });
     await app.init();
-    catalog = app.get(SkMcpCatalog);
+    catalog = app.get(LiaisoCatalog);
     diagnostics = catalog.diagnostics;
   });
 

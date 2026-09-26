@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/mssql-mcp",
+  "name": "@liaiso/mssql-mcp",
   "version": "0.1.0",
   "description": "Read-only MCP server for Microsoft SQL Server.",
   "license": "MIT",
@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "bin": {
-    "sk-mcp-mssql": "./dist/cli.js"
+    "liaiso-mssql": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "@sk-mcp/db-core": "workspace:^",
+    "@liaiso/db-core": "workspace:^",
     "mssql": "11.0.2",
     "zod": "^4.5.4"
   },
@@ -40,8 +40,8 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.0.0",
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/mssql": "^9.1.5",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "3.2.7",

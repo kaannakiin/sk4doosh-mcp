@@ -3,7 +3,7 @@ import {
   createPageBudget,
   fold,
   measureJson,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import {
   normalizeCell,
   resolveCell,
@@ -18,7 +18,7 @@ import {
   type MergePolicy,
   type ValueMode,
 } from "./cursor.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import {
   headerWarnings,
   readHeaderRow,
@@ -120,7 +120,7 @@ function resolveWindow(
     };
   }
   if (options.sheetName !== undefined || options.range !== undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       "cursor cannot be combined with sheetName or range.",
       "Pass only the cursor to continue, or drop the cursor to start a new read.",
@@ -138,7 +138,7 @@ function resolveWindow(
     right: end.column,
   };
   if (bounds.bottom < bounds.top || bounds.right < bounds.left) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_cursor",
       "The cursor points past the end of the range.",
     );
@@ -346,7 +346,7 @@ export function readSheet(
   }
 
   if (budget.refused && budget.admitted === 0) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "resource_limit",
       `The first row of the requested range does not fit in the ${limits.maxPayloadBytes} byte response budget.`,
       "Read a narrower range with the range argument, or use aggregate_sheet for totals.",
@@ -426,7 +426,7 @@ interface Matcher {
 
 function createMatcher(options: FindOptions): Matcher {
   if (options.matchMode === "regex") {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "internal_error",
       "Regex evaluation requires an isolated worker.",
     );
@@ -531,7 +531,7 @@ async function findWithMatcher(
       if (regexTest !== undefined) {
         const bytes = Buffer.byteLength(JSON.stringify(haystacks)) + 1;
         if (bytes > 65530)
-          throw new SkMcpExcelError(
+          throw new LiaisoExcelError(
             "resource_limit",
             "A cell exceeds the regex message budget.",
           );

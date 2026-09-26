@@ -1,6 +1,6 @@
 # Introduction
 
-The HTTP catalog is the sk-mcp product line that exposes an existing HTTP backend to agents. Two
+The HTTP catalog is the liaiso product line that exposes an existing HTTP backend to agents. Two
 SDKs implement it — one for ASP.NET Core, one for NestJS — against a single normative spec and a
 shared conformance fixture corpus. The goal is to make the surface your backend exposes to agents
 describable without writing a separate service for it.
@@ -9,7 +9,7 @@ Making a REST API usable by an agent usually takes two steps today: you stand up
 server, and you re-describe every endpoint inside it. That copy drifts. The backend changes, the
 MCP layer falls behind, and nobody notices until an agent calls something that no longer exists.
 
-sk-mcp keeps the description inside the backend instead. The endpoint is already there; sk-mcp
+liaiso keeps the description inside the backend instead. The endpoint is already there; liaiso
 turns it into a tool the agent understands, and dispatches the agent's call back through your own
 middleware pipeline, so authorization runs where it already lives.
 
@@ -24,7 +24,7 @@ explains what drives that.
 
 ## Search-first discovery
 
-An sk-mcp backend exposes exactly three tools, no matter how many endpoints it has:
+An liaiso backend exposes exactly three tools, no matter how many endpoints it has:
 
 - `search_tools` finds endpoints. An empty query lists everything the caller can see.
 - `load_tool` fetches one tool's input schema.

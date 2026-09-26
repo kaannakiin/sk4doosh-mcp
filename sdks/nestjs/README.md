@@ -1,4 +1,4 @@
-# @sk-mcp/sdk-nestjs
+# @liaiso/sdk-nestjs
 
 An MCP layer that embeds into your existing NestJS backend. It exposes your endpoints to agents as
 a search-first tool catalog and replays each call through **your own** pipeline, so your guards,
@@ -13,12 +13,12 @@ pipes and interceptors keep running unchanged. Not a gateway, not duplicated bus
 - `@modelcontextprotocol/sdk` 1.30.0 or later
 - Node 22 or later, Express as the HTTP adapter
 
-Peers are peers on purpose: sk-mcp uses your Nest and your MCP SDK, not its own copies.
+Peers are peers on purpose: liaiso uses your Nest and your MCP SDK, not its own copies.
 
 ## 1. Install
 
 ```bash
-pnpm add @sk-mcp/sdk-nestjs
+pnpm add @liaiso/sdk-nestjs
 ```
 
 Not on npm yet, so in this repository it resolves as `workspace:*`.
@@ -34,7 +34,7 @@ literal. Passing `{ visibility: { tier: "probe" } }` configures nothing.
 ```ts
 @Module({
   imports: [
-    SkMcpModule.forRoot((options) => {
+    LiaisoModule.forRoot((options) => {
       options.visibility.tier = "probe";
     }),
   ],
@@ -52,22 +52,22 @@ its providers are available without importing it again.
 @Controller()
 export class McpController {
   constructor(
-    private readonly streamableHttp: SkMcpStreamableHttp,
-    private readonly catalog: SkMcpCatalog,
-    private readonly dispatcher: SkMcpDispatcher,
+    private readonly streamableHttp: LiaisoStreamableHttp,
+    private readonly catalog: LiaisoCatalog,
+    private readonly dispatcher: LiaisoDispatcher,
     private readonly visibility: CallerVisibilityProvider,
     @Inject(extensionTokens.invokeResultMapper)
     private readonly mapper: InvokeResultMapper,
     @Inject(extensionTokens.callerScopeResolver)
     private readonly scopes: CallerScopeResolver,
-    @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
+    @Inject(LIAISO_OPTIONS) private readonly options: LiaisoOptions,
   ) {}
 
   @All("mcp")
   async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
     await this.streamableHttp.handle(req, res, () => {
       const server = new McpServer({ name: "your-api", version: "0.0.0" });
-      registerSkMcpTools(server, {
+      registerLiaisoTools(server, {
         catalog: this.catalog,
         dispatcher: this.dispatcher,
         mapper: this.mapper,
@@ -152,10 +152,10 @@ URI versioning, controller path and method path. Two consequences worth knowing:
 
 - **A global prefix moves the protected-resource metadata.** Nest applies the prefix to middleware
   paths too, so `/.well-known/oauth-protected-resource/mcp` becomes `/api/.well-known/...` and RFC
-  9728 discovery breaks. When `resourceServer` is set, sk-mcp raises a fatal `prm_path_prefixed`
+  9728 discovery breaks. When `resourceServer` is set, liaiso raises a fatal `prm_path_prefixed`
   diagnostic naming the fix: `setGlobalPrefix("api", { exclude: ["/.well-known/oauth-protected-resource/mcp"] })`.
 - **Non-URI versioning is not carried into invocation.** With `HEADER`, `MEDIA_TYPE` or `CUSTOM`
-  versioning the version never enters the path, and the synthetic request sk-mcp replays carries no
+  versioning the version never enters the path, and the synthetic request liaiso replays carries no
   version header, so dispatch lands on the default version. URI versioning has no such gap.
 
 One operation bound to several routes — `@Controller(["orders", "purchases"])`, a legacy path kept
@@ -167,7 +167,7 @@ they stay searchable so a query naming the compatibility path still finds the to
 At scale, invert it and exclude the exceptions:
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.selection.default = "include";
 });
 ```
@@ -178,7 +178,7 @@ For a subtree that is categorically off limits — or one you cannot decorate, s
 or third-party controller — put the decision in configuration instead:
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.selection.default = "include";
   options.selection.rules = [
     { route: "/admin/**", decision: "exclude" },
@@ -266,7 +266,7 @@ Full guide: the docs site's _How to tell the agent what a tool returns_.
 
 This is the SDK's defining behaviour, and the thing most likely to surprise you.
 
-sk-mcp asks every guard on an endpoint — global, controller and method — for a declaration, by
+liaiso asks every guard on an endpoint — global, controller and method — for a declaration, by
 looking for a `describeVisibility()` method. **If any guard lacks it, the endpoint is marked
 imperative and its visibility is `unknown` forever.**
 
@@ -318,7 +318,7 @@ them changes ranking — see the how-to on grouping operations.
 This repository ships a client:
 
 ```bash
-SKMCP_BASE_URL=http://127.0.0.1:3000 SKMCP_AUTH=token SKMCP_USER=alice \
+LIAISO_BASE_URL=http://127.0.0.1:3000 LIAISO_AUTH=token LIAISO_USER=alice \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query "create order"
 ```
 
@@ -341,6 +341,6 @@ the RFC 9728 metadata handler for you.
 
 ## 7. What's next
 
-- The docs site: `pnpm --filter @sk-mcp/docs dev` → `http://localhost:5180`
+- The docs site: `pnpm --filter @liaiso/docs dev` → `http://localhost:5180`
 - [samples/demo-api](samples/demo-api) — the same endpoint matrix as the .NET sample: anonymous,
   identity-only, policy, role, imperative ownership, and a POST with path, query and body

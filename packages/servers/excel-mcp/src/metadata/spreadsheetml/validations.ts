@@ -1,4 +1,4 @@
-import { asciiUpper } from "@sk-mcp/file-core";
+import { asciiUpper } from "@liaiso/file-core";
 import { limits } from "../../platform/limits.js";
 import { parseCellRef } from "../../grid/range.js";
 import type { OpcPackage } from "./package.js";

@@ -1,4 +1,4 @@
-import { mcpCoreLimits } from "@sk-mcp/mcp-core";
+import { mcpCoreLimits } from "@liaiso/mcp-core";
 
 export const coreLimits = {
   ...mcpCoreLimits,

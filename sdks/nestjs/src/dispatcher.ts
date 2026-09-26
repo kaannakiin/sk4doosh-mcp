@@ -4,19 +4,19 @@ import {
   armDeadline,
   compose,
   mergeCookieHeader,
-  SkMcpDispatchAborted,
+  LiaisoDispatchAborted,
   untilAbandoned,
   writeBody,
   type ComposedRequest,
   type DispatchDeadline,
   type RefResolver,
   type RequestTemplate,
-} from "@sk-mcp/core";
-import { SkMcpFileRefused } from "./files.js";
+} from "@liaiso/core";
+import { LiaisoFileRefused } from "./files.js";
 import {
   callerOf,
-  SK_MCP_OPTIONS,
-  SkMcpOptions,
+  LIAISO_OPTIONS,
+  LiaisoOptions,
   type InvokeTarget,
   type OuterRequest,
   type SyntheticHeaders,
@@ -64,13 +64,13 @@ function usableMediaType(value: string | undefined): string | undefined {
   return value !== undefined && safeMediaType.test(value) ? value : undefined;
 }
 
-const defaultUserAgent = "sk-mcp/0.0.0";
+const defaultUserAgent = "liaiso/0.0.0";
 
 @Injectable()
-export class SkMcpDispatcher {
+export class LiaisoDispatcher {
   constructor(
     private readonly adapterHost: HttpAdapterHost,
-    @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
+    @Inject(LIAISO_OPTIONS) private readonly options: LiaisoOptions,
   ) {}
 
   dispatch(
@@ -146,7 +146,7 @@ export class SkMcpDispatcher {
       this.adapterHost.httpAdapter?.getInstance<PipelineFunction>();
     if (!pipeline) {
       throw new Error(
-        "sk-mcp: HTTP adapter is not available; initialize the Nest application before dispatching.",
+        "liaiso: HTTP adapter is not available; initialize the Nest application before dispatching.",
       );
     }
 
@@ -211,7 +211,7 @@ export class SkMcpDispatcher {
             );
       const abandoned = deadlineState.reason();
       if (abandoned !== undefined) {
-        throw new SkMcpDispatchAborted(abandoned);
+        throw new LiaisoDispatchAborted(abandoned);
       }
       if (written !== undefined) {
         headers["content-type"] = written.contentType;
@@ -256,7 +256,7 @@ export class SkMcpDispatcher {
       const resolver = this.options.files.resolver;
       if (resolver === undefined || files === undefined) {
         throw new Error(
-          `sk-mcp: file argument '${field}' is a ref but no file resolver is bound.`,
+          `liaiso: file argument '${field}' is a ref but no file resolver is bound.`,
         );
       }
       const limit = files.maxFileBytes;
@@ -269,10 +269,10 @@ export class SkMcpDispatcher {
         signal,
       });
       if (!outcome.ok) {
-        throw new SkMcpFileRefused(field, outcome.reason, limit);
+        throw new LiaisoFileRefused(field, outcome.reason, limit);
       }
       if (outcome.bytes.byteLength > limit) {
-        throw new SkMcpFileRefused(field, "too_large", limit);
+        throw new LiaisoFileRefused(field, "too_large", limit);
       }
       return {
         bytes: outcome.bytes,

@@ -5,10 +5,10 @@ import {
   digestInput,
   type CacheTag,
   type CallerScope,
-  type SkMcpCache,
-} from "@sk-mcp/core";
+  type LiaisoCache,
+} from "@liaiso/core";
 import { extensionTokens } from "./extension-points.js";
-import { SK_MCP_OPTIONS, SkMcpOptions, type OuterRequest } from "./options.js";
+import { LIAISO_OPTIONS, LiaisoOptions, type OuterRequest } from "./options.js";
 
 export interface CallerScopeResolver {
   resolve(outer: OuterRequest | undefined): CallerScope;
@@ -16,7 +16,9 @@ export interface CallerScopeResolver {
 
 @Injectable()
 export class CarrierHashCallerScopeResolver implements CallerScopeResolver {
-  constructor(@Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions) {}
+  constructor(
+    @Inject(LIAISO_OPTIONS) private readonly options: LiaisoOptions,
+  ) {}
 
   resolve(outer: OuterRequest | undefined): CallerScope {
     const carriers = [...this.options.identity.carriers];
@@ -25,12 +27,12 @@ export class CarrierHashCallerScopeResolver implements CallerScopeResolver {
   }
 }
 
-export const SK_MCP_CACHE_INVALIDATOR = Symbol("SK_MCP_CACHE_INVALIDATOR");
+export const LIAISO_CACHE_INVALIDATOR = Symbol("LIAISO_CACHE_INVALIDATOR");
 
 @Injectable()
-export class SkMcpCacheInvalidator {
+export class LiaisoCacheInvalidator {
   constructor(
-    @Inject(extensionTokens.cache) private readonly cache: SkMcpCache,
+    @Inject(extensionTokens.cache) private readonly cache: LiaisoCache,
   ) {}
 
   invalidateCaller(scope: CallerScope): Promise<void> {

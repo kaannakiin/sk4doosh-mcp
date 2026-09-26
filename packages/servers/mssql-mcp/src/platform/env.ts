@@ -27,10 +27,10 @@ export type EnvOutcome =
   | { readonly kind: "invalid"; readonly reason: string };
 
 export const requiredNames = [
-  "SKMCP_MSSQL_SERVER",
-  "SKMCP_MSSQL_DATABASE",
-  "SKMCP_MSSQL_USER",
-  "SKMCP_MSSQL_PASSWORD",
+  "LIAISO_MSSQL_SERVER",
+  "LIAISO_MSSQL_DATABASE",
+  "LIAISO_MSSQL_USER",
+  "LIAISO_MSSQL_PASSWORD",
 ] as const;
 
 function flag(raw: string | undefined, fallback: boolean): boolean | undefined {
@@ -78,47 +78,50 @@ export function readMssqlEnv(env: EnvRecord): EnvOutcome {
   if (missing.length > 0) {
     return { kind: "usage", missing };
   }
-  const port = count(env["SKMCP_MSSQL_PORT"], 1433);
-  const connectTimeoutMs = count(env["SKMCP_MSSQL_CONNECT_TIMEOUT_MS"], 15_000);
-  const queryTimeoutMs = count(env["SKMCP_MSSQL_QUERY_TIMEOUT_MS"], 30_000);
-  const encrypt = flag(env["SKMCP_MSSQL_ENCRYPT"], true);
+  const port = count(env["LIAISO_MSSQL_PORT"], 1433);
+  const connectTimeoutMs = count(
+    env["LIAISO_MSSQL_CONNECT_TIMEOUT_MS"],
+    15_000,
+  );
+  const queryTimeoutMs = count(env["LIAISO_MSSQL_QUERY_TIMEOUT_MS"], 30_000);
+  const encrypt = flag(env["LIAISO_MSSQL_ENCRYPT"], true);
   const trustServerCertificate = flag(
-    env["SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE"],
+    env["LIAISO_MSSQL_TRUST_SERVER_CERTIFICATE"],
     false,
   );
   if (port === undefined) {
     return {
       kind: "invalid",
-      reason: "SKMCP_MSSQL_PORT must be a positive integer.",
+      reason: "LIAISO_MSSQL_PORT must be a positive integer.",
     };
   }
   if (connectTimeoutMs === undefined) {
     return {
       kind: "invalid",
-      reason: "SKMCP_MSSQL_CONNECT_TIMEOUT_MS must be a positive integer.",
+      reason: "LIAISO_MSSQL_CONNECT_TIMEOUT_MS must be a positive integer.",
     };
   }
   if (queryTimeoutMs === undefined) {
     return {
       kind: "invalid",
-      reason: "SKMCP_MSSQL_QUERY_TIMEOUT_MS must be a positive integer.",
+      reason: "LIAISO_MSSQL_QUERY_TIMEOUT_MS must be a positive integer.",
     };
   }
   if (encrypt === undefined || trustServerCertificate === undefined) {
     return {
       kind: "invalid",
       reason:
-        "SKMCP_MSSQL_ENCRYPT and SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE must be true or false.",
+        "LIAISO_MSSQL_ENCRYPT and LIAISO_MSSQL_TRUST_SERVER_CERTIFICATE must be true or false.",
     };
   }
   return {
     kind: "config",
     config: {
-      server: env["SKMCP_MSSQL_SERVER"] ?? "",
+      server: env["LIAISO_MSSQL_SERVER"] ?? "",
       port,
-      database: env["SKMCP_MSSQL_DATABASE"] ?? "",
-      user: env["SKMCP_MSSQL_USER"] ?? "",
-      password: env["SKMCP_MSSQL_PASSWORD"] ?? "",
+      database: env["LIAISO_MSSQL_DATABASE"] ?? "",
+      user: env["LIAISO_MSSQL_USER"] ?? "",
+      password: env["LIAISO_MSSQL_PASSWORD"] ?? "",
       encrypt,
       trustServerCertificate,
       connectTimeoutMs,

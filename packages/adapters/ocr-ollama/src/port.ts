@@ -1,8 +1,8 @@
 /**
- * The shape `@sk-mcp/pdf-mcp` injects an OCR provider through.
+ * The shape `@liaiso/pdf-mcp` injects an OCR provider through.
  *
  * Guard: declared structurally rather than imported, so this adapter names no
- * `@sk-mcp/*` package and the dependency graph stays acyclic. pdf-mcp's
+ * `@liaiso/*` package and the dependency graph stays acyclic. pdf-mcp's
  * `test/adapters.spec.ts` assigns this factory's result to the real
  * `OcrProvider` at compile time, so the two cannot drift apart unnoticed.
  */

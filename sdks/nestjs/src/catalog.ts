@@ -10,7 +10,7 @@ import {
   buildCatalog,
   combineMarkers,
   matchesRoute,
-  SkMcpTemplateError,
+  LiaisoTemplateError,
   textMediaType,
   urlEncodedMediaType,
   type ArgumentCuration,
@@ -19,7 +19,7 @@ import {
   type DiagnosticReporter,
   type EndpointDescriptor,
   type FileOptions,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import { severityOf, type CatalogDiagnostic } from "./discovery/diagnostics.js";
 import {
   createRoutePaths,
@@ -30,13 +30,13 @@ import {
 } from "./discovery/endpoint-discovery.js";
 import type { ArgumentRule } from "./decorators.js";
 import {
-  SK_MCP_OPTIONS,
+  LIAISO_OPTIONS,
   type CurationRule,
-  type SkMcpOptions,
+  type LiaisoOptions,
 } from "./options.js";
 import { protectedResourceMetadataPath } from "./transport/protected-resource-metadata.js";
 
-export { cleanTags } from "@sk-mcp/core";
+export { cleanTags } from "@liaiso/core";
 
 export interface NestSource {
   readonly controller: NewableFunction;
@@ -50,7 +50,7 @@ export interface CatalogSnapshot extends CatalogBuild<NestSource> {
 }
 
 @Injectable()
-export class SkMcpCatalog {
+export class LiaisoCatalog {
   private snapshot: CatalogSnapshot | undefined;
   private currentGeneration = 0;
   private readonly listeners = new Set<() => void>();
@@ -59,7 +59,7 @@ export class SkMcpCatalog {
     private readonly discovery: DiscoveryService,
     private readonly modules: ModulesContainer,
     private readonly applicationConfig: ApplicationConfig,
-    @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
+    @Inject(LIAISO_OPTIONS) private readonly options: LiaisoOptions,
     @Optional() private readonly adapterHost?: HttpAdapterHost,
   ) {}
 
@@ -315,7 +315,7 @@ export class SkMcpCatalog {
     for (const layer of layers) {
       for (const [name, rule] of Object.entries(layer.rules)) {
         if (sealed.has(name) && !layer.sealed) {
-          throw new SkMcpTemplateError(
+          throw new LiaisoTemplateError(
             "sealed_curation_overridden",
             `Argument '${name}' is sealed on ${endpoint.controller.name}.${endpoint.handlerName}; a sealed rule cannot be overridden.`,
           );
@@ -360,7 +360,7 @@ function assertUnambiguous(
       const written = JSON.stringify(declaration);
       const existing = claimed.get(key);
       if (existing !== undefined && existing !== written) {
-        throw new SkMcpTemplateError(
+        throw new LiaisoTemplateError(
           "ambiguous_curation",
           `Two curation rules of equal specificity declare argument '${name}' differently on ${endpoint.controller.name}.${endpoint.handlerName}; narrow one of their targets.`,
         );

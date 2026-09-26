@@ -1,11 +1,11 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/express";
-import { invokeLimits } from "@sk-mcp/core";
-import type { Recognizer, SelectionDefault, SelectionRule } from "@sk-mcp/core";
+import { invokeLimits } from "@liaiso/core";
+import type { Recognizer, SelectionDefault, SelectionRule } from "@liaiso/core";
 import type { ArgumentRule, JsonValue } from "./decorators.js";
 import type { CatalogSeverity } from "./discovery/diagnostics.js";
 import type { TypeShapeBinderOptions } from "./discovery/type-shape.js";
-import type { SkMcpFileOptions } from "./files.js";
+import type { LiaisoFileOptions } from "./files.js";
 import type { OuterConnection } from "./outer-connection.js";
 
 export interface OuterRequest {
@@ -188,7 +188,7 @@ export interface SyntheticRequestOptions {
   userAgent?: string;
 }
 
-export interface SkMcpCacheOptions {
+export interface LiaisoCacheOptions {
   lifetimeMs: number;
   maxCallers: number;
 }
@@ -200,7 +200,7 @@ export interface InvokeTarget {
   readonly route: string;
 }
 
-export interface SkMcpInvokeOptions {
+export interface LiaisoInvokeOptions {
   /** The largest tool response, in UTF-8 bytes, that may reach the agent. */
   maxResponseBytes: number;
   /**
@@ -231,7 +231,7 @@ export class ErrorMappingOptions {
   }
 }
 
-export interface SkMcpResourceServerOptions {
+export interface LiaisoResourceServerOptions {
   resource: URL;
   authorizationServers: URL[];
   scopesSupported?: string[];
@@ -246,7 +246,7 @@ export interface SkMcpResourceServerOptions {
  * `rules` sits below both attribute levels and above `default`; order carries no meaning, and
  * equally specific rules that disagree are a build error rather than a silent first-match win.
  */
-export interface SkMcpSelectionOptions {
+export interface LiaisoSelectionOptions {
   default: SelectionDefault;
   rules?: readonly SelectionRule[];
 }
@@ -259,60 +259,60 @@ export interface SkMcpSelectionOptions {
  * default is `flatten` because switching rewrites the `inputSchema` of every
  * affected tool and renames the namespace curation is keyed by.
  */
-export interface SkMcpQueryOptions {
+export interface LiaisoQueryOptions {
   grouping: "flatten" | "group";
 }
 
-export interface SkMcpNamingOptions {
+export interface LiaisoNamingOptions {
   prefixMode: "always" | "onCollision";
   prefix?: (container: string) => string | undefined;
 }
 
-export interface SkMcpDiagnosticsOptions {
+export interface LiaisoDiagnosticsOptions {
   failOn?: CatalogSeverity;
   readonly escalate: Set<string>;
   readonly downgrade: Set<string>;
 }
 
-export type SkMcpVisibilityTier = "declarative" | "probe";
+export type LiaisoVisibilityTier = "declarative" | "probe";
 
-export interface SkMcpVisibilityOptions {
-  tier: SkMcpVisibilityTier;
+export interface LiaisoVisibilityOptions {
+  tier: LiaisoVisibilityTier;
   onUnknown: "show" | "hide";
   probeTopK: number;
   probeConcurrency: number;
   readonly probeValues: Map<string, string>;
 }
 
-export class SkMcpOptions {
+export class LiaisoOptions {
   readonly identity = new IdentityForwardingOptions();
   readonly synthetic: SyntheticRequestOptions = { accept: "application/json" };
-  readonly cache: SkMcpCacheOptions = { lifetimeMs: 30_000, maxCallers: 128 };
+  readonly cache: LiaisoCacheOptions = { lifetimeMs: 30_000, maxCallers: 128 };
   readonly errors = new ErrorMappingOptions();
-  readonly selection: SkMcpSelectionOptions = { default: "exclude" };
-  readonly query: SkMcpQueryOptions = { grouping: "flatten" };
-  readonly naming: SkMcpNamingOptions = { prefixMode: "always" };
-  readonly diagnostics: SkMcpDiagnosticsOptions = {
+  readonly selection: LiaisoSelectionOptions = { default: "exclude" };
+  readonly query: LiaisoQueryOptions = { grouping: "flatten" };
+  readonly naming: LiaisoNamingOptions = { prefixMode: "always" };
+  readonly diagnostics: LiaisoDiagnosticsOptions = {
     failOn: "fatal",
     escalate: new Set<string>(),
     downgrade: new Set<string>(),
   };
   readonly arguments = new ArgumentCurationOptions();
-  readonly visibility: SkMcpVisibilityOptions = {
+  readonly visibility: LiaisoVisibilityOptions = {
     tier: "declarative",
     onUnknown: "show",
     probeTopK: 25,
     probeConcurrency: 4,
     probeValues: new Map<string, string>(),
   };
-  readonly invoke: SkMcpInvokeOptions = {
+  readonly invoke: LiaisoInvokeOptions = {
     maxResponseBytes: invokeLimits.maxResponseBytes,
     timeoutMs: invokeLimits.invokeTimeoutMs,
     maxInlineFileBytes: invokeLimits.maxInlineFileBytes,
     maxFileBytes: invokeLimits.maxFileBytes,
   };
   /** Binding `files.resolver` is what makes `ref` appear in a file argument's schema. */
-  readonly files: SkMcpFileOptions = {};
+  readonly files: LiaisoFileOptions = {};
   /**
    * Grouping labels for a container the host cannot decorate. It sits below a `@McpTool({ tags })`
    * declaration and above the container-derived default, and like a declaration it replaces that
@@ -320,7 +320,7 @@ export class SkMcpOptions {
    */
   tags?: (container: string) => readonly string[] | undefined;
   schema?: TypeShapeBinderOptions;
-  resourceServer?: SkMcpResourceServerOptions;
+  resourceServer?: LiaisoResourceServerOptions;
 }
 
-export const SK_MCP_OPTIONS = "SK_MCP_OPTIONS";
+export const LIAISO_OPTIONS = "LIAISO_OPTIONS";

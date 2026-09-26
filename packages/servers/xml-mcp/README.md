@@ -1,8 +1,8 @@
-# @sk-mcp/xml-mcp
+# @liaiso/xml-mcp
 
 A read-only, sandboxed MCP server that reads local XML documents.
-It builds on [@sk-mcp/file-core](../../cores/file-core); it does **not** depend on
-`@sk-mcp/core` and imports nothing from `packages/lab/xml-lab`.
+It builds on [@liaiso/file-core](../../cores/file-core); it does **not** depend on
+`@liaiso/core` and imports nothing from `packages/lab/xml-lab`.
 
 ## Quick start
 
@@ -11,7 +11,7 @@ It builds on [@sk-mcp/file-core](../../cores/file-core); it does **not** depend 
   "mcpServers": {
     "xml": {
       "command": "npx",
-      "args": ["-y", "@sk-mcp/xml-mcp", "/path/to/xml/root"]
+      "args": ["-y", "@liaiso/xml-mcp", "/path/to/xml/root"]
     }
   }
 }
@@ -20,7 +20,7 @@ It builds on [@sk-mcp/file-core](../../cores/file-core); it does **not** depend 
 To run it from inside the repo:
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/xml-mcp
+pnpm turbo run build --filter=@liaiso/xml-mcp
 node packages/servers/xml-mcp/dist/cli.js /path/to/xml/root
 ```
 
@@ -126,7 +126,7 @@ this version; the ordered view is rooted at the document element.
 
 **Parsing happens in the worker.** The main process only ever holds a
 serializable handle; a WASM pointer never crosses the boundary. No disposal
-hook was needed on `@sk-mcp/file-core`'s document store because of this.
+hook was needed on `@liaiso/file-core`'s document store because of this.
 
 **Layout follows the worker/host boundary.** `engine/` is the worker-side
 graph and never names `host/` or `tools/`; `model/` and `primitives/` are the
@@ -162,13 +162,13 @@ invalidate the F0-01 integrity record; the CI tarball checker enforces this.
 ## Development
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/xml-mcp
-pnpm turbo run test --filter=@sk-mcp/xml-mcp
-pnpm turbo run check-types --filter=@sk-mcp/xml-mcp
+pnpm turbo run build --filter=@liaiso/xml-mcp
+pnpm turbo run test --filter=@liaiso/xml-mcp
+pnpm turbo run check-types --filter=@liaiso/xml-mcp
 ```
 
-Run tests through Turbo, not `pnpm --filter @sk-mcp/xml-mcp test`: the bare
+Run tests through Turbo, not `pnpm --filter @liaiso/xml-mcp test`: the bare
 filter skips `dependsOn: ["^build"]`.
 
 Large-document tests are opt-in and skipped by default; set
-`SKMCP_XML_LARGE=1` to run them.
+`LIAISO_XML_LARGE=1` to run them.

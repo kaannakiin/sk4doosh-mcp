@@ -5,22 +5,22 @@ import {
   type NestInterceptor,
 } from "@nestjs/common";
 import { of, type Observable } from "rxjs";
-import type { VisibilityDecision } from "@sk-mcp/core";
+import type { VisibilityDecision } from "@liaiso/core";
 import type { CatalogEntry } from "../catalog.js";
-import { SkMcpDispatcher, type ProbeResult } from "../dispatcher.js";
-import { SkMcpDispatchAborted } from "../synthetic-context.js";
+import { LiaisoDispatcher, type ProbeResult } from "../dispatcher.js";
+import { LiaisoDispatchAborted } from "../synthetic-context.js";
 import {
-  isSkMcpProbe,
+  isLiaisoProbe,
   markShortCircuited,
   wasShortCircuited,
 } from "../markers.js";
-import type { OuterRequest, SkMcpOptions } from "../options.js";
+import type { OuterRequest, LiaisoOptions } from "../options.js";
 
 @Injectable()
-export class SkMcpProbeInterceptor implements NestInterceptor {
+export class LiaisoProbeInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request: unknown = context.switchToHttp().getRequest();
-    if (!isSkMcpProbe(request)) {
+    if (!isLiaisoProbe(request)) {
       return next.handle();
     }
     markShortCircuited(request as object);
@@ -36,12 +36,12 @@ export interface ProbeEvaluator {
   ): Promise<VisibilityDecision>;
 }
 
-export class SkMcpProbeEvaluator implements ProbeEvaluator {
+export class LiaisoProbeEvaluator implements ProbeEvaluator {
   private readonly disabled = new Map<string, string>();
 
   constructor(
-    private readonly dispatcher: SkMcpDispatcher,
-    private readonly options: SkMcpOptions,
+    private readonly dispatcher: LiaisoDispatcher,
+    private readonly options: LiaisoOptions,
   ) {}
 
   clearDisabled(): void {
@@ -65,7 +65,7 @@ export class SkMcpProbeEvaluator implements ProbeEvaluator {
         outer,
       );
     } catch (error) {
-      if (!(error instanceof SkMcpDispatchAborted)) {
+      if (!(error instanceof LiaisoDispatchAborted)) {
         throw error;
       }
       this.disabled.set(

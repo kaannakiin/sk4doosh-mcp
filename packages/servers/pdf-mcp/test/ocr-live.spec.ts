@@ -1,5 +1,5 @@
-import { createOllamaOcrProvider } from "@sk-mcp/ocr-ollama";
-import { createPdfjsRasterizer } from "@sk-mcp/pdf-raster-pdfjs";
+import { createOllamaOcrProvider } from "@liaiso/ocr-ollama";
+import { createPdfjsRasterizer } from "@liaiso/pdf-raster-pdfjs";
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import {
   createDocumentRoot,
@@ -11,13 +11,13 @@ import { bodyOf } from "./fixtures/harness.js";
 
 /**
  * Opt-in: this suite needs a reachable Ollama with a vision model, so it is
- * skipped unless SKMCP_PDF_OCR_URL names one. Everything the orchestrator does
+ * skipped unless LIAISO_PDF_OCR_URL names one. Everything the orchestrator does
  * is covered by ocr.spec.ts against fake ports; what this adds is proof that the
  * two real adapters compose — the rasterizer's PNG is something the model can
  * actually read.
  */
-const baseUrl = process.env["SKMCP_PDF_OCR_URL"];
-const model = process.env["SKMCP_PDF_OCR_MODEL"] ?? "deepseek-ocr:3b";
+const baseUrl = process.env["LIAISO_PDF_OCR_URL"];
+const model = process.env["LIAISO_PDF_OCR_MODEL"] ?? "deepseek-ocr:3b";
 
 describe.skipIf(baseUrl === undefined)(
   "live OCR",

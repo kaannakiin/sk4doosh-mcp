@@ -2,11 +2,11 @@
   "extends": ["//"],
   "tasks": {
     "build": { "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"] },
-    "test": { "dependsOn": ["build"], "env": ["SKMCP_XML_LARGE"] },
+    "test": { "dependsOn": ["build"], "env": ["LIAISO_XML_LARGE"] },
     "test:coverage": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
-      "env": ["SKMCP_XML_LARGE"]
+      "env": ["LIAISO_XML_LARGE"]
     }
   }
 }

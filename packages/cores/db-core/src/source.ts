@@ -1,4 +1,4 @@
-import type { ErrorFactory } from "@sk-mcp/mcp-core";
+import type { ErrorFactory } from "@liaiso/mcp-core";
 import { createCatalogCache, type CatalogCache } from "./catalog/snapshot.js";
 import type { DbErrorCode } from "./errors.js";
 import { dbCoreLimits, type DbLimits } from "./limits.js";
@@ -43,7 +43,7 @@ export interface DbSource<TConfig> {
  *
  * Guard: the redactor is assembled here, from the core's patterns plus the
  * dialect's, so a server cannot be composed without one. It is the seam
- * `@sk-mcp/mcp-core` leaves open through `ErrorContext.redact`.
+ * `@liaiso/mcp-core` leaves open through `ErrorContext.redact`.
  */
 export function createDbSource<TConfig>(
   environment: DbEnvironment<TConfig>,

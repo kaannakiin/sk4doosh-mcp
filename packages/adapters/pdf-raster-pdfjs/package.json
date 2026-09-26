@@ -1,7 +1,7 @@
 {
-  "name": "@sk-mcp/pdf-raster-pdfjs",
+  "name": "@liaiso/pdf-raster-pdfjs",
   "version": "0.1.0",
-  "description": "PageRasterizer for @sk-mcp/pdf-mcp, backed by pdf.js and a Node canvas.",
+  "description": "PageRasterizer for @liaiso/pdf-mcp, backed by pdf.js and a Node canvas.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -33,8 +33,8 @@
     "pdfjs-dist": "4.10.38"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "oxlint": "1.85.0",
     "typescript": "7.0.2",

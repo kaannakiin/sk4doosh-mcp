@@ -3,21 +3,21 @@ import type { ComposedRequest } from "../request-composer.js";
 
 export type DispatchAbortReason = "timeout" | "caller" | "pipeline";
 
-export class SkMcpDispatchAborted extends Error {
+export class LiaisoDispatchAborted extends Error {
   constructor(readonly reason: DispatchAbortReason) {
     super(messageFor(reason));
-    this.name = "SkMcpDispatchAborted";
+    this.name = "LiaisoDispatchAborted";
   }
 }
 
 function messageFor(reason: DispatchAbortReason): string {
   switch (reason) {
     case "timeout":
-      return "sk-mcp: the backend did not answer within the invoke deadline.";
+      return "liaiso: the backend did not answer within the invoke deadline.";
     case "caller":
-      return "sk-mcp: the caller cancelled the request.";
+      return "liaiso: the caller cancelled the request.";
     case "pipeline":
-      return "sk-mcp: the backend pipeline threw before it produced a response.";
+      return "liaiso: the backend pipeline threw before it produced a response.";
   }
 }
 
@@ -106,7 +106,7 @@ export function untilAbandoned<T>(
   return new Promise<T>((resolve, reject) => {
     const onAbort = (): void => {
       work.catch(() => undefined);
-      reject(new SkMcpDispatchAborted(reason() ?? "caller"));
+      reject(new LiaisoDispatchAborted(reason() ?? "caller"));
     };
     if (signal.aborted) {
       onAbort();

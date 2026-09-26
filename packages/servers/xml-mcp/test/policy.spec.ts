@@ -9,7 +9,7 @@ import { forbiddenParseOptions, HARDENED } from "../src/engine/policy.js";
 const here = dirname(fileURLToPath(import.meta.url));
 const workerEntry = resolve(here, "../dist/xml-worker.js");
 
-const hostOnly = ["@sk-mcp/", "zod", "@modelcontextprotocol"];
+const hostOnly = ["@liaiso/", "zod", "@modelcontextprotocol"];
 const neverInWorker = ["libxml2-wasm/lib/nodejs"];
 const providerSymbols = [
   "xmlRegisterInputProvider",

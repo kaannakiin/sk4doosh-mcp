@@ -2,7 +2,7 @@ import {
   createFormatRegistry,
   type FormatRegistry,
   type SourceExtension,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { fail } from "./errors.js";
 import { vocabulary } from "./vocabulary.js";
 

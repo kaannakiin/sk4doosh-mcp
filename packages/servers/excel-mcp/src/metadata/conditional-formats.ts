@@ -1,4 +1,4 @@
-import { truncateWellFormed } from "@sk-mcp/file-core";
+import { truncateWellFormed } from "@liaiso/file-core";
 import { limits } from "../platform/limits.js";
 import type {
   OoxmlConditionalBlock,

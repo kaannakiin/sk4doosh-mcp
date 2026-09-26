@@ -7,6 +7,6 @@ export interface FixtureCorpus {
 }
 
 export async function buildCorpus(): Promise<FixtureCorpus> {
-  const root = await mkdtemp(join(tmpdir(), "sk-mcp-xml-f0-"));
+  const root = await mkdtemp(join(tmpdir(), "liaiso-xml-f0-"));
   return { root };
 }

@@ -1,17 +1,17 @@
-# @sk-mcp/openapi
+# @liaiso/openapi
 
-Turns a Swagger 2.0 or OpenAPI 3.0–3.2 document into the same `EndpointDescriptor[]` shape sk-mcp's
+Turns a Swagger 2.0 or OpenAPI 3.0–3.2 document into the same `EndpointDescriptor[]` shape liaiso's
 catalog builds from framework discovery. This is the ingestion library; everything after the
 descriptor — naming, selection, curation, template production, composition, error mapping, search
 — is the existing catalog and lives elsewhere. The one consumer today is
-[`@sk-mcp/openapi-mcp`](../../servers/openapi-mcp).
+[`@liaiso/openapi-mcp`](../../servers/openapi-mcp).
 
 > Status: `0.0.0`, `private: true`. Normative source: [openapi-ingestion.md](../spec/openapi-ingestion.md).
 
 ## Usage
 
 ```ts
-import { ingest } from "@sk-mcp/openapi";
+import { ingest } from "@liaiso/openapi";
 
 const result = await ingest(documentTextOrObject, {
   documentUrl: "file:///abs/path/to/openapi.json",
@@ -68,7 +68,7 @@ Without a `loader` (and a `documentUrl` to resolve relative references against),
 contains any external `$ref` is refused with `external_ref_blocked` rather than read — ingestion
 never decides on its own which file or host it may reach; that decision belongs to the host. A
 loader is expected to enforce its own limits (an allowlisted host, a deadline, a size cap, a root
-directory for a file); `@sk-mcp/openapi-mcp`'s loader is one example, restricted to the document's
+directory for a file); `@liaiso/openapi-mcp`'s loader is one example, restricted to the document's
 own host plus its configured `refHosts`, with a 64 MiB cap.
 
 ## Diagnostics
@@ -90,23 +90,23 @@ CatalogSeverity>>`, so a code added without a severity fails to compile.
 
 ## Rules
 
-- No runtime dependency on any other `@sk-mcp/*` package besides `@sk-mcp/core`, which supplies
+- No runtime dependency on any other `@liaiso/*` package besides `@liaiso/core`, which supplies
   `CatalogSeverity` and the descriptor types this library fills in.
 - Bound by the `openapi-ingestion` fixture profile, not the core catalog's fixture profile — an
   SDK that never reads an OpenAPI document is unaffected by a change here.
-- `private: true`: it is consumed only inside this repository today (`@sk-mcp/openapi-mcp`), and a
+- `private: true`: it is consumed only inside this repository today (`@liaiso/openapi-mcp`), and a
   published package may never depend on a `private: true` workspace package, so it stays private
   until it has a publishable consumer.
 
 ## Development
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/openapi
-pnpm turbo run lint --filter=@sk-mcp/openapi
-pnpm turbo run check-types --filter=@sk-mcp/openapi
-pnpm turbo run test --filter=@sk-mcp/openapi
+pnpm turbo run build --filter=@liaiso/openapi
+pnpm turbo run lint --filter=@liaiso/openapi
+pnpm turbo run check-types --filter=@liaiso/openapi
+pnpm turbo run test --filter=@liaiso/openapi
 ```
 
-Run these through Turbo rather than `pnpm --filter @sk-mcp/openapi <task>`, per this repository's
+Run these through Turbo rather than `pnpm --filter @liaiso/openapi <task>`, per this repository's
 convention. `test/ingest.spec.ts` covers the pipeline directly; `test/conformance-fixtures.spec.ts`
 runs the package against the `openapi-ingestion` fixture corpus.

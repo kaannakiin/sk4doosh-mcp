@@ -1,4 +1,4 @@
-import { invokeLimits } from "@sk-mcp/core";
+import { invokeLimits } from "@liaiso/core";
 import { z } from "zod";
 
 const secret = z.object({ fromEnv: z.string().min(1) }).strict();

@@ -1,4 +1,4 @@
-import { measureJson, type SourceMode } from "@sk-mcp/file-core";
+import { measureJson, type SourceMode } from "@liaiso/file-core";
 import type { CsvReport } from "../format/csv.js";
 
 export const modeEnvelopeBytes = measureJson({ mode: "resident" });

@@ -1,4 +1,4 @@
-import { coreLimits, type ModePolicy } from "@sk-mcp/file-core";
+import { coreLimits, type ModePolicy } from "@liaiso/file-core";
 
 export const modePolicy: ModePolicy = {
   residentMaxBytes: coreLimits.maxFileBytes,

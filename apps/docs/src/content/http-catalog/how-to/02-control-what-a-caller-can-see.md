@@ -1,7 +1,7 @@
 # How to control what a caller can see
 
 You want a specific endpoint to appear, or not appear, in `search_tools` results for a specific
-caller. There is no sk-mcp switch for this. You change the endpoint's own authorization, and
+caller. There is no liaiso switch for this. You change the endpoint's own authorization, and
 visibility follows.
 
 ## Hide an endpoint from callers without a claim
@@ -19,7 +19,7 @@ normally.
 
 ## Show an endpoint to everyone
 
-Mark it anonymous. sk-mcp reads the framework's own anonymous marker:
+Mark it anonymous. liaiso reads the framework's own anonymous marker:
 
 ```csharp
 [HttpGet("/ping")]
@@ -29,13 +29,13 @@ public IActionResult Ping() => Ok(new { pong = true });
 
 ## Understand why a tool shows up as uncertain
 
-If a tool appears with `authUncertain: true`, sk-mcp could not decide. It is showing you the tool
+If a tool appears with `authUncertain: true`, liaiso could not decide. It is showing you the tool
 rather than guessing in either direction. The usual causes:
 
 | Cause                                                                   | Fix                                                                      |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | The endpoint checks authorization inside the handler, not declaratively | Move the resource-independent part of the check to an attribute or guard |
-| Your backend has no authentication scheme sk-mcp can run                | Nothing to fix — the decision is honestly unknown                        |
+| Your backend has no authentication scheme liaiso can run                | Nothing to fix — the decision is honestly unknown                        |
 | A policy did not report a result                                        | Make the policy evaluable without a resource                             |
 
 Resource-dependent checks — row-level ownership, "can this user see _this_ order" — are supposed to
@@ -47,11 +47,11 @@ invoke time. Do not restructure your handler to satisfy the filter.
 Run a search as each caller and compare. With the demo backend:
 
 ```bash
-SKMCP_AUTH=token SKMCP_USER=alice \
+LIAISO_AUTH=token LIAISO_USER=alice \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders
 ```
 
-Change `SKMCP_USER` to see a different slice. The demo users differ only in their claims, and the
+Change `LIAISO_USER` to see a different slice. The demo users differ only in their claims, and the
 tool list follows:
 
 | Caller  | Claims        | Tools visible | Extra over `bob`                              |

@@ -2,7 +2,7 @@ import {
   openRoot,
   type NativeRoot,
   type NativeSnapshot,
-} from "@sk-mcp/file-core-native";
+} from "@liaiso/file-core-native";
 import { relative, isAbsolute, sep } from "node:path";
 import {
   FileSourceError,

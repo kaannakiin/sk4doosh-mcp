@@ -5,7 +5,7 @@ import {
   createDbMcpServer,
   createDbSource,
   type DbSource,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 import { mssqlDialect } from "./dialect/index.js";
 import { createMssqlDriver, type MssqlDriverDeps } from "./driver/adapter.js";
 import { asMssqlError, fail } from "./platform/errors.js";
@@ -39,7 +39,7 @@ export function createMssqlSource(
 
 export function createMssqlMcpServer(source: DbSource<MssqlConfig>): McpServer {
   return createDbMcpServer(
-    { name: "sk-mcp-mssql", version: manifest.version },
+    { name: "liaiso-mssql", version: manifest.version },
     source,
     asMssqlError,
   );

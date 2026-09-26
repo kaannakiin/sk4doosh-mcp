@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
 import { documentSheet, loadDocument } from "../src/format/document.js";
-import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { LiaisoExcelError } from "../src/platform/errors.js";
 import {
   declaredHeaderRow,
   isHeaderCandidate,
@@ -45,7 +45,7 @@ describe("header row evidence", () => {
     try {
       await action();
     } catch (error) {
-      return (error as SkMcpExcelError).code;
+      return (error as LiaisoExcelError).code;
     }
     return "no-error";
   };
@@ -100,7 +100,7 @@ describe("header row evidence", () => {
       scanHeaderRow(sheet, bounds, "master", "AllText");
       expect.unreachable();
     } catch (error) {
-      const failure = error as SkMcpExcelError;
+      const failure = error as LiaisoExcelError;
       expect(failure.recovery).toContain("Row 1");
       expect(failure.recovery).toContain("Row 2");
       expect(failure.recovery).toContain("headerRow 0 disables headers");

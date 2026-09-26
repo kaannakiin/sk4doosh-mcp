@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createRequestTemplate, SkMcpArgumentError } from "../src/index.js";
+import { createRequestTemplate, LiaisoArgumentError } from "../src/index.js";
 import { createApp, hits, type TestApp } from "./hosts.js";
 
 let app: TestApp;
@@ -50,7 +50,7 @@ describe("argument mapping through the pipeline", () => {
       app.dispatcher.dispatch(template, { "X-Data": "x\r\nInjected: 1" }),
     ).rejects.toSatisfy(
       (error) =>
-        error instanceof SkMcpArgumentError &&
+        error instanceof LiaisoArgumentError &&
         error.code === "header_injection",
     );
   });

@@ -8,7 +8,7 @@ import {
   type ToolDefinitions,
   type ToolInputOf,
   type ToolNameOf,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 import {
   redactRoot,
   type CoreErrorCode,

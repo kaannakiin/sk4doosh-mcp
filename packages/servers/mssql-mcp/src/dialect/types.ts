@@ -4,7 +4,7 @@ import {
   type LossKind,
   type NativeColumn,
   type TypeFacts,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 
 /**
  * Guard: the same column is named twice by two vocabularies — the driver reports
@@ -92,7 +92,7 @@ const reshaped: ReadonlySet<string> = new Set(["geography", "geometry"]);
  * numeric is already damaged by the time this package sees it, because the
  * driver hands it over as a `number`. The threshold is the format's; whether it
  * bites is this driver's, which is why the verdict lives in the dialect and not
- * in `@sk-mcp/db-core`.
+ * in `@liaiso/db-core`.
  */
 const SAFE_DIGITS = 15;
 

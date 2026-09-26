@@ -3,12 +3,12 @@ import {
   isFresh,
   type Cursor,
   type Fingerprint,
-} from "@sk-mcp/file-core";
-import { SkMcpExcelError } from "../platform/errors.js";
+} from "@liaiso/file-core";
+import { LiaisoExcelError } from "../platform/errors.js";
 import type { CsvOptions } from "../platform/delimited.js";
 
-export { encodeCursor, fingerprint } from "@sk-mcp/file-core";
-export type { Fingerprint } from "@sk-mcp/file-core";
+export { encodeCursor, fingerprint } from "@liaiso/file-core";
+export type { Fingerprint } from "@liaiso/file-core";
 
 export type ValueMode = "values" | "formulas" | "both";
 export type MergePolicy = "master" | "repeat";
@@ -69,7 +69,7 @@ export function inheritCursorOptions<
 >(args: T): T & Partial<CursorOptions> {
   if (args.cursor === undefined) return args;
   if (args.sheetName !== undefined || args.range !== undefined)
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       "cursor cannot be combined with sheetName or range.",
     );
@@ -84,7 +84,7 @@ export function inheritCursorOptions<
     "encoding",
   ] as const) {
     if (args[key] !== undefined && args[key] !== cursor.o[key])
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         `Option '${key}' conflicts with the cursor.`,
         "Drop cursor to start a read with different options.",
@@ -128,7 +128,7 @@ function isSheetCursor(candidate: unknown): candidate is SheetCursor {
 export function decodeCursor(raw: string): SheetCursor {
   const parsed = decodeCursorPayload(raw);
   if (!isSheetCursor(parsed)) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_cursor",
       "The cursor is not a token produced by a previous read_sheet response.",
       "Call read_sheet again without a cursor.",
@@ -139,7 +139,7 @@ export function decodeCursor(raw: string): SheetCursor {
 
 export function assertFresh(cursor: SheetCursor, current: Fingerprint): void {
   if (!isFresh(cursor, current)) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "stale_cursor",
       "The workbook changed while the previous page was being read.",
       "Restart from read_sheet without a cursor.",

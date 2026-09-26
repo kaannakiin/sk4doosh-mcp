@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/docs",
+  "name": "@liaiso/docs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,8 +23,8 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-router-devtools": "^1.167.1",
     "@types/node": "^24.3.0",

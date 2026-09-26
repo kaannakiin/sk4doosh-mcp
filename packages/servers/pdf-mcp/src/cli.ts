@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { serveFileSourceStdio } from "@sk-mcp/file-core";
+import { serveFileSourceStdio } from "@liaiso/file-core";
 
-const usage = "Usage: sk-mcp-pdf <pdf-source-root> [--ocr <module>]";
+const usage = "Usage: liaiso-pdf <pdf-source-root> [--ocr <module>]";
 
 function fail(message: string, code: number): never {
   process.stderr.write(`${message}\n`);

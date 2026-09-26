@@ -1,4 +1,4 @@
-import { SkMcpArgumentError } from "./errors.js";
+import { LiaisoArgumentError } from "./errors.js";
 import type { ObjectNotation, ParameterKind } from "./request-template.js";
 
 /**
@@ -77,7 +77,7 @@ export function formatScalar(
       }
       break;
   }
-  throw new SkMcpArgumentError(
+  throw new LiaisoArgumentError(
     errorCode,
     `Argument '${parameter.name}' must be of type ${parameter.kind}.`,
   );

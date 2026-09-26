@@ -6,7 +6,7 @@ import {
   json,
   measureJson,
   type ErrorNormalizer,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 import { introspect, introspectOne } from "../catalog/introspect.js";
 import type { SnapshotObject } from "../catalog/snapshot.js";
 import { stableHash } from "../primitives/hash.js";

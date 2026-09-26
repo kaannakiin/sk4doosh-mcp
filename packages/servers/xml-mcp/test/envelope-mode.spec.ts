@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import { modeFor } from "@sk-mcp/file-core";
+import { modeFor } from "@liaiso/file-core";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { modePolicy } from "../src/host/platform/limits.js";
 import type { Fixtures } from "./fixtures/build.js";

@@ -5,10 +5,10 @@ import {
   type ErrorContext,
   type ErrorFactory,
   type SourceErrorCode,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 import { vocabulary } from "./vocabulary.js";
 
-export type SkMcpLlmErrorCode =
+export type LiaisoLlmErrorCode =
   | SourceErrorCode
   | "backend_unavailable"
   | "backend_refused"
@@ -18,15 +18,15 @@ export type SkMcpLlmErrorCode =
   | "input_too_large"
   | "unparsable_output";
 
-export class SkMcpLlmError extends McpSourceError {
-  declare readonly code: SkMcpLlmErrorCode;
+export class LiaisoLlmError extends McpSourceError {
+  declare readonly code: LiaisoLlmErrorCode;
 }
 
-export const fail: ErrorFactory<SkMcpLlmErrorCode> = (
+export const fail: ErrorFactory<LiaisoLlmErrorCode> = (
   code,
   message,
   recovery,
-) => new SkMcpLlmError(code, message, recovery);
+) => new LiaisoLlmError(code, message, recovery);
 
 export function asLlmError(
   error: unknown,

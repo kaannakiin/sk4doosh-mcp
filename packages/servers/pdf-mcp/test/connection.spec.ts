@@ -41,7 +41,7 @@ describe("protocol surface", () => {
         [...toolNames].sort(),
       );
       expect(client.getServerVersion()).toMatchObject({
-        name: "sk-mcp-pdf",
+        name: "liaiso-pdf",
         version: manifest.version,
       });
     } finally {

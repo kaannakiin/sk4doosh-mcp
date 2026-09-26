@@ -1,6 +1,6 @@
 import { searchParameters } from "../card.js";
 import { curatedDescriptions, type CurationRelief } from "../curation.js";
-import { SkMcpCatalogError, SkMcpTemplateError } from "../errors.js";
+import { LiaisoCatalogError, LiaisoTemplateError } from "../errors.js";
 import type { FileOptions } from "../file-argument.js";
 import type { EndpointDescriptor } from "../generated/endpoint-descriptor.js";
 import type { ToolDefinition } from "../generated/tool-definition.js";
@@ -52,7 +52,7 @@ export type CatalogEntry<Source extends object = object> = {
  * @param source fields carried onto the catalog entry unchanged, for the source's own later use
  * @param owner the operation's human-readable identity in diagnostics
  * @param declare applies the source's declarations to the discovered descriptor; it may throw a
- * `SkMcpTemplateError` for a declaration conflict, which aborts the build
+ * `LiaisoTemplateError` for a declaration conflict, which aborts the build
  */
 export interface CatalogCandidate<Source extends object = object> {
   readonly source: Source;
@@ -140,7 +140,7 @@ export function buildCatalog<Source extends object>(
       }
     } catch (error) {
       report({
-        code: (error as SkMcpCatalogError).code,
+        code: (error as LiaisoCatalogError).code,
         message: (error as Error).message,
       });
     }
@@ -197,7 +197,7 @@ export function buildCatalog<Source extends object>(
     });
   } catch (error) {
     report({
-      code: (error as SkMcpCatalogError).code,
+      code: (error as LiaisoCatalogError).code,
       message: (error as Error).message,
     });
     productions = [];
@@ -245,7 +245,7 @@ export function buildCatalog<Source extends object>(
       );
     } catch (error) {
       const code =
-        error instanceof SkMcpTemplateError ? error.code : "template_rejected";
+        error instanceof LiaisoTemplateError ? error.code : "template_rejected";
       report({ code, message: (error as Error).message });
       continue;
     }
@@ -333,7 +333,7 @@ export function assertCatalogValid(fatal: readonly CatalogDiagnostic[]): void {
   if (fatal.length === 0) {
     return;
   }
-  throw new SkMcpCatalogError(
+  throw new LiaisoCatalogError(
     fatal[0]?.code as "name_collision",
     fatal.map((diagnostic) => diagnostic.message).join(" | "),
   );

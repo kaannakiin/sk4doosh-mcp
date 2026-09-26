@@ -42,7 +42,7 @@ export {
   type ToolInputOf,
   type ToolNameOf,
   type Vocabulary,
-} from "@sk-mcp/mcp-core";
+} from "@liaiso/mcp-core";
 export { dbCoreLimits, type DbLimits } from "./limits.js";
 export type { DbVocabulary } from "./vocabulary.js";
 export {

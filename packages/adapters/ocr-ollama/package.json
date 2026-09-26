@@ -1,7 +1,7 @@
 {
-  "name": "@sk-mcp/ocr-ollama",
+  "name": "@liaiso/ocr-ollama",
   "version": "0.1.0",
-  "description": "OcrProvider for @sk-mcp/pdf-mcp, backed by an Ollama vision model.",
+  "description": "OcrProvider for @liaiso/pdf-mcp, backed by an Ollama vision model.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -29,8 +29,8 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "oxlint": "1.85.0",
     "typescript": "7.0.2",

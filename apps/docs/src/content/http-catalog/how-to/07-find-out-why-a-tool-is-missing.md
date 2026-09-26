@@ -9,8 +9,8 @@ The catalog is built at startup and reports itself. Find this line in your host'
 anything else:
 
 ```text
-info: SkMcp.AspNetCore.SkMcpCatalogProvider[0]
-      sk-mcp catalog: 16 discovered, 9 selected, 9 tools, 0 diagnostic(s)
+info: Liaiso.AspNetCore.LiaisoCatalogProvider[0]
+      liaiso catalog: 16 discovered, 9 selected, 9 tools, 0 diagnostic(s)
 ```
 
 Four numbers, and the gap between them names the layer that lost your endpoint.
@@ -46,7 +46,7 @@ each one. Diagnostics have three severities:
 - **fatal** — the catalog itself is not trustworthy, and the host refuses to start.
 
 Three codes are fatal by default: `name_collision`, `ambiguous_selection` and `invalid_name`. All
-three mean two declarations disagree in a way sk-mcp will not silently resolve — a conflict is an
+three mean two declarations disagree in a way liaiso will not silently resolve — a conflict is an
 error here, never a coin flip.
 
 These are `endpointDropped` by default and are the ones to expect when a single endpoint vanishes:
@@ -58,14 +58,14 @@ and — on NestJS — `unresolved_file_field` and `body_parser_missing`.
 
 In practice the two you will actually hit are `argument_collision` (a path or query parameter and a
 body property share a name, so the flat argument object cannot represent both) and
-`unsupported_binding` (a body media type sk-mcp has no writer for, a raw-body binding, a wildcard
+`unsupported_binding` (a body media type liaiso has no writer for, a raw-body binding, a wildcard
 route). Form bodies and file uploads are supported; when one is still dropped, the body-specific
 codes are explained in [how to accept form bodies and file uploads](/docs/http-catalog/accept-form-and-file-uploads). Its close relative `duplicate_argument` is the same problem one step
 earlier: two parameters, not a parameter and a body field, claim one name — most often two query
 DTOs that each declare a member called `field` or `status`.
 
 The complete lists live in the source, one per SDK:
-[`DiagnosticCodes.cs`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/src/SkMcp.AspNetCore/Discovery/DiagnosticCodes.cs)
+[`DiagnosticCodes.cs`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/src/Liaiso.AspNetCore/Discovery/DiagnosticCodes.cs)
 and
 [`diagnostics.ts`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/nestjs/src/discovery/diagnostics.ts).
 There is no single cross-SDK table, because the two sets are not identical.
@@ -88,7 +88,7 @@ Having identified the code, you can move it. Downgrade to keep an endpoint you d
 without, or escalate to make a warning stop the build:
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Diagnostics.Downgrade.Add(DiagnosticCodes.NameCollision);
     options.Diagnostics.Escalate.Add(DiagnosticCodes.UnreadableShape);
@@ -96,7 +96,7 @@ builder.Services.AddSkMcp(options =>
 ```
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.diagnostics.downgrade.add("name_collision");
   options.diagnostics.escalate.add("unreadable_shape");
 });

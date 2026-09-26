@@ -7,7 +7,7 @@ import {
   createXmlDocumentCache,
   type XmlDocumentCache,
 } from "../src/host/document.js";
-import type { SkMcpXmlError } from "../src/host/platform/errors.js";
+import type { LiaisoXmlError } from "../src/host/platform/errors.js";
 import { limits } from "../src/host/platform/limits.js";
 import {
   createDocumentRoot,
@@ -16,7 +16,7 @@ import {
 } from "../src/host/platform/paths.js";
 import { createXmlWorkerPool, type XmlWorkerPool } from "../src/host/pool.js";
 
-const token = "SKMCP-EXTERNAL-IO-CANARY-4f21b8";
+const token = "LIAISO-EXTERNAL-IO-CANARY-4f21b8";
 
 let root: DocumentRoot;
 let pool: XmlWorkerPool;
@@ -51,7 +51,7 @@ async function codeOf(name: string): Promise<string> {
     const path = await resolveDocumentPath(root, basename(name));
     await cache.load(path);
   } catch (error) {
-    return (error as SkMcpXmlError).code;
+    return (error as LiaisoXmlError).code;
   }
   return "no-error";
 }
@@ -66,7 +66,7 @@ beforeAll(async () => {
   await writeFile(inside, token, "utf8");
   insideUrl = pathToFileURL(inside).href;
 
-  const elsewhere = await mkdtemp(join(tmpdir(), "skmcp-canary-"));
+  const elsewhere = await mkdtemp(join(tmpdir(), "liaiso-canary-"));
   const outside = join(elsewhere, "canary-outside.txt");
   await writeFile(outside, token, "utf8");
   outsideUrl = pathToFileURL(outside).href;

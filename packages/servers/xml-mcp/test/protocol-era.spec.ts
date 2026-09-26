@@ -2,7 +2,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
-import { coreLimits } from "@sk-mcp/file-core";
+import { coreLimits } from "@liaiso/file-core";
 import { afterEach, describe, expect, inject, it } from "vitest";
 import type { Fixtures } from "./fixtures/build.js";
 

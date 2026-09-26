@@ -1,4 +1,4 @@
-import { SkMcpTemplateError } from "./errors.js";
+import { LiaisoTemplateError } from "./errors.js";
 import type {
   ArgumentCuration,
   ArgumentFill,
@@ -65,7 +65,7 @@ function declarations(
   const merged = new Map<string, ArgumentCuration>();
   for (const record of endpoint.arguments ?? []) {
     if (merged.has(record.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "duplicate_argument",
         `Argument '${record.name}' is curated twice.`,
       );
@@ -75,7 +75,7 @@ function declarations(
   const overrides = new Map<string, ArgumentCuration>();
   for (const record of variant?.arguments ?? []) {
     if (overrides.has(record.name)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "duplicate_argument",
         `Argument '${record.name}' is curated twice by variant '${variant?.name}'.`,
       );
@@ -151,14 +151,14 @@ export function resolveCuration(
         relief.onUnused(record.name);
         continue;
       }
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "curation_unresolved",
         `Curation names '${record.name}', which this operation does not have. Argument names are matched exactly, including case.`,
       );
     }
     const required = shape.requiredWireNames.has(record.name);
     if (record.hidden?.kind === "omit" && required) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "hidden_required_omitted",
         `Argument '${record.name}' is required, so it cannot be hidden without a value.`,
       );
@@ -213,7 +213,7 @@ function assertAgentNamesUnique(
     }
     const agentName = resolved?.argument ?? wireName;
     if (seen.has(agentName)) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "argument_collision",
         `Curation produces two arguments named '${agentName}'.`,
       );

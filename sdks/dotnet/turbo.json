@@ -8,7 +8,7 @@
         "$TURBO_ROOT$/packages/http/spec/schemas/**",
         "$TURBO_ROOT$/packages/http/spec/package.json"
       ],
-      "outputs": ["src/SkMcp.AspNetCore/Generated/**"]
+      "outputs": ["src/Liaiso.AspNetCore/Generated/**"]
     },
     "build": {
       "dependsOn": ["$TURBO_EXTENDS$", "gen"],

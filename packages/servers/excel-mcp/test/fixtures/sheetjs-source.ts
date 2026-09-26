@@ -1,5 +1,5 @@
 import type * as XLSX from "@e965/xlsx";
-import type { PartEntry, PartSource } from "@sk-mcp/ooxml-core";
+import type { PartEntry, PartSource } from "@liaiso/ooxml-core";
 
 interface RawFile {
   readonly content?: unknown;

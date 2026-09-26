@@ -19,14 +19,14 @@ import {
 import { Test } from "@nestjs/testing";
 import jwt from "jsonwebtoken";
 import {
-  SkMcpDispatcher,
-  SkMcpModule,
+  LiaisoDispatcher,
+  LiaisoModule,
   type ExtensionOverrides,
   type OuterRequest,
-  type SkMcpOptions,
+  type LiaisoOptions,
 } from "../src/index.js";
 
-const secret = "sk-mcp-test-secret-0123456789abcdef";
+const secret = "liaiso-test-secret-0123456789abcdef";
 
 export function mintToken(
   user: string,
@@ -165,23 +165,23 @@ export class ProbeController {
 
 export interface TestApp {
   app: INestApplication;
-  dispatcher: SkMcpDispatcher;
+  dispatcher: LiaisoDispatcher;
   close(): Promise<void>;
 }
 
 export async function createApp(
-  configure?: (options: SkMcpOptions) => void,
+  configure?: (options: LiaisoOptions) => void,
   overrides?: ExtensionOverrides,
 ): Promise<TestApp> {
   const moduleRef = await Test.createTestingModule({
-    imports: [SkMcpModule.forRoot(configure, overrides)],
+    imports: [LiaisoModule.forRoot(configure, overrides)],
     controllers: [ProbeController],
   }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
   await app.init();
   return {
     app,
-    dispatcher: app.get(SkMcpDispatcher),
+    dispatcher: app.get(LiaisoDispatcher),
     close: () => app.close(),
   };
 }

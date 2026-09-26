@@ -1,6 +1,6 @@
-import { fold } from "@sk-mcp/file-core";
+import { fold } from "@liaiso/file-core";
 import type { CellScalar } from "./cell-value.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 
 export type CellKind =
   "number" | "date" | "text" | "boolean" | "error" | "empty";
@@ -42,7 +42,7 @@ export function isNumericText(value: CellScalar): boolean {
 export function coerceNumber(value: CellScalar): number | undefined {
   if (typeof value === "number") {
     if (!Number.isFinite(value))
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "numeric_overflow",
         "A numeric value is outside the finite number range.",
       );
@@ -51,7 +51,7 @@ export function coerceNumber(value: CellScalar): number | undefined {
   if (isNumericText(value)) {
     const number = Number(value);
     if (!Number.isFinite(number))
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "numeric_overflow",
         "Numeric text is outside the finite number range.",
       );
@@ -139,7 +139,7 @@ function operandKind(value: PredicateScalar): CellKind {
 
 function requireOperand(condition: Condition): PredicateScalar {
   if (condition.value === undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       `Operator '${condition.op}' on column '${condition.column}' needs a value.`,
       "Pass value, or use isEmpty / isNotEmpty for blank checks.",
@@ -156,7 +156,7 @@ function comparableKindOf(
   if (kind === "number" || kind === "date" || kind === "text") {
     return kind;
   }
-  throw new SkMcpExcelError(
+  throw new LiaisoExcelError(
     "invalid_argument",
     `Operator '${condition.op}' on column '${condition.column}' cannot compare against a ${kind} value.`,
     "Compare against a number, an ISO date string, or text.",
@@ -169,7 +169,7 @@ export function validateCondition(
 ): void {
   for (const operand of [condition.value, ...(condition.values ?? [])]) {
     if (typeof operand === "number" && !Number.isFinite(operand))
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         "Predicate numbers must be finite.",
       );
@@ -182,7 +182,7 @@ export function validateCondition(
   }
   if (condition.op === "in") {
     if (condition.values === undefined || condition.values.length === 0) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         `Operator 'in' on column '${condition.column}' needs a non-empty values array.`,
         "Pass values, or use eq for a single comparison.",
@@ -193,7 +193,7 @@ export function validateCondition(
   if (condition.op === "between") {
     const pair = condition.values;
     if (pair === undefined || pair.length !== 2) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         `Operator 'between' on column '${condition.column}' needs exactly two values.`,
         "Pass values as [low, high].",
@@ -202,18 +202,18 @@ export function validateCondition(
     const low = pair[0];
     const high = pair[1];
     if (low === undefined || high === undefined)
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         "between needs two bounds.",
       );
     const kind = comparableKindOf(condition, low);
     if (kind !== comparableKindOf(condition, high))
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         "between bounds must have the same comparable type.",
       );
     if (compareWithin(kind, low, high, caseSensitive) > 0) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         `Operator 'between' on column '${condition.column}' was given a low bound above its high bound.`,
         "Swap the two values.",
@@ -226,7 +226,7 @@ export function validateCondition(
     comparableKindOf(condition, operand);
   }
   if (textOperators.has(condition.op) && typeof operand !== "string") {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       `Operator '${condition.op}' on column '${condition.column}' needs text on the right.`,
       "Pass a string, or use eq for an exact comparison.",

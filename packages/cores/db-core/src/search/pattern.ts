@@ -1,4 +1,4 @@
-import { fold } from "@sk-mcp/mcp-core";
+import { fold } from "@liaiso/mcp-core";
 
 /**
  * Matches a name against an agent-supplied pattern, where `%` stands for any

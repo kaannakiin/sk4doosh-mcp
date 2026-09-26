@@ -1,4 +1,4 @@
-import { ooxmlNamespaces } from "@sk-mcp/ooxml-core";
+import { ooxmlNamespaces } from "@liaiso/ooxml-core";
 
 export const namespaces = {
   ...ooxmlNamespaces,
@@ -9,4 +9,4 @@ export const namespaces = {
 } as const;
 
 export { readXmlPart } from "./reader.js";
-export type { XmlNode, XmlVisitor } from "@sk-mcp/ooxml-core";
+export type { XmlNode, XmlVisitor } from "@liaiso/ooxml-core";

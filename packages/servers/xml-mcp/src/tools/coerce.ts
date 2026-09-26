@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { SkMcpXmlError } from "../host/platform/errors.js";
+import { LiaisoXmlError } from "../host/platform/errors.js";
 import type {
   ElementStep,
   NamespaceBinding,
@@ -46,7 +46,7 @@ export function bindingsOf(
   const bound: NamespaceBinding[] = [];
   for (const binding of raw ?? []) {
     if (seen.has(binding.prefix)) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "invalid_argument",
         `The prefix ${binding.prefix} is bound more than once.`,
         "Bind each prefix to one URI.",
@@ -73,7 +73,7 @@ export function columnsOf(raw: RawColumns): readonly ColumnSpec[] {
   const labels = new Set<string>();
   return raw.map((column) => {
     if (labels.has(column.label)) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "invalid_argument",
         `Two columns are labelled ${column.label}.`,
         "Give every column a distinct label; where and groupBy address columns by label.",
@@ -96,7 +96,7 @@ export function columnIndex(
 ): number {
   const index = specs.findIndex((spec) => spec.label === label);
   if (index === -1) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "invalid_argument",
       `There is no column labelled ${label}.`,
       `Declare it in columns first; the declared labels are ${specs.map((spec) => spec.label).join(", ")}.`,
@@ -111,7 +111,7 @@ export function conditionsOf(
 ): readonly Condition[] {
   return (raw ?? []).map((condition) => {
     if (condition.op === "in" && condition.values === undefined) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "invalid_argument",
         "The in operator needs values.",
         "Pass values with at least one entry, or use eq.",
@@ -139,14 +139,14 @@ export function metricsOf(
 ): readonly MetricRequest[] {
   return raw.map((metric) => {
     if (metric.fn !== "count" && metric.column === undefined) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "invalid_argument",
         `The ${metric.fn} metric needs a column.`,
         "Name a declared column, or use count for a plain record count.",
       );
     }
     if (!countingMetrics.has(metric.fn) && mode === "off") {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "invalid_argument",
         `The ${metric.fn} metric converts text to a binary64 number, which this call did not ask for.`,
         "Pass numericMode: binary64 to accept double precision, or use count, countValues or countDistinct.",
@@ -162,7 +162,7 @@ export function metricsOf(
 }
 
 export function refuseCombination(field: string): never {
-  throw new SkMcpXmlError(
+  throw new LiaisoXmlError(
     "invalid_argument",
     `cursor cannot be combined with ${field}.`,
     `Drop ${field}; the cursor pins the view it was produced for.`,

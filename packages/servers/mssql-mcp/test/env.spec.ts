@@ -7,10 +7,10 @@ import {
 import { redact, fail } from "../src/platform/errors.js";
 
 const complete = {
-  SKMCP_MSSQL_SERVER: "db.internal",
-  SKMCP_MSSQL_DATABASE: "Sales",
-  SKMCP_MSSQL_USER: "mcp_reader",
-  SKMCP_MSSQL_PASSWORD: "hunter2",
+  LIAISO_MSSQL_SERVER: "db.internal",
+  LIAISO_MSSQL_DATABASE: "Sales",
+  LIAISO_MSSQL_USER: "mcp_reader",
+  LIAISO_MSSQL_PASSWORD: "hunter2",
 };
 
 describe("readMssqlEnv", () => {
@@ -23,7 +23,7 @@ describe("readMssqlEnv", () => {
   });
 
   it("treats an empty string as missing", () => {
-    const outcome = readMssqlEnv({ ...complete, SKMCP_MSSQL_PASSWORD: "" });
+    const outcome = readMssqlEnv({ ...complete, LIAISO_MSSQL_PASSWORD: "" });
     expect(outcome.kind).toBe("usage");
   });
 
@@ -49,7 +49,7 @@ describe("readMssqlEnv", () => {
       ["false", false],
       ["0", false],
     ] as const) {
-      const outcome = readMssqlEnv({ ...complete, SKMCP_MSSQL_ENCRYPT: raw });
+      const outcome = readMssqlEnv({ ...complete, LIAISO_MSSQL_ENCRYPT: raw });
       expect(outcome.kind).toBe("config");
       if (outcome.kind === "config") {
         expect(outcome.config.encrypt).toBe(expected);
@@ -58,14 +58,14 @@ describe("readMssqlEnv", () => {
   });
 
   it("refuses a flag it cannot read rather than guessing", () => {
-    expect(readMssqlEnv({ ...complete, SKMCP_MSSQL_ENCRYPT: "yes" }).kind).toBe(
-      "invalid",
-    );
+    expect(
+      readMssqlEnv({ ...complete, LIAISO_MSSQL_ENCRYPT: "yes" }).kind,
+    ).toBe("invalid");
   });
 
   it("refuses a port that is not a positive integer", () => {
     for (const port of ["0", "-1", "1.5", "abc"]) {
-      expect(readMssqlEnv({ ...complete, SKMCP_MSSQL_PORT: port }).kind).toBe(
+      expect(readMssqlEnv({ ...complete, LIAISO_MSSQL_PORT: port }).kind).toBe(
         "invalid",
       );
     }

@@ -1,6 +1,6 @@
 import { extname } from "node:path";
 import type { CoreErrorCode, ErrorFactory } from "./errors.js";
-import { asciiLower } from "@sk-mcp/mcp-core";
+import { asciiLower } from "@liaiso/mcp-core";
 import type { Vocabulary } from "./vocabulary.js";
 
 export type SourceExtension = `.${string}`;

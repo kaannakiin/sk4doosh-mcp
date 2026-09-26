@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace SkMcp.Samples.DemoAuthServer;
+namespace Liaiso.Samples.DemoAuthServer;
 
 public sealed class DemoAuthServerOptions
 {

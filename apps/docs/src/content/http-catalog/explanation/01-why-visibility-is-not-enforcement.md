@@ -1,6 +1,6 @@
 # Why visibility is not enforcement
 
-sk-mcp filters `search_tools` results by the caller's authorization. It is tempting to read that as
+liaiso filters `search_tools` results by the caller's authorization. It is tempting to read that as
 a security feature. It is not one, and treating it as one is the most dangerous mistake you can
 make with this system.
 
@@ -66,10 +66,10 @@ the truth: this might work, we could not tell. It is not an unfinished state; it
 answer.
 
 The same principle appears three times in the rule order — an unreported policy is not `allow`, an
-unknown identity is not `absent`, an unknown anonymity is not `yes`. sk-mcp does not invent values.
+unknown identity is not `absent`, an unknown anonymity is not `yes`. liaiso does not invent values.
 
 ## What this means for you
 
 If your reasoning contains the phrase "it's fine, the agent can't see it", stop. That sentence is
-never a security argument in sk-mcp. Enforcement is your backend's job and it always was; sk-mcp
+never a security argument in liaiso. Enforcement is your backend's job and it always was; liaiso
 did not take it over, and the filter's job is to make the agent's life easier, not to guard you.

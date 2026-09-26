@@ -3,34 +3,34 @@ import { McpServer } from "@modelcontextprotocol/server";
 import {
   CallerVisibilityProvider,
   extensionTokens,
-  registerSkMcpTools,
-  SkMcpCatalog,
-  SkMcpDispatcher,
-  SkMcpStreamableHttp,
-  SK_MCP_OPTIONS,
+  registerLiaisoTools,
+  LiaisoCatalog,
+  LiaisoDispatcher,
+  LiaisoStreamableHttp,
+  LIAISO_OPTIONS,
   type CallerScopeResolver,
   type InvokeResultMapper,
-  type SkMcpOptions,
-  type SkMcpRequestHandler,
-} from "@sk-mcp/sdk-nestjs";
+  type LiaisoOptions,
+  type LiaisoRequestHandler,
+} from "@liaiso/sdk-nestjs";
 import type { Request, Response } from "express";
 
 @Controller()
 export class McpController {
   constructor(
-    private readonly streamableHttp: SkMcpStreamableHttp,
-    private readonly catalog: SkMcpCatalog,
-    private readonly dispatcher: SkMcpDispatcher,
+    private readonly streamableHttp: LiaisoStreamableHttp,
+    private readonly catalog: LiaisoCatalog,
+    private readonly dispatcher: LiaisoDispatcher,
     private readonly visibility: CallerVisibilityProvider,
     @Inject(extensionTokens.invokeResultMapper)
     private readonly mapper: InvokeResultMapper,
     @Inject(extensionTokens.callerScopeResolver)
     private readonly scopes: CallerScopeResolver,
-    @Inject(SK_MCP_OPTIONS) private readonly options: SkMcpOptions,
+    @Inject(LIAISO_OPTIONS) private readonly options: LiaisoOptions,
   ) {
     this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({ name: "demo-api", version: "0.0.0" });
-      registerSkMcpTools(server, {
+      registerLiaisoTools(server, {
         catalog: this.catalog,
         dispatcher: this.dispatcher,
         mapper: this.mapper,
@@ -42,7 +42,7 @@ export class McpController {
     });
   }
 
-  private readonly serve: SkMcpRequestHandler;
+  private readonly serve: LiaisoRequestHandler;
 
   @All("mcp")
   async handle(@Req() req: Request, @Res() res: Response): Promise<void> {

@@ -3,14 +3,14 @@ import {
   type CatalogSeverity,
   type DiagnosticsOptions,
   type SeverityTable,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 
-export { atLeast } from "@sk-mcp/core";
+export { atLeast } from "@liaiso/core";
 export type {
   CatalogDiagnostic,
   CatalogSeverity,
   DiagnosticsOptions,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 
 const defaults: SeverityTable = {
   name_collision: "fatal",

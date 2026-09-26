@@ -1,5 +1,5 @@
-import { asciiUpper } from "@sk-mcp/file-core";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { asciiUpper } from "@liaiso/file-core";
+import { LiaisoExcelError } from "../platform/errors.js";
 
 export interface GridBounds {
   readonly top: number;
@@ -17,7 +17,7 @@ export const maxRow = 1_048_576;
 
 export function columnToLetters(index: number): string {
   if (!Number.isInteger(index) || index < 1 || index > maxColumn) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_range",
       `Column index ${index} is out of bounds.`,
     );
@@ -38,7 +38,7 @@ export function lettersToColumn(letters: string): number {
     index = index * 26 + (character.charCodeAt(0) - 64);
   }
   if (index < 1 || index > maxColumn) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_range",
       `Column '${letters}' is out of bounds.`,
     );
@@ -54,7 +54,7 @@ export interface CellRef {
 export function parseCellRef(reference: string): CellRef {
   const match = cellPattern.exec(reference);
   if (!match) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_range",
       `'${reference}' is not a cell reference.`,
       "Use A1 notation without dollar signs, for example B2.",
@@ -63,14 +63,14 @@ export function parseCellRef(reference: string): CellRef {
   const letters = match[1];
   const digits = match[2];
   if (letters === undefined || digits === undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_range",
       `'${reference}' is not a cell reference.`,
     );
   }
   const row = Number(digits);
   if (row > maxRow) {
-    throw new SkMcpExcelError("invalid_range", `Row ${row} is out of bounds.`);
+    throw new LiaisoExcelError("invalid_range", `Row ${row} is out of bounds.`);
   }
   return { row, column: lettersToColumn(letters) };
 }
@@ -111,7 +111,7 @@ function parsePart(part: string): RangePart {
   if (rowPattern.test(part)) {
     const row = Number(part);
     if (row > maxRow) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_range",
         `Row ${row} is out of bounds.`,
       );
@@ -131,11 +131,11 @@ export function resolveRange(
   }
   const trimmed = requested.trim();
   if (trimmed === "") {
-    throw new SkMcpExcelError("invalid_range", "The range is empty.");
+    throw new LiaisoExcelError("invalid_range", "The range is empty.");
   }
   const segments = trimmed.split(":");
   if (segments.length > 2) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_range",
       `'${requested}' has more than one ':' separator.`,
       "Use a form like B2:D40, B:D, 2:40 or B2.",
@@ -151,7 +151,7 @@ export function resolveRange(
     right: end.column ?? used.right,
   };
   if (bounds.bottom < bounds.top || bounds.right < bounds.left) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_range",
       `'${requested}' ends before it starts.`,
       `Used range is ${formatRange(used)}.`,
@@ -172,7 +172,7 @@ function clampToUsed(
     right: Math.min(bounds.right, used.right),
   };
   if (clamped.bottom < clamped.top || clamped.right < clamped.left) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "range_outside_used_range",
       `Requested ${requested} but the used range is ${formatRange(used)}.`,
       `Pick a range inside ${formatRange(used)}.`,

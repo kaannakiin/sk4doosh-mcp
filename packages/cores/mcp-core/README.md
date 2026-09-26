@@ -1,11 +1,11 @@
-# @sk-mcp/mcp-core
+# @liaiso/mcp-core
 
 Source-agnostic machinery for read-only MCP servers: tool typing, the response budget, the error
-envelope, the cursor codec and a stdio server. `@sk-mcp/file-core` (file sources) and
-`@sk-mcp/db-core` (SQL sources) are both built on top of it.
+envelope, the cursor codec and a stdio server. `@liaiso/file-core` (file sources) and
+`@liaiso/db-core` (SQL sources) are both built on top of it.
 
-This package is **not `@sk-mcp/core`** and does not depend on it in either direction.
-`@sk-mcp/core` is the spec's HTTP catalog reference implementation; this package is the shared
+This package is **not `@liaiso/core`** and does not depend on it in either direction.
+`@liaiso/core` is the spec's HTTP catalog reference implementation; this package is the shared
 machinery behind local source servers. It knows nothing about what a source is — a file, a
 database, anything else. All it knows is the path from a tool's input schema to its response
 envelope.
@@ -98,9 +98,9 @@ A tool that changes or deletes existing state fits no catalogue type, on purpose
 ## Development
 
 ```bash
-pnpm turbo run build check-types lint --filter=@sk-mcp/mcp-core
-pnpm turbo run test --filter=@sk-mcp/mcp-core
+pnpm turbo run build check-types lint --filter=@liaiso/mcp-core
+pnpm turbo run test --filter=@liaiso/mcp-core
 ```
 
-Always build through Turbo, never `pnpm --filter @sk-mcp/mcp-core run build` on its own, so
+Always build through Turbo, never `pnpm --filter @liaiso/mcp-core run build` on its own, so
 generated dependencies stay in sync.

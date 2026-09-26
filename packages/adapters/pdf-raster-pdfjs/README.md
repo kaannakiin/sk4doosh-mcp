@@ -1,19 +1,19 @@
-# @sk-mcp/pdf-raster-pdfjs
+# @liaiso/pdf-raster-pdfjs
 
-An implementation of `@sk-mcp/pdf-mcp`'s `PageRasterizer` port, backed by pdf.js: it renders a
+An implementation of `@liaiso/pdf-mcp`'s `PageRasterizer` port, backed by pdf.js: it renders a
 PDF page to PNG. The server never names this package; whoever wires the binding injects it.
 
 ## Quick start
 
 ```ts
-import { createPdfjsRasterizer } from "@sk-mcp/pdf-raster-pdfjs";
+import { createPdfjsRasterizer } from "@liaiso/pdf-raster-pdfjs";
 
 createPdfMcpServer(root, {
   ocr: { rasterizer: createPdfjsRasterizer(), provider, dpi: 200 },
 });
 ```
 
-Pair it with `@sk-mcp/ocr-ollama` to build a full `OcrBinding` for `pdf-mcp` — see that package's
+Pair it with `@liaiso/ocr-ollama` to build a full `OcrBinding` for `pdf-mcp` — see that package's
 README and `packages/servers/pdf-mcp/examples/ollama-binding.ts`.
 
 ## API
@@ -34,7 +34,7 @@ README and `packages/servers/pdf-mcp/examples/ollama-binding.ts`.
 the type is declared structurally here (`src/port.ts`) so the dependency graph stays acyclic and
 `pdf-mcp` can devDepend on this package without a cycle. `createPdfjsRasterizer`'s result
 satisfies that port and is passed as `rasterizer` in an `OcrBinding`, alongside an `OcrProvider`
-such as `@sk-mcp/ocr-ollama`. Compile-time compatibility between this copy of the port and
+such as `@liaiso/ocr-ollama`. Compile-time compatibility between this copy of the port and
 pdf-mcp's real one is pinned by `pdf-mcp/test/adapters.spec.ts`.
 
 ## Rules
@@ -56,6 +56,6 @@ pdf-mcp's real one is pinned by `pdf-mcp/test/adapters.spec.ts`.
 ## Development
 
 ```sh
-pnpm turbo run build --filter=@sk-mcp/pdf-raster-pdfjs
-pnpm turbo run test --filter=@sk-mcp/pdf-raster-pdfjs
+pnpm turbo run build --filter=@liaiso/pdf-raster-pdfjs
+pnpm turbo run test --filter=@liaiso/pdf-raster-pdfjs
 ```

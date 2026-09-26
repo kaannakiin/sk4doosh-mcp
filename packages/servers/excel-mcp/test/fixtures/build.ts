@@ -658,7 +658,7 @@ async function buildOpc(
 }
 
 export async function buildFixtures(): Promise<Fixtures> {
-  const root = await mkdtemp(join(tmpdir(), "sk-mcp-excel-"));
+  const root = await mkdtemp(join(tmpdir(), "liaiso-excel-"));
   await mkdir(join(root, "q1"));
   const fixtures: Fixtures = {
     root,

@@ -9,8 +9,8 @@
         "GITHUB_REPOSITORY",
         "GITHUB_RUN_ID",
         "GITHUB_SERVER_URL",
-        "SKMCP_XML_BENCH",
-        "SKMCP_XML_F0_NO_NETWORK"
+        "LIAISO_XML_BENCH",
+        "LIAISO_XML_F0_NO_NETWORK"
       ]
     }
   }
