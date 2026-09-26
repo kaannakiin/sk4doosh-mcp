@@ -1,25 +1,6 @@
 name: chat
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "products/**"
-      - "packages/toolchain/oxlint-config/**"
-      - "packages/toolchain/typescript-config/**"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".github/workflows/chat.yml"
-  pull_request:
-    paths:
-      - "products/**"
-      - "packages/toolchain/oxlint-config/**"
-      - "packages/toolchain/typescript-config/**"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "turbo.json"
-      - ".github/workflows/chat.yml"
   workflow_dispatch:
 
 concurrency:
