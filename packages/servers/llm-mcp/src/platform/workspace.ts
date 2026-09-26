@@ -97,6 +97,9 @@ export async function openWorkspace(
 
   const redact = (detail: string): string => detail.replaceAll(root, ".");
 
+  const workspaceRelative = (path: string): string =>
+    relative(root, path).split(sep).join("/");
+
   const resolvePath = async (requested: string): Promise<WorkspacePath> => {
     if (requested === "" || requested.includes("\0")) {
       throw fail(
@@ -138,7 +141,7 @@ export async function openWorkspace(
     path: WorkspacePath,
     maxBytes: number,
   ): Promise<string> => {
-    const shown = relative(root, path);
+    const shown = workspaceRelative(path);
     const { size } = await stat(path);
     if (size > maxBytes) {
       throw fail(
@@ -193,7 +196,7 @@ export async function openWorkspace(
         } finally {
           await handle.close();
         }
-        return relative(root, target);
+        return workspaceRelative(target);
       } catch (error) {
         if (!isTaken(error)) {
           throw error;
