@@ -40,7 +40,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          for tgz in tarballs/*.tgz; do
+          # npm reads a bare "dir/file.tgz" as a GitHub owner/repo; the ./ keeps it a file.
+          for tgz in ./tarballs/*.tgz; do
             spec=$(tar -xOzf "$tgz" package/package.json | node -p 'const p = JSON.parse(require("fs").readFileSync(0)); p.name + "@" + p.version')
             if npm view "$spec" version >/dev/null 2>&1; then
               echo "skip $spec: already published"
