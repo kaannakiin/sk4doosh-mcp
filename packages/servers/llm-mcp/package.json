@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "MCP server that lets a planning agent hand bounded language work to a local model.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/servers/llm-mcp"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/servers/llm-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

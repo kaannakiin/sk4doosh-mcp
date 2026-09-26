@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Shared reader for OOXML containers: zip part source, OPC package, relationships, content types, single-pass XML part scanning.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/cores/ooxml-core"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/cores/ooxml-core#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

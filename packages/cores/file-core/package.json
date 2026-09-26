@@ -3,6 +3,15 @@
   "version": "0.3.0",
   "description": "Shared machinery for read-only, sandboxed, file-backed MCP servers.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/cores/file-core"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/cores/file-core#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

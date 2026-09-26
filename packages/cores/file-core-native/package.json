@@ -4,6 +4,15 @@
   "description": "Handle-relative filesystem access for file-core (Node-API).",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/cores/file-core-native"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/cores/file-core-native#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "engines": {
     "node": ">=22"
   },

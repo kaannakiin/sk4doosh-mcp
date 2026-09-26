@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Source-agnostic machinery for read-only MCP servers: tool typing, response budget, error envelope, cursor codec, stdio server.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/cores/mcp-core"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/cores/mcp-core#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

@@ -3,6 +3,15 @@
   "version": "0.4.0",
   "description": "Read-only MCP server for XML documents.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/servers/xml-mcp"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/servers/xml-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

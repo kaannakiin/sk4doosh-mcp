@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Shared machinery for read-only, dialect-agnostic, database-backed MCP servers.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/cores/db-core"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/cores/db-core#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"
