@@ -162,6 +162,10 @@ internal sealed class LiaisoDispatcher(
     /// Guard: the deadline is armed before any <c>ref</c> is resolved, so a resolver that hangs is
     /// bounded exactly like a backend that hangs. Resolving during the validating composition would
     /// let it outlive the call it serves.
+    /// Guard: the deadline cancels the handler's <c>RequestAborted</c> and the abandon signal from one
+    /// token, so a handler that honours cancellation can win <c>WhenAny</c>; its cancellation is still
+    /// the deadline and must answer <c>invoke_timeout</c>. Pinned by ResponseBudgetTests.R4, which
+    /// failed on net10.0 in CI before <c>await run</c> mapped it.
     /// </remarks>
     private async Task<DispatchResult> DispatchAsync(
         HttpMethod method, ComposedRequest composed, HttpRequest? outerRequest,
@@ -248,7 +252,15 @@ internal sealed class LiaisoDispatcher(
                     throw new LiaisoDispatchTimeout();
                 }
             }
-            await run.ConfigureAwait(false);
+            try
+            {
+                await run.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (linked.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw new LiaisoDispatchTimeout();
+            }
 
             responseBody.Position = 0;
             using StreamReader reader = new(responseBody);
