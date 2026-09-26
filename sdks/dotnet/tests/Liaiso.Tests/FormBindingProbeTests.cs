@@ -197,7 +197,7 @@ public sealed class FormBindingProbeTests : IAsyncLifetime
     public void P4_AFromFormDtoIsFlattenedIntoDottedLeavesWithFileLeavesSourcedAsFormFile()
     {
         ApiDescription ticket = Of("probe-form/ticket");
-        Dictionary<string, BindingSource?> leaves = ticket.ParameterDescriptions
+        Dictionary<string, BindingSource> leaves = ticket.ParameterDescriptions
             .ToDictionary(p => p.Name, p => p.Source);
         Assert.Equal(
             ["Address.City", "Address.Zip", "Attachment", "Priority", "Tags", "Title"],
