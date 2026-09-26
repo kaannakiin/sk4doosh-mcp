@@ -67,11 +67,11 @@ request before the handler runs, but a remote request would run it for real.
 What is gained over a typical adapter is the refusal table above, plus one more: every construct
 the reader cannot carry is a diagnostic with a JSON pointer into the document, never a quiet
 fallback. The rules are in the
-[OpenAPI ingestion spec](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/openapi-ingestion.md).
+[OpenAPI ingestion spec](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/openapi-ingestion.md).
 
 ## How the promises are kept
 
 Each rule above is written down before it is implemented, in the
-[normative spec](https://github.com/kaannakiin/sk4doosh-mcp/tree/main/packages/http/spec), and
+[normative spec](https://github.com/kaannakiin/liaiso/tree/main/packages/http/spec), and
 pinned by a fixture corpus that two independent implementations — TypeScript and C# — must both
 pass. A behaviour that only one implementation has is not a behaviour liaiso promises.

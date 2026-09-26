@@ -50,5 +50,5 @@ has a tutorial, a how-to, a reference page, and an explanation, because those fo
 different questions.
 
 For the normative rules, read the spec in
-[`packages/http/spec`](https://github.com/kaannakiin/sk4doosh-mcp/tree/main/packages/http/spec). These pages
+[`packages/http/spec`](https://github.com/kaannakiin/liaiso/tree/main/packages/http/spec). These pages
 describe; the spec binds.

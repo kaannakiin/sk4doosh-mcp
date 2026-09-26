@@ -5,7 +5,7 @@ through your own authorization pipeline.
 
 You will work inside this repository's `DemoApi` sample, so the SDK is already referenced and you
 can see a result in a couple of minutes. To add the package to your own project instead, the
-install steps are in [`sdks/dotnet/README.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/README.md).
+install steps are in [`sdks/dotnet/README.md`](https://github.com/kaannakiin/liaiso/blob/main/sdks/dotnet/README.md).
 
 ## 1. Look at the three calls
 

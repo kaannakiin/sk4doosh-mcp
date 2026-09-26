@@ -63,7 +63,7 @@ argument. At most one of `Value`, `ValueJson` and `ValueFrom` may be set, and no
 Option groups are twelve properties on `LiaisoOptions` — `Identity`, `Synthetic`, `Selection`,
 `Query`, `Schema`, `Naming`, `Visibility`, `Cache`, `Errors`, `ResourceServer`, `Diagnostics`, `Arguments`. Their fields
 and defaults are in
-[`LiaisoOptions.cs`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/src/Liaiso.AspNetCore/LiaisoOptions.cs);
+[`LiaisoOptions.cs`](https://github.com/kaannakiin/liaiso/blob/main/sdks/dotnet/src/Liaiso.AspNetCore/LiaisoOptions.cs);
 this page does not copy them.
 
 ## NestJS
@@ -155,7 +155,7 @@ interface VisibilityDeclaration {
 `options.invoke.maxFileBytes` are the budgets.
 
 Option fields and defaults are in
-[`options.ts`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/nestjs/src/options.ts).
+[`options.ts`](https://github.com/kaannakiin/liaiso/blob/main/sdks/nestjs/src/options.ts).
 The two option trees are not the same shape — the NestJS tree has a `transport` group the .NET one
 does not — so read each SDK's own file rather than assuming parity.
 

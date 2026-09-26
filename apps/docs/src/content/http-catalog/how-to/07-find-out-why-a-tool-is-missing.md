@@ -65,9 +65,9 @@ earlier: two parameters, not a parameter and a body field, claim one name — mo
 DTOs that each declare a member called `field` or `status`.
 
 The complete lists live in the source, one per SDK:
-[`DiagnosticCodes.cs`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/src/Liaiso.AspNetCore/Discovery/DiagnosticCodes.cs)
+[`DiagnosticCodes.cs`](https://github.com/kaannakiin/liaiso/blob/main/sdks/dotnet/src/Liaiso.AspNetCore/Discovery/DiagnosticCodes.cs)
 and
-[`diagnostics.ts`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/nestjs/src/discovery/diagnostics.ts).
+[`diagnostics.ts`](https://github.com/kaannakiin/liaiso/blob/main/sdks/nestjs/src/discovery/diagnostics.ts).
 There is no single cross-SDK table, because the two sets are not identical.
 
 ## 4. Rule out visibility

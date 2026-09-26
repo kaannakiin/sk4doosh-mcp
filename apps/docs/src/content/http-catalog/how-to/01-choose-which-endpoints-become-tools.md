@@ -158,7 +158,7 @@ startup file; the more local declaration is the more specific one.
 
 Two conflicting markers at the _same_ level are an error, not a resolution: the catalog fails with
 `ambiguous_selection` rather than picking one. The normative rules are in
-[`packages/http/spec/selection-hierarchy.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/selection-hierarchy.md).
+[`packages/http/spec/selection-hierarchy.md`](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/selection-hierarchy.md).
 
 ## Verify the result
 

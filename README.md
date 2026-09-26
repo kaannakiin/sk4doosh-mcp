@@ -38,8 +38,8 @@ The longer argument is on the docs site:
 Requirements: Node.js 24+, pnpm 11 (`corepack enable`), and the .NET 8 or 10 SDK for the C# side.
 
 ```bash
-git clone https://github.com/kaannakiin/sk4doosh-mcp.git
-cd sk4doosh-mcp
+git clone https://github.com/kaannakiin/liaiso.git
+cd liaiso
 pnpm install
 pnpm build
 ```

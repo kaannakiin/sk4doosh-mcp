@@ -4,9 +4,9 @@ An agent knows a tool only from its `inputSchema`. This page describes how a bac
 that schema.
 
 > **Source of truth.** The normative text is
-> [`packages/http/spec/schema-conversion-rules.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/schema-conversion-rules.md)
+> [`packages/http/spec/schema-conversion-rules.md`](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/schema-conversion-rules.md)
 > and the shape it consumes is
-> [`type-shape.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/schemas/type-shape.schema.json);
+> [`type-shape.schema.json`](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/schemas/type-shape.schema.json);
 > where the two differ, the spec wins. Its "Unpinned areas" section lists binding-layer details
 > that are not yet pinned — this page does not present those as settled.
 

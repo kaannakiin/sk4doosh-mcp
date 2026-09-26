@@ -7,7 +7,7 @@ of them as a tool, and how a file gets to your endpoint without the agent writin
 context.
 
 The normative rules are in
-[`packages/http/spec/request-bodies.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/request-bodies.md);
+[`packages/http/spec/request-bodies.md`](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/request-bodies.md);
 where this page and the spec differ, the spec wins.
 
 ## What you get for free
