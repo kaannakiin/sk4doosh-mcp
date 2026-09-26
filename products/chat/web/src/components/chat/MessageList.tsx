@@ -4,6 +4,8 @@ import { IconArrowDown } from "@tabler/icons-react";
 import { UnstyledButton } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
+import { AssistantAura } from "~/components/aura/AssistantAura";
+import type { AuraState } from "~/components/aura/aura-variant";
 import { useStickToBottom } from "~/core/hooks/use-stick-to-bottom";
 import { MessageBubble } from "./MessageBubble";
 import type { ToolDecision } from "./parts/ApprovalControls";
@@ -15,6 +17,14 @@ export interface MessageListProps {
   readonly pending: boolean;
   readonly truncated: boolean;
   readonly onDecision: (decision: ToolDecision) => void;
+}
+
+function auraStateOf(pending: boolean, streaming: boolean): AuraState {
+  if (pending) {
+    return "thinking";
+  }
+
+  return streaming ? "speaking" : "idle";
 }
 
 export function MessageList({
@@ -36,10 +46,15 @@ export function MessageList({
    */
   const drawn = messages.filter((message) => message.parts.length > 0);
   const last = drawn.length - 1;
+  const answer = drawn[last]?.role === "assistant" ? drawn[last] : undefined;
+  const history = answer === undefined ? drawn : drawn.slice(0, last);
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div className="h-full overflow-y-auto overscroll-contain" ref={ref}>
+      <div
+        className="@container h-full overflow-y-auto overscroll-contain"
+        ref={ref}
+      >
         {/**
          * Guard: the gap between turns is owned by this container, not by the
          * turns. A sibling rule keyed on the turn's own class only matches two
@@ -53,21 +68,47 @@ export function MessageList({
             </p>
           ) : null}
 
-          {drawn.map((message, index) => (
+          {history.map((message) => (
             <MessageBubble
               key={message.id}
               sessionId={sessionId}
               message={message}
-              streaming={streaming && index === last}
+              streaming={false}
               onDecision={onDecision}
             />
           ))}
 
-          {pending ? (
-            <p className="chat-thinking font-serif text-[1.0625rem] text-ink-dim italic">
-              {t("conversation.thinking")}
-            </p>
-          ) : null}
+          {/**
+           * Guard: the latest answer and the aura share one wrapper that stays
+           * mounted for the whole conversation, and the aura row sits at a fixed
+           * child index inside it. That keeps one canvas alive from thinking
+           * through speaking to rest; a separate indicator per phase would
+           * remount it and cut every transition the springs exist to ease.
+           */}
+          <div className="relative">
+            {answer === undefined ? null : (
+              <MessageBubble
+                key={answer.id}
+                sessionId={sessionId}
+                message={answer}
+                streaming={streaming}
+                onDecision={onDecision}
+              />
+            )}
+            {answer === undefined && !pending ? null : (
+              <div className="pointer-events-none sticky bottom-4 flex min-h-9 items-center gap-3 @4xl:min-h-0">
+                <AssistantAura
+                  state={auraStateOf(pending, streaming)}
+                  className="size-8 @4xl:absolute @4xl:-start-16 @4xl:top-1/2 @4xl:size-11 @4xl:-translate-y-1/2"
+                />
+                {pending ? (
+                  <p className="chat-thinking font-serif text-[1.0625rem] text-ink-dim italic">
+                    {t("conversation.thinking")}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

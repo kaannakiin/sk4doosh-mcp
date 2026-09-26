@@ -22,6 +22,9 @@
   --chat-green: #2f6b3a;
   --chat-red: #a8342b;
   --chat-grain: rgba(29, 26, 21, 0.022);
+  --chat-aura-core: #faf7f2;
+  --chat-aura-mid: #b6d3cf;
+  --chat-aura-edge: #69a49e;
 }
 
 [data-mantine-color-scheme="dark"] {
@@ -38,6 +41,9 @@
   --chat-green: #79c08a;
   --chat-red: #e58a7f;
   --chat-grain: rgba(255, 255, 255, 0.018);
+  --chat-aura-core: #b6d3cf;
+  --chat-aura-mid: #2c6763;
+  --chat-aura-edge: #1f5f5b;
 }
 
 /**
@@ -103,6 +109,46 @@ body {
 .chat-thinking::after {
   content: "…";
   animation: chat-blink 1.4s steps(2, start) infinite;
+}
+
+.chat-aura-still {
+  background: radial-gradient(
+    circle at 34% 30%,
+    var(--chat-aura-core) 0%,
+    var(--chat-aura-mid) 55%,
+    var(--chat-aura-edge) 100%
+  );
+}
+
+.chat-aura::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--chat-accent) 18%, transparent),
+    transparent
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+
+.chat-aura[data-state="thinking"]::before {
+  opacity: 0.6;
+}
+
+.chat-aura[data-state="speaking"]::before {
+  opacity: 1;
+  animation: chat-aura-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes chat-aura-breathe {
+  50% {
+    transform: scale(1.12);
+  }
 }
 
 @keyframes chat-blink {
@@ -307,7 +353,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .chat-markdown[data-live] > :last-child::after,
-  .chat-thinking::after {
+  .chat-thinking::after,
+  .chat-aura::before {
     animation: none;
   }
 }

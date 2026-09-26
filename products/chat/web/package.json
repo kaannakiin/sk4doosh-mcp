@@ -32,6 +32,7 @@
     "react-i18next": "^17.0.13",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "typegpu": "^0.12.5",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -43,12 +44,14 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@webgpu/types": "^0.1.74",
     "oxlint": "1.85.0",
     "postcss": "^8.5.6",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
+    "unplugin-typegpu": "^0.12.3",
     "vite": "^8.2.2"
   }
 }
