@@ -34,15 +34,15 @@ jobs:
           - { id: darwin-arm64, os: macos-15, pdf: true }
           - { id: win32-x64, os: windows-2022, pdf: true }
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.23.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pnpm install --frozen-lockfile
@@ -51,7 +51,7 @@ jobs:
       - run: pnpm pack --filter=@liaiso/file-core-native --filter=@liaiso/mcp-core --filter=@liaiso/db-core --filter=@liaiso/mssql-mcp --filter=@liaiso/file-core --filter=@liaiso/ooxml-core --filter=@liaiso/excel-mcp --filter=@liaiso/xml-mcp --filter=@liaiso/llm-mcp ${{ matrix.target.pdf && '--filter=@liaiso/pdf-mcp --filter=@liaiso/pdf-raster-pdfjs --filter=@liaiso/ocr-ollama' || '' }} --pack-destination ./local/native-tarballs
       - run: python3 .github/scripts/check-npm-tarballs.py local/native-tarballs
       - run: node .github/scripts/smoke-file-packages.mjs local/native-tarballs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: matrix.node == 24
         with:
           name: native-${{ matrix.target.id }}
@@ -62,15 +62,15 @@ jobs:
     name: build, lint, types, fixtures
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.23.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -84,15 +84,15 @@ jobs:
     name: dotnet test (net8.0 + net10.0)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.23.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -106,29 +106,29 @@ jobs:
     runs-on: ubuntu-latest
     needs: [node, dotnet, native]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.23.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
             10.0.x
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo run pack --filter=@liaiso/sdk-dotnet
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Liaiso.AspNetCore-nupkg
           path: sdks/dotnet/local/nupkg-feed/*
       - run: pnpm turbo run build --filter=@liaiso/mcp-core --filter=@liaiso/db-core --filter=@liaiso/mssql-mcp --filter=@liaiso/file-core --filter=@liaiso/ooxml-core --filter=@liaiso/excel-mcp --filter=@liaiso/xml-mcp --filter=@liaiso/pdf-mcp --filter=@liaiso/pdf-raster-pdfjs --filter=@liaiso/ocr-ollama --filter=@liaiso/llm-mcp
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: native-*
           path: packages/cores/file-core-native/prebuilds/
@@ -138,7 +138,7 @@ jobs:
         env:
           LIAISO_REQUIRE_ALL_PREBUILDS: "1"
       - run: node .github/scripts/smoke-file-packages.mjs local/npm-tarballs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-tarballs
           path: local/npm-tarballs/*.tgz
