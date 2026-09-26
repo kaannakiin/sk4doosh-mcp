@@ -2,7 +2,25 @@
   "name": "@liaiso/ocr-ollama",
   "version": "0.1.0",
   "description": "OcrProvider for @liaiso/pdf-mcp, backed by an Ollama vision model.",
+  "keywords": [
+    "ocr",
+    "ollama",
+    "vision",
+    "pdf",
+    "pdf-mcp",
+    "mcp",
+    "liaiso"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/adapters/ocr-ollama"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/adapters/ocr-ollama#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

@@ -1,8 +1,34 @@
 {
   "name": "@liaiso/excel-mcp",
   "version": "0.6.0",
-  "description": "Read-only MCP server for Excel workbooks.",
+  "description": "Read-only MCP server that lets AI agents read local Excel workbooks (.xlsx, .xlsm, .csv): cells, formulas, tables and defined names, sandboxed to one folder.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agents",
+    "llm",
+    "claude",
+    "liaiso",
+    "excel",
+    "xlsx",
+    "xlsm",
+    "csv",
+    "spreadsheet",
+    "workbook",
+    "read-only",
+    "sandbox"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/servers/excel-mcp"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/servers/excel-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

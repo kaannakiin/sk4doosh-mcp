@@ -1,0 +1,54 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run the full CI and pack, but do not publish
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-tarballs
+          path: tarballs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm --version
+      - name: Publish tarballs
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          for tgz in tarballs/*.tgz; do
+            spec=$(tar -xOzf "$tgz" package/package.json | node -p 'const p = JSON.parse(require("fs").readFileSync(0)); p.name + "@" + p.version')
+            if npm view "$spec" version >/dev/null 2>&1; then
+              echo "skip $spec: already published"
+              continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              npm publish "$tgz" --access public --dry-run
+            else
+              npm publish "$tgz" --access public --provenance
+            fi
+          done

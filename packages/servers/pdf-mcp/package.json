@@ -1,8 +1,34 @@
 {
   "name": "@liaiso/pdf-mcp",
   "version": "0.1.0",
-  "description": "Read-only MCP server for PDF documents.",
+  "description": "Read-only MCP server that lets AI agents extract text from local PDF documents, with optional pluggable OCR. Never reaches the network.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agents",
+    "llm",
+    "claude",
+    "liaiso",
+    "pdf",
+    "pdf-to-text",
+    "pdf-extraction",
+    "text-extraction",
+    "ocr",
+    "offline",
+    "read-only",
+    "sandbox"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaannakiin/liaiso.git",
+    "directory": "packages/servers/pdf-mcp"
+  },
+  "homepage": "https://github.com/kaannakiin/liaiso/tree/main/packages/servers/pdf-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/kaannakiin/liaiso/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

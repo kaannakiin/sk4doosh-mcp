@@ -5,9 +5,13 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
+# github.workflow is the caller's name under workflow_call, so a release
+# build started by publish.yml never shares a group with a push to main,
+# which would cancel it halfway through.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 # Every job is opt-in. The matrix spans four runners and two of them are macOS,
@@ -148,7 +152,7 @@ jobs:
           pattern: native-*
           path: packages/cores/file-core-native/prebuilds/
           merge-multiple: true
-      - run: pnpm pack --filter=@liaiso/file-core-native --filter=@liaiso/mcp-core --filter=@liaiso/db-core --filter=@liaiso/mssql-mcp --filter=@liaiso/file-core --filter=@liaiso/ooxml-core --filter=@liaiso/excel-mcp --filter=@liaiso/xml-mcp --filter=@liaiso/pdf-mcp --filter=@liaiso/llm-mcp --pack-destination ./local/npm-tarballs
+      - run: pnpm pack --filter=@liaiso/file-core-native --filter=@liaiso/mcp-core --filter=@liaiso/db-core --filter=@liaiso/mssql-mcp --filter=@liaiso/file-core --filter=@liaiso/ooxml-core --filter=@liaiso/excel-mcp --filter=@liaiso/xml-mcp --filter=@liaiso/pdf-mcp --filter=@liaiso/llm-mcp --filter=@liaiso/pdf-raster-pdfjs --filter=@liaiso/ocr-ollama --pack-destination ./local/npm-tarballs
       - run: python3 .github/scripts/check-npm-tarballs.py local/npm-tarballs
         env:
           LIAISO_REQUIRE_ALL_PREBUILDS: "1"
