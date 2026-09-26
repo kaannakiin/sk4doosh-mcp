@@ -65,9 +65,9 @@ describe("synthetic metadata", () => {
     expect((await meta(custom)).accept).toBe("application/xml");
   });
 
-  it("M5: user-agent defaults to sk-mcp/{version} and is overridable", async () => {
+  it("M5: user-agent defaults to liaiso/{version} and is overridable", async () => {
     const app = await start();
-    expect((await meta(app)).userAgent).toMatch(/^sk-mcp\//);
+    expect((await meta(app)).userAgent).toMatch(/^liaiso\//);
     await app.close();
 
     const custom = await start((options) => {

@@ -1,4 +1,4 @@
-import { SkMcpCatalogError, SkMcpTemplateError } from "./errors.js";
+import { LiaisoCatalogError, LiaisoTemplateError } from "./errors.js";
 import type {
   EndpointDescriptor,
   ToolVariant,
@@ -129,7 +129,7 @@ export function applyPrefix(body: string, prefix: string | undefined): string {
 
 function validate(name: string, endpoint: EndpointDescriptor): string {
   if (!toolNamePattern.test(name)) {
-    throw new SkMcpCatalogError(
+    throw new LiaisoCatalogError(
       "invalid_name",
       `Generated tool name '${name}' for ${endpoint.method} ${endpoint.route} does not match the required pattern; define an operationId or a tool name.`,
     );
@@ -252,7 +252,7 @@ export function expandToolProductions<T>(
       continue;
     }
     if (endpoint.toolName !== undefined) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "variant_declaration_conflict",
         `${endpoint.method} ${endpoint.route} declares both a tool name and variants; a variant names itself.`,
       );
@@ -311,7 +311,7 @@ export function createToolNames(
     const name = names[index] as string;
     const owner = claimed.get(name);
     if (owner !== undefined) {
-      throw new SkMcpCatalogError(
+      throw new LiaisoCatalogError(
         "name_collision",
         `Tool name '${name}' is produced by both ${owner.method} ${owner.route} and ${endpoint.method} ${endpoint.route}; declare a tool name on one of them.`,
       );

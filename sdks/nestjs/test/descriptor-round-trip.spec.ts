@@ -24,12 +24,12 @@ import {
   createRequestTemplateFromEndpoint,
   createToolDefinition,
   expandToolProductions,
-  SkMcpTemplateError,
+  LiaisoTemplateError,
   type EndpointDescriptor,
   type FileOptions,
   type Fixture,
   type ToolDefinition,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import { describe, expect, it } from "vitest";
 import { cleanTags, declaredDescriptor, toCuration } from "../src/catalog.js";
 import { curate, hidden, McpTool, McpVariant } from "../src/decorators.js";
@@ -914,8 +914,8 @@ describe("nest descriptor round-trip against metadata-extraction", () => {
           toolsOf(descriptor, host.files);
           expect.unreachable("expected a template error");
         } catch (error) {
-          expect(error).toBeInstanceOf(SkMcpTemplateError);
-          expect((error as SkMcpTemplateError).code).toBe(expected.error);
+          expect(error).toBeInstanceOf(LiaisoTemplateError);
+          expect((error as LiaisoTemplateError).code).toBe(expected.error);
         }
         return;
       }

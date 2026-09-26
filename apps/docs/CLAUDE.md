@@ -2,20 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Scope: `apps/docs`, the sk-mcp documentation site. The repo-root `CLAUDE.md` still applies — this
+Scope: `apps/docs`, the liaiso documentation site. The repo-root `CLAUDE.md` still applies — this
 file adds what is specific to this app and overrides it where stated.
 
 ## Commands
 
 Run from the repo root:
 
-- `pnpm --filter @sk-mcp/docs dev` — dev server on `http://localhost:5180`
-- `pnpm turbo run build --filter=@sk-mcp/docs` — production build into `dist/`
-- `pnpm --filter @sk-mcp/docs start` — serve the SSR build (requires a build first)
-- `pnpm --filter @sk-mcp/docs lint` / `check-types`
+- `pnpm --filter @liaiso/docs dev` — dev server on `http://localhost:5180`
+- `pnpm turbo run build --filter=@liaiso/docs` — production build into `dist/` (Worker in
+  `dist/server`, prerendered pages and assets in `dist/client`)
+- `pnpm --filter @liaiso/docs preview` — serve the build locally in `workerd` (requires a build first)
+- `pnpm --filter @liaiso/docs deploy` — `wrangler deploy` to the `liaiso-docs` Worker (requires a build first)
+- `pnpm --filter @liaiso/docs lint` / `check-types`
 
-Use turbo for `build` so `^build` dependencies resolve; `dev` and `start` do not need it. There
-are no tests in this app.
+Use turbo for `build` so `^build` dependencies resolve; `dev`, `preview` and `deploy` do not need it.
+There are no tests in this app.
+
+## Hosting
+
+The site runs on Cloudflare Workers through `@cloudflare/vite-plugin`; `wrangler.jsonc` is the
+config. Every page reachable by a link is prerendered at build time (`prerender.crawlLinks`) and
+served as a static asset; the Worker only answers what no file matches — the `/docs` and
+`/docs/$product` redirects and 404s. `cloudflare()` must stay first in `vite.config.ts`.
+
+`assets.html_handling` is `drop-trailing-slash` because prerender writes `<route>/index.html` while
+every link is slash-less; the default `auto-trailing-slash` would answer each page with a 307 to
+`<route>/`.
 
 ## Writing documentation
 
@@ -36,7 +49,7 @@ sidebar. Adding a **product** is two steps — create `src/content/<id>/` with a
 add one `{ id, label, tagline }` entry to `src/content/products.json`. No route file changes;
 `$product` is a route param, so `routeTree.gen.ts` is untouched.
 
-`pnpm --filter @sk-mcp/docs validate` (`scripts/check-content.mjs`) enforces the structural half of
+`pnpm --filter @liaiso/docs validate` (`scripts/check-content.mjs`) enforces the structural half of
 `WRITING.md`: folder/registry agreement, mode directory names, numeric prefixes, unique
 slugs, a `# Title` on every page, the how-to/reference title patterns, and that every internal
 `/docs/...` link points at a page that exists. It runs inside `pnpm lint` and in CI's node job.
@@ -46,7 +59,7 @@ time, so a `throw` in it fails `dev` but not `build`. The `validate` script is t
 
 ## Language
 
-Site content and UI strings are **English** — this site is sk-mcp's public face, and so is
+Site content and UI strings are **English** — this site is liaiso's public face, and so is
 `packages/http/spec`, which these pages link to as normative. There is no i18n layer, by design.
 
 ## Style layers — the one thing that breaks silently
@@ -80,5 +93,5 @@ forbid the pair. If a Mantine component ever looks unstyled, check this file fir
 - **`postcss.config.js` is not for Tailwind.** Tailwind goes through `@tailwindcss/vite`. The
   PostCSS config exists only so `.module.css` files can use Mantine mixins (`@mixin dark`, `rem()`).
 - **`tsconfig.json` overrides the shared base to `moduleResolution: Bundler`** because
-  `@sk-mcp/typescript-config/base.json` is `NodeNext` and TanStack Start requires Bundler. Leave
+  `@liaiso/typescript-config/base.json` is `NodeNext` and TanStack Start requires Bundler. Leave
   `verbatimModuleSyntax` off — Start's docs warn it can leak server bundles into the client.

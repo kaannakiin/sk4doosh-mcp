@@ -4,11 +4,11 @@ import {
   type CacheKey,
   type CallerFacts,
   type CallerScope,
-  type SkMcpCache,
+  type LiaisoCache,
   type VisibilityDecision,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import type { CatalogEntry } from "../catalog.js";
-import type { OuterRequest, SkMcpOptions } from "../options.js";
+import type { OuterRequest, LiaisoOptions } from "../options.js";
 import type { ProbeEvaluator } from "./probe.js";
 import type { VisibilityEvaluator } from "./evaluator.js";
 
@@ -20,8 +20,8 @@ export class CallerVisibilityProvider {
   constructor(
     private readonly evaluator: VisibilityEvaluator,
     private readonly prober: ProbeEvaluator,
-    private readonly cache: SkMcpCache,
-    private readonly options: SkMcpOptions,
+    private readonly cache: LiaisoCache,
+    private readonly options: LiaisoOptions,
   ) {}
 
   bump(): void {

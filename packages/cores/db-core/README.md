@@ -1,14 +1,14 @@
-# @sk-mcp/db-core
+# @liaiso/db-core
 
-Shared machinery for read-only, dialect-agnostic, database-backed MCP servers. `@sk-mcp/mssql-mcp` builds on it; `pg-mcp` will too.
+Shared machinery for read-only, dialect-agnostic, database-backed MCP servers. `@liaiso/mssql-mcp` builds on it; `pg-mcp` will too.
 
-It consumes `@sk-mcp/mcp-core` (tool typing, response budget, error envelope, stdio server) and adds the relational layer on top: a connection pool, the cancellation rule, a value policy, catalogue introspection, and the four read-only tools.
+It consumes `@liaiso/mcp-core` (tool typing, response budget, error envelope, stdio server) and adds the relational layer on top: a connection pool, the cancellation rule, a value policy, catalogue introspection, and the four read-only tools.
 
-This package is **not `@sk-mcp/core`** — that one is the spec's HTTP catalog reference implementation.
+This package is **not `@liaiso/core`** — that one is the spec's HTTP catalog reference implementation.
 
 ## Usage
 
-A product server plugs in a `Dialect<TConfig>` (everything one engine knows that another does not) and a `DriverAdapter<TConfig>` (the socket); `db-core` names no driver anywhere, not as a dependency, not as a peer. `createDbSource` binds a dialect, a connection profile and a driver adapter into the object every tool handler runs against, and `createDbMcpServer` builds the MCP server from it — this is exactly how `@sk-mcp/mssql-mcp` is composed (`packages/servers/mssql-mcp/src/server.ts`):
+A product server plugs in a `Dialect<TConfig>` (everything one engine knows that another does not) and a `DriverAdapter<TConfig>` (the socket); `db-core` names no driver anywhere, not as a dependency, not as a peer. `createDbSource` binds a dialect, a connection profile and a driver adapter into the object every tool handler runs against, and `createDbMcpServer` builds the MCP server from it — this is exactly how `@liaiso/mssql-mcp` is composed (`packages/servers/mssql-mcp/src/server.ts`):
 
 ```ts
 import {
@@ -16,7 +16,7 @@ import {
   createDbMcpServer,
   createDbSource,
   type DbSource,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 import { mssqlDialect } from "./dialect/index.js";
 import { createMssqlDriver } from "./driver/adapter.js";
 import { asMssqlError, fail } from "./platform/errors.js";
@@ -43,7 +43,7 @@ export function createMssqlSource(config: MssqlConfig): DbSource<MssqlConfig> {
 
 export function createMssqlMcpServer(source: DbSource<MssqlConfig>) {
   return createDbMcpServer(
-    { name: "sk-mcp-mssql", version: "0.1.0" },
+    { name: "liaiso-mssql", version: "0.1.0" },
     source,
     asMssqlError,
   );
@@ -138,5 +138,5 @@ Deliberately out of scope:
 ## Development
 
 ```text
-pnpm turbo run test --filter=@sk-mcp/db-core
+pnpm turbo run test --filter=@liaiso/db-core
 ```

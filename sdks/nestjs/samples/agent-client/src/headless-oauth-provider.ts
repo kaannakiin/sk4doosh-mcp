@@ -33,7 +33,7 @@ export class HeadlessOAuthProvider implements OAuthClientProvider {
 
   get clientMetadata(): OAuthClientMetadata {
     return {
-      client_name: "sk-mcp-example-agent",
+      client_name: "liaiso-example-agent",
       redirect_uris: [this._redirectUrl],
       token_endpoint_auth_method: "none",
       application_type: "native",

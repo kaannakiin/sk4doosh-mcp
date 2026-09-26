@@ -3,7 +3,7 @@ import {
   guard as coreGuard,
   type ErrorContext,
   type GuardedHandler,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 
 import { asXmlError, fail } from "../host/platform/errors.js";
 import type { Definitions, ToolInput, ToolName } from "./definitions.js";

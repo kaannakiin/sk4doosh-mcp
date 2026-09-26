@@ -1,5 +1,5 @@
 import type { OxlintConfig } from "oxlint";
-import { config as base } from "@sk-mcp/oxlint-config/base";
+import { config as base } from "@liaiso/oxlint-config/base";
 
 export const config = {
   ...base,

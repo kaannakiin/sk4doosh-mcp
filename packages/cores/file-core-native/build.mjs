@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const version = process.versions.node;
 const candidates = [
-  process.env.SKMCP_NODE_HEADERS,
+  process.env.LIAISO_NODE_HEADERS,
   resolve(dirname(process.execPath), "../include/node"),
   join(homedir(), "Library/Caches/node-gyp", version, "include/node"),
   join(homedir(), ".cache/node-gyp", version, "include/node"),
@@ -23,7 +23,7 @@ const headers = candidates.find((candidate) =>
 );
 if (!headers)
   throw new Error(
-    "Node-API headers missing. Set SKMCP_NODE_HEADERS to an installed Node include directory.",
+    "Node-API headers missing. Set LIAISO_NODE_HEADERS to an installed Node include directory.",
   );
 const outputDir = join(
   root,
@@ -37,9 +37,9 @@ let compiler;
 let args;
 if (process.platform === "win32") {
   compiler = "cl.exe";
-  const library = process.env.SKMCP_NODE_LIB;
+  const library = process.env.LIAISO_NODE_LIB;
   if (!library || !existsSync(library))
-    throw new Error("Set SKMCP_NODE_LIB to the matching x64 node.lib.");
+    throw new Error("Set LIAISO_NODE_LIB to the matching x64 node.lib.");
   args = [
     "/nologo",
     "/LD",

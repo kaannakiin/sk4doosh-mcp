@@ -1,6 +1,6 @@
-# sk-mcp
+# liaiso
 
-**Swagger for agents.** sk-mcp turns what you already have — an HTTP backend, a folder of
+**Swagger for agents.** liaiso turns what you already have — an HTTP backend, a folder of
 spreadsheets, a SQL Server database — into tools an AI agent can find and call over the
 [Model Context Protocol](https://modelcontextprotocol.io).
 
@@ -21,7 +21,7 @@ It comes in two shapes:
 
 A naive MCP adapter turns every endpoint into a tool and forwards calls over the network. That
 floods the agent's context, loses the caller's identity and silently papers over what it cannot
-represent. sk-mcp instead:
+represent. liaiso instead:
 
 - shows the agent **three meta-tools** (`search_tools`, `load_tool`, `invoke_tool`) rather than the
   whole catalog, so the size of your API does not grow the agent's context;
@@ -31,15 +31,15 @@ represent. sk-mcp instead:
   an error with a code the agent can act on.
 
 The longer argument is on the docs site:
-[why sk-mcp is not an OpenAPI adapter](apps/docs/src/content/http-catalog/explanation/06-why-sk-mcp-is-not-an-openapi-adapter.md).
+[why liaiso is not an OpenAPI adapter](apps/docs/src/content/http-catalog/explanation/06-why-liaiso-is-not-an-openapi-adapter.md).
 
 ## Quick start
 
 Requirements: Node.js 24+, pnpm 11 (`corepack enable`), and the .NET 8 or 10 SDK for the C# side.
 
 ```bash
-git clone https://github.com/kaannakiin/sk4doosh-mcp.git
-cd sk4doosh-mcp
+git clone https://github.com/kaannakiin/liaiso.git
+cd liaiso
 pnpm install
 pnpm build
 ```
@@ -66,11 +66,11 @@ Each package README has its own quick start, configuration and limits.
 
 | Package                                             | What it is                                                            | Status    |
 | --------------------------------------------------- | --------------------------------------------------------------------- | --------- |
-| [SkMcp.AspNetCore](sdks/dotnet)                     | ASP.NET Core SDK                                                      | alpha     |
-| [@sk-mcp/sdk-nestjs](sdks/nestjs)                   | NestJS SDK                                                            | internal  |
-| [@sk-mcp/openapi-mcp](packages/servers/openapi-mcp) | Gateway: an OpenAPI document as a catalog over a remote backend       | internal  |
-| [@sk-mcp/openapi](packages/http/openapi)            | Swagger 2.0 / OpenAPI 3.0–3.2 ingestion                               | internal  |
-| [@sk-mcp/core](packages/http/core)                  | TypeScript reference implementation of the spec                       | internal  |
+| [Liaiso.AspNetCore](sdks/dotnet)                    | ASP.NET Core SDK                                                      | alpha     |
+| [@liaiso/sdk-nestjs](sdks/nestjs)                   | NestJS SDK                                                            | internal  |
+| [@liaiso/openapi-mcp](packages/servers/openapi-mcp) | Gateway: an OpenAPI document as a catalog over a remote backend       | internal  |
+| [@liaiso/openapi](packages/http/openapi)            | Swagger 2.0 / OpenAPI 3.0–3.2 ingestion                               | internal  |
+| [@liaiso/core](packages/http/core)                  | TypeScript reference implementation of the spec                       | internal  |
 | [spec](packages/http/spec)                          | The normative spec and JSON Schemas — the single source of truth      | normative |
 | [conformance](packages/http/conformance)            | 480 JSON fixtures across 11 kinds that every implementation must pass | —         |
 
@@ -78,24 +78,24 @@ Each package README has its own quick start, configuration and limits.
 
 | Package                                                        | What it is                                                   | Status      |
 | -------------------------------------------------------------- | ------------------------------------------------------------ | ----------- |
-| [@sk-mcp/excel-mcp](packages/servers/excel-mcp)                | Reads local Excel workbooks                                  | publishable |
-| [@sk-mcp/xml-mcp](packages/servers/xml-mcp)                    | Reads local XML documents                                    | publishable |
-| [@sk-mcp/pdf-mcp](packages/servers/pdf-mcp)                    | Reads local PDF documents, with pluggable OCR                | publishable |
-| [@sk-mcp/mssql-mcp](packages/servers/mssql-mcp)                | Read-only Microsoft SQL Server                               | publishable |
-| [@sk-mcp/llm-mcp](packages/servers/llm-mcp)                    | Delegates bounded language work to a local model (Ollama)    | publishable |
-| [@sk-mcp/ocr-ollama](packages/adapters/ocr-ollama)             | OCR provider for pdf-mcp                                     | publishable |
-| [@sk-mcp/pdf-raster-pdfjs](packages/adapters/pdf-raster-pdfjs) | Page rasterizer for pdf-mcp                                  | publishable |
-| [@sk-mcp/mcp-core](packages/cores/mcp-core)                    | Source-agnostic machinery for read-only MCP servers          | publishable |
-| [@sk-mcp/file-core](packages/cores/file-core)                  | Sandboxed file layer over mcp-core                           | publishable |
-| [@sk-mcp/db-core](packages/cores/db-core)                      | Relational layer over mcp-core; dialects and drivers plug in | publishable |
-| [@sk-mcp/ooxml-core](packages/cores/ooxml-core)                | Reader for OOXML (zip/OPC) containers                        | publishable |
+| [@liaiso/excel-mcp](packages/servers/excel-mcp)                | Reads local Excel workbooks                                  | publishable |
+| [@liaiso/xml-mcp](packages/servers/xml-mcp)                    | Reads local XML documents                                    | publishable |
+| [@liaiso/pdf-mcp](packages/servers/pdf-mcp)                    | Reads local PDF documents, with pluggable OCR                | publishable |
+| [@liaiso/mssql-mcp](packages/servers/mssql-mcp)                | Read-only Microsoft SQL Server                               | publishable |
+| [@liaiso/llm-mcp](packages/servers/llm-mcp)                    | Delegates bounded language work to a local model (Ollama)    | publishable |
+| [@liaiso/ocr-ollama](packages/adapters/ocr-ollama)             | OCR provider for pdf-mcp                                     | publishable |
+| [@liaiso/pdf-raster-pdfjs](packages/adapters/pdf-raster-pdfjs) | Page rasterizer for pdf-mcp                                  | publishable |
+| [@liaiso/mcp-core](packages/cores/mcp-core)                    | Source-agnostic machinery for read-only MCP servers          | publishable |
+| [@liaiso/file-core](packages/cores/file-core)                  | Sandboxed file layer over mcp-core                           | publishable |
+| [@liaiso/db-core](packages/cores/db-core)                      | Relational layer over mcp-core; dialects and drivers plug in | publishable |
+| [@liaiso/ooxml-core](packages/cores/ooxml-core)                | Reader for OOXML (zip/OPC) containers                        | publishable |
 
 "Publishable" means the package is built and checked for publication in CI but not on npm yet.
 
 ### Also in this repository
 
 - [apps/docs](apps/docs) — the documentation site (TanStack Start). Run it with
-  `pnpm --filter @sk-mcp/docs dev` and open `http://localhost:5180`.
+  `pnpm --filter @liaiso/docs dev` and open `http://localhost:5180`.
 - [products/chat](products/chat) — a chat product built on these servers. It is a separate
   product line and shares only the toolchain.
 

@@ -1,5 +1,5 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/base";
+import { config } from "@liaiso/oxlint-config/base";
 
 export default defineConfig({
   extends: [config],

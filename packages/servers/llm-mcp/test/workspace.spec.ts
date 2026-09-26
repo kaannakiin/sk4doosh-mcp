@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { fail, SkMcpLlmError } from "../src/platform/errors.js";
+import { fail, LiaisoLlmError } from "../src/platform/errors.js";
 import { openWorkspace, type Workspace } from "../src/platform/workspace.js";
 
 let base: string;
@@ -36,8 +36,8 @@ afterAll(async () => {
 
 const codeOf = async (work: Promise<unknown>): Promise<string> => {
   const error: unknown = await work.catch((caught: unknown) => caught);
-  expect(error).toBeInstanceOf(SkMcpLlmError);
-  return (error as SkMcpLlmError).code;
+  expect(error).toBeInstanceOf(LiaisoLlmError);
+  return (error as LiaisoLlmError).code;
 };
 
 describe("resolve", () => {

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Fingerprint } from "@sk-mcp/mcp-core";
+import type { Fingerprint } from "@liaiso/mcp-core";
 
 /**
  * Identity from filesystem metadata alone: cheap, and enough for a listing that

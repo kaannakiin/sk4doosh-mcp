@@ -1,20 +1,20 @@
-import type { SkMcpOptions } from "./options.js";
+import type { LiaisoOptions } from "./options.js";
 
-export class SkMcpConfigurationError extends Error {
+export class LiaisoConfigurationError extends Error {
   constructor(readonly failures: readonly string[]) {
-    super(`sk-mcp: invalid configuration.\n  ${failures.join("\n  ")}`);
-    this.name = "SkMcpConfigurationError";
+    super(`liaiso: invalid configuration.\n  ${failures.join("\n  ")}`);
+    this.name = "LiaisoConfigurationError";
   }
 }
 
 /**
- * Mirrors the ASP.NET `SkMcpOptionsValidator` so the two surfaces can be audited side by side.
+ * Mirrors the ASP.NET `LiaisoOptionsValidator` so the two surfaces can be audited side by side.
  *
  * @param options the configured options
  * @returns one message per invalid setting, empty when the configuration is usable
  */
 export function collectConfigurationFailures(
-  options: SkMcpOptions,
+  options: LiaisoOptions,
 ): readonly string[] {
   const failures: string[] = [];
   if (options.cache.lifetimeMs < 0) {
@@ -66,11 +66,11 @@ export function collectConfigurationFailures(
 
 /**
  * @param options the configured options
- * @throws SkMcpConfigurationError when any setting is unusable
+ * @throws LiaisoConfigurationError when any setting is unusable
  */
-export function validateSkMcpOptions(options: SkMcpOptions): void {
+export function validateLiaisoOptions(options: LiaisoOptions): void {
   const failures = collectConfigurationFailures(options);
   if (failures.length > 0) {
-    throw new SkMcpConfigurationError(failures);
+    throw new LiaisoConfigurationError(failures);
   }
 }

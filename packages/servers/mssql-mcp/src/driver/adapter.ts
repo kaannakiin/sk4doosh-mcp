@@ -7,7 +7,7 @@ import {
   type QueryResult,
   type QuerySpec,
   type RunningQuery,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 import type { MssqlConfig } from "../platform/env.js";
 import { describeType } from "../dialect/types.js";
 

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.Authentication;
-using SkMcp.AspNetCore;
-using SkMcp.AspNetCore.Discovery;
-using SkMcp.Samples.DemoAuthServer;
+using Liaiso.AspNetCore;
+using Liaiso.AspNetCore.Discovery;
+using Liaiso.Samples.DemoAuthServer;
 
 const string McpResource = "http://127.0.0.1:5178/mcp";
 const string Issuer = "http://127.0.0.1:5178/oauth";
@@ -41,9 +41,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("BusinessHours", policy => policy.RequireAssertion(_ => DateTime.UtcNow.Hour is >= 6 and < 22));
 });
 
-builder.Services.AddSingleton<SkMcp.AspNetCore.Files.ISkMcpFileResolver, DemoApi.DemoAttachmentResolver>();
+builder.Services.AddSingleton<Liaiso.AspNetCore.Files.ILiaisoFileResolver, DemoApi.DemoAttachmentResolver>();
 builder.Services.AddOpenApi();
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Visibility.Tier = VisibilityTier.Probe;
     if (Environment.GetEnvironmentVariable("DEMOAPI_QUERY_GROUPING") == "group")
@@ -61,7 +61,7 @@ builder.Services.AddSkMcp(options =>
 
 var app = builder.Build();
 
-app.UseSkMcpCapture();
+app.UseLiaisoCapture();
 
 app.UseRouting();
 app.UseAuthentication();
@@ -73,7 +73,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
     .AllowAnonymous()
     .WithMetadata(new McpToolAttribute(), new EndpointDescriptionAttribute("Service health status; requires no identity."));
 app.MapDemoAuthorizationServer(authServer);
-app.MapSkMcp("/mcp").RequireAuthorization();
+app.MapLiaiso("/mcp").RequireAuthorization();
 
 app.MapPost("/auth/token", (TokenRequest request) =>
 {

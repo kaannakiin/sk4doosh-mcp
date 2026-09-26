@@ -26,8 +26,8 @@ const limits = [];
 const record = (id, expected, actual, pass) =>
   rows.push({ id, expected, actual: String(actual).slice(0, 300), pass });
 
-const workspace = mkdtempSync(join(os.tmpdir(), "sk-mcp-xml-f0-security-"));
-const token = `SKMCP_XML_F0_CANARY_${randomBytes(16).toString("hex")}`;
+const workspace = mkdtempSync(join(os.tmpdir(), "liaiso-xml-f0-security-"));
+const token = `LIAISO_XML_F0_CANARY_${randomBytes(16).toString("hex")}`;
 const canaryPath = join(workspace, "canary-secret.txt");
 writeFileSync(canaryPath, token);
 writeFileSync(

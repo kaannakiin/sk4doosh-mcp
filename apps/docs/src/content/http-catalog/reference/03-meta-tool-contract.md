@@ -6,9 +6,9 @@ decoration a generator writes around it — a `$schema` keyword, the numeric bou
 are framework detail, not contract.
 
 > **Source of truth.** The search and card semantics are normative in
-> [`packages/http/spec/search-semantics.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/search-semantics.md)
+> [`packages/http/spec/search-semantics.md`](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/search-semantics.md)
 > and the loaded tool's shape in
-> [`tool-definition.schema.json`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/packages/http/spec/schemas/tool-definition.schema.json);
+> [`tool-definition.schema.json`](https://github.com/kaannakiin/liaiso/blob/main/packages/http/spec/schemas/tool-definition.schema.json);
 > where they differ from this page, they win.
 
 ## The three tools
@@ -20,7 +20,7 @@ load_tool, search_tools, invoke_tool
 Every one of them carries a `_meta` stamp naming the catalog generation it was listed for:
 
 ```json
-{ "sk-mcp/catalogGeneration": 0 }
+{ "liaiso/catalogGeneration": 0 }
 ```
 
 When the catalog reloads, the number changes and the server sends `notifications/tools/list_changed`.
@@ -199,7 +199,7 @@ Takes `name` and `arguments`, an object whose keys are the input schema's proper
 through the backend's own pipeline with the caller's identity.
 
 `arguments` is published with a description and no `type`, so a value that is not an object reaches
-the SDK and comes back as an sk-mcp envelope instead of a protocol error. Two shapes are accepted
+the SDK and comes back as an liaiso envelope instead of a protocol error. Two shapes are accepted
 anyway: `null` composes as `{}`, and a string that parses to a JSON object is unwrapped and composed
 as that object, with the rewrite written to the server's log. Anything else — a string that is not
 JSON, an array, a scalar — is `invalid_type`, and the message names the kind that arrived. The flag

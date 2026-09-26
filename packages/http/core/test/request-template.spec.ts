@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   arraySeparatorFor,
   createRequestTemplate,
-  SkMcpTemplateError,
+  LiaisoTemplateError,
 } from "../src/index.js";
 
 describe("createRequestTemplate", () => {
@@ -23,7 +23,7 @@ describe("createRequestTemplate", () => {
           route: "/items",
           bodyProperties: ["text"],
         }),
-      ).toThrow(SkMcpTemplateError);
+      ).toThrow(LiaisoTemplateError);
     }
   });
 
@@ -48,7 +48,7 @@ describe("createRequestTemplate", () => {
           route: "/items",
           parameters: [{ name, location: "header", kind: "string" }],
         }),
-      ).toThrow(SkMcpTemplateError);
+      ).toThrow(LiaisoTemplateError);
     }
   });
 
@@ -119,7 +119,7 @@ describe("arraySeparatorFor", () => {
   it("rejects a delimited style that explicitly explodes", () => {
     for (const style of ["spaceDelimited", "pipeDelimited"] as const) {
       expect(() => arraySeparatorFor(style, true, "tag")).toThrow(
-        SkMcpTemplateError,
+        LiaisoTemplateError,
       );
       expect(() => arraySeparatorFor(style, true, "tag")).toThrow(
         "has no wire form",
@@ -205,7 +205,7 @@ describe("arraySeparatorFor", () => {
   it("rejects deepObject on an array, whatever explode says", () => {
     for (const explode of [undefined, true, false]) {
       expect(() => arraySeparatorFor("deepObject", explode, "tag")).toThrow(
-        SkMcpTemplateError,
+        LiaisoTemplateError,
       );
       expect(() => arraySeparatorFor("deepObject", explode, "tag")).toThrow(
         "has no array form",

@@ -1,7 +1,7 @@
 import type { ProtocolRevision } from "./generated/protocol-revision.js";
 
 /**
- * The revisions sk-mcp speaks, oldest first.
+ * The revisions liaiso speaks, oldest first.
  *
  * `satisfies Record<ProtocolRevision, number>` is the guard: the generated union is the only
  * source of the revision set, so a revision added to or dropped from

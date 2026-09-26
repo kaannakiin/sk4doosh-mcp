@@ -1,4 +1,4 @@
-import { fold } from "@sk-mcp/file-core";
+import { fold } from "@liaiso/file-core";
 import type { CellScalar } from "./cell-value.js";
 import {
   buildColumnIndex,
@@ -6,7 +6,7 @@ import {
   type ColumnIndex,
   type ColumnMode,
 } from "./columns.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import {
   headerWarnings,
   readHeaderRow,
@@ -142,7 +142,7 @@ function sumOf(state: SumState): number {
 
 function finite(value: number): number {
   if (!Number.isFinite(value))
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "numeric_overflow",
       "A metric calculation exceeded the finite number range.",
       "Narrow the range or scale the numeric values.",
@@ -251,7 +251,7 @@ export function aggregateSheet(
   options: AggregateOptions,
 ): AggregateResult {
   if (options.metrics.length === 0) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       "At least one metric is required.",
       'Pass metrics, for example [{"fn":"count"}].',
@@ -263,7 +263,7 @@ export function aggregateSheet(
       options.orderByMetric < 1 ||
       options.orderByMetric > options.metrics.length)
   ) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       "orderByMetric must identify an entry in metrics.",
     );
@@ -297,7 +297,7 @@ export function aggregateSheet(
   }));
   for (const entry of metricColumns) {
     if (entry.metric.fn !== "count" && entry.column === undefined) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "invalid_argument",
         `Metric '${entry.metric.fn}' needs a column.`,
         "Pass column, or use fn 'count' to count rows.",
@@ -335,7 +335,7 @@ export function aggregateSheet(
       return existing;
     }
     if (groups.size >= limits.maxAggregateGroups) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "resource_limit",
         `The rows form more than ${limits.maxAggregateGroups} groups.`,
         "Group by fewer or coarser columns, or add where conditions.",
@@ -353,7 +353,7 @@ export function aggregateSheet(
   const visit = (): void => {
     visits += 1;
     if (visits > limits.maxAggregateCellVisits) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "resource_limit",
         `Aggregating this range reads more than ${limits.maxAggregateCellVisits} cells.`,
         "Pass a narrower range, or split the aggregate into several ranges.",
@@ -486,7 +486,7 @@ export function aggregateSheet(
           continue;
         }
         if (state.extreme.kind !== candidate.kind)
-          throw new SkMcpExcelError(
+          throw new LiaisoExcelError(
             "invalid_argument",
             `Metric '${entry.metric.fn}' mixes ${state.extreme.kind} and ${candidate.kind} at ${columnToLetters(column)}${row}.`,
             "Use a homogeneous range or filter the source values.",

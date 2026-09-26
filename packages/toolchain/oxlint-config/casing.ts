@@ -5,7 +5,7 @@ type RestrictedProperty =
   | { property: string; message: string };
 
 const casingMessage =
-  "Use fold, canonical, asciiLower or asciiUpper from @sk-mcp/file-core instead of locale-dependent casing.";
+  "Use fold, canonical, asciiLower or asciiUpper from @liaiso/file-core instead of locale-dependent casing.";
 
 export const casingProperties: RestrictedProperty[] = [
   { property: "toLowerCase", message: casingMessage },

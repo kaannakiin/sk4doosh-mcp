@@ -2,9 +2,9 @@ import "reflect-metadata";
 import { Controller, Get, Post } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { beforeAll, describe, expect, it } from "vitest";
-import { SkMcpCatalog } from "../src/catalog.js";
+import { LiaisoCatalog } from "../src/catalog.js";
 import { McpTool } from "../src/decorators.js";
-import { SkMcpModule } from "../src/sk-mcp.module.js";
+import { LiaisoModule } from "../src/liaiso.module.js";
 
 @Controller("admin")
 class AdminController {
@@ -25,18 +25,18 @@ class OrdersController {
   create(): void {}
 }
 
-const targetsOf = (catalog: SkMcpCatalog): string[] =>
+const targetsOf = (catalog: LiaisoCatalog): string[] =>
   catalog.current.entries
     .map((entry) => `${entry.descriptor.method} ${entry.descriptor.route}`)
     .sort();
 
 describe("selection rules", () => {
-  let catalog: SkMcpCatalog;
+  let catalog: LiaisoCatalog;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
-        SkMcpModule.forRoot((options) => {
+        LiaisoModule.forRoot((options) => {
           options.selection.default = "include";
           options.selection.rules = [
             { route: "/admin/**", decision: "exclude" },
@@ -48,7 +48,7 @@ describe("selection rules", () => {
     }).compile();
     const app = moduleRef.createNestApplication({ logger: false });
     await app.init();
-    catalog = app.get(SkMcpCatalog);
+    catalog = app.get(LiaisoCatalog);
   });
 
   it("carves a route subtree out of a global include without an attribute", () => {
@@ -56,7 +56,7 @@ describe("selection rules", () => {
   });
 
   /**
-   * Guard: the twin of S2 in sdks/dotnet/tests/SkMcp.Tests/SelectionRuleHostTests.cs. An operation
+   * Guard: the twin of S2 in sdks/dotnet/tests/Liaiso.Tests/SelectionRuleHostTests.cs. An operation
    * marker is the only place a carve-out can be written, because equally specific rules that
    * disagree are a build error rather than a silent winner.
    */
@@ -70,12 +70,12 @@ describe("selection rules", () => {
 });
 
 describe("selection rules that disagree", () => {
-  let conflicted: SkMcpCatalog;
+  let conflicted: LiaisoCatalog;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
-        SkMcpModule.forRoot((options) => {
+        LiaisoModule.forRoot((options) => {
           options.selection.default = "include";
           options.selection.rules = [
             { route: "/admin/**", decision: "exclude" },
@@ -87,7 +87,7 @@ describe("selection rules that disagree", () => {
     }).compile();
     const app = moduleRef.createNestApplication({ logger: false });
     await app.init();
-    conflicted = app.get(SkMcpCatalog);
+    conflicted = app.get(LiaisoCatalog);
   });
 
   it("reports ambiguous_selection rather than picking one", () => {
@@ -104,13 +104,13 @@ describe("selection rules that disagree", () => {
 
 describe("a blank rule field", () => {
   /**
-   * Guard: the twin of S6 in sdks/dotnet/tests/SkMcp.Tests/SelectionRuleHostTests.cs. Omitting a
+   * Guard: the twin of S6 in sdks/dotnet/tests/Liaiso.Tests/SelectionRuleHostTests.cs. Omitting a
    * field is the catch-all; a blank one matches nothing, so it would decide nothing and say so
    * nowhere.
    */
   it("is a configuration failure, not a catch-all", () => {
     expect(() =>
-      SkMcpModule.forRoot((options) => {
+      LiaisoModule.forRoot((options) => {
         options.selection.rules = [{ route: "  ", decision: "exclude" }];
       }),
     ).toThrow(/must not be blank/);

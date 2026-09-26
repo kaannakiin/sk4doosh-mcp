@@ -5,7 +5,7 @@ import {
   type ParseContext,
   type SandboxedPath,
   type SourceReader,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import {
   declaredEncodingOf,
   isRefusal,
@@ -15,7 +15,7 @@ import type { RootFacts } from "../model/describe.js";
 import type { ShapeSurvey } from "../model/scan.js";
 import { refusalError } from "./chunk/chunked.js";
 import { scanProlog } from "./chunk/doctype.js";
-import { SkMcpXmlError, fail } from "./platform/errors.js";
+import { LiaisoXmlError, fail } from "./platform/errors.js";
 import { limits } from "./platform/limits.js";
 import { vocabulary } from "./platform/vocabulary.js";
 import type { XmlWorkerPool } from "./pool.js";
@@ -60,7 +60,7 @@ export type ResidentBody = WorkerBodyOf<ResidentKind>;
 export type FailureMapper = (
   failure: string,
   detail: string | undefined,
-) => SkMcpXmlError | undefined;
+) => LiaisoXmlError | undefined;
 
 export interface XmlDocumentCache {
   load(path: SandboxedPath): Promise<LoadedXmlDocument>;
@@ -86,28 +86,28 @@ function translate(
   const mapped = mapFailure?.(failure, detail);
   if (mapped !== undefined) throw mapped;
   if (failure === "numeric_precision") {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "numeric_precision",
       `The value ${detail ?? ""} carries more digits than a binary64 number holds, so a numeric metric would change it.`,
       "Use count, countValues or countDistinct, or project the rows and total them outside this server.",
     );
   }
   if (failure === "doctype_not_allowed") {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "doctype_not_allowed",
       doctypeRefusal,
       "Remove the DOCTYPE declaration, or read a document that does not use one.",
     );
   }
   if (failure === "address_not_found") {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "invalid_argument",
       "No node matches that address in this document.",
       "Call describe_document for a usable address, or drop address to start at the document element.",
     );
   }
   if (failure === "resource_limit") {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       detail === "timeout"
         ? `Parsing exceeded the ${limits.maxParseMs} millisecond budget.`
@@ -115,7 +115,7 @@ function translate(
       "Retry with a smaller document.",
     );
   }
-  throw new SkMcpXmlError(
+  throw new LiaisoXmlError(
     "malformed_xml",
     "The document is not well-formed XML.",
     "Fix the markup and read the file again.",
@@ -131,7 +131,7 @@ function surveyChunked(
   });
   if (isRefusal(survey)) throw refusalError(survey);
   if (survey.root === undefined)
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "malformed_xml",
       "The document is not well-formed XML.",
       "Fix the markup and read the file again.",
@@ -168,14 +168,14 @@ export function createXmlDocumentCache(
           });
     const prolog = scanProlog(bytes, limits.prologScanBytes);
     if (prolog.unsupportedEncoding !== undefined) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "unsupported_encoding",
         `The document is encoded as ${prolog.unsupportedEncoding}, which this server cannot read.`,
         "Re-encode the document as UTF-8 or UTF-16.",
       );
     }
     if (prolog.doctype) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "doctype_not_allowed",
         doctypeRefusal,
         "Remove the DOCTYPE declaration, or read a document that does not use one.",
@@ -229,7 +229,7 @@ export function createXmlDocumentCache(
     store.clear();
     const second = await store.load(path, {});
     if (second.mode === "resident" && second.generation !== pool.generation) {
-      throw new SkMcpXmlError(
+      throw new LiaisoXmlError(
         "internal_error",
         "The parse worker restarted twice while reading one document.",
         "Retry the call.",
@@ -255,7 +255,7 @@ export function createXmlDocumentCache(
         return second.value;
       }
       if (second.failure === "unknown_residency") {
-        throw new SkMcpXmlError(
+        throw new LiaisoXmlError(
           "internal_error",
           "The parse worker lost the document twice while answering one call.",
           "Retry the call.",

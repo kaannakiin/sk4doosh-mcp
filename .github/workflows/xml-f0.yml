@@ -40,15 +40,15 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo run check-types lint --filter=@sk-mcp/xml-lab
-      - run: pnpm turbo run test --filter=@sk-mcp/xml-lab --force
+      - run: pnpm turbo run check-types lint --filter=@liaiso/xml-lab
+      - run: pnpm turbo run test --filter=@liaiso/xml-lab --force
         env:
-          SKMCP_XML_BENCH: "1"
+          LIAISO_XML_BENCH: "1"
       - run: node packages/lab/xml-lab/collect-evidence.mjs
         if: always()
         continue-on-error: true
         env:
-          SKMCP_XML_BENCH: "1"
+          LIAISO_XML_BENCH: "1"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

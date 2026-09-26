@@ -1,4 +1,4 @@
-import { SkMcpPdfError } from "../platform/errors.js";
+import { LiaisoPdfError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 
 /**
@@ -29,27 +29,27 @@ export function assertSelectablePages(
   pageCount: number,
 ): void {
   if (pages.length === 0) {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "invalid_argument",
       "pages must name at least one page.",
       "Omit pages to read from the first page.",
     );
   }
   if (pages.length > limits.maxReadPages) {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "invalid_argument",
       `pages names ${String(pages.length)} pages; at most ${String(limits.maxReadPages)} may be requested at once.`,
     );
   }
   for (const page of pages) {
     if (!Number.isSafeInteger(page) || page < 1) {
-      throw new SkMcpPdfError(
+      throw new LiaisoPdfError(
         "invalid_argument",
         `'${String(page)}' is not a page number; pages are numbered from 1.`,
       );
     }
     if (page > pageCount) {
-      throw new SkMcpPdfError(
+      throw new LiaisoPdfError(
         "invalid_argument",
         `The document has ${String(pageCount)} pages; page ${String(page)} does not exist.`,
         "Call describe_document to read pageCount.",
@@ -72,7 +72,7 @@ export function assertWithinPageBudget(
   subject: string,
 ): void {
   if (pageCount > limits.maxPages) {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "resource_limit",
       `'${subject}' has ${String(pageCount)} pages; this server reads at most ${String(limits.maxPages)}.`,
       "Split the document, or read a smaller one.",

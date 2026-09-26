@@ -1,6 +1,6 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/base";
-import { casing } from "@sk-mcp/oxlint-config/casing";
+import { config } from "@liaiso/oxlint-config/base";
+import { casing } from "@liaiso/oxlint-config/casing";
 
 const driverMessage =
   "db-core names no driver; the dialect and the driver adapter arrive by injection.";
@@ -73,7 +73,7 @@ export default defineConfig({
     {
       files: ["src/primitives/**/*.ts"],
       rules: restrict(primitivesMessage, {
-        paths: ["@sk-mcp/mcp-core"],
+        paths: ["@liaiso/mcp-core"],
         folders: [
           "**/model/**",
           "**/values/**",

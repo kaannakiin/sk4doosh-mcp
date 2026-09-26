@@ -2,28 +2,29 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readMssqlEnv } from "../src/platform/env.js";
 import { createMssqlMcpServer, createMssqlSource } from "../src/server.js";
-import type { DbSource } from "@sk-mcp/db-core";
+import type { DbSource } from "@liaiso/db-core";
 import type { MssqlConfig } from "../src/platform/env.js";
 
 /**
  * Guard: the catalogue statements are the one part of this package a fake cannot
  * check — a snapshot proves the text did not change, not that the joins are
  * right. This suite runs them against a real server, and is skipped unless
- * SKMCP_MSSQL_LIVE is set so CI never needs a database.
+ * LIAISO_MSSQL_LIVE is set so CI never needs a database.
  */
-const live = process.env["SKMCP_MSSQL_LIVE"] === "1";
+const live = process.env["LIAISO_MSSQL_LIVE"] === "1";
 
 const outcome = readMssqlEnv({
-  SKMCP_MSSQL_SERVER: process.env["SKMCP_MSSQL_SERVER"],
-  SKMCP_MSSQL_PORT: process.env["SKMCP_MSSQL_PORT"],
-  SKMCP_MSSQL_DATABASE: process.env["SKMCP_MSSQL_DATABASE"],
-  SKMCP_MSSQL_USER: process.env["SKMCP_MSSQL_USER"],
-  SKMCP_MSSQL_PASSWORD: process.env["SKMCP_MSSQL_PASSWORD"],
-  SKMCP_MSSQL_ENCRYPT: process.env["SKMCP_MSSQL_ENCRYPT"],
-  SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE:
-    process.env["SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE"],
-  SKMCP_MSSQL_CONNECT_TIMEOUT_MS: process.env["SKMCP_MSSQL_CONNECT_TIMEOUT_MS"],
-  SKMCP_MSSQL_QUERY_TIMEOUT_MS: process.env["SKMCP_MSSQL_QUERY_TIMEOUT_MS"],
+  LIAISO_MSSQL_SERVER: process.env["LIAISO_MSSQL_SERVER"],
+  LIAISO_MSSQL_PORT: process.env["LIAISO_MSSQL_PORT"],
+  LIAISO_MSSQL_DATABASE: process.env["LIAISO_MSSQL_DATABASE"],
+  LIAISO_MSSQL_USER: process.env["LIAISO_MSSQL_USER"],
+  LIAISO_MSSQL_PASSWORD: process.env["LIAISO_MSSQL_PASSWORD"],
+  LIAISO_MSSQL_ENCRYPT: process.env["LIAISO_MSSQL_ENCRYPT"],
+  LIAISO_MSSQL_TRUST_SERVER_CERTIFICATE:
+    process.env["LIAISO_MSSQL_TRUST_SERVER_CERTIFICATE"],
+  LIAISO_MSSQL_CONNECT_TIMEOUT_MS:
+    process.env["LIAISO_MSSQL_CONNECT_TIMEOUT_MS"],
+  LIAISO_MSSQL_QUERY_TIMEOUT_MS: process.env["LIAISO_MSSQL_QUERY_TIMEOUT_MS"],
 });
 
 const config: MssqlConfig | undefined =

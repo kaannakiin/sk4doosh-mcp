@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createCallerScope } from "../src/cache/caller-scope.js";
 import { flattenCacheKey, type CacheKey } from "../src/cache/cache.js";
-import { MemorySkMcpCache } from "../src/cache/memory-cache.js";
+import { MemoryLiaisoCache } from "../src/cache/memory-cache.js";
 
-describe("MemorySkMcpCache", () => {
+describe("MemoryLiaisoCache", () => {
   it("M1: TTL is absolute from the scope's first write and does not slide", async () => {
     let now = 0;
-    const cache = new MemorySkMcpCache({
+    const cache = new MemoryLiaisoCache({
       lifetimeMs: 100,
       maxCallers: 10,
       now: () => now,
@@ -28,7 +28,10 @@ describe("MemorySkMcpCache", () => {
   });
 
   it("M2: evicts the least recently used scope only when a new scope is admitted over capacity", async () => {
-    const cache = new MemorySkMcpCache({ lifetimeMs: 100_000, maxCallers: 2 });
+    const cache = new MemoryLiaisoCache({
+      lifetimeMs: 100_000,
+      maxCallers: 2,
+    });
     const a = createCallerScope("scope-a");
     const b = createCallerScope("scope-b");
     const c = createCallerScope("scope-c");
@@ -45,7 +48,7 @@ describe("MemorySkMcpCache", () => {
   });
 
   it("M3: removeScope drops every kind cached for that scope", async () => {
-    const cache = new MemorySkMcpCache({ lifetimeMs: 1000, maxCallers: 10 });
+    const cache = new MemoryLiaisoCache({ lifetimeMs: 1000, maxCallers: 10 });
     const scope = createCallerScope("scope-a");
     await cache.set({ scope, kind: "facts" }, "F");
     await cache.set({ scope, kind: "probe", subkey: "tool_a" }, "A");
@@ -59,7 +62,7 @@ describe("MemorySkMcpCache", () => {
   });
 
   it("M4: removeTag drops every scope carrying that tag, and none other", async () => {
-    const cache = new MemorySkMcpCache({ lifetimeMs: 1000, maxCallers: 10 });
+    const cache = new MemoryLiaisoCache({ lifetimeMs: 1000, maxCallers: 10 });
     const alice1 = createCallerScope("alice-session-1", ["user:alice"]);
     const alice2 = createCallerScope("alice-session-2", ["user:alice"]);
     const bob = createCallerScope("bob-session", ["user:bob"]);
@@ -76,7 +79,7 @@ describe("MemorySkMcpCache", () => {
   });
 
   it("M5: clear removes every scope", async () => {
-    const cache = new MemorySkMcpCache({ lifetimeMs: 1000, maxCallers: 10 });
+    const cache = new MemoryLiaisoCache({ lifetimeMs: 1000, maxCallers: 10 });
     const a = createCallerScope("scope-a", ["user:a"]);
     const b = createCallerScope("scope-b", ["user:b"]);
     await cache.set({ scope: a, kind: "facts" }, "A");
@@ -89,18 +92,18 @@ describe("MemorySkMcpCache", () => {
     await expect(cache.removeTag("user:a")).resolves.toBeUndefined();
   });
 
-  it("M6: keys flatten to skmcp:v1:{scope}:{kind}[:{subkey}]", () => {
+  it("M6: keys flatten to liaiso:v1:{scope}:{kind}[:{subkey}]", () => {
     const scope = createCallerScope("a".repeat(64));
     expect(flattenCacheKey({ scope, kind: "facts" })).toBe(
-      `skmcp:v1:${scope.key}:facts`,
+      `liaiso:v1:${scope.key}:facts`,
     );
     expect(
       flattenCacheKey({ scope, kind: "probe", subkey: "search_orders" }),
-    ).toBe(`skmcp:v1:${scope.key}:probe:search_orders`);
+    ).toBe(`liaiso:v1:${scope.key}:probe:search_orders`);
   });
 
   it("lifetimeMs 0 makes set a no-op and get always miss", async () => {
-    const cache = new MemorySkMcpCache({ lifetimeMs: 0, maxCallers: 10 });
+    const cache = new MemoryLiaisoCache({ lifetimeMs: 0, maxCallers: 10 });
     const scope = createCallerScope("scope-a");
     await cache.set({ scope, kind: "facts" }, "F");
     expect(await cache.get({ scope, kind: "facts" })).toBeUndefined();

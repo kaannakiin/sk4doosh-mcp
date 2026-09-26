@@ -4,8 +4,8 @@
     "build": {
       "cache": false,
       "passThroughEnv": [
-        "SKMCP_NODE_HEADERS",
-        "SKMCP_NODE_LIB",
+        "LIAISO_NODE_HEADERS",
+        "LIAISO_NODE_LIB",
         "CXX",
         "INCLUDE",
         "LIB",

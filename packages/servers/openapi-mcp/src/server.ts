@@ -22,7 +22,7 @@ import {
   wrongArgumentType,
   type CatalogEntry,
   type VisibilityDecision,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import { z } from "zod";
 import type { GatewaySource } from "./catalog/build.js";
 import type { GatewayCatalog } from "./catalog/build.js";
@@ -41,11 +41,11 @@ interface ToolContext {
 }
 
 /** Where the http transport's auth gate leaves the token the caller's own was exchanged for. */
-export const exchangedTokenKey = "skMcpExchangedToken";
+export const exchangedTokenKey = "liaisoExchangedToken";
 
 /**
  * Guard: `name` binds as `unknown` so a call that misspells the argument reaches the handler and
- * leaves as an sk-mcp envelope; a `z.string()` would be rejected by the framework's validator with
+ * leaves as an liaiso envelope; a `z.string()` would be rejected by the framework's validator with
  * a bare text error the agent cannot parse. The published schema is byte-identical to the SDKs'.
  */
 function namedArgument(description: string) {
@@ -69,7 +69,7 @@ export function createOpenApiMcpServer(
 ): McpServer {
   const { catalog } = gateway;
   const budget = (): number => limits.maxResponseBytes;
-  const server = new McpServer({ name: "sk-mcp-openapi", version });
+  const server = new McpServer({ name: "liaiso-openapi", version });
 
   server.registerTool(
     "search_tools",

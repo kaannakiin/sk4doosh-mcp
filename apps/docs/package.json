@@ -1,12 +1,13 @@
 {
-  "name": "@sk-mcp/docs",
+  "name": "@liaiso/docs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "node dist/server/server.js",
+    "preview": "vite preview",
+    "deploy": "wrangler deploy",
     "lint": "oxlint --deny-warnings",
     "check-types": "tsc --noEmit",
     "validate": "node scripts/check-content.mjs"
@@ -23,8 +24,9 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@cloudflare/vite-plugin": "^1.60.1",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-router-devtools": "^1.167.1",
     "@types/node": "^24.3.0",
@@ -37,6 +39,7 @@
     "postcss-simple-vars": "^7.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "wrangler": "~4.140.0"
   }
 }

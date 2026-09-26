@@ -13,7 +13,7 @@ import {
   type RowRecord,
   type ServerFacts,
   type TableRef,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 import { describeType } from "./types.js";
 
 /**

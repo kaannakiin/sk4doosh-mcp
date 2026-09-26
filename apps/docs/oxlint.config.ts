@@ -1,5 +1,5 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/react";
+import { config } from "@liaiso/oxlint-config/react";
 
 export default defineConfig({
   extends: [config],

@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import type { McpServer } from "@modelcontextprotocol/server";
-import { createFileSourceServer } from "@sk-mcp/file-core";
+import { createFileSourceServer } from "@liaiso/file-core";
 import { createXmlDocumentCache } from "./host/document.js";
-import { SkMcpXmlError } from "./host/platform/errors.js";
+import { LiaisoXmlError } from "./host/platform/errors.js";
 import { limits, workerCapacityFor } from "./host/platform/limits.js";
 import type { DocumentRoot } from "./host/platform/paths.js";
 import { toolDefinitions } from "./tools/definitions.js";
@@ -33,7 +33,7 @@ function requireCacheSize(value: number | undefined): number {
     value < 1 ||
     value > maxDocumentCacheSize
   ) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "invalid_argument",
       `documentCacheSize must be an integer between 1 and ${String(maxDocumentCacheSize)}.`,
     );
@@ -51,7 +51,7 @@ export function createXmlMcpServer(
   });
   const cache = createXmlDocumentCache(pool, root.real, documentCacheSize);
   const server = createFileSourceServer(
-    { name: "sk-mcp-xml", version: manifest.version },
+    { name: "liaiso-xml", version: manifest.version },
     toolDefinitions,
     createHandlers(root, {
       pool,

@@ -1,7 +1,7 @@
 import { CsvError } from "csv-parse";
 import { parse } from "csv-parse/sync";
 import type { CellSnapshot } from "../grid/cell-value.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 import { columnToLetters, type GridBounds } from "../grid/range.js";
 import { presentIndices, type RowView, type SheetView } from "../grid/sheet.js";
@@ -48,7 +48,7 @@ function assertNoNulBytes(bytes: Buffer, path: string): void {
   if (!window.includes(0)) {
     return;
   }
-  throw new SkMcpExcelError(
+  throw new LiaisoExcelError(
     "undecodable_text",
     `'${path}' contains NUL bytes near its start. It is a binary file, or UTF-16 text without a byte-order mark.`,
     "Pass encoding 'utf-16le' or 'utf-16be' if the file is UTF-16 text.",
@@ -68,7 +68,7 @@ function detectBom(bytes: Buffer): BomMatch | undefined {
     bytes[2] === 0x00 &&
     bytes[3] === 0x00
   ) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "undecodable_text",
       "The file begins with a UTF-32 byte-order mark, which cannot be decoded.",
       "Save the file as UTF-8.",
@@ -81,7 +81,7 @@ function detectBom(bytes: Buffer): BomMatch | undefined {
     bytes[2] === 0xfe &&
     bytes[3] === 0xff
   ) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "undecodable_text",
       "The file begins with a UTF-32 byte-order mark, which cannot be decoded.",
       "Save the file as UTF-8.",
@@ -122,7 +122,7 @@ function decode(
     bom !== undefined &&
     bom.encoding !== requested
   ) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_argument",
       `'${path}' begins with a ${bom.encoding} byte-order mark but encoding '${requested}' was requested.`,
       `Omit encoding, or pass '${bom.encoding}'.`,
@@ -141,7 +141,7 @@ function decode(
   try {
     text = decoder.decode(bytes);
   } catch {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "undecodable_text",
       `'${path}' is not valid ${chosen} text.`,
       "Pass encoding explicitly: 'windows-1254' (Turkish Excel), 'iso-8859-9', 'windows-1252', 'utf-16le' or 'utf-16be'.",
@@ -247,7 +247,7 @@ export function sniffDelimiter(
   }
   const tied = scored.filter((entry) => entry.score === best.score);
   if (tied.length > 1) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "ambiguous_delimiter",
       `${tied.map((entry) => `'${entry.name}'`).join(" and ")} are equally consistent in the first ${limits.csvSniffLines} lines.`,
       "Pass delimiter explicitly: 'comma', 'semicolon', 'tab' or 'pipe'.",
@@ -270,19 +270,19 @@ function detectLineBreak(text: string): CsvReport["lineBreak"] {
   return crlf ? "crlf" : bareLf ? "lf" : "cr";
 }
 
-function mapCsvError(error: unknown, path: string): SkMcpExcelError {
-  if (error instanceof SkMcpExcelError) {
+function mapCsvError(error: unknown, path: string): LiaisoExcelError {
+  if (error instanceof LiaisoExcelError) {
     return error;
   }
   if (error instanceof CsvError) {
-    return new SkMcpExcelError(
+    return new LiaisoExcelError(
       "corrupt_workbook",
       `'${path}' is not well-formed CSV (${error.code}): ${error.message}`,
       "Check the quoting around the reported line and re-save the file.",
     );
   }
   const detail = error instanceof Error ? error.message : String(error);
-  return new SkMcpExcelError(
+  return new LiaisoExcelError(
     "corrupt_workbook",
     `'${path}' could not be parsed as CSV: ${detail}`,
     "Check the file with a text editor; it may not be a delimited table.",
@@ -296,7 +296,7 @@ export async function parseCsv(
   path: string,
 ): Promise<CsvTable> {
   if (sizeBytes > limits.maxCsvBytes) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "file_too_large",
       `The file is ${sizeBytes} bytes; the CSV limit is ${limits.maxCsvBytes}.`,
       "Split the file or read a smaller one.",
@@ -322,7 +322,7 @@ export async function parseCsv(
       on_record: (record: string[]) => {
         cells += record.length;
         if (cells > limits.maxCsvCells) {
-          throw new SkMcpExcelError(
+          throw new LiaisoExcelError(
             "file_too_large",
             `The file holds more than ${limits.maxCsvCells} cells.`,
             "Read a narrower file, or split it.",
@@ -427,7 +427,7 @@ function assertRecordWidth(text: string, delimiter: string): void {
     } else if (character === delimiter) {
       fields += 1;
       if (fields > limits.maxCsvColumns)
-        throw new SkMcpExcelError(
+        throw new LiaisoExcelError(
           "file_too_large",
           `A CSV record exceeds ${limits.maxCsvColumns} fields.`,
           "Read a narrower file, or split it.",

@@ -1,4 +1,4 @@
-import { snakeCase, type EndpointDescriptor } from "@sk-mcp/core";
+import { snakeCase, type EndpointDescriptor } from "@liaiso/core";
 import { OperationDropped, type DiagnosticSink } from "../diagnostics.js";
 import {
   childPointer,
@@ -173,7 +173,7 @@ function lowerOperation(
   options: OperationOptions,
 ): SourcedEndpoint | undefined {
   const { operation, at, method } = site;
-  if (operation["x-sk-mcp-dropped"] === true) {
+  if (operation["x-liaiso-dropped"] === true) {
     return undefined;
   }
   if (!describable.has(method)) {

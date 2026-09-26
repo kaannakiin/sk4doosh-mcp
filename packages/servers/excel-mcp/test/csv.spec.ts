@@ -4,7 +4,7 @@ import {
   sheetSource,
   type LoadedCsv,
 } from "../src/format/document.js";
-import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { LiaisoExcelError } from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
@@ -43,7 +43,7 @@ async function codeOf(
   try {
     await action();
   } catch (error) {
-    return (error as SkMcpExcelError).code;
+    return (error as LiaisoExcelError).code;
   }
   return "no-error";
 }

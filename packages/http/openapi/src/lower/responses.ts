@@ -1,4 +1,4 @@
-import { isJsonMediaType, type EndpointDescriptor } from "@sk-mcp/core";
+import { isJsonMediaType, type EndpointDescriptor } from "@liaiso/core";
 import { OperationDropped } from "../diagnostics.js";
 import { childPointer, type JsonPointer } from "../ir/brand.js";
 import {

@@ -71,7 +71,7 @@ nothing about it. That is a startup error, not a runtime surprise.
 Register the provider once; every endpoint that names the source uses it.
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Arguments.Provide("tenant", (caller, _) =>
         ValueTask.FromResult<JsonNode?>(JsonValue.Create(caller.Claim("tenant_id"))));
@@ -79,7 +79,7 @@ builder.Services.AddSkMcp(options =>
 ```
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.arguments.provide("tenant", (caller) => caller.claim("tenant_id"));
 });
 ```
@@ -175,14 +175,14 @@ By default a whole-object query binding is flattened: `ListOrdersQuery { Status,
 agent as two unrelated top-level arguments. Turn that off and the DTO stays one argument:
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Query.Grouping = QueryObjectGrouping.Group;
 });
 ```
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.query.grouping = "group";
 });
 ```

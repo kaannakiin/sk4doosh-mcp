@@ -21,14 +21,14 @@ import {
   createRequestTemplate,
   extensionTokens,
   isMappedError,
-  SkMcpDispatcher,
-  SkMcpModule,
+  LiaisoDispatcher,
+  LiaisoModule,
   type ExtensionOverrides,
   type InvokeResult,
   type InvokeResultMapper,
   type MappedError,
   type Recognizer,
-  type SkMcpOptions,
+  type LiaisoOptions,
 } from "../src/index.js";
 
 const validateTemplate = createRequestTemplate({
@@ -111,24 +111,24 @@ class ErrorMappingProbeController {
 
 interface TestApp {
   app: INestApplication;
-  dispatcher: SkMcpDispatcher;
+  dispatcher: LiaisoDispatcher;
   mapper: InvokeResultMapper;
   close(): Promise<void>;
 }
 
 async function createApp(
-  configure?: (options: SkMcpOptions) => void,
+  configure?: (options: LiaisoOptions) => void,
   overrides?: ExtensionOverrides,
 ): Promise<TestApp> {
   const moduleRef = await Test.createTestingModule({
-    imports: [SkMcpModule.forRoot(configure, overrides)],
+    imports: [LiaisoModule.forRoot(configure, overrides)],
     controllers: [ErrorMappingProbeController],
   }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
   await app.init();
   return {
     app,
-    dispatcher: app.get(SkMcpDispatcher),
+    dispatcher: app.get(LiaisoDispatcher),
     mapper: app.get<InvokeResultMapper>(extensionTokens.invokeResultMapper),
     close: () => app.close(),
   };

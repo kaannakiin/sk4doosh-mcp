@@ -1,4 +1,4 @@
-import { fold } from "@sk-mcp/mcp-core";
+import { fold } from "@liaiso/mcp-core";
 
 const separator = /[^\p{L}\p{N}]+/u;
 const acronym = /(\p{Lu}+)(\p{Lu}\p{Ll})/gu;

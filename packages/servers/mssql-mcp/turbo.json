@@ -8,16 +8,16 @@
     "test": {
       "dependsOn": ["build"],
       "passThroughEnv": [
-        "SKMCP_MSSQL_SERVER",
-        "SKMCP_MSSQL_PORT",
-        "SKMCP_MSSQL_DATABASE",
-        "SKMCP_MSSQL_USER",
-        "SKMCP_MSSQL_PASSWORD",
-        "SKMCP_MSSQL_ENCRYPT",
-        "SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE",
-        "SKMCP_MSSQL_CONNECT_TIMEOUT_MS",
-        "SKMCP_MSSQL_QUERY_TIMEOUT_MS",
-        "SKMCP_MSSQL_LIVE"
+        "LIAISO_MSSQL_SERVER",
+        "LIAISO_MSSQL_PORT",
+        "LIAISO_MSSQL_DATABASE",
+        "LIAISO_MSSQL_USER",
+        "LIAISO_MSSQL_PASSWORD",
+        "LIAISO_MSSQL_ENCRYPT",
+        "LIAISO_MSSQL_TRUST_SERVER_CERTIFICATE",
+        "LIAISO_MSSQL_CONNECT_TIMEOUT_MS",
+        "LIAISO_MSSQL_QUERY_TIMEOUT_MS",
+        "LIAISO_MSSQL_LIVE"
       ]
     },
     "test:coverage": {
@@ -26,15 +26,15 @@
     },
     "dev": {
       "passThroughEnv": [
-        "SKMCP_MSSQL_SERVER",
-        "SKMCP_MSSQL_PORT",
-        "SKMCP_MSSQL_DATABASE",
-        "SKMCP_MSSQL_USER",
-        "SKMCP_MSSQL_PASSWORD",
-        "SKMCP_MSSQL_ENCRYPT",
-        "SKMCP_MSSQL_TRUST_SERVER_CERTIFICATE",
-        "SKMCP_MSSQL_CONNECT_TIMEOUT_MS",
-        "SKMCP_MSSQL_QUERY_TIMEOUT_MS"
+        "LIAISO_MSSQL_SERVER",
+        "LIAISO_MSSQL_PORT",
+        "LIAISO_MSSQL_DATABASE",
+        "LIAISO_MSSQL_USER",
+        "LIAISO_MSSQL_PASSWORD",
+        "LIAISO_MSSQL_ENCRYPT",
+        "LIAISO_MSSQL_TRUST_SERVER_CERTIFICATE",
+        "LIAISO_MSSQL_CONNECT_TIMEOUT_MS",
+        "LIAISO_MSSQL_QUERY_TIMEOUT_MS"
       ]
     }
   }

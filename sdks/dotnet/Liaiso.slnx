@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/DemoApi/DemoApi.csproj" />
+    <Project Path="samples/DemoAuthServer/DemoAuthServer.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Liaiso.AspNetCore/Liaiso.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Liaiso.Tests/Liaiso.Tests.csproj" />
+  </Folder>
+</Solution>

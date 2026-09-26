@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import type { SkMcpResourceServerOptions } from "../options.js";
+import type { LiaisoResourceServerOptions } from "../options.js";
 
 export const protectedResourceMetadataWellKnownPrefix =
   "/.well-known/oauth-protected-resource";
@@ -16,7 +16,7 @@ export function protectedResourceMetadataUrl(
 }
 
 export function protectedResourceMetadataHandler(
-  options: SkMcpResourceServerOptions,
+  options: LiaisoResourceServerOptions,
 ): RequestHandler {
   return (_request, response) => {
     response.set("Cache-Control", "public, max-age=300");

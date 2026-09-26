@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const schemasDir = path.resolve(here, "../../../packages/http/spec/schemas");
-const outDir = path.resolve(here, "../src/SkMcp.AspNetCore/Generated");
+const outDir = path.resolve(here, "../src/Liaiso.AspNetCore/Generated");
 const specVersion = JSON.parse(
   readFileSync(
     path.resolve(here, "../../../packages/http/spec/package.json"),
@@ -180,9 +180,9 @@ await writeFile(
   [
     "using System.Text.Json.Nodes;",
     "",
-    "namespace SkMcp.AspNetCore.Spec;",
+    "namespace Liaiso.AspNetCore.Spec;",
     "",
-    `public static class SkMcpSpec\n{\n    public const string Version = "${specVersion}";\n}`,
+    `public static class LiaisoSpec\n{\n    public const string Version = "${specVersion}";\n}`,
     "",
     [...emitted.values()].join("\n\n"),
     "",

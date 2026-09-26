@@ -5,7 +5,7 @@ import {
   createXmlDocumentCache,
   type XmlDocumentCache,
 } from "../src/host/document.js";
-import type { SkMcpXmlError } from "../src/host/platform/errors.js";
+import type { LiaisoXmlError } from "../src/host/platform/errors.js";
 import { limits } from "../src/host/platform/limits.js";
 import {
   createDocumentRoot,
@@ -27,7 +27,7 @@ async function codeOf(action: () => Promise<unknown>): Promise<string> {
   try {
     await action();
   } catch (error) {
-    return (error as SkMcpXmlError).code;
+    return (error as LiaisoXmlError).code;
   }
   return "no-error";
 }

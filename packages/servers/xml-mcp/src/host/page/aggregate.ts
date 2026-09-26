@@ -3,8 +3,8 @@ import {
   measureJson,
   type Fingerprint,
   type SourceMode,
-} from "@sk-mcp/file-core";
-import { SkMcpXmlError } from "../platform/errors.js";
+} from "@liaiso/file-core";
+import { LiaisoXmlError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 import type { ExpandedName, NodeAddress } from "../../model/node.js";
 import type {
@@ -106,7 +106,7 @@ export function assembleAggregate(
   }
 
   if (admitted.length === 0 && outcome.groups.length > 0) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       `The first group does not fit in the ${String(limits.maxPayloadBytes)} byte response budget.`,
       "Group by fewer columns, or ask for fewer metrics.",

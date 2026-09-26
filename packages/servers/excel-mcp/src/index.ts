@@ -1,5 +1,5 @@
-export { SkMcpExcelError, asExcelError } from "./platform/errors.js";
-export type { SkMcpExcelErrorCode } from "./platform/errors.js";
+export { LiaisoExcelError, asExcelError } from "./platform/errors.js";
+export type { LiaisoExcelErrorCode } from "./platform/errors.js";
 export { limits } from "./platform/limits.js";
 export type { Limits } from "./platform/limits.js";
 export { formats } from "./platform/formats.js";

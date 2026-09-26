@@ -1,5 +1,5 @@
-import { asciiUpper, fold } from "@sk-mcp/file-core";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { asciiUpper, fold } from "@liaiso/file-core";
+import { LiaisoExcelError } from "../platform/errors.js";
 import { columnToLetters, type GridBounds } from "./range.js";
 
 export type ColumnMode = "auto" | "header" | "letter";
@@ -83,7 +83,7 @@ export function resolveColumn(
   }
 
   if (byHeader !== undefined && byHeader.length > 1) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "ambiguous_column",
       `'${reference}' is the header of columns ${byHeader.map(columnToLetters).join(" and ")}.`,
       `Address one of them by letter: ${byHeader.map((column) => `"${columnToLetters(column)}"`).join(" or ")}.`,
@@ -100,7 +100,7 @@ export function resolveColumn(
 
   const header = byHeader?.[0];
   if (header !== undefined && byLetter !== undefined && header !== byLetter) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "ambiguous_column",
       `'${reference}' is both the header of column ${columnToLetters(header)} and the A1 letter of column ${columnToLetters(byLetter)}.`,
       'Set columnMode to "header" or "letter".',
@@ -119,7 +119,7 @@ function unknownColumn(
   index: ColumnIndex,
   reference: string,
   mode: ColumnMode,
-): SkMcpExcelError {
+): LiaisoExcelError {
   const scope =
     index.headerRow === 0
       ? "headerRow is 0, so only A1 letters resolve here. "
@@ -132,7 +132,7 @@ function unknownColumn(
     index.byHeader.size === 0 && index.headerRow > 0
       ? " Pass headerRow to name the row that carries the column headers, or headerScan true to prove it."
       : "";
-  return new SkMcpExcelError(
+  return new LiaisoExcelError(
     "unknown_column",
     `'${reference}' is not a column of ${index.sheet}.`,
     `${scope}${describeColumns(index)}${adjust}`,

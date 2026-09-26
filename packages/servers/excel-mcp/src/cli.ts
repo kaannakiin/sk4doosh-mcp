@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { parseServerArgv, serveFileSourceStdio } from "@sk-mcp/file-core";
+import { parseServerArgv, serveFileSourceStdio } from "@liaiso/file-core";
 import { createWorkbookRoot } from "./platform/paths.js";
 import { createExcelMcpServer } from "./server.js";
 
@@ -11,7 +11,7 @@ function fail(message: string, code: number): never {
 const parsed = parseServerArgv(process.argv);
 
 if (parsed.kind === "usage") {
-  fail("Usage: sk-mcp-excel <workbook-root>", 2);
+  fail("Usage: liaiso-excel <workbook-root>", 2);
 }
 
 try {

@@ -1,4 +1,4 @@
-import { SkMcpCatalogError } from "./errors.js";
+import { LiaisoCatalogError } from "./errors.js";
 import { matchesRoute } from "./route-glob.js";
 
 export type SelectionDecision = "include" | "exclude";
@@ -22,7 +22,7 @@ function reject(
     return;
   }
   const target = describedAs === undefined ? "" : ` on ${describedAs}`;
-  throw new SkMcpCatalogError(
+  throw new LiaisoCatalogError(
     "ambiguous_selection",
     `Both include and exclude markers are present at the ${level} level${target}; remove one of them.`,
   );
@@ -56,7 +56,7 @@ function matchesEndpoint(
  * @param method - The endpoint's HTTP method.
  * @param describedAs - How to name the endpoint in an error.
  * @returns The decision of the most specific matching rules, or `undefined` when none match.
- * @throws SkMcpCatalogError `ambiguous_selection` when equally specific rules disagree.
+ * @throws LiaisoCatalogError `ambiguous_selection` when equally specific rules disagree.
  */
 export function resolveRules(
   rules: readonly SelectionRule[] | undefined,
@@ -83,7 +83,7 @@ export function resolveRules(
    */
   if (decisions.size > 1) {
     const target = describedAs === undefined ? "" : ` on ${describedAs}`;
-    throw new SkMcpCatalogError(
+    throw new LiaisoCatalogError(
       "ambiguous_selection",
       `Two selection rules of equal specificity disagree${target}; narrow one of their targets.`,
     );

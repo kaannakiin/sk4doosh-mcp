@@ -2,7 +2,7 @@ import {
   classifyPdfAsync,
   extractPagesMarkdownAsync,
 } from "@firecrawl/pdf-inspector";
-import { SkMcpPdfError } from "../platform/errors.js";
+import { LiaisoPdfError } from "../platform/errors.js";
 import { assertWithinPageBudget, toOneBased } from "./pages.js";
 
 export type DocumentType = "text_based" | "scanned" | "image_based" | "mixed";
@@ -42,10 +42,10 @@ const documentTypes: Readonly<Record<string, DocumentType>> = {
  * degrades to extraction_failed instead of mislabelling, and the test says so
  * out loud.
  */
-function asEngineError(error: unknown, subject: string): SkMcpPdfError {
+function asEngineError(error: unknown, subject: string): LiaisoPdfError {
   const detail = error instanceof Error ? error.message : String(error);
   if (detail.includes("PDF is encrypted")) {
-    return new SkMcpPdfError(
+    return new LiaisoPdfError(
       "encrypted_pdf",
       `'${subject}' is password-protected and cannot be read.`,
       "This server never asks for a password; supply an unprotected copy.",
@@ -55,13 +55,13 @@ function asEngineError(error: unknown, subject: string): SkMcpPdfError {
     detail.includes("Not a PDF") ||
     detail.includes("Invalid PDF structure")
   ) {
-    return new SkMcpPdfError(
+    return new LiaisoPdfError(
       "malformed_pdf",
       `'${subject}' is not a readable PDF document.`,
       "The file may be truncated or may not be a PDF despite its extension.",
     );
   }
-  return new SkMcpPdfError(
+  return new LiaisoPdfError(
     "extraction_failed",
     `'${subject}' could not be read by the PDF engine.`,
     "Retrying the same call will not help; the document may use an unsupported feature.",

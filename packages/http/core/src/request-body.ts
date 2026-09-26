@@ -1,4 +1,4 @@
-import { SkMcpArgumentError } from "./errors.js";
+import { LiaisoArgumentError } from "./errors.js";
 import { invokeLimits } from "./invoke-guard.js";
 import type {
   FileSource,
@@ -115,8 +115,8 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function invalidFile(field: string, detail: string): SkMcpArgumentError {
-  return new SkMcpArgumentError(
+function invalidFile(field: string, detail: string): LiaisoArgumentError {
+  return new LiaisoArgumentError(
     "invalid_file_argument",
     `File argument '${field}' ${detail}`,
   );
@@ -264,7 +264,7 @@ function emitFields(
       continue;
     }
     if (item === null) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "null_not_allowed",
         `Body argument '${field.name}' cannot be null; omit it instead.`,
       );
@@ -272,7 +272,7 @@ function emitFields(
     switch (field.kind) {
       case "object": {
         if (!isPlainObject(item)) {
-          throw new SkMcpArgumentError(
+          throw new LiaisoArgumentError(
             "invalid_type",
             `Body argument '${field.name}' must be an object.`,
           );
@@ -280,7 +280,7 @@ function emitFields(
         const declared = new Set(field.members.map((member) => member.name));
         const unknown = Object.keys(item).filter((name) => !declared.has(name));
         if (unknown.length > 0) {
-          throw new SkMcpArgumentError(
+          throw new LiaisoArgumentError(
             "unknown_argument",
             `Unknown argument(s): ${unknown.map((name) => `${field.name}.${name}`).join(", ")}. Allowed: ${field.members
               .map((member) => `${field.name}.${member.name}`)
@@ -298,7 +298,7 @@ function emitFields(
             kind: member.kind,
           };
           if (memberValue === null) {
-            throw new SkMcpArgumentError(
+            throw new LiaisoArgumentError(
               "null_not_allowed",
               `Body argument '${slot.name}' cannot be null; omit it instead.`,
             );
@@ -311,7 +311,7 @@ function emitFields(
           );
           const items = member.isArray === true ? memberValue : [memberValue];
           if (!Array.isArray(items)) {
-            throw new SkMcpArgumentError(
+            throw new LiaisoArgumentError(
               "invalid_type",
               `Body argument '${slot.name}' must be an array.`,
             );
@@ -328,7 +328,7 @@ function emitFields(
       case "file": {
         const items = field.isArray === true ? item : [item];
         if (!Array.isArray(items)) {
-          throw new SkMcpArgumentError(
+          throw new LiaisoArgumentError(
             "invalid_type",
             `Body argument '${field.name}' must be an array.`,
           );
@@ -346,7 +346,7 @@ function emitFields(
       default: {
         const items = field.isArray === true ? item : [item];
         if (!Array.isArray(items)) {
-          throw new SkMcpArgumentError(
+          throw new LiaisoArgumentError(
             "invalid_type",
             `Body argument '${field.name}' must be an array.`,
           );
@@ -379,7 +379,7 @@ function assertInlineBudget(
     const advice = sources.has("ref")
       ? "Send the file as a 'ref' instead."
       : "Send a smaller file.";
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "file_too_large",
       `The base64 file arguments decode to ${total} bytes, over the inline limit of ${limit} bytes. ${advice}`,
     );
@@ -413,7 +413,7 @@ export function encodeBody(
   }
   if (contentType === textMediaType) {
     if (typeof value !== "string") {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "invalid_type",
         `Argument '${template.bodyRoot ?? "body"}' must be of type string.`,
       );
@@ -422,7 +422,7 @@ export function encodeBody(
   }
   const form = template.form as FormBinding;
   if (!isPlainObject(value)) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "invalid_type",
       `Argument '${template.bodyRoot ?? "body"}' must be an object.`,
     );
@@ -431,7 +431,7 @@ export function encodeBody(
     const declared = new Set(form.fields.map((field) => field.name));
     const unknown = Object.keys(value).filter((name) => !declared.has(name));
     if (unknown.length > 0) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "unknown_argument",
         `Unknown argument(s): ${unknown.map((name) => `${template.bodyRoot}.${name}`).join(", ")}. Allowed: ${[
           ...declared,

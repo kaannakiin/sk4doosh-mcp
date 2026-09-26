@@ -1,4 +1,4 @@
-import type { DbVocabulary } from "@sk-mcp/db-core";
+import type { DbVocabulary } from "@liaiso/db-core";
 
 export const vocabulary = {
   serverName: "mssql-mcp",

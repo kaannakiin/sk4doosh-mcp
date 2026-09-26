@@ -19,11 +19,11 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "sk-mcp — Swagger for Agents" },
+      { title: "liaiso — Swagger for Agents" },
       {
         name: "description",
         content:
-          "sk-mcp is an MCP layer that embeds into existing backends. One spec, one SDK per language.",
+          "liaiso is an MCP layer that embeds into existing backends. One spec, one SDK per language.",
       },
     ],
     links: [{ rel: "stylesheet", href: appCss }],

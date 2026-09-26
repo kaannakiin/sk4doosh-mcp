@@ -7,11 +7,11 @@ import {
   type OpenedFile,
   type ParseContext,
   type SandboxedPath,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import type { DocumentRoot } from "../platform/paths.js";
 import { classify, extractAll } from "../engine/inspector.js";
 import { assertWithinPageBudget } from "../engine/pages.js";
-import { SkMcpPdfError, fail } from "../platform/errors.js";
+import { LiaisoPdfError, fail } from "../platform/errors.js";
 import { limits, modePolicy } from "../platform/limits.js";
 import { vocabulary } from "../platform/vocabulary.js";
 import { bodyOf, type PdfBody } from "./extraction.js";
@@ -49,7 +49,7 @@ export async function readDocumentBytes(
     limits.maxPdfBytes,
   );
   if (contentFingerprint(path, snapshot.bytes, "") !== stamp) {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "file_changed",
       "The document changed while it was being read.",
       "Call the tool again.",

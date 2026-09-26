@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { serveMcpSourceStdio } from "@sk-mcp/mcp-core";
+import { serveMcpSourceStdio } from "@liaiso/mcp-core";
 import { createOllamaBackend } from "./backend/ollama.js";
 import { createSerialBackend } from "./backend/serial.js";
 import { readLlmEnv, requiredNames } from "./platform/env.js";
@@ -19,20 +19,20 @@ function stop(message: string, code: number): never {
  */
 const outcome = readLlmEnv(
   {
-    SKMCP_LLM_ROOT: process.env["SKMCP_LLM_ROOT"],
-    SKMCP_LLM_OUTPUT_DIR: process.env["SKMCP_LLM_OUTPUT_DIR"],
-    SKMCP_LLM_BASE_URL: process.env["SKMCP_LLM_BASE_URL"],
-    SKMCP_LLM_MODEL: process.env["SKMCP_LLM_MODEL"],
-    SKMCP_LLM_NUM_CTX: process.env["SKMCP_LLM_NUM_CTX"],
-    SKMCP_LLM_KEEP_ALIVE: process.env["SKMCP_LLM_KEEP_ALIVE"],
-    SKMCP_LLM_TIMEOUT_MS: process.env["SKMCP_LLM_TIMEOUT_MS"],
+    LIAISO_LLM_ROOT: process.env["LIAISO_LLM_ROOT"],
+    LIAISO_LLM_OUTPUT_DIR: process.env["LIAISO_LLM_OUTPUT_DIR"],
+    LIAISO_LLM_BASE_URL: process.env["LIAISO_LLM_BASE_URL"],
+    LIAISO_LLM_MODEL: process.env["LIAISO_LLM_MODEL"],
+    LIAISO_LLM_NUM_CTX: process.env["LIAISO_LLM_NUM_CTX"],
+    LIAISO_LLM_KEEP_ALIVE: process.env["LIAISO_LLM_KEEP_ALIVE"],
+    LIAISO_LLM_TIMEOUT_MS: process.env["LIAISO_LLM_TIMEOUT_MS"],
   },
   process.cwd(),
 );
 
 if (outcome.kind === "usage") {
   stop(
-    `sk-mcp-llm reads its model host from the environment. Missing: ${outcome.missing.join(", ")}.\nRequired: ${requiredNames.join(", ")}.`,
+    `liaiso-llm reads its model host from the environment. Missing: ${outcome.missing.join(", ")}.\nRequired: ${requiredNames.join(", ")}.`,
     2,
   );
 }
@@ -50,7 +50,7 @@ try {
   );
 } catch (error) {
   const detail = error instanceof Error ? error.message : String(error);
-  stop(`sk-mcp-llm cannot open its workspace: ${detail}`, 2);
+  stop(`liaiso-llm cannot open its workspace: ${detail}`, 2);
 }
 
 const backend = createSerialBackend(createOllamaBackend(outcome.config));
@@ -64,5 +64,5 @@ serveMcpSourceStdio(() => server);
  */
 backend.warm().catch((error: unknown) => {
   const detail = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`sk-mcp-llm: warm-up failed: ${detail}\n`);
+  process.stderr.write(`liaiso-llm: warm-up failed: ${detail}\n`);
 });

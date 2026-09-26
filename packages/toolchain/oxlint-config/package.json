@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/oxlint-config",
+  "name": "@liaiso/oxlint-config",
   "version": "0.0.0",
   "type": "module",
   "private": true,

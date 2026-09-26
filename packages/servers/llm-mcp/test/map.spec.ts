@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CompletionRequest, QueuedBackend } from "../src/backend/port.js";
-import { fail, SkMcpLlmError } from "../src/platform/errors.js";
+import { fail, LiaisoLlmError } from "../src/platform/errors.js";
 import { limits } from "../src/platform/limits.js";
 import { openWorkspace, type Workspace } from "../src/platform/workspace.js";
 import { planBatches, runMap, type MapInput } from "../src/tools/map.js";
@@ -97,8 +97,8 @@ const input = (overrides: Partial<MapInput> = {}): MapInput => ({
 
 const codeOf = async (work: Promise<unknown>): Promise<string> => {
   const error: unknown = await work.catch((caught: unknown) => caught);
-  expect(error).toBeInstanceOf(SkMcpLlmError);
-  return (error as SkMcpLlmError).code;
+  expect(error).toBeInstanceOf(LiaisoLlmError);
+  return (error as LiaisoLlmError).code;
 };
 
 describe("planBatches", () => {

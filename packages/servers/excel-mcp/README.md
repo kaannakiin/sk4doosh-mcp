@@ -1,8 +1,8 @@
-# @sk-mcp/excel-mcp
+# @liaiso/excel-mcp
 
 A standalone MCP server that **reads** local Excel files for an agent. There is no write path.
 
-Reads `.xlsx`, `.xlsm` and `.csv`. Sandboxing, the document cache, the error envelope, the cursor codec and the tool registration layer come from [@sk-mcp/file-core](../../cores/file-core).
+Reads `.xlsx`, `.xlsm` and `.csv`. Sandboxing, the document cache, the error envelope, the cursor codec and the tool registration layer come from [@liaiso/file-core](../../cores/file-core).
 
 Cells, ranges, merges, formulas and defined names are read by SheetJS. Data validation, Excel Tables, conditional formatting, images and frozen panes are read directly from the OOXML parts. exceljs is not present at runtime.
 
@@ -15,7 +15,7 @@ The server takes the folder it is allowed to read as a **required argument**. No
   "mcpServers": {
     "excel": {
       "command": "npx",
-      "args": ["-y", "@sk-mcp/excel-mcp", "/Users/me/sheets"]
+      "args": ["-y", "@liaiso/excel-mcp", "/Users/me/sheets"]
     }
   }
 }
@@ -24,7 +24,7 @@ The server takes the folder it is allowed to read as a **required argument**. No
 To run it from inside the repo:
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/excel-mcp
+pnpm turbo run build --filter=@liaiso/excel-mcp
 node packages/servers/excel-mcp/dist/cli.js /Users/me/sheets
 ```
 
@@ -109,9 +109,9 @@ An unclassifiable failure caused by a defect in the server itself returns `inter
 ## Development
 
 ```bash
-pnpm turbo run build --filter=@sk-mcp/excel-mcp
-pnpm turbo run test --filter=@sk-mcp/excel-mcp
-pnpm turbo run check-types --filter=@sk-mcp/excel-mcp
+pnpm turbo run build --filter=@liaiso/excel-mcp
+pnpm turbo run test --filter=@liaiso/excel-mcp
+pnpm turbo run check-types --filter=@liaiso/excel-mcp
 ```
 
-Run tests through Turbo, not `pnpm --filter @sk-mcp/excel-mcp test`: the bare filter skips `dependsOn: ["^build"]`, and this package resolves `@sk-mcp/file-core` through `exports.default → ./dist/index.js`, so a bare filter can test against a stale `dist`.
+Run tests through Turbo, not `pnpm --filter @liaiso/excel-mcp test`: the bare filter skips `dependsOn: ["^build"]`, and this package resolves `@liaiso/file-core` through `exports.default → ./dist/index.js`, so a bare filter can test against a stale `dist`.

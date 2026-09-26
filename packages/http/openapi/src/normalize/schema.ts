@@ -1,4 +1,4 @@
-import type { JsonSchemaObject } from "@sk-mcp/core";
+import type { JsonSchemaObject } from "@liaiso/core";
 import { OperationDropped, type DiagnosticSink } from "../diagnostics.js";
 import { childPointer, segmentsOf, type JsonPointer } from "../ir/brand.js";
 import {

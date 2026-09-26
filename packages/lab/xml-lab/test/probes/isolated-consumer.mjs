@@ -36,7 +36,7 @@ const percentile = (values, p) => {
   return Number(sorted[index].toFixed(3));
 };
 
-const project = mkdtempSync(join(os.tmpdir(), "sk-mcp-xml-f0-consumer-"));
+const project = mkdtempSync(join(os.tmpdir(), "liaiso-xml-f0-consumer-"));
 const npmCache = join(project, ".npm-cache");
 
 try {
@@ -371,7 +371,7 @@ const handle = (message) => {
   );
 
   limits.push(
-    "F0-02 registry erişimi gerektirir; SKMCP_XML_F0_NO_NETWORK=1 ile atlanırsa kanıt 'not run' olarak kaydedilir, 'pass' olarak değil.",
+    "F0-02 registry erişimi gerektirir; LIAISO_XML_F0_NO_NETWORK=1 ile atlanırsa kanıt 'not run' olarak kaydedilir, 'pass' olarak değil.",
   );
   limits.push(
     "Node 22 ve 24 olcutu tek runner'da kapanmaz; kapi ancak platform CI iki major'i da kaydettiginde saglanir.",

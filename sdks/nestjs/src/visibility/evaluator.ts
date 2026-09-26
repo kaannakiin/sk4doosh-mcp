@@ -1,4 +1,4 @@
-import type { CallerFacts } from "@sk-mcp/core";
+import type { CallerFacts } from "@liaiso/core";
 import type { OuterRequest } from "../options.js";
 
 export interface VisibilityEvaluator {

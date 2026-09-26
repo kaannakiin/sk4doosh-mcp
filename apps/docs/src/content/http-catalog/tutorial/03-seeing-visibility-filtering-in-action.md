@@ -1,6 +1,6 @@
 # Seeing visibility filtering in action
 
-In this tutorial you run an sk-mcp backend, connect to it as two different users, and watch the
+In this tutorial you run an liaiso backend, connect to it as two different users, and watch the
 same search return different tools for each of them. By the end you will have watched a tool
 disappear for a caller who cannot use it, and seen what happens when that caller reaches for it
 anyway.
@@ -13,7 +13,7 @@ From the repository root:
 
 ```bash
 pnpm install
-pnpm turbo run build --filter=@sk-mcp/agent-client
+pnpm turbo run build --filter=@liaiso/agent-client
 ```
 
 ## 2. Start the demo backend
@@ -35,7 +35,7 @@ It exposes an orders API. One endpoint, `GET /orders/{id}`, is guarded by a poli
 Back in the first terminal:
 
 ```bash
-SKMCP_AUTH=token SKMCP_USER=alice \
+LIAISO_AUTH=token LIAISO_USER=alice \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders
 ```
 
@@ -54,7 +54,7 @@ Eight tools exist for her, seven of them match the query.
 Run the same command, changing one word:
 
 ```bash
-SKMCP_AUTH=token SKMCP_USER=bob \
+LIAISO_AUTH=token LIAISO_USER=bob \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders
 ```
 
@@ -71,7 +71,7 @@ Five, not eight. bob is a real, authenticated user with a valid token — he jus
 You know `get_order` exists, because alice saw it. Point bob straight at it:
 
 ```bash
-SKMCP_AUTH=token SKMCP_USER=bob \
+LIAISO_AUTH=token LIAISO_USER=bob \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query orders --tool get_order
 ```
 
@@ -87,7 +87,7 @@ word, that a name you invented would get. For bob, `get_order` does not exist.
 The filter hid the tool. It did not lock it. Call it directly:
 
 ```bash
-SKMCP_AUTH=token SKMCP_USER=bob \
+LIAISO_AUTH=token LIAISO_USER=bob \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario error-envelope --tool get_order \
   --arguments '{"id":1}'
 ```
@@ -107,7 +107,7 @@ never consults the visibility filter.
 ## What you just saw
 
 You changed nothing about the backend — no annotation, no tool registration, no filter code. You
-changed which user was asking, and the answer changed. sk-mcp built a synthetic request for each
+changed which user was asking, and the answer changed. liaiso built a synthetic request for each
 endpoint, ran the backend's own authentication and authorization against it, and kept what came
 back allowed.
 
@@ -115,7 +115,7 @@ Two things are worth separating in your head, because the rest of the documentat
 
 - Step 5 was **visibility**. It is about what the agent is shown.
 - Step 6 was **enforcement**. It is about what the backend permits, and it happened in your
-  pipeline, not in sk-mcp.
+  pipeline, not in liaiso.
 
 The rules behind step 5 are on [visibility decision](/docs/http-catalog/visibility-decision). Why the two are
 deliberately kept apart is on

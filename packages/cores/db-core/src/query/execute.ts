@@ -1,4 +1,4 @@
-import { McpSourceError, type ErrorFactory } from "@sk-mcp/mcp-core";
+import { McpSourceError, type ErrorFactory } from "@liaiso/mcp-core";
 import type { DbErrorCode } from "../errors.js";
 import type {
   ConnectionPool,

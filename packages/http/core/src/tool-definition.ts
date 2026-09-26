@@ -7,7 +7,7 @@ import { assertUniqueArgumentNames } from "./argument-names.js";
 import { curationShapeOf, resolveCuration } from "./curation.js";
 import type { CurationRelief } from "./curation.js";
 import type { ToolVariant } from "./generated/endpoint-descriptor.js";
-import { SkMcpTemplateError } from "./errors.js";
+import { LiaisoTemplateError } from "./errors.js";
 import type { JsonSchemaObject } from "./generated/endpoint-descriptor.js";
 import {
   additionalPropertiesOf,
@@ -450,7 +450,7 @@ function canonical(value: unknown): string {
  * descriptor is shared across the catalog snapshot, so stripping `$defs` from it would break every
  * tool built after the first. A root declaring `$id` never reaches here, because it takes the root
  * argument instead of flattening.
- * @throws SkMcpTemplateError `schema_def_conflict` when one key carries two different schemas.
+ * @throws LiaisoTemplateError `schema_def_conflict` when one key carries two different schemas.
  */
 function liftDefs(
   properties: Record<string, JsonSchemaObject>,
@@ -462,7 +462,7 @@ function liftDefs(
     const existing = merged[name];
     if (existing !== undefined) {
       if (canonical(existing) !== canonical(body)) {
-        throw new SkMcpTemplateError(
+        throw new LiaisoTemplateError(
           "schema_def_conflict",
           `Two schemas define '${name}' differently; the tool cannot be built.`,
         );

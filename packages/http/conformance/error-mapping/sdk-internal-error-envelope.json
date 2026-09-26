@@ -3,11 +3,11 @@
   "description": "internal_error ayni zarftan gecer; ham exception mesaji ajana asla akmaz",
   "input": {
     "sdkError": "internal_error",
-    "message": "The operation failed inside the sk-mcp layer. Details were withheld."
+    "message": "The operation failed inside the liaiso layer. Details were withheld."
   },
   "expected": {
     "error": "internal_error",
-    "message": "The operation failed inside the sk-mcp layer. Details were withheld.",
+    "message": "The operation failed inside the liaiso layer. Details were withheld.",
     "retryable": false
   }
 }

@@ -3,8 +3,8 @@ import { mkdtemp, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openRoot } from "@sk-mcp/file-core-native";
-import { contentFingerprint, fingerprintFromDigest } from "@sk-mcp/mcp-core";
+import { openRoot } from "@liaiso/file-core-native";
+import { contentFingerprint, fingerprintFromDigest } from "@liaiso/mcp-core";
 
 let directory: string;
 

@@ -1,4 +1,4 @@
-import type { Vocabulary as SourceVocabulary } from "@sk-mcp/mcp-core";
+import type { Vocabulary as SourceVocabulary } from "@liaiso/mcp-core";
 
 export interface Vocabulary<
   TToolName extends string,

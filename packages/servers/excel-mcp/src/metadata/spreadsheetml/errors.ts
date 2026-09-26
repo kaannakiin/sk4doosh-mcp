@@ -1,11 +1,11 @@
-import type { OoxmlErrorCode, OoxmlErrorFactory } from "@sk-mcp/ooxml-core";
+import type { OoxmlErrorCode, OoxmlErrorFactory } from "@liaiso/ooxml-core";
 import {
-  SkMcpExcelError,
-  type SkMcpExcelErrorCode,
+  LiaisoExcelError,
+  type LiaisoExcelErrorCode,
 } from "../../platform/errors.js";
 
 interface Mapping {
-  readonly code: SkMcpExcelErrorCode;
+  readonly code: LiaisoExcelErrorCode;
   readonly recovery: string;
 }
 
@@ -42,5 +42,5 @@ const mappings: Readonly<Record<OoxmlErrorCode, Mapping>> = {
  */
 export const failOoxml: OoxmlErrorFactory = (code, message) => {
   const mapping = mappings[code];
-  return new SkMcpExcelError(mapping.code, message, mapping.recovery);
+  return new LiaisoExcelError(mapping.code, message, mapping.recovery);
 };

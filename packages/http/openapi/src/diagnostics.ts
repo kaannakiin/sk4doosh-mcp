@@ -1,4 +1,4 @@
-import type { CatalogSeverity } from "@sk-mcp/core";
+import type { CatalogSeverity } from "@liaiso/core";
 import type { JsonPointer } from "./ir/brand.js";
 
 export const ingestionSeverities = {

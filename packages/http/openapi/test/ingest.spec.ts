@@ -1,4 +1,4 @@
-import { buildCatalog, compose, severityIn } from "@sk-mcp/core";
+import { buildCatalog, compose, severityIn } from "@liaiso/core";
 import { describe, expect, it } from "vitest";
 import { ingest, type IngestionResult } from "../src/index.js";
 

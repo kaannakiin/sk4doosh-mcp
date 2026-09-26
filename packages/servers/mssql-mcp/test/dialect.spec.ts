@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DbSourceError, type ErrorFactory } from "@sk-mcp/db-core";
-import type { DbErrorCode } from "@sk-mcp/db-core";
+import { DbSourceError, type ErrorFactory } from "@liaiso/db-core";
+import type { DbErrorCode } from "@liaiso/db-core";
 import { describeType } from "../src/dialect/types.js";
 import { mapDriverError } from "../src/dialect/errors.js";
 import { readOnlyGuard } from "../src/dialect/guard.js";

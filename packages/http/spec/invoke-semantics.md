@@ -1,6 +1,6 @@
 # Invoke Semantics
 
-> Status: **normative** — validated by two independent implementations (NestJS `emitGuarded` + ASP.NET `SkMcpMetaTools.Respond` produce the same envelopes from the same `error-mapping/` corpus).
+> Status: **normative** — validated by two independent implementations (NestJS `emitGuarded` + ASP.NET `LiaisoMetaTools.Respond` produce the same envelopes from the same `error-mapping/` corpus).
 
 Defines what happens between argument composition and the result the agent reads: the response budget, the invoke deadline and the cancellation ladder. [argument-mapping.md](argument-mapping.md) owns the step before this one, [error-mapping.md](error-mapping.md) owns the shape of the result. The machine-readable counterpart is [schemas/invoke-result.schema.json](schemas/invoke-result.schema.json); the corpus is [conformance/error-mapping/](../conformance/error-mapping/).
 
@@ -88,7 +88,7 @@ Three levels, and an implementation MUST NOT promise more than it delivers.
 
 - **L0 — the agent is always freed.** When the deadline expires the result is emitted immediately; the agent never waits longer than the deadline. Unconditional.
 - **L1 — the signal is always delivered.** The implementation MUST propagate cancellation into the handler it invoked, through whatever channel that platform gives a disconnecting client. Delivery is unconditional; observation is not.
-- **L2 — the handler stops only if it cooperates.** sk-mcp MUST NOT promise that backend work stops. A handler that does not observe its signal runs to completion and its result is discarded. Work already committed stays committed; no level of this ladder rolls anything back.
+- **L2 — the handler stops only if it cooperates.** liaiso MUST NOT promise that backend work stops. A handler that does not observe its signal runs to completion and its result is discarded. Work already committed stays committed; no level of this ladder rolls anything back.
 
 **A timeout frees the agent; it does not cancel a non-cooperating handler.** This is true on both platforms and for the same reason: `CancellationToken` and `AbortSignal` are both cooperative, and neither runtime preempts running code. The platforms differ only in how conventionally the signal is already threaded through library calls — in .NET a token usually is, in Node a signal usually is not.
 

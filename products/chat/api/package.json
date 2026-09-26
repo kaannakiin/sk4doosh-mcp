@@ -42,8 +42,8 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^12.0.1",
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/node": "^24.3.0",

@@ -3,7 +3,7 @@ import {
   asciiUpper,
   sqlText,
   type GuardOutcome,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 
 /**
  * Keywords that make a statement do something other than read. `into` is here

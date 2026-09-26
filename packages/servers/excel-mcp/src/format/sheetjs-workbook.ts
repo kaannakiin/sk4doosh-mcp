@@ -1,8 +1,8 @@
-import { canonical } from "@sk-mcp/file-core";
+import { canonical } from "@liaiso/file-core";
 import * as XLSX from "@e965/xlsx";
 import { conditionalFormatRuleCountOf } from "../metadata/conditional-formats.js";
 import type { MediaEntry } from "../metadata/images.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import { openPackage } from "../metadata/spreadsheetml/package.js";
 import { zipSource } from "../metadata/spreadsheetml/reader.js";
 import {
@@ -98,20 +98,20 @@ export function parseSheetJs(bytes: Buffer, path: string): SheetJsWorkbook {
      * recovery advice.
      */
     if (detail === "Unsupported ZIP file") {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "not_a_workbook",
         `'${path}' is a zip archive but carries no workbook part.`,
         "The file is probably not a spreadsheet; check what it really is before reading it.",
       );
     }
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "corrupt_workbook",
       `'${path}' could not be parsed as .xlsx: ${detail}`,
       "Open the file in Excel and re-save it as .xlsx.",
     );
   }
   if (book.SheetNames.length === 0) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "not_a_workbook",
       `'${path}' is a zip archive but carries no worksheet.`,
       "The file is probably not a spreadsheet; check what it really is before reading it.",
@@ -193,7 +193,7 @@ export function selectSheetName(
     );
     const fallback = visible ?? loaded.sheetNames[0];
     if (fallback === undefined) {
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "unknown_sheet",
         "The workbook has no worksheets.",
       );
@@ -203,7 +203,7 @@ export function selectSheetName(
   const wanted = canonical(sheetName);
   const found = loaded.sheetNames.filter((name) => canonical(name) === wanted);
   if (found.length > 1) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "ambiguous_sheet",
       `The workbook has ${found.length} sheets whose names normalise to '${sheetName}'.`,
       "Rename the sheets in the workbook; they cannot be addressed apart.",
@@ -211,7 +211,7 @@ export function selectSheetName(
   }
   const only = found[0];
   if (only === undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "unknown_sheet",
       `The workbook has no sheet named '${sheetName}'.`,
       `Available sheets: ${sheetNameSummary(loaded)}.`,
@@ -223,7 +223,7 @@ export function selectSheetName(
 function sheetOf(loaded: SheetJsWorkbook, name: string): XLSX.WorkSheet {
   const sheet = loaded.book.Sheets[name];
   if (sheet === undefined) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "unknown_sheet",
       `The workbook has no sheet named '${name}'.`,
       `Available sheets: ${sheetNameSummary(loaded)}.`,

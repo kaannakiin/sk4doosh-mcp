@@ -194,7 +194,7 @@ function syntheticDocuments(seed: number, count: number): SearchDocument[] {
 /**
  * Guard: these two rules cannot be expressed as `search` fixtures without the fixture asserting a
  * negative that a runner ignoring `input.tags` would also satisfy, so they are pinned here and by
- * the paired cases in sdks/dotnet/tests/SkMcp.Tests/TagFilterTests.cs. Folding is what the two
+ * the paired cases in sdks/dotnet/tests/Liaiso.Tests/TagFilterTests.cs. Folding is what the two
  * SDKs historically diverged on; a trim would diverge again, because JavaScript's
  * `String.prototype.trim` strips U+FEFF and .NET's `string.Trim` does not.
  */

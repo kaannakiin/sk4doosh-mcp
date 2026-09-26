@@ -1,4 +1,4 @@
-import { SkMcpArgumentError } from "./errors.js";
+import { LiaisoArgumentError } from "./errors.js";
 import { encodeBody } from "./request-body.js";
 import type { BodyValue, ComposeLimits, ComposedBody } from "./request-body.js";
 import type { ArgumentFill } from "./generated/endpoint-descriptor.js";
@@ -55,7 +55,7 @@ export function compose(
   )) {
     const value = wire.get(p.name);
     if (value === undefined || value === null) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "missing_path_parameter",
         `Missing required path argument '${p.name}'.`,
       );
@@ -75,7 +75,7 @@ export function compose(
     }
     const value = wire.get(p.name);
     if (value === null) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "null_not_allowed",
         `Query argument '${p.name}' cannot be null; omit it instead.`,
       );
@@ -94,7 +94,7 @@ export function compose(
       p.allowReserved === true ? percentEncodeAllowingReserved : percentEncode;
     if (p.isArray) {
       if (!Array.isArray(value)) {
-        throw new SkMcpArgumentError(
+        throw new LiaisoArgumentError(
           "invalid_type",
           `Query argument '${p.name}' must be an array.`,
         );
@@ -148,7 +148,7 @@ export function compose(
     }
     const value = wire.get(p.name);
     if (value === null) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "null_not_allowed",
         `Header argument '${p.name}' cannot be null; omit it instead.`,
       );
@@ -158,7 +158,7 @@ export function compose(
       formatted = contentText(p, value);
     } else if (p.isArray) {
       if (!Array.isArray(value)) {
-        throw new SkMcpArgumentError(
+        throw new LiaisoArgumentError(
           "invalid_type",
           `Header argument '${p.name}' must be an array.`,
         );
@@ -173,7 +173,7 @@ export function compose(
       formatted = formatScalar(value, p, "invalid_type");
     }
     if (/[\r\n\0]/.test(formatted)) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "header_injection",
         `Header argument '${p.name}' contains a control character.`,
       );
@@ -191,7 +191,7 @@ export function compose(
     }
     const value = wire.get(p.name);
     if (value === null) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "null_not_allowed",
         `Cookie argument '${p.name}' cannot be null; omit it instead.`,
       );
@@ -202,7 +202,7 @@ export function compose(
     }
     if (p.isArray) {
       if (!Array.isArray(value)) {
-        throw new SkMcpArgumentError(
+        throw new LiaisoArgumentError(
           "invalid_type",
           `Cookie argument '${p.name}' must be an array.`,
         );
@@ -265,7 +265,7 @@ const absent = Symbol("absent");
 function contentText(p: ContentParameterBinding, value: unknown): string {
   if (p.mediaType === "text/plain") {
     if (typeof value !== "string") {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "invalid_type",
         `Argument '${p.name}' must be of type string.`,
       );
@@ -282,7 +282,7 @@ function contentText(p: ContentParameterBinding, value: unknown): string {
  */
 function querystringText(p: ContentParameterBinding, value: unknown): string {
   if (value === null) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "null_not_allowed",
       `Query argument '${p.name}' cannot be null; omit it instead.`,
     );
@@ -291,7 +291,7 @@ function querystringText(p: ContentParameterBinding, value: unknown): string {
     return percentEncode(contentText(p, value));
   }
   if (typeof value !== "object" || Array.isArray(value)) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "invalid_type",
       `Query argument '${p.name}' must be an object.`,
     );
@@ -305,7 +305,7 @@ function querystringText(p: ContentParameterBinding, value: unknown): string {
       }
       const slot = { name: `${p.name}.${member.name}`, kind: member.kind };
       if (item === null) {
-        throw new SkMcpArgumentError(
+        throw new LiaisoArgumentError(
           "null_not_allowed",
           `Query argument '${slot.name}' cannot be null; omit it instead.`,
         );
@@ -317,7 +317,7 @@ function querystringText(p: ContentParameterBinding, value: unknown): string {
         ];
       }
       if (!Array.isArray(item)) {
-        throw new SkMcpArgumentError(
+        throw new LiaisoArgumentError(
           "invalid_type",
           `Query argument '${slot.name}' must be an array.`,
         );
@@ -349,13 +349,13 @@ function pathSegment(p: ScalarParameterBinding, value: unknown): string {
     }
   }
   if (!Array.isArray(value)) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "invalid_path_type",
       `Path argument '${p.name}' must be an array.`,
     );
   }
   if (value.length === 0) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "missing_path_parameter",
       `Missing required path argument '${p.name}'; an empty array fills no segment.`,
     );
@@ -381,7 +381,7 @@ function cookieValue(value: unknown, p: ScalarParameterBinding): string {
     return percentEncode(formatted);
   }
   if (!isCookieOctets(formatted)) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "invalid_cookie_value",
       `Cookie argument '${p.name}' contains a character a cookie value cannot carry; space, '"', ',', ';', '\\' and control characters are not allowed.`,
     );
@@ -392,7 +392,7 @@ function cookieValue(value: unknown, p: ScalarParameterBinding): string {
 /**
  * Joins the cookies an identity carrier already put on the request with the composed ones.
  *
- * @throws SkMcpArgumentError `cookie_carrier_collision` when a composed cookie has the name of a
+ * @throws LiaisoArgumentError `cookie_carrier_collision` when a composed cookie has the name of a
  * carried one: either side winning would be a silent resolution — the agent overwriting the
  * caller's credential, or the agent's value vanishing without an error.
  */
@@ -409,7 +409,7 @@ export function mergeCookieHeader(
   const names = new Set(cookieNames(carried));
   const clash = cookieNames(composed).find((name) => names.has(name));
   if (clash !== undefined) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "cookie_carrier_collision",
       `Cookie '${clash}' already travels with the caller's identity and cannot also be sent as an argument; omit it.`,
     );
@@ -478,7 +478,7 @@ function resolveFill(
   const missing = !present || (value === null && !isBodySlot);
   if (missing) {
     if (required) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "deferred_value_missing",
         `The operation could not be completed because a value it fills itself was unavailable. Retrying with the same arguments will not help. Argument: '${wireName}'.`,
       );
@@ -518,7 +518,7 @@ function assertFilledParameter(
         (item) => typeof item !== "string" || isCookieOctets(item),
       ));
   if (!shapeOk || !scalarsOk || !clean) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "deferred_value_invalid",
       `The operation could not be completed because a value it fills itself was unusable. Retrying with the same arguments will not help. Argument: '${p.name}'.`,
     );
@@ -532,7 +532,7 @@ function assertFilledContent(value: unknown, p: ContentParameterBinding): void {
     typeof serialized !== "string" ||
     (p.location === "header" && /[\r\n\0]/.test(serialized));
   if (unusable) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "deferred_value_invalid",
       `The operation could not be completed because a value it fills itself was unusable. Retrying with the same arguments will not help. Argument: '${p.name}'.`,
     );
@@ -600,7 +600,7 @@ function toArgumentMap(args: unknown): Map<string, unknown> {
     return map;
   }
   if (typeof args !== "object" || args === null || Array.isArray(args)) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "invalid_type",
       `Arguments must be a JSON object; received ${describeArgumentKind(args)}. Send each argument as a property of that object and call the operation again.`,
     );
@@ -640,7 +640,7 @@ function rejectUnknown(
   }
   if (unknown.length > 0) {
     const allowed = [...allowedNames].sort();
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "unknown_argument",
       `Unknown argument(s): ${unknown.join(", ")}. Allowed: ${allowed.join(", ")}.`,
     );
@@ -674,7 +674,7 @@ function rejectUnknownMembers(
     const unknown = Object.keys(value).filter((name) => !declared.has(name));
     if (unknown.length > 0) {
       const allowed = members.map((member) => `${group}.${member.name}`).sort();
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "unknown_argument",
         `Unknown argument(s): ${unknown.map((name) => `${group}.${name}`).join(", ")}. Allowed: ${allowed.join(", ")}.`,
       );
@@ -687,7 +687,7 @@ function objectQueryEntries(
   value: unknown,
 ): readonly string[] {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new SkMcpArgumentError(
+    throw new LiaisoArgumentError(
       "invalid_type",
       `Query argument '${parameter.name}' must be an object.`,
     );
@@ -703,7 +703,7 @@ function objectQueryEntries(
       kind: member.kind,
     };
     if (item === null) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "null_not_allowed",
         `Query argument '${slot.name}' cannot be null; omit it instead.`,
       );
@@ -720,7 +720,7 @@ function objectQueryEntries(
       ];
     }
     if (!Array.isArray(item)) {
-      throw new SkMcpArgumentError(
+      throw new LiaisoArgumentError(
         "invalid_type",
         `Query argument '${slot.name}' must be an array.`,
       );

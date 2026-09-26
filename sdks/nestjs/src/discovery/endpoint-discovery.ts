@@ -12,13 +12,13 @@ import type {
   EndpointDescriptor,
   JsonSchemaObject,
   SchemaSimplificationOptions,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import {
   allowsAdditional,
   flattenableBody,
   simplifySchema,
   typeOf,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import {
   markersOf,
   type ArgumentRule,
@@ -410,7 +410,7 @@ function describe(
   if (unsupported) {
     options.report?.({
       code: "unsupported_binding",
-      message: `${controller.name}.${handlerName} binds the raw body, which sk-mcp has no writer for; endpoint skipped.`,
+      message: `${controller.name}.${handlerName} binds the raw body, which liaiso has no writer for; endpoint skipped.`,
     });
     return undefined;
   }
@@ -861,7 +861,7 @@ function queryFor(
  * Declining is not a failure: an unreadable or inexpressible shape falls back
  * to the binding this SDK already produced, so turning grouping on cannot drop
  * an endpoint that stands today. Express parses the bracket form only under
- * `query parser: 'extended'`, which {@link SkMcpCatalog} checks once the
+ * `query parser: 'extended'`, which {@link LiaisoCatalog} checks once the
  * catalog is built.
  */
 function groupedQueryFor(

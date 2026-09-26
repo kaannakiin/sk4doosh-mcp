@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { parseServerArgv, serveFileSourceStdio } from "@sk-mcp/file-core";
+import { parseServerArgv, serveFileSourceStdio } from "@liaiso/file-core";
 import { createDocumentRoot } from "./host/platform/paths.js";
 import { createXmlMcpServer } from "./server.js";
 
@@ -11,7 +11,7 @@ function fail(message: string, code: number): never {
 const parsed = parseServerArgv(process.argv);
 
 if (parsed.kind === "usage") {
-  fail("Usage: sk-mcp-xml <xml-source-root>", 2);
+  fail("Usage: liaiso-xml <xml-source-root>", 2);
 }
 
 try {

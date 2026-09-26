@@ -6,7 +6,7 @@ import {
   fingerprint,
   type SheetCursor,
 } from "../src/grid/cursor.js";
-import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { LiaisoExcelError } from "../src/platform/errors.js";
 
 const stamp = fingerprint("/q1.xlsx", 1, 10);
 const otherStamp = fingerprint("/q1.xlsx", 2, 10);
@@ -34,7 +34,7 @@ function codeOf(action: () => unknown): string {
   try {
     action();
   } catch (error) {
-    return (error as SkMcpExcelError).code;
+    return (error as LiaisoExcelError).code;
   }
   return "no-error";
 }

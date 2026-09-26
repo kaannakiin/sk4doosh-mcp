@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Fixture } from "@sk-mcp/core";
+import type { Fixture } from "@liaiso/core";
 import { describe, expect, it } from "vitest";
 import { ingest, ingestionSeverities } from "../src/index.js";
 

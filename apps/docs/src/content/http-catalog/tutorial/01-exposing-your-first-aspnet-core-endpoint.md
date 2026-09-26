@@ -5,39 +5,39 @@ through your own authorization pipeline.
 
 You will work inside this repository's `DemoApi` sample, so the SDK is already referenced and you
 can see a result in a couple of minutes. To add the package to your own project instead, the
-install steps are in [`sdks/dotnet/README.md`](https://github.com/kaannakiin/sk4doosh-mcp/blob/main/sdks/dotnet/README.md).
+install steps are in [`sdks/dotnet/README.md`](https://github.com/kaannakiin/liaiso/blob/main/sdks/dotnet/README.md).
 
 ## 1. Look at the three calls
 
-Open `sdks/dotnet/samples/DemoApi/Program.cs`. Every sk-mcp integration is these three calls and
+Open `sdks/dotnet/samples/DemoApi/Program.cs`. Every liaiso integration is these three calls and
 nothing else:
 
 ```csharp
-builder.Services.AddSkMcp();
+builder.Services.AddLiaiso();
 
 var app = builder.Build();
 
-app.UseSkMcpCapture();
+app.UseLiaisoCapture();
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapSkMcp("/mcp");
+app.MapLiaiso("/mcp");
 ```
 
-`AddSkMcp()` registers discovery. `UseSkMcpCapture()` takes a handle on the pipeline. `MapSkMcp()`
+`AddLiaiso()` registers discovery. `UseLiaisoCapture()` takes a handle on the pipeline. `MapLiaiso()`
 serves the MCP endpoint.
 
-`UseSkMcpCapture()` captures the pipeline **from that point onward** and replays agent calls into
+`UseLiaisoCapture()` captures the pipeline **from that point onward** and replays agent calls into
 it. Put it before `UseRouting`, `UseAuthentication` and `UseAuthorization`, as early as you can. If
 it sits after them, agent requests never reach your authentication layer. If you leave it out
 entirely, the host refuses to start:
 
 ```text
-MapSkMcp() requires app.UseSkMcpCapture() earlier in the pipeline, before UseRouting(),
-UseAuthentication() and UseAuthorization(). Add app.UseSkMcpCapture() near the top of the pipeline.
+MapLiaiso() requires app.UseLiaisoCapture() earlier in the pipeline, before UseRouting(),
+UseAuthentication() and UseAuthorization(). Add app.UseLiaisoCapture() near the top of the pipeline.
 ```
 
 ## 2. Mark one endpoint
@@ -54,10 +54,10 @@ public IActionResult GetOrder([Description("Order id")] int id) =>
 ```
 
 Two things carry into the catalog. `[McpTool]` on the class opts the controller in. `[Description]`
-becomes the tool description an agent searches against — sk-mcp reads ASP.NET's own description
+becomes the tool description an agent searches against — liaiso reads ASP.NET's own description
 metadata, so you are not writing a second copy of anything.
 
-The `[Authorize(Policy = "OrdersRead")]` line is untouched by sk-mcp. It will run when the agent
+The `[Authorize(Policy = "OrdersRead")]` line is untouched by liaiso. It will run when the agent
 calls.
 
 ## 3. Start the backend
@@ -69,8 +69,8 @@ dotnet run --project sdks/dotnet/samples/DemoApi
 The catalog is built at startup and reports what it found:
 
 ```text
-info: SkMcp.AspNetCore.SkMcpCatalogProvider[0]
-      sk-mcp catalog: 16 discovered, 9 selected, 9 tools, 0 diagnostic(s)
+info: Liaiso.AspNetCore.LiaisoCatalogProvider[0]
+      liaiso catalog: 16 discovered, 9 selected, 9 tools, 0 diagnostic(s)
 ```
 
 Sixteen endpoints exist; nine were selected, because selection is opt-in and only the decorated
@@ -102,7 +102,7 @@ the agent searches it. `search_tools` matched your description and returned a co
 route constraint says `{id:int}`, and the description came from your attribute. `invoke_tool`
 called the endpoint and got the order back with a `200`.
 
-The client authenticated as `alice` and her token satisfied `OrdersRead`. Your policy ran; sk-mcp
+The client authenticated as `alice` and her token satisfied `OrdersRead`. Your policy ran; liaiso
 did not evaluate it.
 
 ## What you just built

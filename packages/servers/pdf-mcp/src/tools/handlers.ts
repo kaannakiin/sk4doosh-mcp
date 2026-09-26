@@ -4,7 +4,7 @@ import {
   json,
   measureJson,
   type Fingerprint,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 
 import { assertSelectablePages } from "../engine/pages.js";
 import {
@@ -21,7 +21,7 @@ import {
 import { applyOcr, createOcrCache, type OcrCache } from "../ocr/apply.js";
 import type { OcrBinding } from "../ocr/port.js";
 import { capabilitiesWith } from "../platform/capabilities.js";
-import { SkMcpPdfError } from "../platform/errors.js";
+import { LiaisoPdfError } from "../platform/errors.js";
 import {
   createDeadline,
   createGate,
@@ -89,7 +89,7 @@ interface PageEntry {
 function entryFor(pages: readonly ResolvedPage[], page: number): PageEntry {
   const found = pageAt(pages, page);
   if (found === undefined) {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "invalid_argument",
       `The document has ${String(pages.length)} pages; page ${String(page)} does not exist.`,
     );
@@ -138,7 +138,7 @@ export function createHandlers(
   const listings: Gate = createGate(
     deps.maxConcurrentListings ?? limits.maxConcurrentListings,
     () => {
-      throw new SkMcpPdfError(
+      throw new LiaisoPdfError(
         "resource_limit",
         "Too many listings are already running.",
         "Retry once an earlier list_documents call finishes.",
@@ -148,7 +148,7 @@ export function createHandlers(
   const extractions: Gate = createGate(
     deps.maxConcurrentExtractions ?? limits.maxConcurrentExtractions,
     () => {
-      throw new SkMcpPdfError(
+      throw new LiaisoPdfError(
         "resource_limit",
         "Too many documents are already being read.",
         "Retry once an earlier read finishes; PDF extraction is memory-bound. A read that exceeded its budget keeps its slot until it ends, and only a server restart reclaims one that never does.",
@@ -171,7 +171,7 @@ export function createHandlers(
     const deadline = createDeadline(
       limits.maxExtractMs,
       () =>
-        new SkMcpPdfError(
+        new LiaisoPdfError(
           "resource_limit",
           `Reading '${raw}' exceeded the ${String(limits.maxExtractMs)} ms extraction budget.`,
           "Read a smaller document; the work already started is not cancelled, and its slot stays taken until it finishes.",
@@ -182,7 +182,7 @@ export function createHandlers(
 
   const ocrCache: OcrCache = deps.ocrCache ?? createOcrCache();
   const ocrRuns: Gate = createGate(limits.maxConcurrentOcr, () => {
-    throw new SkMcpPdfError(
+    throw new LiaisoPdfError(
       "resource_limit",
       "An OCR run is already in progress.",
       "Retry once it finishes; transcription is the slowest thing this server does. A run that exceeded its budget keeps its slot until it ends, and only a server restart reclaims one that never does.",
@@ -219,7 +219,7 @@ export function createHandlers(
       };
     }
     if (deps.ocr === undefined) {
-      throw new SkMcpPdfError(
+      throw new LiaisoPdfError(
         "ocr_unavailable",
         "No OCR provider is configured, so pages without a text layer cannot be transcribed.",
         "Call describe_document and read capabilities.ocr, or omit ocr to read the text layer alone.",
@@ -234,7 +234,7 @@ export function createHandlers(
     const deadline = createDeadline(
       timeoutMs,
       () =>
-        new SkMcpPdfError(
+        new LiaisoPdfError(
           "ocr_failed",
           `OCR exceeded the ${String(timeoutMs)} ms budget.`,
           "Request fewer pages, or configure a faster provider; the run already started keeps its slot until it finishes.",
@@ -328,7 +328,7 @@ export function createHandlers(
        */
       const hash = optionsHash({ tool: "read", ocr: args.ocr === true });
       if (args.cursor !== undefined && args.pages !== undefined) {
-        throw new SkMcpPdfError(
+        throw new LiaisoPdfError(
           "invalid_argument",
           "cursor cannot be combined with pages.",
           "The cursor already carries the pages and the position the previous response stopped at.",
@@ -428,7 +428,7 @@ export function createHandlers(
           truncatedMarkdown: true,
         }));
         if (kept.length === 0) {
-          throw new SkMcpPdfError(
+          throw new LiaisoPdfError(
             "resource_limit",
             `No part of page ${String(page)} fits the ${String(maxPayloadBytes)} byte response budget.`,
             "Read a document with smaller pages.",

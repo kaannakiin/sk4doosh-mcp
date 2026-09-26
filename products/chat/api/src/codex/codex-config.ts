@@ -45,8 +45,8 @@ export function codexConfigFor(
               default_tools_approval_mode: "auto",
               tool_timeout_sec: LOCAL_WORKER_TIMEOUT_SEC,
               env: {
-                SKMCP_LLM_BASE_URL: llm.baseUrl,
-                SKMCP_LLM_MODEL: llm.model,
+                LIAISO_LLM_BASE_URL: llm.baseUrl,
+                LIAISO_LLM_MODEL: llm.model,
               },
             },
           },

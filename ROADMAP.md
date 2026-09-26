@@ -19,15 +19,15 @@ spec, a guard comment or the package README.
   between security alternatives have no tests.
 - **A login credential source.** Listed under "Not specified" in
   [credentials.md](packages/http/spec/credentials.md).
-- **Publishing the gateway.** `@sk-mcp/openapi-mcp` depends on the private `@sk-mcp/core`, and a
+- **Publishing the gateway.** `@liaiso/openapi-mcp` depends on the private `@liaiso/core`, and a
   published package may not depend on a private one. Either publish core or bundle it.
 - **A route-normalisation conformance corpus.** Each SDK pins its own route folding with unit tests
   ([selection-hierarchy.md](packages/http/spec/selection-hierarchy.md), Known limits).
 
 ## Source servers
 
-- **`pg-mcp`.** A PostgreSQL server over `@sk-mcp/db-core`, which already names no driver.
-- **`docx-mcp` and `pptx-mcp`.** Further OOXML servers over `@sk-mcp/ooxml-core`. Moving media
+- **`pg-mcp`.** A PostgreSQL server over `@liaiso/db-core`, which already names no driver.
+- **`docx-mcp` and `pptx-mcp`.** Further OOXML servers over `@liaiso/ooxml-core`. Moving media
   selection from path prefixes to content types is the generalisation they need; `excel-mcp` keeps
   its prefix so its result set does not change.
 
@@ -41,8 +41,8 @@ spec, a guard comment or the package README.
   delegation's cost is known rather than assumed.
 - **A job model for large inputs.** Start and poll for work over 1 000 rows; `local_map` refuses more
   than 2 000 rows today.
-- **Configuration knobs.** A model per `local_task` kind (only `SKMCP_LLM_MODEL` exists),
-  `SKMCP_LLM_TOOLS` to register a subset of tools, `SKMCP_LLM_PROMPTS` to override the kind prompts
+- **Configuration knobs.** A model per `local_task` kind (only `LIAISO_LLM_MODEL` exists),
+  `LIAISO_LLM_TOOLS` to register a subset of tools, `LIAISO_LLM_PROMPTS` to override the kind prompts
   (hard-coded in `src/tools/prompts.ts`), and throughput in `local_status`.
 - **An OpenAI-compatible backend** for vLLM, llama.cpp and LM Studio. Only `src/backend/ollama.ts`
   exists; the port is `src/backend/port.ts`.
@@ -65,7 +65,7 @@ its tools under invoke-time authorization ([connections/README.md](products/chat
   grows. Needed before partner scope publishing ships.
 - **SDK-assisted delegated auth.** An adapter over a partner's own session or JWT system, so a
   backend that embeds the SDK can link accounts without running an OAuth server.
-- **`sk-mcp auth` CLI.** `inspect`, `setup`, `test` and `publish` for partner onboarding.
+- **`liaiso auth` CLI.** `inspect`, `setup`, `test` and `publish` for partner onboarding.
 - **PAT and API-key connections.** `IntegrationAuthMode` has only `oauth` and `none`.
 - **An invocation audit trail.** `ConnectionEvent` records the connection lifecycle only; invocation
   denials are logged, not stored.

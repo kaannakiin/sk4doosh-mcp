@@ -3,9 +3,9 @@ import {
   measureJson,
   type Fingerprint,
   type SourceMode,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "../platform/errors.js";
+import { LiaisoXmlError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 import {
   parseNodeId,
@@ -101,7 +101,7 @@ export function assemblePage(input: AssembleInput): ReadEnvelope {
   }
 
   if (admitted.length === 0) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       `The first node of the requested view does not fit in the ${String(limits.maxPayloadBytes)} byte response budget.`,
       "Read a narrower view with address and maxDepth, or use find_in_document to locate a value.",

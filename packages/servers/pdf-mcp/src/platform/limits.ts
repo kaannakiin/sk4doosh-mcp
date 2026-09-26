@@ -1,4 +1,4 @@
-import { coreLimits, type ModePolicy } from "@sk-mcp/file-core";
+import { coreLimits, type ModePolicy } from "@liaiso/file-core";
 
 const maxPdfBytes = 32 * 1024 * 1024;
 

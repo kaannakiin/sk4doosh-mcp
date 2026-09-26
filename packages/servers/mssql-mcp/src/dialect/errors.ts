@@ -1,4 +1,4 @@
-import type { DbErrorCode, DriverFailure } from "@sk-mcp/db-core";
+import type { DbErrorCode, DriverFailure } from "@liaiso/db-core";
 
 interface RequestErrorShape {
   readonly code?: unknown;

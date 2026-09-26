@@ -1,10 +1,10 @@
 import { defineConfig } from "oxlint";
-import { config } from "@sk-mcp/oxlint-config/base";
+import { config } from "@liaiso/oxlint-config/base";
 import {
   casingProperties,
   processEnvProperty,
   restrictProperties,
-} from "@sk-mcp/oxlint-config/casing";
+} from "@liaiso/oxlint-config/casing";
 
 const platformMessage =
   "The platform layer is the db-core and node boundary; it may not import a layer above it.";
@@ -17,7 +17,7 @@ const driverPackages = ["mssql", "tedious"];
 const serverPackages = ["@modelcontextprotocol/server"];
 
 const sqlMinters = {
-  name: "@sk-mcp/db-core",
+  name: "@liaiso/db-core",
   importNames: ["sqlText", "quotedIdentifier"],
   message:
     "Minting SqlText or a QuotedIdentifier belongs to the dialect layer; everywhere else they arrive already built.",

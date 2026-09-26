@@ -1,5 +1,5 @@
 import { realpath, stat } from "node:fs/promises";
-import type { NativeRoot } from "@sk-mcp/file-core-native";
+import type { NativeRoot } from "@liaiso/file-core-native";
 import { accessError, pinRoot } from "./access.js";
 import {
   basename,
@@ -13,7 +13,7 @@ import {
 } from "node:path";
 import type { CoreErrorCode, ErrorFactory } from "./errors.js";
 import { extensionListOf, type FormatRegistry } from "./formats.js";
-import { asciiLower, canonical } from "@sk-mcp/mcp-core";
+import { asciiLower, canonical } from "@liaiso/mcp-core";
 import type { Vocabulary } from "./vocabulary.js";
 
 declare const sandboxedBrand: unique symbol;

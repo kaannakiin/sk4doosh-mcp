@@ -14,14 +14,14 @@ import {
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 import type { Request, Response } from "express";
-import { defaultProtocolRevision, protocolRevisions } from "@sk-mcp/core";
+import { defaultProtocolRevision, protocolRevisions } from "@liaiso/core";
 import jwt from "jsonwebtoken";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  SkMcpModule,
-  SkMcpStreamableHttp,
-  type SkMcpOptions,
-  type SkMcpRequestHandler,
+  LiaisoModule,
+  LiaisoStreamableHttp,
+  type LiaisoOptions,
+  type LiaisoRequestHandler,
 } from "../src/index.js";
 
 const secret = "transport-test-secret-0123456789abcdef";
@@ -61,9 +61,9 @@ function frameOf(body: string): unknown {
 
 @Controller()
 class TransportProbeController {
-  private readonly serve: SkMcpRequestHandler;
+  private readonly serve: LiaisoRequestHandler;
 
-  constructor(private readonly streamableHttp: SkMcpStreamableHttp) {
+  constructor(private readonly streamableHttp: LiaisoStreamableHttp) {
     this.serve = this.streamableHttp.serve(() => {
       const server = new McpServer({
         name: "transport-test",
@@ -89,10 +89,10 @@ interface TransportTestApp {
 }
 
 async function createTransportApp(
-  configure: (options: SkMcpOptions) => void,
+  configure: (options: LiaisoOptions) => void,
 ): Promise<TransportTestApp> {
   const moduleRef = await Test.createTestingModule({
-    imports: [SkMcpModule.forRoot(configure)],
+    imports: [LiaisoModule.forRoot(configure)],
     controllers: [TransportProbeController],
   }).compile();
   const app = moduleRef.createNestApplication({ logger: false });
@@ -249,7 +249,7 @@ describe("Nest streamable HTTP transport", () => {
     const tools = await client.listTools();
     expect(tools.tools.some((tool) => tool.name === "ping")).toBe(true);
 
-    current.app.get(SkMcpStreamableHttp).notifyToolListChanged();
+    current.app.get(LiaisoStreamableHttp).notifyToolListChanged();
     await waitFor(() => notified > 0);
 
     await client.close();

@@ -2,7 +2,7 @@ import type { InheritedContext } from "../../model/scan.js";
 
 const encoder = new TextEncoder();
 
-export const fragmentNamespace = "urn:x-skmcp:fragment";
+export const fragmentNamespace = "urn:x-liaiso:fragment";
 
 /**
  * Returns a prefix that no declaration in `context` already binds. The wrapper
@@ -11,9 +11,9 @@ export const fragmentNamespace = "urn:x-skmcp:fragment";
  */
 export function wrapperPrefix(context: InheritedContext): string {
   const taken = new Set(context.namespaces.map((entry) => entry.prefix));
-  if (!taken.has("skmcp")) return "skmcp";
+  if (!taken.has("liaiso")) return "liaiso";
   for (let i = 0; ; i += 1) {
-    const candidate = `skmcp${i}`;
+    const candidate = `liaiso${i}`;
     if (!taken.has(candidate)) return candidate;
   }
 }

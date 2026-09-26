@@ -1,7 +1,7 @@
-# @sk-mcp/ooxml-core
+# @liaiso/ooxml-core
 
 Shared reader for OOXML (ECMA-376) containers: a zip part source, the OPC package model,
-relationships, content types and single-pass XML part scanning. `@sk-mcp/excel-mcp` consumes it
+relationships, content types and single-pass XML part scanning. `@liaiso/excel-mcp` consumes it
 today; `docx-mcp` and `pptx-mcp` are meant to sit on the same core later.
 
 ## Usage
@@ -11,7 +11,7 @@ A consumer injects an error factory and reads a package through the resulting re
 ```ts
 const reader = createOoxmlReader({
   fail: (code, message) =>
-    new SkMcpExcelError(excelCodeFor(code), message, recoveryFor(code)),
+    new LiaisoExcelError(excelCodeFor(code), message, recoveryFor(code)),
 });
 ```
 
@@ -35,7 +35,7 @@ format nouns belong there, not in this package.
   WordprocessingML / PresentationML namespace, or the noun "workbook", "sheet", "document" or
   "presentation" inside this package is a defect. Container nouns — package, part, relationship,
   archive — are ECMA-376 vocabulary and are allowed.
-- **Names no `@sk-mcp/*` package.** The error factory and the part source both arrive by
+- **Names no `@liaiso/*` package.** The error factory and the part source both arrive by
   injection, so `@e965/xlsx` never enters this package.
 - **`saxes` and `fflate` are its only runtime dependencies.**
 
@@ -86,6 +86,6 @@ the package. An encrypted entry fails as a corrupt part instead.
 ## Development
 
 ```bash
-pnpm turbo run build check-types lint --filter=@sk-mcp/ooxml-core
-pnpm turbo run test --filter=@sk-mcp/ooxml-core
+pnpm turbo run build check-types lint --filter=@liaiso/ooxml-core
+pnpm turbo run test --filter=@liaiso/ooxml-core
 ```

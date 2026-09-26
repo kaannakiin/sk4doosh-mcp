@@ -3,9 +3,9 @@ import {
   measureJson,
   type Fingerprint,
   type SourceMode,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "../platform/errors.js";
+import { LiaisoXmlError } from "../platform/errors.js";
 import type { FindMatch, FindPage } from "../../model/find.js";
 import { limits } from "../platform/limits.js";
 import {
@@ -108,7 +108,7 @@ export function assembleFindPage(input: AssembleFindInput): FindEnvelope {
   }
 
   if (admitted.length === 0 && page.matches.length > 0) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       `The first match does not fit in the ${String(limits.maxPayloadBytes)} byte response budget.`,
       "Narrow the search with scopeAddress, or search for a shorter query.",

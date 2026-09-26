@@ -1,6 +1,6 @@
 # Why there is no depth limit
 
-sk-mcp used to cut object graphs at three levels. It no longer does, and the reason is worth
+liaiso used to cut object graphs at three levels. It no longer does, and the reason is worth
 recording, because the old behaviour looked prudent and was actually lossy.
 
 ## What the limit cost

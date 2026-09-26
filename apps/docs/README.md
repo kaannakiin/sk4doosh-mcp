@@ -1,10 +1,10 @@
-# @sk-mcp/docs
+# @liaiso/docs
 
-The sk-mcp documentation site. TanStack Start (Vite) + Mantine + Tailwind CSS.
+The liaiso documentation site. TanStack Start (Vite) + Mantine + Tailwind CSS.
 
 ```bash
-pnpm --filter @sk-mcp/docs dev     # http://localhost:5180
-pnpm turbo run build --filter=@sk-mcp/docs
+pnpm --filter @liaiso/docs dev     # http://localhost:5180
+pnpm turbo run build --filter=@liaiso/docs
 ```
 
 ## Content
@@ -14,10 +14,10 @@ Diátaxis mode). The filename gives the order and the slug, the first `#` line g
 (`http-catalog/00-introduction.md` → `/docs/http-catalog/introduction`). The sidebar is generated
 by `src/lib/content.ts`; the product list comes from `src/content/products.json`.
 
-`pnpm --filter @sk-mcp/docs validate` enforces the structural rules (mode folder names, product
+`pnpm --filter @liaiso/docs validate` enforces the structural rules (mode folder names, product
 registration, unique slugs, `# Title`, internal link targets). `pnpm lint` runs it too.
 
-Site content and UI strings are written in **English** — this site is sk-mcp's public face. `packages/http/spec/`
+Site content and UI strings are written in **English** — this site is liaiso's public face. `packages/http/spec/`
 is in English too, because the site links to it as its normative source. There is no i18n layer: one
 language, no drift.
 

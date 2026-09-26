@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/ooxml-core",
+  "name": "@liaiso/ooxml-core",
   "version": "0.1.0",
   "description": "Shared reader for OOXML containers: zip part source, OPC package, relationships, content types, single-pass XML part scanning.",
   "license": "MIT",
@@ -35,8 +35,8 @@
     "saxes": "^6.0.0"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "3.2.7",
     "jszip": "3.10.1",

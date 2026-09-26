@@ -5,7 +5,7 @@ import {
   textMediaType,
   urlEncodedMediaType,
   type JsonSchemaObject,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import type { McpFileFieldOptions, McpToolOptions } from "../decorators.js";
 import type { DiscoveryDiagnostic } from "./endpoint-discovery.js";
 
@@ -242,7 +242,7 @@ export function bodyEncodingOf(
   if (!isWritable(contentType)) {
     report?.({
       code: "unsupported_binding",
-      message: `${where} takes a ${contentType} body, which sk-mcp has no writer for; endpoint skipped.`,
+      message: `${where} takes a ${contentType} body, which liaiso has no writer for; endpoint skipped.`,
     });
     return undefined;
   }

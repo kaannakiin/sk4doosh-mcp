@@ -1,6 +1,6 @@
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { beforeEach, describe, expect, it } from "vitest";
-import { McpSourceError } from "@sk-mcp/mcp-core";
+import { McpSourceError } from "@liaiso/mcp-core";
 import {
   connectionSecret,
   createDbMcpServer,

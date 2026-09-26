@@ -1,7 +1,7 @@
-export { SkMcpModule } from "./sk-mcp.module.js";
-export type { SkMcpModuleAsyncOptions } from "./sk-mcp.module.js";
-export { SkMcpDispatcher } from "./dispatcher.js";
-export { SkMcpCatalog } from "./catalog.js";
+export { LiaisoModule } from "./liaiso.module.js";
+export type { LiaisoModuleAsyncOptions } from "./liaiso.module.js";
+export { LiaisoDispatcher } from "./dispatcher.js";
+export { LiaisoCatalog } from "./catalog.js";
 export type { CatalogEntry, CatalogSnapshot } from "./catalog.js";
 export {
   curate,
@@ -19,12 +19,12 @@ export type {
   McpToolOptions,
   McpVariantOptions,
 } from "./decorators.js";
-export { SkMcpFileRefused } from "./files.js";
+export { LiaisoFileRefused } from "./files.js";
 export type {
   FileResolution,
   FileResolveRequest,
   FileResolver,
-  SkMcpFileOptions,
+  LiaisoFileOptions,
 } from "./files.js";
 export { ArgumentCurationOptions, callerOf } from "./options.js";
 export type {
@@ -33,12 +33,12 @@ export type {
   McpCaller,
   VerifiedToken,
 } from "./options.js";
-export { isSkMcpProbe, isSkMcpRequest } from "./markers.js";
+export { isLiaisoProbe, isLiaisoRequest } from "./markers.js";
 export {
   currentOuterConnection,
   type OuterConnection,
 } from "./outer-connection.js";
-export { catalogGenerationMetaKey, registerSkMcpTools } from "./meta-tools.js";
+export { catalogGenerationMetaKey, registerLiaisoTools } from "./meta-tools.js";
 export type { MetaToolDependencies } from "./meta-tools.js";
 export {
   createRoutePaths,
@@ -63,8 +63,8 @@ export type {
 export { DeclarativeVisibilityEvaluator } from "./visibility/evaluator.js";
 export type { VisibilityEvaluator } from "./visibility/evaluator.js";
 export {
-  SkMcpProbeEvaluator,
-  SkMcpProbeInterceptor,
+  LiaisoProbeEvaluator,
+  LiaisoProbeInterceptor,
 } from "./visibility/probe.js";
 export type { ProbeEvaluator } from "./visibility/probe.js";
 export { CallerVisibilityProvider } from "./visibility/provider.js";
@@ -73,32 +73,32 @@ export type {
   DispatchResult,
   ProbeResult,
 } from "./dispatcher.js";
-export { SkMcpDispatchAborted } from "./synthetic-context.js";
+export { LiaisoDispatchAborted } from "./synthetic-context.js";
 export type { DispatchAbortReason } from "./synthetic-context.js";
 export {
   ErrorMappingOptions,
   IdentityForwardingOptions,
-  SkMcpOptions,
-  SK_MCP_OPTIONS,
+  LiaisoOptions,
+  LIAISO_OPTIONS,
 } from "./options.js";
 export {
-  SkMcpConfigurationError,
+  LiaisoConfigurationError,
   collectConfigurationFailures,
-  validateSkMcpOptions,
+  validateLiaisoOptions,
 } from "./options-validation.js";
 export type {
   InvokeTarget,
-  SkMcpInvokeOptions,
-  SkMcpDiagnosticsOptions,
-  SkMcpNamingOptions,
-  SkMcpSelectionOptions,
-  SkMcpVisibilityOptions,
-  SkMcpVisibilityTier,
+  LiaisoInvokeOptions,
+  LiaisoDiagnosticsOptions,
+  LiaisoNamingOptions,
+  LiaisoSelectionOptions,
+  LiaisoVisibilityOptions,
+  LiaisoVisibilityTier,
 } from "./options.js";
 export type {
   OuterRequest,
-  SkMcpCacheOptions,
-  SkMcpResourceServerOptions,
+  LiaisoCacheOptions,
+  LiaisoResourceServerOptions,
   SyntheticHeaders,
   SyntheticRequestOptions,
 } from "./options.js";
@@ -110,16 +110,16 @@ export type {
 } from "./extension-points.js";
 export {
   CarrierHashCallerScopeResolver,
-  SK_MCP_CACHE_INVALIDATOR,
-  SkMcpCacheInvalidator,
+  LIAISO_CACHE_INVALIDATOR,
+  LiaisoCacheInvalidator,
 } from "./cache.js";
 export type { CallerScopeResolver } from "./cache.js";
 export { DefaultInvokeResultMapper } from "./invoke-result-mapper.js";
 export type { InvokeResultMapper } from "./invoke-result-mapper.js";
-export { SkMcpStreamableHttp } from "./transport/streamable-http.js";
+export { LiaisoStreamableHttp } from "./transport/streamable-http.js";
 export type {
-  SkMcpRequestHandler,
-  SkMcpServerFactory,
+  LiaisoRequestHandler,
+  LiaisoServerFactory,
 } from "./transport/streamable-http.js";
 export { withAudienceCheck } from "./transport/audience.js";
 export {
@@ -135,9 +135,9 @@ export {
   isMappedError,
   isSdkError,
   mapInvokeResult,
-  SkMcpArgumentError,
-  SkMcpTemplateError,
-} from "@sk-mcp/core";
+  LiaisoArgumentError,
+  LiaisoTemplateError,
+} from "@liaiso/core";
 export type {
   BackendErrorCode,
   BackendResponse,
@@ -154,5 +154,5 @@ export type {
   Recognizer,
   RequestTemplate,
   RequestTemplateInput,
-  SkMcpArgumentErrorCode,
-} from "@sk-mcp/core";
+  LiaisoArgumentErrorCode,
+} from "@liaiso/core";

@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/agent-client",
+  "name": "@liaiso/agent-client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,9 +13,9 @@
     "@modelcontextprotocol/client": "^2.0.0"
   },
   "devDependencies": {
-    "@sk-mcp/core": "workspace:*",
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/core": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "oxlint": "1.85.0",
     "typescript": "7.0.2"

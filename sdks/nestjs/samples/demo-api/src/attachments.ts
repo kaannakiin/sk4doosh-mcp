@@ -2,7 +2,7 @@ import type {
   FileResolution,
   FileResolveRequest,
   FileResolver,
-} from "@sk-mcp/sdk-nestjs";
+} from "@liaiso/sdk-nestjs";
 
 interface StoredAttachment {
   readonly owner: string;

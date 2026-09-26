@@ -24,8 +24,8 @@ import {
   searchLimitDescription,
   searchQueryDescription,
   searchTagsDescription,
-  SkMcpArgumentError,
-  SkMcpDispatchAborted,
+  LiaisoArgumentError,
+  LiaisoDispatchAborted,
   textResult,
   unknownTool,
   vocabularyOf,
@@ -35,35 +35,35 @@ import {
   type MetaResponse,
   type VisibilityDecision,
   type WireResult,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import { Logger } from "@nestjs/common";
 import { z } from "zod";
-import type { CatalogEntry, SkMcpCatalog } from "./catalog.js";
+import type { CatalogEntry, LiaisoCatalog } from "./catalog.js";
 import type { CallerScopeResolver } from "./cache.js";
 import type {
   DispatchDeadline,
   DispatchFiles,
-  SkMcpDispatcher,
+  LiaisoDispatcher,
 } from "./dispatcher.js";
-import { SkMcpFileRefused } from "./files.js";
+import { LiaisoFileRefused } from "./files.js";
 import type { InvokeResultMapper } from "./invoke-result-mapper.js";
 import { callerOf } from "./options.js";
 import type {
   InvokeTarget,
   OuterRequest,
-  SkMcpOptions,
+  LiaisoOptions,
   VerifiedToken,
 } from "./options.js";
 import { currentOuterConnection } from "./outer-connection.js";
 import type { CallerVisibilityProvider } from "./visibility/provider.js";
 
 export interface MetaToolDependencies {
-  readonly catalog: SkMcpCatalog;
-  readonly dispatcher: SkMcpDispatcher;
+  readonly catalog: LiaisoCatalog;
+  readonly dispatcher: LiaisoDispatcher;
   readonly mapper: InvokeResultMapper;
   readonly visibility: CallerVisibilityProvider;
   readonly scopes: CallerScopeResolver;
-  readonly options: SkMcpOptions;
+  readonly options: LiaisoOptions;
 }
 
 interface ToolContext {
@@ -76,7 +76,7 @@ interface ToolContext {
 
 export { catalogGenerationMetaKey };
 
-const logger = new Logger("SkMcp");
+const logger = new Logger("Liaiso");
 
 /**
  * Guard: `name` binds as `unknown` and the object publishes its own `required`, so a call that
@@ -153,7 +153,7 @@ function emitGuarded(
   return emitWithin((target) => budgetFor(deps, target), produce);
 }
 
-export function registerSkMcpTools(
+export function registerLiaisoTools(
   server: McpServer,
   deps: MetaToolDependencies,
 ): void {
@@ -280,7 +280,7 @@ export function registerSkMcpTools(
       _meta: generationMeta(),
       /**
        * Guard: `arguments` publishes a description and no `type`, so a value that is not an object
-       * reaches the handler and leaves as an sk-mcp envelope. A schema that constrained it was
+       * reaches the handler and leaves as an liaiso envelope. A schema that constrained it was
        * rejected during the framework's own argument binding, and the caller got an answer carrying
        * neither the envelope nor the leak filter. Pinned by test/meta-tools.spec.ts and by T18.
        */
@@ -341,7 +341,7 @@ export function registerSkMcpTools(
             maxInlineFileBytes: files.maxInlineFileBytes,
           });
         } catch (error) {
-          if (error instanceof SkMcpArgumentError) {
+          if (error instanceof LiaisoArgumentError) {
             return errorResult(error.code, error.message);
           }
           throw error;
@@ -359,15 +359,15 @@ export function registerSkMcpTools(
           );
         } catch (error) {
           if (
-            error instanceof SkMcpDispatchAborted &&
+            error instanceof LiaisoDispatchAborted &&
             error.reason === "timeout"
           ) {
             return { payload: refuseTimedOutInvoke(timeoutMs), isError: true };
           }
-          if (error instanceof SkMcpArgumentError) {
+          if (error instanceof LiaisoArgumentError) {
             return errorResult(error.code, error.message);
           }
-          if (error instanceof SkMcpFileRefused) {
+          if (error instanceof LiaisoFileRefused) {
             return {
               payload: refuseUnresolvedFile(
                 error.field,

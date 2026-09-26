@@ -1,4 +1,4 @@
-import { sqlText, type Dialect, type QuerySpec } from "@sk-mcp/db-core";
+import { sqlText, type Dialect, type QuerySpec } from "@liaiso/db-core";
 import type { MssqlConfig } from "../platform/env.js";
 import { secretPatterns } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";

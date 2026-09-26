@@ -1,4 +1,4 @@
-import { truncateWellFormed } from "@sk-mcp/file-core";
+import { truncateWellFormed } from "@liaiso/file-core";
 import type { MergePolicy, ValueMode } from "./cursor.js";
 import { limits } from "../platform/limits.js";
 

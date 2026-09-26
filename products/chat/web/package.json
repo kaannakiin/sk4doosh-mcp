@@ -36,8 +36,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-router-devtools": "^1.167.1",
     "@types/node": "^24.3.0",

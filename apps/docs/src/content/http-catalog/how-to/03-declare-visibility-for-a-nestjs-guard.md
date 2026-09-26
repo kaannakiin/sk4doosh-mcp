@@ -1,11 +1,11 @@
 # How to declare visibility for a NestJS guard
 
-An sk-mcp catalog filters search results per caller. On NestJS that filtering only works if your
-guards tell sk-mcp what they enforce. This page shows how, and what happens when they don't.
+An liaiso catalog filters search results per caller. On NestJS that filtering only works if your
+guards tell liaiso what they enforce. This page shows how, and what happens when they don't.
 
 ## The trap, first
 
-sk-mcp reads each endpoint's guards — global, controller and method — and asks every one of them
+liaiso reads each endpoint's guards — global, controller and method — and asks every one of them
 for a declaration. A guard declares itself by having a `describeVisibility()` method. **If any
 guard on the endpoint lacks that method, the endpoint is marked `imperative: true`, and its
 visibility is `unknown` forever.** One undeclared guard is enough; declaring the other three
@@ -13,7 +13,7 @@ changes nothing.
 
 That is not a bug. A NestJS guard is arbitrary code — `canActivate` can read a database, call a
 service, or check the time — so its _binding_ is readable through `Reflector` but its _meaning_ is
-not. sk-mcp refuses to guess.
+not. liaiso refuses to guess.
 
 `unknown` is not a denial. With the default `visibility.onUnknown: "show"` the tool still appears
 in search, flagged `authUncertain`, and the caller finds out for real at invoke time.
@@ -43,7 +43,7 @@ Two fields, both optional:
   satisfies; they never reach the agent.
 
 The method must not throw and must not depend on request state — it is called once at catalog
-build time, with no request in scope. sk-mcp swallows a throw and treats the guard as undeclared,
+build time, with no request in scope. liaiso swallows a throw and treats the guard as undeclared,
 which puts you back in the `unknown` case silently.
 
 Across several guards on one endpoint, `anonymous: "no"` from any guard wins, and `policies` are
@@ -55,7 +55,7 @@ Sometimes the guards are not yours to change, or the check genuinely cannot be s
 the probe tier:
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.visibility.tier = "probe";
 });
 ```
@@ -75,7 +75,7 @@ has the measured cost.
 
 ## Give the probe usable path parameters
 
-A probe has to build a URL, and a route like `/orders/{id}` needs an `id`. sk-mcp synthesizes one
+A probe has to build a URL, and a route like `/orders/{id}` needs an `id`. liaiso synthesizes one
 from the parameter's type — `1` for an integer, `true` for a boolean, an all-zero UUID, `2000-01-01`
 for a date-time, otherwise the literal `probe`.
 
@@ -100,7 +100,7 @@ Run a search as two different callers and compare the counts. Against this repos
 sample, whose four guards are all undeclared:
 
 ```bash
-SKMCP_BASE_URL=http://127.0.0.1:3000 SKMCP_AUTH=token SKMCP_USER=alice \
+LIAISO_BASE_URL=http://127.0.0.1:3000 LIAISO_AUTH=token LIAISO_USER=alice \
   node sdks/nestjs/samples/agent-client/dist/main.js --scenario smoke --query "create order"
 ```
 

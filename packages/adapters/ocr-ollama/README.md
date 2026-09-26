@@ -1,12 +1,12 @@
-# @sk-mcp/ocr-ollama
+# @liaiso/ocr-ollama
 
-An implementation of `@sk-mcp/pdf-mcp`'s `OcrProvider` port, backed by Ollama: it sends a page
+An implementation of `@liaiso/pdf-mcp`'s `OcrProvider` port, backed by Ollama: it sends a page
 image to a vision model and returns the transcribed text. No runtime dependency beyond `fetch`.
 
 ## Quick start
 
 ```ts
-import { createOllamaOcrProvider } from "@sk-mcp/ocr-ollama";
+import { createOllamaOcrProvider } from "@liaiso/ocr-ollama";
 
 const provider = createOllamaOcrProvider({
   baseUrl: "http://127.0.0.1:11434",
@@ -14,7 +14,7 @@ const provider = createOllamaOcrProvider({
 });
 ```
 
-Pair it with `@sk-mcp/pdf-raster-pdfjs` to build a full `OcrBinding` for `pdf-mcp` — see that
+Pair it with `@liaiso/pdf-raster-pdfjs` to build a full `OcrBinding` for `pdf-mcp` — see that
 package's README and `packages/servers/pdf-mcp/examples/ollama-binding.ts`.
 
 ## API
@@ -39,7 +39,7 @@ package's README and `packages/servers/pdf-mcp/examples/ollama-binding.ts`.
 `pdf-mcp` defines the `OcrProvider` port in `src/ocr/port.ts` and never imports this package —
 the type is declared structurally here (`src/port.ts`) so the dependency graph stays acyclic.
 `createOllamaOcrProvider`'s result satisfies that port and is passed as `provider` in an
-`OcrBinding`, alongside a `PageRasterizer` such as `@sk-mcp/pdf-raster-pdfjs`. Compile-time
+`OcrBinding`, alongside a `PageRasterizer` such as `@liaiso/pdf-raster-pdfjs`. Compile-time
 compatibility between this copy of the port and pdf-mcp's real one is pinned by
 `pdf-mcp/test/adapters.spec.ts`.
 
@@ -62,6 +62,6 @@ compatibility between this copy of the port and pdf-mcp's real one is pinned by
 ## Development
 
 ```sh
-pnpm turbo run build --filter=@sk-mcp/ocr-ollama
-pnpm turbo run test --filter=@sk-mcp/ocr-ollama
+pnpm turbo run build --filter=@liaiso/ocr-ollama
+pnpm turbo run test --filter=@liaiso/ocr-ollama
 ```

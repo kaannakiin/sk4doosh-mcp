@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { limits } from "../src/host/platform/limits.js";
 import { bodyOf, createHarness, type Harness } from "./fixtures/harness.js";
 
-const enabled = process.env["SKMCP_XML_LARGE"] === "1";
+const enabled = process.env["LIAISO_XML_LARGE"] === "1";
 
 const mib = 1024 * 1024;
 

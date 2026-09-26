@@ -23,17 +23,17 @@ import {
 import type { Request, Response } from "express";
 import { IsNotEmpty, IsString } from "class-validator";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SkMcpCatalog } from "../src/catalog.js";
+import { LiaisoCatalog } from "../src/catalog.js";
 import { McpTool } from "../src/decorators.js";
-import { SkMcpDispatcher } from "../src/dispatcher.js";
+import { LiaisoDispatcher } from "../src/dispatcher.js";
 import { extensionTokens } from "../src/extension-points.js";
 import type { InvokeResultMapper } from "../src/invoke-result-mapper.js";
-import { registerSkMcpTools } from "../src/meta-tools.js";
-import { SK_MCP_OPTIONS, type SkMcpOptions } from "../src/options.js";
-import { SkMcpModule } from "../src/sk-mcp.module.js";
+import { registerLiaisoTools } from "../src/meta-tools.js";
+import { LIAISO_OPTIONS, type LiaisoOptions } from "../src/options.js";
+import { LiaisoModule } from "../src/liaiso.module.js";
 import {
-  SkMcpStreamableHttp,
-  type SkMcpRequestHandler,
+  LiaisoStreamableHttp,
+  type LiaisoRequestHandler,
 } from "../src/transport/streamable-http.js";
 import type { CallerScopeResolver } from "../src/cache.js";
 import { CallerVisibilityProvider } from "../src/visibility/provider.js";
@@ -112,12 +112,12 @@ interface Wire {
 
 @Controller()
 class MetaToolsMcpController {
-  private readonly serve: SkMcpRequestHandler;
+  private readonly serve: LiaisoRequestHandler;
 
   constructor(
-    private readonly streamableHttp: SkMcpStreamableHttp,
-    private readonly catalog: SkMcpCatalog,
-    private readonly dispatcher: SkMcpDispatcher,
+    private readonly streamableHttp: LiaisoStreamableHttp,
+    private readonly catalog: LiaisoCatalog,
+    private readonly dispatcher: LiaisoDispatcher,
     private readonly visibility: CallerVisibilityProvider,
   ) {
     this.serve = this.streamableHttp.serve(() => {
@@ -125,13 +125,13 @@ class MetaToolsMcpController {
         name: "nest-matrix",
         version: "0.0.0",
       });
-      registerSkMcpTools(server, {
+      registerLiaisoTools(server, {
         catalog: this.catalog,
         dispatcher: this.dispatcher,
         mapper: mapper as InvokeResultMapper,
         visibility: this.visibility,
         scopes: scopes as CallerScopeResolver,
-        options: options as SkMcpOptions,
+        options: options as LiaisoOptions,
       });
       return server;
     });
@@ -145,12 +145,12 @@ class MetaToolsMcpController {
 
 let mapper: InvokeResultMapper | undefined;
 let scopes: CallerScopeResolver | undefined;
-let options: SkMcpOptions | undefined;
+let options: LiaisoOptions | undefined;
 
 describe("nest meta-tools", () => {
   let app: INestApplication;
   let baseUrl: string;
-  let catalog: SkMcpCatalog;
+  let catalog: LiaisoCatalog;
   const clients = new Map<string, Client>();
 
   const clientFor = async (bearer?: string): Promise<Client> => {
@@ -191,7 +191,7 @@ describe("nest meta-tools", () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [
-        SkMcpModule.forRoot((opts) => {
+        LiaisoModule.forRoot((opts) => {
           opts.visibility.tier = "probe";
           opts.cache.lifetimeMs = 0;
         }),
@@ -204,10 +204,10 @@ describe("nest meta-tools", () => {
     await app.listen(0);
     baseUrl = await app.getUrl();
 
-    catalog = app.get(SkMcpCatalog);
+    catalog = app.get(LiaisoCatalog);
     mapper = app.get<InvokeResultMapper>(extensionTokens.invokeResultMapper);
     scopes = app.get<CallerScopeResolver>(extensionTokens.callerScopeResolver);
-    options = app.get<SkMcpOptions>(SK_MCP_OPTIONS);
+    options = app.get<LiaisoOptions>(LIAISO_OPTIONS);
   });
 
   afterAll(async () => {
@@ -250,7 +250,7 @@ describe("nest meta-tools", () => {
   });
 
   /**
-   * The twin of this test is T17 in sdks/dotnet/tests/SkMcp.Tests/TransportTests.cs, and the
+   * The twin of this test is T17 in sdks/dotnet/tests/Liaiso.Tests/TransportTests.cs, and the
    * description is asserted verbatim in both because nothing else can compare two SDKs running in
    * two processes. The `default` is null rather than an empty array because a C# array parameter's
    * default must be a compile-time constant; zod's `meta` publishes the same null here.
@@ -271,9 +271,9 @@ describe("nest meta-tools", () => {
   });
 
   /**
-   * The twin of T18 in sdks/dotnet/tests/SkMcp.Tests/TransportTests.cs. `arguments` publishes a
+   * The twin of T18 in sdks/dotnet/tests/Liaiso.Tests/TransportTests.cs. `arguments` publishes a
    * description and no `type` on purpose: the argument accepts raw JSON so a non-object value
-   * reaches the handler and leaves as an sk-mcp envelope rather than a raw MCP validation error.
+   * reaches the handler and leaves as an liaiso envelope rather than a raw MCP validation error.
    */
   it("invoke_tool publishes name and arguments as required", async () => {
     const listed = await (await clientFor("alice")).listTools();
@@ -296,7 +296,7 @@ describe("nest meta-tools", () => {
   });
 
   /**
-   * The twin of T19 in sdks/dotnet/tests/SkMcp.Tests/TransportTests.cs. The permissive runtime type
+   * The twin of T19 in sdks/dotnet/tests/Liaiso.Tests/TransportTests.cs. The permissive runtime type
    * must not show up in what the agent reads.
    */
   it("load_tool still publishes name as a required string", async () => {

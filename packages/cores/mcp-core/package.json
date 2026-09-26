@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/mcp-core",
+  "name": "@liaiso/mcp-core",
   "version": "0.1.0",
   "description": "Source-agnostic machinery for read-only MCP servers: tool typing, response budget, error envelope, cursor codec, stdio server.",
   "license": "MIT",
@@ -37,8 +37,8 @@
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "3.2.7",
     "oxlint": "1.85.0",

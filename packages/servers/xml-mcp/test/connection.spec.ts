@@ -3,7 +3,7 @@ import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import type { CallToolResult } from "@modelcontextprotocol/client";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { SkMcpXmlError } from "../src/host/platform/errors.js";
+import { LiaisoXmlError } from "../src/host/platform/errors.js";
 import { formats } from "../src/host/platform/formats.js";
 import { limits } from "../src/host/platform/limits.js";
 import {
@@ -32,7 +32,7 @@ async function codeOf(action: () => Promise<unknown>): Promise<string> {
   try {
     await action();
   } catch (error) {
-    return (error as SkMcpXmlError).code;
+    return (error as LiaisoXmlError).code;
   }
   return "no-error";
 }
@@ -71,8 +71,8 @@ describe("the registry is bound to XML", () => {
       await resolveDocumentPath(root, "../outside.xml");
       expect.unreachable();
     } catch (error) {
-      const failure = error as SkMcpXmlError;
-      expect(failure).toBeInstanceOf(SkMcpXmlError);
+      const failure = error as LiaisoXmlError;
+      expect(failure).toBeInstanceOf(LiaisoXmlError);
       expect(failure.message).toContain(vocabulary.rootLabel);
     }
   });
@@ -82,7 +82,7 @@ describe("the registry is bound to XML", () => {
       await resolveDocumentPath(root, "missing.xml");
       expect.unreachable();
     } catch (error) {
-      expect((error as SkMcpXmlError).recovery).toContain("list_documents");
+      expect((error as LiaisoXmlError).recovery).toContain("list_documents");
     }
   });
 });

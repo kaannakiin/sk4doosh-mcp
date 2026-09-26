@@ -6,7 +6,7 @@ import type {
   ToolVariant,
 } from "./generated/endpoint-descriptor.js";
 import type { ToolDefinition } from "./generated/tool-definition.js";
-import { SkMcpTemplateError } from "./errors.js";
+import { LiaisoTemplateError } from "./errors.js";
 import {
   fileSourcesOf,
   isFileArraySchema,
@@ -66,19 +66,19 @@ function objectBindingFor(
   fill: ArgumentFill | undefined,
 ): ObjectParameterBinding {
   if (parameter.style !== "deepObject") {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_object_style",
       `Parameter '${parameter.name}' has an object schema but declares style '${parameter.style ?? "form"}'; only deepObject has a wire form.`,
     );
   }
   if (parameter.explode === false) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_object_style",
       `Parameter '${parameter.name}' declares deepObject with explode false, which OpenAPI leaves undefined; omit explode or set it true.`,
     );
   }
   if (fill !== undefined) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_object_style",
       `Parameter '${parameter.name}' is an object and cannot be hidden or filled.`,
     );
@@ -95,7 +95,7 @@ function objectBindingFor(
       schema.$ref !== undefined ||
       schema.$defs !== undefined
     ) {
-      throw new SkMcpTemplateError(
+      throw new LiaisoTemplateError(
         "unsupported_object_nesting",
         `Member '${parameter.name}.${name}' is not a query scalar or an array of them; flatten it out of the object.`,
       );
@@ -127,7 +127,7 @@ function contentBindingFor(
   fill: ArgumentFill | undefined,
 ): ContentParameterBinding {
   if (parameter.style !== undefined || parameter.explode !== undefined) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_parameter_content",
       `Parameter '${parameter.name}' is serialized as ${String(parameter.contentType)} and cannot also declare a style.`,
     );
@@ -143,7 +143,7 @@ function contentBindingFor(
       const isArray = type === "array";
       const scalar = isArray ? typeOf(schema.items) : type;
       if (!queryScalars.has(scalar as JsonSchemaType)) {
-        throw new SkMcpTemplateError(
+        throw new LiaisoTemplateError(
           "unsupported_object_nesting",
           `Member '${parameter.name}.${name}' is not a query scalar or an array of them.`,
         );
@@ -212,7 +212,7 @@ function formFieldFor(
       const isArray = typeOf(memberSchema) === "array";
       const scalar = isArray ? memberSchema.items : memberSchema;
       if (!isQueryScalar(scalar)) {
-        throw new SkMcpTemplateError(
+        throw new LiaisoTemplateError(
           "unsupported_body_shape",
           `Member '${name}.${member}' is not a form scalar or an array of them; a form body carries one level of nesting.`,
         );
@@ -225,7 +225,7 @@ function formFieldFor(
     }
     return { name, kind: "object", members };
   }
-  throw new SkMcpTemplateError(
+  throw new LiaisoTemplateError(
     "unsupported_body_shape",
     `Field '${name}' is not a form scalar, an array of them, a one-level object or a file.`,
   );
@@ -241,7 +241,7 @@ function formBindingFor(
   properties: Readonly<Record<string, JsonSchemaObject>> | undefined,
 ): FormBinding {
   if (properties === undefined) {
-    throw new SkMcpTemplateError(
+    throw new LiaisoTemplateError(
       "unsupported_body_shape",
       `A ${endpoint.requestBody?.contentType ?? ""} body must be an object with declared properties.`,
     );

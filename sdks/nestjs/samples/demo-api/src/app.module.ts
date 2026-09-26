@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { SkMcpModule } from "@sk-mcp/sdk-nestjs";
+import { LiaisoModule } from "@liaiso/sdk-nestjs";
 import { AttachmentsController } from "./attachments.controller.js";
 import { DemoAttachmentResolver } from "./attachments.js";
 import { AuthController } from "./auth.controller.js";
@@ -20,7 +20,7 @@ import { OrdersController } from "./orders.controller.js";
 
 @Module({
   imports: [
-    SkMcpModule.forRoot((options) => {
+    LiaisoModule.forRoot((options) => {
       options.resourceServer = {
         resource: demoResourceUrl,
         authorizationServers: [demoIssuerUrl],

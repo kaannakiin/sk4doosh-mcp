@@ -3,9 +3,9 @@ import {
   measureJson,
   type Fingerprint,
   type SourceMode,
-} from "@sk-mcp/file-core";
+} from "@liaiso/file-core";
 import { cursorTtlMs, encodePosition } from "./cursor.js";
-import { SkMcpXmlError } from "../platform/errors.js";
+import { LiaisoXmlError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 import type { ExpandedName, NodeAddress } from "../../model/node.js";
 import type { ColumnReport, RecordPage, Row } from "../../model/query.js";
@@ -107,7 +107,7 @@ export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
   }
 
   if (admitted.length === 0 && page.rows.length > 0) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       `The first row does not fit in the ${String(limits.maxPayloadBytes)} byte response budget.`,
       "Ask for fewer columns, or read the record with read_node instead.",
@@ -122,7 +122,7 @@ export function assembleRecordPage(input: AssembleRecordInput): RecordEnvelope {
     input.resumeFrom !== undefined &&
     ordinal <= input.resumeFrom
   ) {
-    throw new SkMcpXmlError(
+    throw new LiaisoXmlError(
       "resource_limit",
       "The page made no progress through the record set.",
       "Start again without a cursor, or narrow itemAddress.",

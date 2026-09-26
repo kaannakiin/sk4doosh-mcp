@@ -93,19 +93,19 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
 }
 
 function readEnv(): Env {
-  const base = process.env["SKMCP_BASE_URL"] ?? "http://127.0.0.1:5178";
-  const user = process.env["SKMCP_USER"] ?? "alice";
-  const rawAuthMode = process.env["SKMCP_AUTH"] ?? "oauth";
+  const base = process.env["LIAISO_BASE_URL"] ?? "http://127.0.0.1:5178";
+  const user = process.env["LIAISO_USER"] ?? "alice";
+  const rawAuthMode = process.env["LIAISO_AUTH"] ?? "oauth";
   if (!isAuthMode(rawAuthMode)) {
     throw new Error(
-      `unknown SKMCP_AUTH "${rawAuthMode}", expected oauth, token or bearer`,
+      `unknown LIAISO_AUTH "${rawAuthMode}", expected oauth, token or bearer`,
     );
   }
   return {
     base,
     user,
     authMode: rawAuthMode,
-    token: process.env["SKMCP_TOKEN"],
+    token: process.env["LIAISO_TOKEN"],
   };
 }
 

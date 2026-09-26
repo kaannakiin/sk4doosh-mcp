@@ -10,7 +10,7 @@ const HARDENED =
   ParseOption.XML_PARSE_NO_SYS_CATALOG;
 
 const MiB = 1024 * 1024;
-const FULL_TIER = process.env.SKMCP_XML_BENCH === "1";
+const FULL_TIER = process.env.LIAISO_XML_BENCH === "1";
 const SIZES = FULL_TIER ? [1, 4, 8] : [1];
 
 const rows = [];
@@ -410,7 +410,7 @@ record(
 
 if (!FULL_TIER) {
   limits.push(
-    "SKMCP_XML_BENCH=1 verilmedigi icin yalniz 1 MiB kademesi olculdu; 8 MiB dosya limiti bu kosudan turetilemez ve F0-08 dosya limiti karari acik kalir.",
+    "LIAISO_XML_BENCH=1 verilmedigi icin yalniz 1 MiB kademesi olculdu; 8 MiB dosya limiti bu kosudan turetilemez ve F0-08 dosya limiti karari acik kalir.",
   );
 }
 

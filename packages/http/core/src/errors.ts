@@ -1,4 +1,4 @@
-export type SkMcpTemplateErrorCode =
+export type LiaisoTemplateErrorCode =
   | "empty_route"
   | "body_not_allowed"
   | "conflicting_body_modes"
@@ -26,17 +26,17 @@ export type SkMcpTemplateErrorCode =
   | "multiple_querystring"
   | "querystring_with_query";
 
-export class SkMcpTemplateError extends Error {
+export class LiaisoTemplateError extends Error {
   constructor(
-    readonly code: SkMcpTemplateErrorCode,
+    readonly code: LiaisoTemplateErrorCode,
     message: string,
   ) {
     super(message);
-    this.name = "SkMcpTemplateError";
+    this.name = "LiaisoTemplateError";
   }
 }
 
-export type SkMcpArgumentErrorCode =
+export type LiaisoArgumentErrorCode =
   | "unknown_argument"
   | "invalid_path_type"
   | "missing_path_parameter"
@@ -50,25 +50,25 @@ export type SkMcpArgumentErrorCode =
   | "invalid_file_argument"
   | "file_too_large";
 
-export class SkMcpArgumentError extends Error {
+export class LiaisoArgumentError extends Error {
   constructor(
-    readonly code: SkMcpArgumentErrorCode,
+    readonly code: LiaisoArgumentErrorCode,
     message: string,
   ) {
     super(message);
-    this.name = "SkMcpArgumentError";
+    this.name = "LiaisoArgumentError";
   }
 }
 
-export type SkMcpCatalogErrorCode =
+export type LiaisoCatalogErrorCode =
   "name_collision" | "invalid_name" | "ambiguous_selection";
 
-export class SkMcpCatalogError extends Error {
+export class LiaisoCatalogError extends Error {
   constructor(
-    readonly code: SkMcpCatalogErrorCode,
+    readonly code: LiaisoCatalogErrorCode,
     message: string,
   ) {
     super(message);
-    this.name = "SkMcpCatalogError";
+    this.name = "LiaisoCatalogError";
   }
 }

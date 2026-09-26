@@ -1,14 +1,14 @@
 import type { OxlintOverride } from "oxlint";
 
-const skMcpPattern = {
-  group: ["@sk-mcp/*"],
+const liaisoPattern = {
+  group: ["@liaiso/*"],
   message:
-    "The chat product does not import sk-mcp product packages. Shared schemas live in @chat/contracts.",
+    "The chat product does not import liaiso product packages. Shared schemas live in @chat/contracts.",
 };
 
 /**
- * Guard: blocks the chat product line from importing sk-mcp product packages.
- * `@sk-mcp/sdk-nestjs` is on zod 3 while `@chat/contracts` is on zod 4; two zod
+ * Guard: blocks the chat product line from importing liaiso product packages.
+ * `@liaiso/sdk-nestjs` is on zod 3 while `@chat/contracts` is on zod 4; two zod
  * majors in one process make `instanceof ZodError` and schema identity fail
  * silently. Scoped to `src/**` so `oxlint.config.ts` and `tsconfig.json` can
  * still consume the shared toolchain packages.
@@ -17,7 +17,7 @@ export const chat: OxlintOverride[] = [
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: [skMcpPattern] }],
+      "no-restricted-imports": ["error", { patterns: [liaisoPattern] }],
     },
   },
 ];
@@ -48,7 +48,7 @@ export const chatApp: OxlintOverride[] = [
             },
           ],
           patterns: [
-            skMcpPattern,
+            liaisoPattern,
             {
               group: ["zod", "zod/*"],
               allowTypeImports: true,

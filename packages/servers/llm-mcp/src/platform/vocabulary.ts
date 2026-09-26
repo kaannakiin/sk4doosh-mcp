@@ -1,4 +1,4 @@
-import type { Vocabulary } from "@sk-mcp/mcp-core";
+import type { Vocabulary } from "@liaiso/mcp-core";
 
 export const vocabulary = {
   serverName: "llm-mcp",

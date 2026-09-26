@@ -87,7 +87,7 @@ export class AppServerService implements OnModuleDestroy {
     connection: JsonRpcConnection,
   ): Promise<JsonRpcConnection> {
     await connection.request("initialize", {
-      clientInfo: { name: "sk-mcp-chat", title: null, version: "0.0.0" },
+      clientInfo: { name: "liaiso-chat", title: null, version: "0.0.0" },
       capabilities: null,
     });
     connection.notify("initialized");

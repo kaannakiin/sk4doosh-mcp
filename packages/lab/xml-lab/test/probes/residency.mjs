@@ -9,7 +9,7 @@ const HARDENED =
   ParseOption.XML_PARSE_NONET |
   ParseOption.XML_PARSE_NO_SYS_CATALOG;
 
-const FULL_TIER = process.env.SKMCP_XML_BENCH === "1";
+const FULL_TIER = process.env.LIAISO_XML_BENCH === "1";
 const MAD_CEILING = 0.15;
 
 const rows = [];

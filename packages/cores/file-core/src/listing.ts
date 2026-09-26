@@ -1,11 +1,11 @@
 import { extname, basename, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { setImmediate as yieldTurn } from "node:timers/promises";
-import type { NativeEntry } from "@sk-mcp/file-core-native";
+import type { NativeEntry } from "@liaiso/file-core-native";
 import { accessError } from "./access.js";
 import { modeFor, type ModePolicy, type SourceMode } from "./mode.js";
 import { isContained, type SandboxRoot } from "./paths.js";
-import { asciiLower, fold } from "@sk-mcp/mcp-core";
+import { asciiLower, fold } from "@liaiso/mcp-core";
 
 /** Bounded glob matching avoids user-controlled RegExp backtracking. */
 function globMatches(pattern: string, value: string): boolean {

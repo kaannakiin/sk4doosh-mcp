@@ -4,7 +4,7 @@ import {
   type ErrorFactory,
   type QuotedIdentifier,
   type TableRef,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 
 /**
  * Quotes one identifier for T-SQL.

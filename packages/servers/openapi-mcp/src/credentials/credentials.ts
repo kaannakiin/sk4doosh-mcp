@@ -1,11 +1,11 @@
 import { asciiLower, asciiUpper } from "../platform/ascii.js";
-import { mergeCookieHeader } from "@sk-mcp/core";
+import { mergeCookieHeader } from "@liaiso/core";
 import type {
   CredentialRef,
   SecurityModel,
   SecurityRequirement,
   SecurityScheme,
-} from "@sk-mcp/openapi";
+} from "@liaiso/openapi";
 import type { ResolvedCredential } from "../platform/config.js";
 
 export interface Placement {
@@ -90,7 +90,7 @@ const encode = (value: string): string =>
 export class ExchangedTokenMissing extends Error {
   constructor() {
     super(
-      "sk-mcp-openapi: the operation needs an exchanged token, and the call carried none.",
+      "liaiso-openapi: the operation needs an exchanged token, and the call carried none.",
     );
     this.name = "ExchangedTokenMissing";
   }

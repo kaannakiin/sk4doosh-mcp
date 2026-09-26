@@ -1,5 +1,5 @@
 {
-  "name": "sk-mcp",
+  "name": "liaiso",
   "private": true,
   "scripts": {
     "build": "turbo run build",

@@ -5,7 +5,7 @@ import type { ApiError } from "@chat/contracts/http/error";
  * A contract schema, named by its shape rather than by `ZodType`.
  *
  * Guard: this package never names zod, as a value or as a type. It is a schema
- * consumer, so `@sk-mcp/oxlint-config/chat`'s `chatApp` rule forbids the value
+ * consumer, so `@liaiso/oxlint-config/chat`'s `chatApp` rule forbids the value
  * import, and a structural parse signature additionally keeps the declaration
  * self contained — a React Native consumer resolves `@chat/queries` without
  * pulling a second zod copy into its module graph.

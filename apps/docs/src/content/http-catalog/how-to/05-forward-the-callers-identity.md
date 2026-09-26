@@ -10,7 +10,7 @@ credential is not a header at all.
 `Authorization` is forwarded, and nothing else. If your backend authenticates from a bearer token
 in that header — the common case — you configure nothing and identity already works.
 
-sk-mcp forwards the credential **unchanged**. It does not mint, refresh, exchange or rewrite
+liaiso forwards the credential **unchanged**. It does not mint, refresh, exchange or rewrite
 tokens. A `401` from your pipeline means your authentication rejected the caller's real
 credential; retrying the same MCP session will not change that.
 
@@ -20,7 +20,7 @@ Cookie-based sessions, an API-key header, a tenant header your middleware reads 
 to be named explicitly.
 
 ```csharp
-builder.Services.AddSkMcp(options =>
+builder.Services.AddLiaiso(options =>
 {
     options.Identity.Forward("Cookie");
     options.Identity.Forward("X-Api-Key");
@@ -28,7 +28,7 @@ builder.Services.AddSkMcp(options =>
 ```
 
 ```ts
-SkMcpModule.forRoot((options) => {
+LiaisoModule.forRoot((options) => {
   options.identity.forward("cookie").forward("x-api-key");
 });
 ```
@@ -60,7 +60,7 @@ options.identity.project((outer, syntheticHeaders) => {
 
 The projector runs once per synthetic request with the outer request in hand. It is the escape
 hatch for hosts whose authorization does not live in `[Authorize]` or in guards — write the value
-into a header your middleware already understands, rather than teaching sk-mcp about your identity
+into a header your middleware already understands, rather than teaching liaiso about your identity
 model.
 
 ## Verify the result
@@ -68,7 +68,7 @@ model.
 Call an endpoint that echoes the caller. The samples in this repository have one:
 
 ```bash
-SKMCP_USER=alice node sdks/nestjs/samples/agent-client/dist/main.js \
+LIAISO_USER=alice node sdks/nestjs/samples/agent-client/dist/main.js \
   --scenario smoke --query identity --tool orders_me --arguments '{}'
 ```
 
@@ -89,5 +89,5 @@ but also authorized. `get_order` behind `OrdersRead` is that test in the
 
 Forwarding does not elevate. The synthetic request carries the same credential the agent presented,
 so an agent acting as `bob` is `bob` inside your pipeline. There is no service identity, no
-impersonation, and no way for sk-mcp to widen what the caller can do — which is the property that
+impersonation, and no way for liaiso to widen what the caller can do — which is the property that
 makes the visibility filter safe to be approximate.

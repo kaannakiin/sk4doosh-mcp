@@ -12,8 +12,8 @@ export {
   fail,
   redact,
   secretPatterns,
-  SkMcpMssqlError,
-  type SkMcpMssqlErrorCode,
+  LiaisoMssqlError,
+  type LiaisoMssqlErrorCode,
 } from "./platform/errors.js";
 export { limits } from "./platform/limits.js";
 export { vocabulary } from "./platform/vocabulary.js";

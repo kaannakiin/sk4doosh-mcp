@@ -1,4 +1,4 @@
-import { truncateWellFormed } from "@sk-mcp/mcp-core";
+import { truncateWellFormed } from "@liaiso/mcp-core";
 import type { QueuedBackend } from "../backend/port.js";
 import { csvField, fieldsOf, parseTable } from "../platform/csv.js";
 import { fail } from "../platform/errors.js";

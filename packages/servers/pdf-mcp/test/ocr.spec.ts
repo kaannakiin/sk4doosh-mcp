@@ -10,7 +10,7 @@ import type {
   RenderedPage,
 } from "../src/ocr/port.js";
 import { applyOcr, createOcrCache } from "../src/ocr/apply.js";
-import { fingerprintFromDigest } from "@sk-mcp/file-core";
+import { fingerprintFromDigest } from "@liaiso/file-core";
 import { createHandlers, type PdfHandlerDeps } from "../src/tools/handlers.js";
 import type { ToolHandlers } from "../src/tools/definitions.js";
 import { bodyOf, codeOf } from "./fixtures/harness.js";

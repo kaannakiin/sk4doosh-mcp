@@ -490,7 +490,7 @@ export function upgradeSwagger2(
         childPointer(operationAt, "responses"),
       );
       if (upgraded.dropped) {
-        out["x-sk-mcp-dropped"] = true;
+        out["x-liaiso-dropped"] = true;
       }
       converted[method] = located(context, out, operationAt);
     }

@@ -2,7 +2,7 @@ import type {
   ArgumentFill,
   EndpointDescriptor,
   JsonSchemaObject,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 
 export type JsonValue =
   | string
@@ -156,7 +156,7 @@ export interface McpSelectionMarker {
   readonly options: McpToolOptions;
 }
 
-export const MCP_SELECTION = "sk-mcp:selection";
+export const MCP_SELECTION = "liaiso:selection";
 
 export function McpVariant(options: McpVariantOptions): MethodDecorator {
   return ((

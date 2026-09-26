@@ -1,4 +1,4 @@
-import type { FileRefusalReason } from "@sk-mcp/core";
+import type { FileRefusalReason } from "@liaiso/core";
 import type { InvokeTarget, McpCaller } from "./options.js";
 
 /** What a file resolver is asked to deliver. */
@@ -25,7 +25,7 @@ export type FileResolution =
   | { readonly ok: false; readonly reason: FileRefusalReason };
 
 /**
- * Turns a `ref` file argument into bytes. sk-mcp names no storage: the host binds this port, and
+ * Turns a `ref` file argument into bytes. liaiso names no storage: the host binds this port, and
  * binding it is what makes `ref` appear in a file argument's schema.
  */
 export interface FileResolver {
@@ -34,18 +34,18 @@ export interface FileResolver {
   resolve(request: FileResolveRequest): Promise<FileResolution>;
 }
 
-export interface SkMcpFileOptions {
+export interface LiaisoFileOptions {
   resolver?: FileResolver;
 }
 
 /** Raised by the dispatcher when a `ref` was not delivered; the meta-tool layer turns it into an envelope. */
-export class SkMcpFileRefused extends Error {
+export class LiaisoFileRefused extends Error {
   constructor(
     readonly field: string,
     readonly reason: FileRefusalReason,
     readonly limit: number,
   ) {
-    super(`sk-mcp: file argument '${field}' was refused (${reason}).`);
-    this.name = "SkMcpFileRefused";
+    super(`liaiso: file argument '${field}' was refused (${reason}).`);
+    this.name = "LiaisoFileRefused";
   }
 }

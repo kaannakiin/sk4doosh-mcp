@@ -1,5 +1,5 @@
 {
-  "name": "@sk-mcp/xml-lab",
+  "name": "@liaiso/xml-lab",
   "version": "0.0.0",
   "description": "F0 evidence harness for the XML MCP engine gate. Never published, never imported.",
   "license": "MIT",
@@ -14,8 +14,8 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@types/node": "^24.3.0",
     "libxml2-wasm": "0.7.2",
     "oxlint": "1.85.0",

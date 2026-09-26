@@ -30,8 +30,8 @@ describe("codexConfigFor", () => {
           default_tools_approval_mode: "auto",
           tool_timeout_sec: 900,
           env: {
-            SKMCP_LLM_BASE_URL: "http://10.0.0.5:11434",
-            SKMCP_LLM_MODEL: "qwen3:8b",
+            LIAISO_LLM_BASE_URL: "http://10.0.0.5:11434",
+            LIAISO_LLM_MODEL: "qwen3:8b",
           },
         },
       },

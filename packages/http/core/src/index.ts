@@ -15,14 +15,14 @@ export type {
 export type { ToolDefinition } from "./generated/tool-definition.js";
 export type { Fixture } from "./generated/fixture.js";
 export {
-  SkMcpTemplateError,
-  SkMcpArgumentError,
-  SkMcpCatalogError,
+  LiaisoTemplateError,
+  LiaisoArgumentError,
+  LiaisoCatalogError,
 } from "./errors.js";
 export type {
-  SkMcpArgumentErrorCode,
-  SkMcpCatalogErrorCode,
-  SkMcpTemplateErrorCode,
+  LiaisoArgumentErrorCode,
+  LiaisoCatalogErrorCode,
+  LiaisoTemplateErrorCode,
 } from "./errors.js";
 export {
   arraySeparatorFor,
@@ -229,11 +229,11 @@ export type {
   CacheKind,
   CacheKey,
   FlatCacheKey,
-  SkMcpCache,
+  LiaisoCache,
 } from "./cache/cache.js";
 export { flattenCacheKey } from "./cache/cache.js";
-export { MemorySkMcpCache } from "./cache/memory-cache.js";
-export type { MemorySkMcpCacheOptions } from "./cache/memory-cache.js";
+export { MemoryLiaisoCache } from "./cache/memory-cache.js";
+export type { MemoryLiaisoCacheOptions } from "./cache/memory-cache.js";
 export { SingleFlight } from "./cache/single-flight.js";
 export { atLeast, severityIn } from "./catalog/diagnostics.js";
 export type {
@@ -263,7 +263,7 @@ export type {
 } from "./catalog/pipeline.js";
 export {
   armDeadline,
-  SkMcpDispatchAborted,
+  LiaisoDispatchAborted,
   untilAbandoned,
 } from "./invoke/deadline.js";
 export type {

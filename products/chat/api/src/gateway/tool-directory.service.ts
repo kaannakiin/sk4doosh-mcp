@@ -247,9 +247,9 @@ export class ToolDirectoryService {
       command: process.execPath,
       args: [entry],
       env: {
-        SKMCP_LLM_BASE_URL: request.worker.baseUrl,
-        SKMCP_LLM_MODEL: request.worker.model,
-        SKMCP_LLM_ROOT: request.filesDir,
+        LIAISO_LLM_BASE_URL: request.worker.baseUrl,
+        LIAISO_LLM_MODEL: request.worker.model,
+        LIAISO_LLM_ROOT: request.filesDir,
       },
     };
     const connect = () =>

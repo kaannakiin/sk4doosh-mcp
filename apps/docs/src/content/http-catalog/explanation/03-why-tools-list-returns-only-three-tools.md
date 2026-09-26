@@ -1,6 +1,6 @@
 # Why `tools/list` returns only three tools
 
-An MCP server is supposed to list its tools. sk-mcp lists three — `search_tools`, `load_tool`,
+An MCP server is supposed to list its tools. liaiso lists three — `search_tools`, `load_tool`,
 `invoke_tool` — and keeps the actual catalog behind them. This is the core of the design, not a
 staged rollout.
 
@@ -9,7 +9,7 @@ staged rollout.
 A real backend measured during this project's integration work reported:
 
 ```text
-sk-mcp catalog: 718 discovered, 718 selected, 698 tools, 11 diagnostic(s)
+liaiso catalog: 718 discovered, 718 selected, 698 tools, 11 diagnostic(s)
 ```
 
 698 tools. Every one with a name, a description, and a full input schema. Handing that to an agent
@@ -63,7 +63,7 @@ search or already know the name.
 
 That is a real cost and it is paid on every call. The trade is deliberate: three cheap round trips
 against a context budget that does not survive 698 schemas, and it only makes sense because the
-catalog is large. On a backend with six endpoints, search-first is pure overhead — sk-mcp is not
+catalog is large. On a backend with six endpoints, search-first is pure overhead — liaiso is not
 the right tool for a six-endpoint backend.
 
 ## Why not both

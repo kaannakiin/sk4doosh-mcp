@@ -26,9 +26,9 @@ import {
   searchParameters,
   sdkError,
   simplifySchema,
-  SkMcpArgumentError,
-  SkMcpCatalogError,
-  SkMcpTemplateError,
+  LiaisoArgumentError,
+  LiaisoCatalogError,
+  LiaisoTemplateError,
   ToolIndex,
   type ArgumentFill,
   type BackendResponse,
@@ -43,7 +43,7 @@ import {
   type ParameterBinding,
   type RequestTemplate,
   type ToolDefinition,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 
 type FixtureOf<K extends Fixture["kind"]> = Extract<Fixture, { kind: K }>;
 
@@ -70,8 +70,8 @@ function catalogErrorCode(run: () => unknown): string {
   try {
     run();
   } catch (error) {
-    expect(error).toBeInstanceOf(SkMcpCatalogError);
-    return (error as SkMcpCatalogError).code;
+    expect(error).toBeInstanceOf(LiaisoCatalogError);
+    return (error as LiaisoCatalogError).code;
   }
   return expect.unreachable("expected a catalog error");
 }
@@ -356,8 +356,8 @@ describe("conformance: argument-mapping", () => {
           composeFixture(template, fixture.input);
           expect.unreachable(`expected error ${expected}`);
         } catch (error) {
-          expect(error).toBeInstanceOf(SkMcpArgumentError);
-          expect((error as SkMcpArgumentError).code).toBe(expected);
+          expect(error).toBeInstanceOf(LiaisoArgumentError);
+          expect((error as LiaisoArgumentError).code).toBe(expected);
         }
       } else {
         const composed = composeFixture(template, fixture.input);
@@ -444,8 +444,8 @@ function templateErrorCode(run: () => unknown): string {
   try {
     run();
   } catch (error) {
-    expect(error).toBeInstanceOf(SkMcpTemplateError);
-    return (error as SkMcpTemplateError).code;
+    expect(error).toBeInstanceOf(LiaisoTemplateError);
+    return (error as LiaisoTemplateError).code;
   }
   return expect.unreachable("expected a template error");
 }

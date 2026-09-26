@@ -30,7 +30,7 @@ function Landing() {
         </Badge>
 
         <Title order={1} className="text-balance !text-5xl sm:!text-6xl">
-          sk-mcp
+          liaiso
         </Title>
 
         <Text size="xl" c="dimmed" className="max-w-2xl">

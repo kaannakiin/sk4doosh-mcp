@@ -1,5 +1,5 @@
 import { Worker } from "node:worker_threads";
-import { SkMcpExcelError } from "./errors.js";
+import { LiaisoExcelError } from "./errors.js";
 
 let running = 0;
 const waiting: {
@@ -20,7 +20,7 @@ const workers = new Set<Worker>();
 
 async function acquire(signal?: AbortSignal): Promise<void> {
   if (signal?.aborted)
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "resource_limit",
       "The regex search was cancelled.",
     );
@@ -29,7 +29,7 @@ async function acquire(signal?: AbortSignal): Promise<void> {
     return;
   }
   if (waiting.length >= 8)
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "resource_limit",
       "The regex queue is full.",
       "Retry after another search completes.",
@@ -50,7 +50,7 @@ async function acquire(signal?: AbortSignal): Promise<void> {
       const index = waiting.indexOf(entry);
       if (index >= 0) waiting.splice(index, 1);
       entry.reject(
-        new SkMcpExcelError(
+        new LiaisoExcelError(
           "resource_limit",
           "The queued regex search was cancelled.",
         ),
@@ -70,7 +70,7 @@ function release(): void {
 export async function closeRegexWorkers(): Promise<void> {
   for (const pending of waiting.splice(0))
     pending.reject(
-      new SkMcpExcelError(
+      new LiaisoExcelError(
         "resource_limit",
         "The regex service is shutting down.",
       ),
@@ -91,7 +91,7 @@ export async function withRegex<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   if (query.length > 256 || query.includes("\\p{") || query.includes("\\P{"))
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "invalid_pattern",
       "Regex patterns must be at most 256 characters and cannot use Unicode property escapes.",
     );
@@ -101,7 +101,7 @@ export async function withRegex<T>(
   let abort: (() => void) | undefined;
   try {
     if (signal?.aborted)
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "resource_limit",
         "The regex search was cancelled.",
       );
@@ -126,7 +126,7 @@ export async function withRegex<T>(
     };
     active.on("error", () =>
       fail(
-        new SkMcpExcelError(
+        new LiaisoExcelError(
           "resource_limit",
           "The regex worker exceeded its resource budget.",
         ),
@@ -134,7 +134,7 @@ export async function withRegex<T>(
     );
     active.on("exit", () =>
       fail(
-        new SkMcpExcelError(
+        new LiaisoExcelError(
           "resource_limit",
           "The regex worker stopped before completing the search.",
         ),
@@ -147,7 +147,7 @@ export async function withRegex<T>(
         "error" in message
       ) {
         fail(
-          new SkMcpExcelError(
+          new LiaisoExcelError(
             message.error === "invalid_pattern"
               ? "invalid_pattern"
               : "resource_limit",
@@ -166,7 +166,7 @@ export async function withRegex<T>(
       });
     timer = setTimeout(() => {
       fail(
-        new SkMcpExcelError(
+        new LiaisoExcelError(
           "resource_limit",
           "The regex search exceeded its 2 second deadline.",
           "Narrow the range or use a literal search.",
@@ -177,7 +177,7 @@ export async function withRegex<T>(
     const ready = await receive();
     abort = () => {
       fail(
-        new SkMcpExcelError(
+        new LiaisoExcelError(
           "resource_limit",
           "The regex search was cancelled.",
         ),
@@ -192,13 +192,13 @@ export async function withRegex<T>(
       !("ready" in ready) ||
       ready.ready !== true
     )
-      throw new SkMcpExcelError(
+      throw new LiaisoExcelError(
         "internal_error",
         "Invalid regex worker handshake.",
       );
     return await run(async (texts) => {
       if (Buffer.byteLength(JSON.stringify(texts)) > 65536)
-        throw new SkMcpExcelError(
+        throw new LiaisoExcelError(
           "resource_limit",
           "A regex batch exceeded 64 KiB.",
         );
@@ -210,7 +210,7 @@ export async function withRegex<T>(
         result.length !== texts.length ||
         !result.every((value: unknown) => typeof value === "boolean")
       )
-        throw new SkMcpExcelError(
+        throw new LiaisoExcelError(
           "internal_error",
           "Invalid regex worker result.",
         );

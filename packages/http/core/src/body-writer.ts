@@ -103,7 +103,7 @@ export async function writeBody(
       return { contentType: body.contentType, bytes: Buffer.from(file.bytes) };
     }
     case "multipart": {
-      const boundary = `----sk-mcp-${randomBytes(16).toString("hex")}`;
+      const boundary = `----liaiso-${randomBytes(16).toString("hex")}`;
       const chunks: Buffer[] = [];
       for (const part of body.parts) {
         chunks.push(Buffer.from(`--${boundary}\r\n`, "ascii"));

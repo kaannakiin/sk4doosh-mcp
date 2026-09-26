@@ -1,7 +1,7 @@
-import { fold } from "@sk-mcp/file-core";
+import { fold } from "@liaiso/file-core";
 import { normalizeCell, type NormalizeOptions } from "./cell-value.js";
 import type { MergePolicy } from "./cursor.js";
-import { SkMcpExcelError } from "../platform/errors.js";
+import { LiaisoExcelError } from "../platform/errors.js";
 import { limits } from "../platform/limits.js";
 import { classify } from "./predicate.js";
 import {
@@ -121,7 +121,7 @@ export function declaredHeaderRow(
     candidates.push({ row: topLeft.row, source: `table ${table.name}` });
   }
   if (candidates.length > 1)
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "ambiguous_header_row",
       "Multiple tables can provide the header for this range.",
       "Pass headerRow explicitly.",
@@ -248,7 +248,7 @@ export function scanHeaderRow(
   }
   const headerAt = facts.findIndex(isHeaderCandidate);
   if (headerAt === -1) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "unknown_header_row",
       `No row in rows ${first}-${last} of ${label} is a header row; every row holds a number, date, boolean or error cell, or carries fewer than two header texts.`,
       "Pass headerRow 0 to read without headers, or widen the range to include the header row.",
@@ -257,7 +257,7 @@ export function scanHeaderRow(
   const header = facts[headerAt] as RowFacts;
   const next = facts.slice(headerAt + 1).find((entry) => entry.filled > 0);
   if (next !== undefined && isHeaderCandidate(next)) {
-    throw new SkMcpExcelError(
+    throw new LiaisoExcelError(
       "ambiguous_header_row",
       `Rows ${header.row} and ${next.row} of ${label} are both header rows by text; the header row cannot be proven.`,
       `Pass headerRow explicitly. Row ${header.row}: ${preview(header)}. Row ${next.row}: ${preview(next)}. headerRow 0 disables headers.`,

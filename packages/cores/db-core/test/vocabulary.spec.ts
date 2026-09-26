@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { asciiLower } from "@sk-mcp/mcp-core";
+import { asciiLower } from "@liaiso/mcp-core";
 
 const root = new URL("../src", import.meta.url).pathname;
 

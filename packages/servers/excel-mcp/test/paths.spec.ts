@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import { SkMcpExcelError } from "../src/platform/errors.js";
+import { LiaisoExcelError } from "../src/platform/errors.js";
 import { modePolicy } from "../src/platform/limits.js";
 import {
   createWorkbookRoot,
@@ -13,11 +13,11 @@ import {
 
 async function failureOf(
   action: () => Promise<unknown>,
-): Promise<SkMcpExcelError> {
+): Promise<LiaisoExcelError> {
   try {
     await action();
   } catch (error) {
-    return error as SkMcpExcelError;
+    return error as LiaisoExcelError;
   }
   throw new Error("the call was expected to fail");
 }
@@ -88,10 +88,10 @@ describe("the excel sandbox wiring", () => {
     expect(failure.recovery).toContain("list_workbooks");
   });
 
-  it("raises SkMcpExcelError, not the bare core error", async () => {
+  it("raises LiaisoExcelError, not the bare core error", async () => {
     const failure = await failureOf(() => resolveWorkbookPath(root, ""));
-    expect(failure).toBeInstanceOf(SkMcpExcelError);
-    expect(failure.name).toBe("SkMcpExcelError");
+    expect(failure).toBeInstanceOf(LiaisoExcelError);
+    expect(failure.name).toBe("LiaisoExcelError");
     expect(failure.code).toBe("invalid_argument");
   });
 

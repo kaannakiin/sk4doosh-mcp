@@ -27,8 +27,8 @@
     "pg": "^8.23.0"
   },
   "devDependencies": {
-    "@sk-mcp/oxlint-config": "workspace:*",
-    "@sk-mcp/typescript-config": "workspace:*",
+    "@liaiso/oxlint-config": "workspace:*",
+    "@liaiso/typescript-config": "workspace:*",
     "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.11.0",

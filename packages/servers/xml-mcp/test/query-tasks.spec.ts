@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { Client } from "@modelcontextprotocol/client";
 import type { CallToolResult } from "@modelcontextprotocol/client";
-import { coreLimits } from "@sk-mcp/file-core";
+import { coreLimits } from "@liaiso/file-core";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { limits } from "../src/host/platform/limits.js";
 import type { Fixtures } from "./fixtures/build.js";

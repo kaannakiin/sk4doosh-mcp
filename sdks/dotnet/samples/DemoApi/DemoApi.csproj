@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SkMcp.AspNetCore\SkMcp.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Liaiso.AspNetCore\Liaiso.AspNetCore.csproj" />
     <ProjectReference Include="..\DemoAuthServer\DemoAuthServer.csproj" />
   </ItemGroup>
 

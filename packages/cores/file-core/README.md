@@ -1,20 +1,20 @@
-# @sk-mcp/file-core
+# @liaiso/file-core
 
-Shared machinery for read-only, sandboxed, file-backed MCP servers. `@sk-mcp/excel-mcp`,
-`@sk-mcp/xml-mcp` and `@sk-mcp/pdf-mcp` are all built on top of it.
+Shared machinery for read-only, sandboxed, file-backed MCP servers. `@liaiso/excel-mcp`,
+`@liaiso/xml-mcp` and `@liaiso/pdf-mcp` are all built on top of it.
 
 The source-agnostic machinery (`guard`, the response budget, the error envelope, the cursor
-codec, the stdio server) **moved to `@sk-mcp/mcp-core`**; this package consumes it, adds the
+codec, the stdio server) **moved to `@liaiso/mcp-core`**; this package consumes it, adds the
 file-specific layer, and re-exports its full surface except the output-writing tool type
 (`ownOutput`, `OwnOutputToolDefinition`, `ToolCatalog`, `createMcpOutputServer`).
 
-This package is **not `@sk-mcp/core`** and does not depend on it in either direction.
-`@sk-mcp/core` is the spec's HTTP catalog reference implementation; this package is the machinery
+This package is **not `@liaiso/core`** and does not depend on it in either direction.
+`@liaiso/core` is the spec's HTTP catalog reference implementation; this package is the machinery
 behind local file sources.
 
 ## Usage
 
-A file server names only this package (never `@sk-mcp/mcp-core` directly): it resolves paths
+A file server names only this package (never `@liaiso/mcp-core` directly): it resolves paths
 through `createSandboxRoot`/`resolveSourcePath`, lists sources with `listSources`, opens and caches
 documents with `createDocumentStore`, and wraps its handlers with the `guard`/`toToolError` this
 package re-exports — both already bound to the root redactor, so no file server can emit an error
@@ -62,10 +62,10 @@ connection secret must never be in `argv`. The generic `fingerprintFromDigest` a
 ## Development
 
 ```bash
-pnpm turbo run build check-types lint --filter=@sk-mcp/file-core
-pnpm turbo run test --filter=@sk-mcp/file-core
+pnpm turbo run build check-types lint --filter=@liaiso/file-core
+pnpm turbo run test --filter=@liaiso/file-core
 ```
 
-Always build through Turbo, never `pnpm --filter @sk-mcp/file-core run build` on its own —
+Always build through Turbo, never `pnpm --filter @liaiso/file-core run build` on its own —
 downstream consumers such as `excel-mcp` resolve this package through `exports.default →
 ./dist/index.js`, so a bare filter can leave them testing against a stale `dist`.

@@ -1,6 +1,6 @@
 import { sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { internalErrorMessage, internalErrorRecovery } from "@sk-mcp/mcp-core";
+import { internalErrorMessage, internalErrorRecovery } from "@liaiso/mcp-core";
 import {
   FileSourceError,
   redactRoot,

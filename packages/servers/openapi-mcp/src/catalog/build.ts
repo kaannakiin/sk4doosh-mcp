@@ -4,14 +4,14 @@ import {
   severityIn,
   type CatalogBuild,
   type CatalogDiagnostic,
-} from "@sk-mcp/core";
+} from "@liaiso/core";
 import {
   ingest,
   type IngestionDiagnostic,
   type SecurityModel,
   type SourcedEndpoint,
-} from "@sk-mcp/openapi";
-import type { DocumentLoader } from "@sk-mcp/openapi";
+} from "@liaiso/openapi";
+import type { DocumentLoader } from "@liaiso/openapi";
 import {
   chooseCredentials,
   type ChosenCredentials,

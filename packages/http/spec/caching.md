@@ -2,7 +2,7 @@
 
 > Status: **partly normative.** Key derivation (`DigestInput`), namespacing, absolute TTL plus
 > negative jitter, the LRU bound, the `_disabled` rule and the in-flight rule are validated by two
-> implementations (ASP.NET `MemorySkMcpCache` + `CallerVisibilityProvider`, TS `MemorySkMcpCache` +
+> implementations (ASP.NET `MemoryLiaisoCache` + `CallerVisibilityProvider`, TS `MemoryLiaisoCache` +
 > Nest `CallerVisibilityProvider`). **Still one-sided:** the shared-store guarantees in the
 > "Distributed deployment" section (per-scope grouped storage, tag → scope set, O(1) `ClearAsync`)
 > are implemented in neither SDK — that section is a contract draft for a host writing an adapter,
@@ -33,7 +33,7 @@ The same carriers produce the same `Key` → they share the same cache entry; a 
 
 ## Namespacing
 
-Every key is serialized as `skmcp:v1:{scope}:{kind}[:{subkey}]` (`{scope}` = `CallerScope.Key`, `{kind}` = `facts` or `probe`, `{subkey}` = the tool name for `probe`, absent for `facts`). The version prefix (`v1`) prevents old entries from being silently misinterpreted when the encoding changes.
+Every key is serialized as `liaiso:v1:{scope}:{kind}[:{subkey}]` (`{scope}` = `CallerScope.Key`, `{kind}` = `facts` or `probe`, `{subkey}` = the tool name for `probe`, absent for `facts`). The version prefix (`v1`) prevents old entries from being silently misinterpreted when the encoding changes.
 
 ## Lifetime
 
@@ -44,7 +44,7 @@ Every key is serialized as `skmcp:v1:{scope}:{kind}[:{subkey}]` (`{scope}` = `Ca
 
 ## Invalidation
 
-Three operations (`ISkMcpCacheInvalidator`):
+Three operations (`ILiaisoCacheInvalidator`):
 
 | Operation               | Effect                                                                                                                              |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,11 +52,11 @@ Three operations (`ISkMcpCacheInvalidator`):
 | `InvalidateTagAsync`    | Every scope carrying that tag (the host must produce tags — if the default resolver produces none, this operation affects nothing). |
 | `InvalidateAllAsync`    | The whole cache, every scope.                                                                                                       |
 
-**The signal is always manual** — sk-mcp MUST NOT listen for any backend event (an authorization change, a user update) on its own; the host calls one of these three at its own authorization-change point (a role assignment, a permission revoke). The tag bridge closes the "the backend knows the user id, sk-mcp only knows the carrier digest" gap: by writing an `ICallerScopeResolver` that produces its own `user:{id}` tag, the host can call `InvalidateTagAsync("user:42")` with the backend's own user identity.
+**The signal is always manual** — liaiso MUST NOT listen for any backend event (an authorization change, a user update) on its own; the host calls one of these three at its own authorization-change point (a role assignment, a permission revoke). The tag bridge closes the "the backend knows the user id, liaiso only knows the carrier digest" gap: by writing an `ICallerScopeResolver` that produces its own `user:{id}` tag, the host can call `InvalidateTagAsync("user:42")` with the backend's own user identity.
 
 **The in-flight rule:** once an invalidation call has completed, within this process, no entry written **before** the call is ever observed again for the affected scopes. A computation that is **in flight** during the call (the read has started, the write has not happened yet) MAY complete, but the epoch guard MUST NOT write it back (see below — a cache-aside read writes only if the epoch observed at read time is still current).
 
-**A catalog reload clears everything:** the `ISkMcpCatalogChangeSource.ReloadAsync()` order is — build the new snapshot → increment `Generation` → **signal the change token (increment the epoch)** → call `ISkMcpCache.ClearAsync()`. The order is normative: the epoch MUST increment **before** the clear, otherwise a computation that began before the reload could write a stale value back into the cleared cache and the in-flight rule would be violated on the reload path. The mechanism that increments the epoch MUST be independent of the authorization-invalidation path (subscribing to the change token is sufficient). This clears **the whole** cache without regard to the `facts`/`probe` distinction; if the catalog changed, a cached verdict for an old tool is meaningless.
+**A catalog reload clears everything:** the `ILiaisoCatalogChangeSource.ReloadAsync()` order is — build the new snapshot → increment `Generation` → **signal the change token (increment the epoch)** → call `ILiaisoCache.ClearAsync()`. The order is normative: the epoch MUST increment **before** the clear, otherwise a computation that began before the reload could write a stale value back into the cleared cache and the in-flight rule would be violated on the reload path. The mechanism that increments the epoch MUST be independent of the authorization-invalidation path (subscribing to the change token is sufficient). This clears **the whole** cache without regard to the `facts`/`probe` distinction; if the catalog changed, a cached verdict for an old tool is meaningless.
 
 **The `_disabled` probe set is cleared only on a catalog change**, never by an authorization-invalidation operation. That set holds the endpoints the probe permanently gave up on (when an ambiguous response such as an unmarked `2xx` was seen — [visibility.md](visibility.md), T2 "Verdict"). Why only the catalog: the set records a **structural fact** (the route did not match, or an unmarked success was seen and the handler may have run), not authorization state; reopening it on an authorization event would reintroduce the risk of the handler running, and for that the catalog must genuinely have changed (a new deployment, a new endpoint registration).
 
@@ -70,12 +70,12 @@ Three operations (`ISkMcpCacheInvalidator`):
 
 ## Distributed deployment
 
-The default implementation (`MemorySkMcpCache`) is per-process: in a multi-instance deployment every instance keeps its own cache and they converge independently within `Lifetime` — invalidation calls affect only the process they were called in. A host wanting a shared `ISkMcpCache` adapter (Redis or similar) MUST provide these guarantees:
+The default implementation (`MemoryLiaisoCache`) is per-process: in a multi-instance deployment every instance keeps its own cache and they converge independently within `Lifetime` — invalidation calls affect only the process they were called in. A host wanting a shared `ILiaisoCache` adapter (Redis or similar) MUST provide these guarantees:
 
-- `GetAsync`/`SetAsync` carry a string value; sk-mcp's own compact encoding is used (`P|OrdersRead=A;Owner=U` for `facts`, a single character `A`/`D` for `probe`) — the adapter needs no general serializer contract.
+- `GetAsync`/`SetAsync` carry a string value; liaiso's own compact encoding is used (`P|OrdersRead=A;Owner=U` for `facts`, a single character `A`/`D` for `probe`) — the adapter needs no general serializer contract.
 - Per-scope grouped storage is recommended (for example a Redis `HASH` with field names `kind[:subkey]`): dropping one caller in a single operation (`InvalidateCallerAsync`) MUST be O(1).
 - The tag → scope set mapping MUST be kept in a separate structure (for example one Redis `SET` per tag); `InvalidateTagAsync` reads that set and drops the relevant scopes rather than scanning the whole key space.
-- `ClearAsync` SHOULD be as cheap as incrementing a generation/epoch counter; deleting every key one by one is not required (`MemorySkMcpCache` does it by swapping two dictionaries with `Interlocked.Exchange`).
+- `ClearAsync` SHOULD be as cheap as incrementing a generation/epoch counter; deleting every key one by one is not required (`MemoryLiaisoCache` does it by swapping two dictionaries with `Interlocked.Exchange`).
 
 ## Mechanics / policy table
 
@@ -87,8 +87,8 @@ The table from decision 003 applies here too: anything whose right answer varies
 | Key derivation (the digest input)                                       | Mechanics | `CarrierHashCallerScopeResolver.DigestInput` — sealed, pure, identical in both languages |
 | Tag production                                                          | Policy    | Override `ICallerScopeResolver` (the default produces none)                              |
 | Negative jitter, absolute TTL, the `_disabled` rule, the in-flight rule | Mechanics | Knob-less; an SDK guarantee                                                              |
-| The store (in-memory / distributed)                                     | Policy    | Override `ISkMcpCache` (TryAdd)                                                          |
-| When the invalidation signal arrives                                    | Policy    | The host's business; the SDK provides only the `ISkMcpCacheInvalidator` surface          |
+| The store (in-memory / distributed)                                     | Policy    | Override `ILiaisoCache` (TryAdd)                                                         |
+| When the invalidation signal arrives                                    | Policy    | The host's business; the SDK provides only the `ILiaisoCacheInvalidator` surface         |
 
 ## Relationship to `Identity.Project`
 

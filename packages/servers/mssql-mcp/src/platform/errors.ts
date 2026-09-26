@@ -8,13 +8,13 @@ import {
   type DbErrorCode,
   type ErrorContext,
   type ErrorFactory,
-} from "@sk-mcp/db-core";
+} from "@liaiso/db-core";
 import { vocabulary } from "./vocabulary.js";
 
-export type SkMcpMssqlErrorCode = DbErrorCode;
+export type LiaisoMssqlErrorCode = DbErrorCode;
 
-export class SkMcpMssqlError extends DbSourceError {
-  declare readonly code: SkMcpMssqlErrorCode;
+export class LiaisoMssqlError extends DbSourceError {
+  declare readonly code: LiaisoMssqlErrorCode;
 }
 
 /**
@@ -32,11 +32,11 @@ export const secretPatterns = [
 export const redact = (detail: string): string =>
   redactSecrets(detail, secretPatterns);
 
-export const fail: ErrorFactory<SkMcpMssqlErrorCode> = (
+export const fail: ErrorFactory<LiaisoMssqlErrorCode> = (
   code,
   message,
   recovery,
-) => new SkMcpMssqlError(code, redact(message), recovery && redact(recovery));
+) => new LiaisoMssqlError(code, redact(message), recovery && redact(recovery));
 
 export function asMssqlError(
   error: unknown,

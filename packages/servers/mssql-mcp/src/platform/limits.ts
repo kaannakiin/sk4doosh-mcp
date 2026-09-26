@@ -1,4 +1,4 @@
-import { dbCoreLimits } from "@sk-mcp/db-core";
+import { dbCoreLimits } from "@liaiso/db-core";
 
 export const limits = {
   ...dbCoreLimits,

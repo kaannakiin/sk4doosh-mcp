@@ -1,4 +1,4 @@
-import { guard, json } from "@sk-mcp/mcp-core";
+import { guard, json } from "@liaiso/mcp-core";
 import type { QueuedBackend } from "../backend/port.js";
 import { asLlmError, fail } from "../platform/errors.js";
 import { inputBudgetTokens } from "../platform/limits.js";

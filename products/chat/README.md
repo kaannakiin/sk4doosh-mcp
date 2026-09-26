@@ -1,7 +1,7 @@
 # Chat
 
-A separate product line built on top of the sk-mcp toolchain, sharing only the shared config
-packages (`@sk-mcp/oxlint-config`, `@sk-mcp/typescript-config`). It is a chat application whose
+A separate product line built on top of the liaiso toolchain, sharing only the shared config
+packages (`@liaiso/oxlint-config`, `@liaiso/typescript-config`). It is a chat application whose
 backend reaches local and remote MCP servers — including this repository's own — through a coding
 agent, localized in English and Turkish.
 
@@ -14,7 +14,7 @@ pnpm dev:chat
 This is `turbo run dev dev:types --filter='@chat/*'`, which starts every `@chat/*` package in
 watch mode together: `@chat/contracts` (`tsc --watch`), `@chat/api` on `http://127.0.0.1:5191`,
 and `@chat/web` on `http://localhost:5190`. `pnpm dev:sk` is the complement, for working on the
-sk-mcp line without the chat processes running.
+liaiso line without the chat processes running.
 
 Environment comes from `products/chat/api/.env` and `products/chat/web/.env`, loaded by
 `@nestjs/config` and Vite respectively — Turbo runs in strict env mode and does not load `.env`
@@ -34,12 +34,12 @@ reached through the dev server's own origin.
 | `web`                                  | TanStack Start + Mantine + Tailwind frontend, localized (`en`, `tr`). Locale is carried by a `chat_locale` cookie, never in the URL.                                                                                     |
 | `db` _(not in the root package table)_ | `@chat/db`: the Prisma schema and generated client `api` builds on (`pnpm turbo run gen --filter=@chat/db` before a build; `db:migrate`/`db:deploy`/`db:status` scripts).                                                |
 
-## Boundary with the sk-mcp line
+## Boundary with the liaiso line
 
 No package under `apps/*`, `packages/*` or `sdks/*` may depend on `@chat/*`
 (`boundaries.tags.chat.dependents.allow: ["chat"]` in the root `turbo.json`, checked by
-`pnpm boundaries`), and no source file under `products/chat/*/src` may import an `@sk-mcp/*`
-product package. Both `@sk-mcp/sdk-nestjs` and `@chat/contracts` declare `zod` as a peer on the
+`pnpm boundaries`), and no source file under `products/chat/*/src` may import an `@liaiso/*`
+product package. Both `@liaiso/sdk-nestjs` and `@chat/contracts` declare `zod` as a peer on the
 4.x line, but nothing in the dependency graph keeps a version bump on one side in step with the
 other; the boundary is what stops that from turning into two zod majors sharing one process.
 

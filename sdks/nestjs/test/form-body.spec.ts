@@ -22,18 +22,18 @@ import {
 import type { Request, Response } from "express";
 import { IsInt, IsOptional, IsString } from "class-validator";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SkMcpCatalog } from "../src/catalog.js";
+import { LiaisoCatalog } from "../src/catalog.js";
 import { McpTool } from "../src/decorators.js";
-import { SkMcpDispatcher } from "../src/dispatcher.js";
+import { LiaisoDispatcher } from "../src/dispatcher.js";
 import { extensionTokens } from "../src/extension-points.js";
 import type { FileResolveRequest, FileResolver } from "../src/files.js";
 import type { InvokeResultMapper } from "../src/invoke-result-mapper.js";
-import { registerSkMcpTools } from "../src/meta-tools.js";
-import { SK_MCP_OPTIONS, type SkMcpOptions } from "../src/options.js";
-import { SkMcpModule } from "../src/sk-mcp.module.js";
+import { registerLiaisoTools } from "../src/meta-tools.js";
+import { LIAISO_OPTIONS, type LiaisoOptions } from "../src/options.js";
+import { LiaisoModule } from "../src/liaiso.module.js";
 import {
-  SkMcpStreamableHttp,
-  type SkMcpRequestHandler,
+  LiaisoStreamableHttp,
+  type LiaisoRequestHandler,
 } from "../src/transport/streamable-http.js";
 import type { CallerScopeResolver } from "../src/cache.js";
 import { CallerVisibilityProvider } from "../src/visibility/provider.js";
@@ -115,23 +115,23 @@ interface Wire {
 
 @Controller()
 class FormMcpController {
-  private readonly serve: SkMcpRequestHandler;
+  private readonly serve: LiaisoRequestHandler;
 
   constructor(
-    streamableHttp: SkMcpStreamableHttp,
-    catalog: SkMcpCatalog,
-    dispatcher: SkMcpDispatcher,
+    streamableHttp: LiaisoStreamableHttp,
+    catalog: LiaisoCatalog,
+    dispatcher: LiaisoDispatcher,
     visibility: CallerVisibilityProvider,
   ) {
     this.serve = streamableHttp.serve(() => {
       const server = new McpServer({ name: "nest-form", version: "0.0.0" });
-      registerSkMcpTools(server, {
+      registerLiaisoTools(server, {
         catalog,
         dispatcher,
         mapper: state.mapper as InvokeResultMapper,
         visibility,
         scopes: state.scopes as CallerScopeResolver,
-        options: state.options as SkMcpOptions,
+        options: state.options as LiaisoOptions,
       });
       return server;
     });
@@ -146,7 +146,7 @@ class FormMcpController {
 const state: {
   mapper?: InvokeResultMapper;
   scopes?: CallerScopeResolver;
-  options?: SkMcpOptions;
+  options?: LiaisoOptions;
 } = {};
 
 const stored: Record<string, Buffer> = {
@@ -191,16 +191,16 @@ class MemoryResolver implements FileResolver {
 
 interface Host {
   readonly app: INestApplication;
-  readonly catalog: SkMcpCatalog;
+  readonly catalog: LiaisoCatalog;
   readonly client: Client;
 }
 
 async function startHost(
-  configure: (options: SkMcpOptions) => void,
+  configure: (options: LiaisoOptions) => void,
   textParser: boolean,
 ): Promise<Host> {
   const moduleRef = await Test.createTestingModule({
-    imports: [SkMcpModule.forRoot(configure)],
+    imports: [LiaisoModule.forRoot(configure)],
     controllers: [FormController, FormMcpController],
   }).compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({
@@ -217,12 +217,12 @@ async function startHost(
   state.scopes = app.get<CallerScopeResolver>(
     extensionTokens.callerScopeResolver,
   );
-  state.options = app.get<SkMcpOptions>(SK_MCP_OPTIONS);
+  state.options = app.get<LiaisoOptions>(LIAISO_OPTIONS);
   const client = new Client({ name: "form-probe", version: "0.0.0" });
   await client.connect(
     new StreamableHTTPClientTransport(new URL(`${await app.getUrl()}/mcp`)),
   );
-  return { app, catalog: app.get(SkMcpCatalog), client };
+  return { app, catalog: app.get(LiaisoCatalog), client };
 }
 
 function toolFor(host: Host, route: string): string {

@@ -13,7 +13,7 @@ Start with what is the same, because it is the larger half.
 
 Both SDKs enforce identically, and neither one reads your authorization hierarchy to do it. A tool
 call is replayed as a synthetic request into your own pipeline; the framework then applies global,
-controller and endpoint-level authorization exactly as it would for an HTTP request. sk-mcp does
+controller and endpoint-level authorization exactly as it would for an HTTP request. liaiso does
 not know what that chain contains and does not need to.
 
 So the property that matters most — a tool call cannot do more than an HTTP call by the same caller
@@ -34,7 +34,7 @@ endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>()
 
 Combining those is a framework call too, and the combination is an AND — every level's requirement
 must pass. So the SDK evaluates one combined policy against the caller and gets an answer. No
-inference, no guessing: the hierarchy was never resolved by sk-mcp, it was read.
+inference, no guessing: the hierarchy was never resolved by liaiso, it was read.
 
 **NestJS exposes the binding but not the meaning.** Nest also has three levels — `APP_GUARD`,
 `@UseGuards` on the class, `@UseGuards` on the method — and `Reflector` plus the DI container will
@@ -42,7 +42,7 @@ tell you exactly which guards apply. The hierarchy is visible.
 
 But an ASP.NET policy is _declarative_: a claim requirement is data you can read. A Nest guard is
 _imperative_: `canActivate` is code. It can query a database, call a service, check the clock. What
-it checks cannot be known statically, by sk-mcp or by anything else.
+it checks cannot be known statically, by liaiso or by anything else.
 
 ## What that forces
 
@@ -50,7 +50,7 @@ Everything awkward about the NestJS SDK traces back to that one sentence.
 
 `describeVisibility()` exists because a guard has to volunteer what it enforces — there is no
 metadata to read instead. It is opt-in because most guards do not have it, and a guard that lacks
-it makes its endpoint `unknown` rather than letting sk-mcp assume. Assuming would be the actual
+it makes its endpoint `unknown` rather than letting liaiso assume. Assuming would be the actual
 bug: assuming `allow` pollutes search with tools the caller cannot use, assuming `deny` hides tools
 they can.
 
@@ -60,7 +60,7 @@ the same evaluation ASP.NET gets from `IAuthorizationService`, obtained the expe
 costs real requests is why
 [probe is not the default](/docs/http-catalog/why-probe-visibility-is-not-the-default).
 
-The hand-written MCP controller has a smaller cause but the same flavour. `MapSkMcp` can add an
+The hand-written MCP controller has a smaller cause but the same flavour. `MapLiaiso` can add an
 endpoint because ASP.NET routes are data a library can contribute to. A Nest controller is a class
 you own, and a module cannot add a route to it — so the seven injections are yours to wire. This is
 the one difference that is arguably fixable; the visibility ones are not.
@@ -82,5 +82,5 @@ from the other direction.
 If your backend declares authorization declaratively, the two SDKs feel nearly the same and you
 pay nothing. If it does not — imperative guards on Nest, or authorization living in custom
 middleware on either — the visibility layer is where you will feel it, and the fix is one line in
-your framework rather than configuration in sk-mcp:
+your framework rather than configuration in liaiso:
 [declare the guard](/docs/http-catalog/declare-visibility-for-a-nestjs-guard).

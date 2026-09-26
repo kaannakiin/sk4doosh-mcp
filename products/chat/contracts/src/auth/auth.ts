@@ -3,8 +3,8 @@ import { z } from "zod";
 import { grantTtlSchema } from "../integration/grant-scope.ts";
 import { toolApprovalModeSchema } from "../integration/tool-approval-mode.ts";
 
-export const WEB_SESSION_ISSUER = "sk-mcp-auth";
-export const WEB_SESSION_AUDIENCE = "sk-mcp-web";
+export const WEB_SESSION_ISSUER = "liaiso-auth";
+export const WEB_SESSION_AUDIENCE = "liaiso-web";
 export const WEB_ACCESS_TTL_MS = 15 * 60 * 1000;
 export const WEB_REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const AUTH_CHALLENGE_TTL_MS = 10 * 60 * 1000;

@@ -63,7 +63,7 @@ the machine-readable part, and it is the only part that names what to change.
 
 ## Tell an SDK rejection apart from a backend one
 
-Some errors never reach your backend: sk-mcp validates the arguments against the tool's schema
+Some errors never reach your backend: liaiso validates the arguments against the tool's schema
 first and rejects locally. Those envelopes have **no `status` field**, and that absence is the
 discriminator:
 
@@ -72,7 +72,7 @@ discriminator:
 ```
 
 An error with a `status` came from your backend and was mapped. An error without one was produced
-by sk-mcp itself: for the argument codes, the names or types do not match the schema you loaded, so
+by liaiso itself: for the argument codes, the names or types do not match the schema you loaded, so
 re-read the schema with `load_tool` instead of retrying.
 
 The codes that arrive without a `status` are `unknown_argument`, `invalid_path_type`,
@@ -87,11 +87,11 @@ The full envelope shape is on the
 
 ## Do not retry every error
 
-`retryable` is set by sk-mcp from the mapped status, and it is the flag to branch on. Only
+`retryable` is set by liaiso from the mapped status, and it is the flag to branch on. Only
 `408`, `429`, `502`, `503` and `504` are retryable; a `429` may also carry `retryAfterSeconds`.
 
 Everything else needs a different call or a different caller, not a second attempt. A `forbidden`
-will not become allowed by repeating it, and neither will an `unauthenticated` — sk-mcp forwarded
+will not become allowed by repeating it, and neither will an `unauthenticated` — liaiso forwarded
 the caller's credential unchanged, so the same session cannot do better.
 
 ## Verify the loop

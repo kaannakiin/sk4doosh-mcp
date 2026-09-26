@@ -13,6 +13,7 @@ allowBuilds:
   prisma: true
   protobufjs: true
   ssh2: true
+  workerd: true
 minimumReleaseAgeExclude:
   - json-schema-to-typescript@16.0.0
   - "@types/react-dom@19.2.7"

@@ -160,7 +160,7 @@ function providerConfig(
  * Guard: the OCR binding's host and model are handed to the PDF reader as its
  * own environment because nothing else reaches it. The stdio transport starts a
  * reader with `HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM` and `USER` only, so a
- * `SKMCP_PDF_OCR_URL` exported to the api is dropped and the binding falls back
+ * `LIAISO_PDF_OCR_URL` exported to the api is dropped and the binding falls back
  * to `127.0.0.1`, where no OCR model runs.
  */
 function pdfReaderEnv(
@@ -168,8 +168,8 @@ function pdfReaderEnv(
   model: string | undefined,
 ): Record<string, string> {
   return {
-    ...(url === undefined ? {} : { SKMCP_PDF_OCR_URL: url }),
-    ...(model === undefined ? {} : { SKMCP_PDF_OCR_MODEL: model }),
+    ...(url === undefined ? {} : { LIAISO_PDF_OCR_URL: url }),
+    ...(model === undefined ? {} : { LIAISO_PDF_OCR_MODEL: model }),
   };
 }
 

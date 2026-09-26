@@ -49,7 +49,7 @@ const probes = [
     file: "f0-02-consumer.json",
     options: { timeoutMs: 300_000 },
     command: "node packages/lab/xml-lab/test/probes/isolated-consumer.mjs",
-    skip: process.env.SKMCP_XML_F0_NO_NETWORK === "1",
+    skip: process.env.LIAISO_XML_F0_NO_NETWORK === "1",
   },
   {
     task: "F0-03",
@@ -96,7 +96,7 @@ const probes = [
     file: "f0-08-measurements.json",
     options: { execArgv: ["--max-old-space-size=3072"], timeoutMs: 420_000 },
     command:
-      "SKMCP_XML_BENCH=1 node --max-old-space-size=3072 packages/lab/xml-lab/test/probes/budget.mjs",
+      "LIAISO_XML_BENCH=1 node --max-old-space-size=3072 packages/lab/xml-lab/test/probes/budget.mjs",
   },
   {
     task: "F2-10",
@@ -107,7 +107,7 @@ const probes = [
       timeoutMs: 600_000,
     },
     command:
-      "SKMCP_XML_BENCH=1 node --expose-gc packages/lab/xml-lab/test/probes/residency.mjs",
+      "LIAISO_XML_BENCH=1 node --expose-gc packages/lab/xml-lab/test/probes/residency.mjs",
   },
 ];
 
@@ -116,7 +116,9 @@ mkdirSync(outputDirectory, { recursive: true });
 let failed = 0;
 for (const entry of probes) {
   if (entry.skip === true) {
-    process.stderr.write(`${entry.task} not run (SKMCP_XML_F0_NO_NETWORK=1)\n`);
+    process.stderr.write(
+      `${entry.task} not run (LIAISO_XML_F0_NO_NETWORK=1)\n`,
+    );
     continue;
   }
   const outcome = runProbe(entry.probe, entry.options);

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, inject, it } from "vitest";
-import type { SkMcpExcelError } from "../src/platform/errors.js";
+import type { LiaisoExcelError } from "../src/platform/errors.js";
 import {
   createWorkbookRoot,
   resolveWorkbookPath,
@@ -21,7 +21,7 @@ async function codeOf(
   try {
     await action();
   } catch (error) {
-    return (error as SkMcpExcelError).code;
+    return (error as LiaisoExcelError).code;
   }
   return "no-error";
 }
@@ -173,7 +173,7 @@ describe("worksheet selection", () => {
       selectSheetName(loaded.workbook, "Nope");
       expect.unreachable();
     } catch (error) {
-      const failure = error as SkMcpExcelError;
+      const failure = error as LiaisoExcelError;
       expect(failure.code).toBe("unknown_sheet");
       expect(failure.recovery).toContain("Notes (hidden)");
     }
