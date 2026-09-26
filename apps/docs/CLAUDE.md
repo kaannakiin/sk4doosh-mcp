@@ -10,12 +10,25 @@ file adds what is specific to this app and overrides it where stated.
 Run from the repo root:
 
 - `pnpm --filter @liaiso/docs dev` — dev server on `http://localhost:5180`
-- `pnpm turbo run build --filter=@liaiso/docs` — production build into `dist/`
-- `pnpm --filter @liaiso/docs start` — serve the SSR build (requires a build first)
+- `pnpm turbo run build --filter=@liaiso/docs` — production build into `dist/` (Worker in
+  `dist/server`, prerendered pages and assets in `dist/client`)
+- `pnpm --filter @liaiso/docs preview` — serve the build locally in `workerd` (requires a build first)
+- `pnpm --filter @liaiso/docs deploy` — `wrangler deploy` to the `liaiso-docs` Worker (requires a build first)
 - `pnpm --filter @liaiso/docs lint` / `check-types`
 
-Use turbo for `build` so `^build` dependencies resolve; `dev` and `start` do not need it. There
-are no tests in this app.
+Use turbo for `build` so `^build` dependencies resolve; `dev`, `preview` and `deploy` do not need it.
+There are no tests in this app.
+
+## Hosting
+
+The site runs on Cloudflare Workers through `@cloudflare/vite-plugin`; `wrangler.jsonc` is the
+config. Every page reachable by a link is prerendered at build time (`prerender.crawlLinks`) and
+served as a static asset; the Worker only answers what no file matches — the `/docs` and
+`/docs/$product` redirects and 404s. `cloudflare()` must stay first in `vite.config.ts`.
+
+`assets.html_handling` is `drop-trailing-slash` because prerender writes `<route>/index.html` while
+every link is slash-less; the default `auto-trailing-slash` would answer each page with a 307 to
+`<route>/`.
 
 ## Writing documentation
 
