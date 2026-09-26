@@ -1,9 +1,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { asciiLower } from "@liaiso/mcp-core";
 
-const root = new URL("../src", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../src", import.meta.url));
 
 function sources(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {
